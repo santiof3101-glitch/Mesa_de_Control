@@ -1,19 +1,15 @@
 const STORAGE_KEY = "autocor-control-legal";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
-
 async function leerUltimoEstadoSupabase() {
   try {
-    const response = await fetch(
-      `${SUPABASE_URL}/REGISTROS?modulo=eq.sistema&tipo=eq.estado_completo&select=datos&order=created_at.desc&limit=1`,
-      {
-        method: "GET",
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`
-        }
+    const response = await fetch(`${SUPABASE_URL}/REGISTROS?modulo=eq.sistema&tipo=eq.estado_completo&select=datos&order=created_at.desc&limit=1`, {
+      method: "GET",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`
       }
-    );
+    });
 
     const rows = await response.json();
 
@@ -27,15 +23,14 @@ async function leerUltimoEstadoSupabase() {
     return null;
   }
 }
-
-async function guardarEnSupabase(modulo, tipo, datos, usuario = "sistema") {
+async function guardarEnSupabase(modulo, tipo, datos, usuario = "Sistema") {
   try {
     await fetch(`${SUPABASE_URL}/REGISTROS`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`
       },
       body: JSON.stringify({
         modulo,
@@ -48,7 +43,6 @@ async function guardarEnSupabase(modulo, tipo, datos, usuario = "sistema") {
     console.error("Error Supabase:", error);
   }
 }
-
 const OLD_STORAGE_KEY = "autocor-saneamiento";
 const STATE_SCHEMA_VERSION = 20260520;
 const REMEMBER_ACCESS_KEY = "autocor-remembered-access";
@@ -56,17 +50,12 @@ const BACKUP_DB_NAME = "autocor-control-legal-backups";
 const BACKUP_STORE_NAME = "snapshots";
 const FILE_PAYLOAD_STORE_NAME = "filePayloads";
 const BACKUP_RECORD_ID = "latest";
-
-const SHARED_PC_STATE_URL =
-  location.protocol === "file:"
-    ? "http://127.0.0.1:8787/api/state"
-    : `${location.origin}/api/state`;
-
-const SHARED_PC_BACKUPS_URL =
-  location.protocol === "file:"
-    ? "http://127.0.0.1:8787/api/backups"
-    : `${location.origin}/api/backups`;
-
+const SHARED_PC_STATE_URL = location.protocol === "file:"
+  ? "http://127.0.0.1:8787/api/state"
+  : `${location.origin}/api/state`;
+const SHARED_PC_BACKUPS_URL = location.protocol === "file:"
+  ? "http://127.0.0.1:8787/api/backups"
+  : `${location.origin}/api/backups`;
 const ADMIN_PASSWORD = "Autocor2026!";
 const SESSION_TIMEOUT_MS = 5 * 60 * 60 * 1000;
 const MAX_FILE_LIBRARY_SIZE = 50 * 1024 * 1024;
@@ -109,8 +98,7 @@ const PURCHASE_STATUS_OPTIONS = [
 const CONTRACT_COLUMNS = [
   "ID",
   "HORA DE INICIO",
-  "HORA DE FINALIZACION"
-];
+  "HORA DE FINALIZACION",
   "CORREO ELECTRONICO",
   "COLUMN",
   "NOMBRE COMPLETO CLIENTE",
@@ -1012,9 +1000,33 @@ function saveState() {
   } catch {
     // IndexedDB queda como respaldo cuando localStorage se llena o el navegador lo bloquea.
   }
-writeSharedPcState(snapshot);
-guardarEnSupabase("sistema", "estado_completo", snapshot, session?.name || "Sistema");
-persistStateBackup(snapshot);
+  writeSharedPcState(snapshot);
+  guardarEnSupabase("sistema", "estado_completo", snapshot, session?.name || "Sistema");
+  persistStateBackup(snapshot);
+}
+
+let supabaseInitialSyncDone = false;
+
+async function sincronizarEstadoSupabaseInicial() {
+  if (supabaseInitialSyncDone) return;
+  supabaseInitialSyncDone = true;
+  const remoteState = await leerUltimoEstadoSupabase();
+  if (!remoteState) return;
+
+  try {
+    const normalizedRemote = normalizeImportedState(remoteState);
+    const merged = mergePcStates(normalizedRemote, state);
+    const currentScore = getStateScore(state);
+    const remoteScore = getStateScore(normalizedRemote);
+    const mergedScore = getStateScore(merged);
+
+    if (remoteScore > currentScore || mergedScore > currentScore) {
+      replaceState(merged);
+      showToast("Informacion sincronizada desde Supabase.");
+    }
+  } catch (error) {
+    console.error("No se pudo sincronizar Supabase:", error);
+  }
 }
 
 function openBackupDb() {
@@ -8723,5 +8735,6 @@ document.addEventListener("change", (event) => {
 window.setInterval(checkSessionExpiry, 60000);
 
 renderAll();
+sincronizarEstadoSupabaseInicial();
 restoreStateFromInternalBackupIfNeeded();
 migrateIndexedDbFilesToSharedPc();
