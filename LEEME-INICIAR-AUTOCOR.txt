@@ -1,0 +1,16 @@
+AUTOCOR CONTROL LEGAL - MODO PC
+
+Para que los datos se vean iguales en cualquier navegador o perfil de Google del mismo computador:
+
+1. Abre el archivo iniciar-autocor.bat.
+2. Deja abierta la ventana "Autocor datos PC" mientras uses la plataforma.
+3. Abre la aplicacion desde el index.html o desde la ventana que se abre automaticamente.
+
+Los datos compartidos se guardan en:
+autocor-datos-pc.json
+
+Importante:
+- Si abres index.html sin ejecutar iniciar-autocor.bat, cada perfil de navegador puede tener datos diferentes.
+- Si ejecutas iniciar-autocor.bat primero, todos los perfiles del mismo PC comparten la misma informacion.
+- Para migrar datos antiguos, abre iniciar-autocor.bat desde el perfil de Google donde ya ves tus datos y recarga la pagina.
+- No borres autocor-datos-pc.json si quieres conservar la informacion.
