@@ -236,16 +236,9 @@ let sharedPcStorageAvailable = false;
 let stateLoadedFromPc = false;
 const state = loadState();
 hydrateCommercialOwners();
-leerUltimoEstadoSupabase().then((estadoSupabase) => {
-  if (!estadoSupabase) return;
-
-  Object.keys(state).forEach((key) => delete state[key]);
-  Object.assign(state, estadoSupabase);
-
-  hydrateCommercialOwners();
-
-  console.log("Estado cargado desde Supabase");
-});
+const state = loadState();
+hydrateCommercialOwners();
+let session = { role: "public", userId: null, name: "", agency: "" };
 let session = { role: "public", userId: null, name: "", agency: "" };
 let lastActivityAt = Date.now();
 let activeFilter = "todos";
