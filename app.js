@@ -1398,7 +1398,7 @@ function renderLogo() {
     return;
   }
 
-  logoSlot.innerHTML = `<img src="autocor-logo.svg" alt="Logo Autocor">`;
+  logoSlot.innerHTML = `<img src="logotipo-autocor-v2.svg.webp?v=20260619" alt="Logo Autocor">`;
 }
 
 function renderSelects() {
