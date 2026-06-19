@@ -1,6 +1,26 @@
 const STORAGE_KEY = "autocor-control-legal";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1/";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
+async function guardarEnSupabase(modulo, tipo, datos, usuario = "Sistema") {
+  try {
+    await fetch(`${SUPABASE_URL}/REGISTROS`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`
+      },
+      body: JSON.stringify({
+        modulo,
+        tipo,
+        datos,
+        usuario
+      })
+    });
+  } catch (error) {
+    console.error("Error Supabase:", error);
+  }
+}
 const OLD_STORAGE_KEY = "autocor-saneamiento";
 const STATE_SCHEMA_VERSION = 20260520;
 const REMEMBER_ACCESS_KEY = "autocor-remembered-access";
@@ -958,8 +978,9 @@ function saveState() {
   } catch {
     // IndexedDB queda como respaldo cuando localStorage se llena o el navegador lo bloquea.
   }
-  writeSharedPcState(snapshot);
-  persistStateBackup(snapshot);
+writeSharedPcState(snapshot);
+guardarEnSupabase("sistema", "estado_completo", snapshot, session?.name || "Sistema");
+persistStateBackup(snapshot);
 }
 
 function openBackupDb() {
