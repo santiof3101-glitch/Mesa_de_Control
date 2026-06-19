@@ -1,7 +1,28 @@
 const STORAGE_KEY = "autocor-control-legal";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1/";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
-async function guardarEnSupabase(modulo, tipo, datos, usuario = "Sistema") {
+async function leerUltimoEstadoSupabase() {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/REGISTROS?modulo=eq.sistema&tipo=eq.estado_completo&select=datos&order=created_at.desc&limit=1`, {
+      method: "GET",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`
+      }
+    });
+
+    const rows = await response.json();
+
+    if (Array.isArray(rows) && rows.length && rows[0].datos) {
+      return rows[0].datos;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error leyendo Supabase:", error);
+    return null;
+  }
+}
   try {
     await fetch(`${SUPABASE_URL}/REGISTROS`, {
       method: "POST",
@@ -215,6 +236,16 @@ let sharedPcStorageAvailable = false;
 let stateLoadedFromPc = false;
 const state = loadState();
 hydrateCommercialOwners();
+leerUltimoEstadoSupabase().then((estadoSupabase) => {
+  if (!estadoSupabase) return;
+
+  Object.keys(state).forEach((key) => delete state[key]);
+  Object.assign(state, estadoSupabase);
+
+  hydrateCommercialOwners();
+
+  console.log("Estado cargado desde Supabase");
+});
 let session = { role: "public", userId: null, name: "", agency: "" };
 let lastActivityAt = Date.now();
 let activeFilter = "todos";
