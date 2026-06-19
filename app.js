@@ -1,4 +1,6 @@
 const STORAGE_KEY = "autocor-control-legal";
+const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1/";
+const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
 const OLD_STORAGE_KEY = "autocor-saneamiento";
 const STATE_SCHEMA_VERSION = 20260520;
 const REMEMBER_ACCESS_KEY = "autocor-remembered-access";
