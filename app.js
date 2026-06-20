@@ -1,48 +1,6 @@
 const STORAGE_KEY = "autocor-control-legal";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
-async function leerUltimoEstadoSupabase() {
-  try {
-    const response = await fetch(`${SUPABASE_URL}/REGISTROS?modulo=eq.sistema&tipo=eq.estado_completo&select=datos&order=created_at.desc&limit=1`, {
-      method: "GET",
-      headers: {
-        "apikey": SUPABASE_KEY,
-        "Authorization": `Bearer ${SUPABASE_KEY}`
-      }
-    });
-
-    const rows = await response.json();
-
-    if (Array.isArray(rows) && rows.length && rows[0].datos) {
-      return rows[0].datos;
-    }
-
-    return null;
-  } catch (error) {
-    console.error("Error leyendo Supabase:", error);
-    return null;
-  }
-}
-async function guardarEnSupabase(modulo, tipo, datos, usuario = "Sistema") {
-  try {
-    await fetch(`${SUPABASE_URL}/REGISTROS`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": SUPABASE_KEY,
-        "Authorization": `Bearer ${SUPABASE_KEY}`
-      },
-      body: JSON.stringify({
-        modulo,
-        tipo,
-        datos,
-        usuario
-      })
-    });
-  } catch (error) {
-    console.error("Error Supabase:", error);
-  }
-}
 const OLD_STORAGE_KEY = "autocor-saneamiento";
 const STATE_SCHEMA_VERSION = 20260520;
 const REMEMBER_ACCESS_KEY = "autocor-remembered-access";
@@ -235,6 +193,7 @@ const defaultState = {
 
 let sharedPcStorageAvailable = false;
 let stateLoadedFromPc = false;
+let supabaseSyncTimer = null;
 const state = loadState();
 hydrateCommercialOwners();
 let session = { role: "public", userId: null, name: "", agency: "" };
@@ -570,6 +529,62 @@ function readSharedPcState() {
   return null;
 }
 
+async function leerUltimoEstadoSupabase() {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return null;
+  try {
+    const response = await fetch(`${SUPABASE_URL}/REGISTROS?modulo=eq.sistema&tipo=eq.estado_completo&select=datos,created_at&order=created_at.desc&limit=1`, {
+      method: "GET",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`
+      }
+    });
+    if (!response.ok) return null;
+    const rows = await response.json();
+    if (Array.isArray(rows) && rows.length && rows[0].datos) {
+      return rows[0].datos;
+    }
+  } catch (error) {
+    console.warn("No se pudo leer Supabase:", error);
+  }
+  return null;
+}
+
+async function guardarRegistroSupabase(modulo, tipo, datos, usuario = "sistema") {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return;
+  try {
+    await fetch(`${SUPABASE_URL}/REGISTROS`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`
+      },
+      body: JSON.stringify({ modulo, tipo, datos, usuario })
+    });
+  } catch (error) {
+    console.warn("No se pudo guardar en Supabase:", error);
+  }
+}
+
+async function restoreStateFromSupabaseIfNeeded() {
+  const remoteState = await leerUltimoEstadoSupabase();
+  if (!remoteState) return;
+  try {
+    const normalizedRemote = normalizeImportedState(remoteState);
+    const currentScore = getStateScore(state);
+    const remoteScore = getStateScore(normalizedRemote);
+    if (remoteScore <= currentScore) return;
+    const merged = mergePcStates(normalizedRemote, state);
+    Object.assign(state, merged);
+    saveState();
+    safeRenderAll();
+    showToast("Datos restaurados desde el respaldo en linea.");
+  } catch (error) {
+    console.warn("No se pudo restaurar Supabase:", error);
+  }
+}
+
 function mergePcStates(baseState, extraState) {
   const merged = normalizeImportedState({ ...baseState });
   const baseProcessing = merged.dataProcessing || {};
@@ -802,15 +817,15 @@ function normalizeContractLoad(load) {
 
 function getContractColumnAliases(column) {
   const aliases = {
-    "HORA DE FINALIZACION": ["Hora de finalizacion", "Hora de finalización"],
-    "CORREO ELECTRONICO": ["Correo electronico", "Correo electrónico"],
+    "HORA DE FINALIZACION": ["Hora de finalizacion", "Hora de finalizaciÃ³n"],
+    "CORREO ELECTRONICO": ["Correo electronico", "Correo electrÃ³nico"],
     "NOMBRE COMPLETO CLIENTE": ["Nombre completo cliente", "Cliente"],
-    "CEDULA DE IDENTIDAD": ["Cedula de identidad", "Cedula", "Cédula de identidad"],
+    "CEDULA DE IDENTIDAD": ["Cedula de identidad", "Cedula", "CÃ©dula de identidad"],
     "PLACAS": ["Placa", "Placas"],
     "VALOR DE VENTA": [" Valor de venta: ", "Valor de venta:", "Valor venta"],
     "MARCA Y MODELO (MATRICULA )": ["Marca y modelo (matricula )", "Marca y modelo", "Matricula"],
-    "DIRECCION EXACTA DE VIVIENDA": ["Direccion exacta de vivienda", "Dirección exacta de vivienda"],
-    "CORREO ELECTRONICO CLIENTE": ["Correo electronico cliente", "Correo electrónico cliente"],
+    "DIRECCION EXACTA DE VIVIENDA": ["Direccion exacta de vivienda", "DirecciÃ³n exacta de vivienda"],
+    "CORREO ELECTRONICO CLIENTE": ["Correo electronico cliente", "Correo electrÃ³nico cliente"],
     "AGENCIA DE VENTA": ["Agencia de venta", "Agencia"],
     "NOMBRE DEL ASESOR": ["Nombre del asesor", "Asesor"],
     "ESTADO CIVIL COMPRADOR": ["Estado civil comprador"],
@@ -979,7 +994,7 @@ function migrateVisualDefaults(merged, source = {}) {
     "CENTRO OPERATIVO DE SANEAMIENTO",
     "CENTRO OPERATIVO DE MESA DE CONTROL",
     "OPERACION DE SANEAMIENTO",
-    "OPERACIÓN DE SANEAMIENTO"
+    "OPERACIÃ“N DE SANEAMIENTO"
   ]);
   const currentTitle = normalizeLooseText(source.copy?.heroTitle || merged.copy?.heroTitle);
   if (!source.schemaVersion || source.schemaVersion < STATE_SCHEMA_VERSION || oldHeroTitles.has(currentTitle)) {
@@ -1001,32 +1016,15 @@ function saveState() {
     // IndexedDB queda como respaldo cuando localStorage se llena o el navegador lo bloquea.
   }
   writeSharedPcState(snapshot);
-  guardarEnSupabase("sistema", "estado_completo", snapshot, session?.name || "Sistema");
   persistStateBackup(snapshot);
+  scheduleSupabaseStateSync(snapshot);
 }
 
-let supabaseInitialSyncDone = false;
-
-async function sincronizarEstadoSupabaseInicial() {
-  if (supabaseInitialSyncDone) return;
-  supabaseInitialSyncDone = true;
-  const remoteState = await leerUltimoEstadoSupabase();
-  if (!remoteState) return;
-
-  try {
-    const normalizedRemote = normalizeImportedState(remoteState);
-    const merged = mergePcStates(normalizedRemote, state);
-    const currentScore = getStateScore(state);
-    const remoteScore = getStateScore(normalizedRemote);
-    const mergedScore = getStateScore(merged);
-
-    if (remoteScore > currentScore || mergedScore > currentScore) {
-      replaceState(merged);
-      showToast("Informacion sincronizada desde Supabase.");
-    }
-  } catch (error) {
-    console.error("No se pudo sincronizar Supabase:", error);
-  }
+function scheduleSupabaseStateSync(snapshot) {
+  if (supabaseSyncTimer) window.clearTimeout(supabaseSyncTimer);
+  supabaseSyncTimer = window.setTimeout(() => {
+    guardarRegistroSupabase("sistema", "estado_completo", snapshot, session?.name || session?.role || "sistema");
+  }, 1500);
 }
 
 function openBackupDb() {
@@ -1279,6 +1277,17 @@ async function renderInternalBackupStatus(knownBackup = null) {
 }
 
 function normalizeImportedState(importedState) {
+  importedState = parseMaybeJson(importedState) || {};
+  importedState.copy = parseMaybeJson(importedState.copy) || importedState.copy;
+  importedState.theme = parseMaybeJson(importedState.theme) || importedState.theme;
+  importedState.dataProcessing = parseMaybeJson(importedState.dataProcessing) || importedState.dataProcessing;
+  importedState.statusOptions = parseMaybeJson(importedState.statusOptions) || importedState.statusOptions;
+  importedState.tasks = parseMaybeJson(importedState.tasks) || importedState.tasks;
+  if (!isPlainObject(importedState.copy)) importedState.copy = {};
+  if (!isPlainObject(importedState.theme)) importedState.theme = {};
+  if (!isPlainObject(importedState.dataProcessing)) importedState.dataProcessing = {};
+  if (!Array.isArray(importedState.statusOptions)) importedState.statusOptions = [];
+  if (!Array.isArray(importedState.tasks)) importedState.tasks = [];
   const merged = { ...structuredClone(defaultState), ...importedState };
   merged.commercialAdvisors = normalizeCommercialAdvisors(merged.commercialAdvisors || []);
   merged.announcements = merged.announcements || [];
@@ -1302,6 +1311,21 @@ function normalizeImportedState(importedState) {
   merged.tasks = (merged.tasks || []).map(normalizeTask);
   merged.schemaVersion = STATE_SCHEMA_VERSION;
   return merged;
+}
+
+function parseMaybeJson(value) {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  if (!trimmed || (!trimmed.startsWith("{") && !trimmed.startsWith("["))) return value;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return value;
+  }
+}
+
+function isPlainObject(value) {
+  return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
 function replaceState(nextState) {
@@ -1392,7 +1416,7 @@ function setView(viewId) {
   views.forEach((view) => view.classList.toggle("is-active", view.id === viewId));
   navTabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.view === viewId));
   window.scrollTo({ top: 0, behavior: "smooth" });
-  renderAll();
+  safeRenderAll();
 }
 
 function applyTheme() {
@@ -1413,15 +1437,15 @@ function applyCopy() {
   document.querySelector("#heroEyebrow").textContent = state.copy.heroEyebrow;
   document.querySelector("#access-title").textContent = state.copy.heroTitle;
   document.querySelector("#heroSubtitle").textContent = state.copy.heroSubtitle;
-  document.querySelector("#commercialAccessTitle").textContent = `💼 ${state.copy.commercialTitle}`;
+  document.querySelector("#commercialAccessTitle").textContent = `ðŸ’¼ ${state.copy.commercialTitle}`;
   document.querySelector("#commercialAccessText").textContent = state.copy.commercialText;
-  document.querySelector("#legalAccessTitle").textContent = `🛡️ ${state.copy.legalTitle}`;
+  document.querySelector("#legalAccessTitle").textContent = `ðŸ›¡ï¸ ${state.copy.legalTitle}`;
   document.querySelector("#legalAccessText").textContent = state.copy.legalText;
-  document.querySelector("#adminAccessTitle").textContent = `⚙️ ${state.copy.adminTitle}`;
+  document.querySelector("#adminAccessTitle").textContent = `âš™ï¸ ${state.copy.adminTitle}`;
   document.querySelector("#adminAccessText").textContent = state.copy.adminText;
-  document.querySelector("#announcementsAccessTitle").textContent = `📌 ${state.copy.announcementsTitle}`;
+  document.querySelector("#announcementsAccessTitle").textContent = `ðŸ“Œ ${state.copy.announcementsTitle}`;
   document.querySelector("#announcementsAccessText").textContent = state.copy.announcementsText;
-  document.querySelector("#managerAccessTitle").textContent = `📊 ${state.copy.managerTitle}`;
+  document.querySelector("#managerAccessTitle").textContent = `ðŸ“Š ${state.copy.managerTitle}`;
   document.querySelector("#managerAccessText").textContent = state.copy.managerText;
 
   Object.entries(state.copy).forEach(([key, value]) => {
@@ -1467,7 +1491,7 @@ function renderLogo() {
     return;
   }
 
-  logoSlot.innerHTML = `<img src="logotipo-autocor-v2.svg.webp" alt="Logo Autocor">`;
+  logoSlot.innerHTML = `<img src="autocor-logo.svg" alt="Logo Autocor">`;
 }
 
 function renderSelects() {
@@ -1660,7 +1684,7 @@ function renderCommercialAdvisors() {
   state.commercialAdvisors.forEach((advisor) => {
     const item = document.createElement("span");
     item.className = "option-item";
-    item.innerHTML = `<span>${escapeHtml(advisor.name)} <small>${escapeHtml(advisor.agency || "Sin agencia")} · Usuario: ${escapeHtml(advisor.username || "")}</small></span><input type="password" placeholder="Nueva contrasena"><button class="btn secondary change-password" type="button">Cambiar</button><button class="remove-option" type="button" aria-label="Eliminar ${escapeHtml(advisor.name)}">x</button>`;
+    item.innerHTML = `<span>${escapeHtml(advisor.name)} <small>${escapeHtml(advisor.agency || "Sin agencia")} Â· Usuario: ${escapeHtml(advisor.username || "")}</small></span><input type="password" placeholder="Nueva contrasena"><button class="btn secondary change-password" type="button">Cambiar</button><button class="remove-option" type="button" aria-label="Eliminar ${escapeHtml(advisor.name)}">x</button>`;
     item.querySelector(".remove-option").addEventListener("click", () => removeCommercialAdvisor(advisor.id));
     item.querySelector(".change-password").addEventListener("click", () => {
       changePassword("commercialAdvisors", advisor.id, item.querySelector("input").value);
@@ -1678,7 +1702,7 @@ function renderStatusOptions() {
     item.className = "option-item status-admin-item";
     item.innerHTML = `
       <i style="background:${escapeHtml(status.color)}"></i>
-      <span>${escapeHtml(status.label)}${status.closes ? " · cierra tarea" : ""}</span>
+      <span>${escapeHtml(status.label)}${status.closes ? " Â· cierra tarea" : ""}</span>
       ${status.isDefault ? "" : `<button class="remove-option" type="button" aria-label="Eliminar ${escapeHtml(status.label)}">x</button>`}
     `;
     const button = item.querySelector("button");
@@ -2314,28 +2338,28 @@ function renderDashboards() {
   document.querySelector("#heroAverage").textContent = `Promedio: ${formatMinutes(kpis.avgCompletion)}`;
 
   const cards = [
-    ["📋 Total leads", kpis.total, "Solicitudes registradas"],
-    ["🚘 Placas unicas", kpis.uniquePlates, "Vehiculos sin repetir"],
-    ["⏳ Pendientes", kpis.pending, "Sin tomar"],
-    ["🛠️ En proceso", kpis.inProgress, "Trabajandose"],
-    ["✅ Completados", kpis.completed, "Cerrados"],
-    ["🟢 Disponibles", kpis.unassigned, "Para tomar"],
-    ["⚠️ Duplicados", kpis.duplicates, "Placa o cliente repetido"],
-    ["⏱️ Prom. toma", formatMinutes(kpis.avgTake), "Ingreso a toma"],
-    ["🏁 Prom. cierre", formatMinutes(kpis.avgCompletion), "Toma a cierre"]
+    ["ðŸ“‹ Total leads", kpis.total, "Solicitudes registradas"],
+    ["ðŸš˜ Placas unicas", kpis.uniquePlates, "Vehiculos sin repetir"],
+    ["â³ Pendientes", kpis.pending, "Sin tomar"],
+    ["ðŸ› ï¸ En proceso", kpis.inProgress, "Trabajandose"],
+    ["âœ… Completados", kpis.completed, "Cerrados"],
+    ["ðŸŸ¢ Disponibles", kpis.unassigned, "Para tomar"],
+    ["âš ï¸ Duplicados", kpis.duplicates, "Placa o cliente repetido"],
+    ["â±ï¸ Prom. toma", formatMinutes(kpis.avgTake), "Ingreso a toma"],
+    ["ðŸ Prom. cierre", formatMinutes(kpis.avgCompletion), "Toma a cierre"]
   ];
 
   const adminCards = [
-    ["📋 Total leads", adminKpis.total, "Segun filtros"],
-    ["🚘 Placas unicas", adminKpis.uniquePlates, "Vehiculos sin repetir"],
-    ["⏳ Pendientes", adminKpis.pending, "Sin tomar"],
-    ["🛠️ En proceso", adminKpis.inProgress, "Trabajandose"],
-    ["✅ Completados", adminKpis.completed, "Cerrados"],
-    ["🟢 Disponibles", adminKpis.unassigned, "Para tomar"],
-    ["⚠️ Duplicados", adminKpis.duplicates, "Placa o cliente repetido"],
-    ["⏱️ Prom. toma", formatMinutes(adminKpis.avgTake), "Ingreso a toma"],
-    ["🏁 Prom. cierre", formatMinutes(adminKpis.avgCompletion), "Toma a cierre"],
-    ["📅 Cerrados hoy", adminKpis.completedToday, "Gestion filtrada"]
+    ["ðŸ“‹ Total leads", adminKpis.total, "Segun filtros"],
+    ["ðŸš˜ Placas unicas", adminKpis.uniquePlates, "Vehiculos sin repetir"],
+    ["â³ Pendientes", adminKpis.pending, "Sin tomar"],
+    ["ðŸ› ï¸ En proceso", adminKpis.inProgress, "Trabajandose"],
+    ["âœ… Completados", adminKpis.completed, "Cerrados"],
+    ["ðŸŸ¢ Disponibles", adminKpis.unassigned, "Para tomar"],
+    ["âš ï¸ Duplicados", adminKpis.duplicates, "Placa o cliente repetido"],
+    ["â±ï¸ Prom. toma", formatMinutes(adminKpis.avgTake), "Ingreso a toma"],
+    ["ðŸ Prom. cierre", formatMinutes(adminKpis.avgCompletion), "Toma a cierre"],
+    ["ðŸ“… Cerrados hoy", adminKpis.completedToday, "Gestion filtrada"]
   ];
 
   renderKpiCards("#accessKpis", cards.slice(0, 4));
@@ -2362,10 +2386,10 @@ function renderCommercialDashboard() {
   const tasks = getCommercialTasks();
   const kpis = getKpis(tasks);
   renderKpiCards("#commercialKpis", [
-    ["📋 Mis solicitudes", kpis.total, "Registradas por tu usuario"],
-    ["⏳ Pendientes", kpis.pending, "Aun sin tomar"],
-    ["🛠️ En proceso", kpis.inProgress, "Tomadas por mesa"],
-    ["✅ Cerradas", kpis.completed, "Finalizadas"]
+    ["ðŸ“‹ Mis solicitudes", kpis.total, "Registradas por tu usuario"],
+    ["â³ Pendientes", kpis.pending, "Aun sin tomar"],
+    ["ðŸ› ï¸ En proceso", kpis.inProgress, "Tomadas por mesa"],
+    ["âœ… Cerradas", kpis.completed, "Finalizadas"]
   ]);
   chartContainer.innerHTML = renderBarRows(groupByStatus(tasks), Math.max(tasks.length, 1));
   if (leadList) renderCommercialLeadList(leadList, tasks);
@@ -2376,10 +2400,10 @@ function renderCommercialGeneralDashboard() {
   const tasks = state.tasks;
   const kpis = getKpis(tasks);
   renderKpiCards("#commercialGeneralKpis", [
-    ["🟢 Disponibles", kpis.unassigned, "Por tomar en mesa"],
-    ["🛠️ En proceso", kpis.inProgress, "Gestion legal activa"],
-    ["✅ Cerrados", kpis.completed, "Finalizados"],
-    ["⏱️ Prom. cierre", formatMinutes(kpis.avgCompletion), "Tomado a cerrado"]
+    ["ðŸŸ¢ Disponibles", kpis.unassigned, "Por tomar en mesa"],
+    ["ðŸ› ï¸ En proceso", kpis.inProgress, "Gestion legal activa"],
+    ["âœ… Cerrados", kpis.completed, "Finalizados"],
+    ["â±ï¸ Prom. cierre", formatMinutes(kpis.avgCompletion), "Tomado a cerrado"]
   ]);
   document.querySelector("#commercialGeneralChart").innerHTML = renderBarRows(groupByStatus(tasks), Math.max(tasks.length, 1));
 }
@@ -2387,13 +2411,13 @@ function renderCommercialGeneralDashboard() {
 function renderCommercialLeadList(container, tasks) {
   const sorted = [...tasks].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 8);
   if (!sorted.length) {
-    container.innerHTML = `<div class="empty compact-empty">📭 Todavia no tienes solicitudes registradas.</div>`;
+    container.innerHTML = `<div class="empty compact-empty">ðŸ“­ Todavia no tienes solicitudes registradas.</div>`;
     return;
   }
 
   container.innerHTML = `
     <div class="mini-list-head">
-      <strong>🧾 Ultimas solicitudes</strong>
+      <strong>ðŸ§¾ Ultimas solicitudes</strong>
       <span>${tasks.length} en total</span>
     </div>
     ${sorted.map((task) => `
@@ -2419,10 +2443,10 @@ function renderControlDashboard() {
     : state.tasks;
   const kpis = getKpis(tasks);
   renderKpiCards("#controlKpis", [
-    ["🟢 Disponibles", kpis.unassigned, "Sin tomar"],
-    ["🛠️ Tomados", kpis.inProgress, "En mesa"],
-    ["✅ Cerrados", kpis.completed, "Finalizados"],
-    ["🚘 Placas unicas", kpis.uniquePlates, "Vehiculos"]
+    ["ðŸŸ¢ Disponibles", kpis.unassigned, "Sin tomar"],
+    ["ðŸ› ï¸ Tomados", kpis.inProgress, "En mesa"],
+    ["âœ… Cerrados", kpis.completed, "Finalizados"],
+    ["ðŸš˜ Placas unicas", kpis.uniquePlates, "Vehiculos"]
   ]);
 }
 
@@ -2430,15 +2454,15 @@ function renderManagerDashboard() {
   const tasks = state.tasks;
   const kpis = getKpis(tasks);
   renderKpiCards("#managerKpis", [
-    ["▦ Total saneamientos", kpis.total, "Operacion completa"],
-    ["▰ Placas unicas", kpis.uniquePlates, "Vehiculos sin repetir"],
-    ["◷ Pendientes", kpis.pending, "Sin tomar"],
-    ["◆ Tomados / proceso", kpis.inProgress, "En gestion"],
-    ["✓ Cerrados", kpis.completed, "Estatus de cierre"],
+    ["â–¦ Total saneamientos", kpis.total, "Operacion completa"],
+    ["â–° Placas unicas", kpis.uniquePlates, "Vehiculos sin repetir"],
+    ["â—· Pendientes", kpis.pending, "Sin tomar"],
+    ["â—† Tomados / proceso", kpis.inProgress, "En gestion"],
+    ["âœ“ Cerrados", kpis.completed, "Estatus de cierre"],
     ["! Duplicados", kpis.duplicates, "Alertas de placa/cliente"],
-    ["◴ Prom. toma", formatMinutes(kpis.avgTake), "Ingreso a tomado"],
-    ["◇ Prom. cierre", formatMinutes(kpis.avgCompletion), "Tomado a cerrado"],
-    ["▦ Cerrados hoy", kpis.completedToday, "Resultado del dia"]
+    ["â—´ Prom. toma", formatMinutes(kpis.avgTake), "Ingreso a tomado"],
+    ["â—‡ Prom. cierre", formatMinutes(kpis.avgCompletion), "Tomado a cerrado"],
+    ["â–¦ Cerrados hoy", kpis.completedToday, "Resultado del dia"]
   ]);
 
   const hero = document.querySelector("#managerHeroMetric");
@@ -2467,12 +2491,12 @@ function renderManagerDetails(tasks) {
     detailCount.textContent = `${filtered.length} ${filtered.length === 1 ? "registro" : "registros"}`;
   }
   if (!sorted.length) {
-    container.innerHTML = `<div class="empty compact-empty">🔍 No hay saneamientos con esos filtros.</div>`;
+    container.innerHTML = `<div class="empty compact-empty">ðŸ” No hay saneamientos con esos filtros.</div>`;
     return;
   }
   container.innerHTML = `
     <div class="detail-header">
-      <span><span class="mono-icon">▰</span> Placa</span><span><span class="mono-icon">▥</span> Agencia</span><span><span class="mono-icon">●</span> Asesor</span><span><span class="mono-icon">◆</span> Estatus</span><span><span class="mono-icon">▦</span> Fecha</span>
+      <span><span class="mono-icon">â–°</span> Placa</span><span><span class="mono-icon">â–¥</span> Agencia</span><span><span class="mono-icon">â—</span> Asesor</span><span><span class="mono-icon">â—†</span> Estatus</span><span><span class="mono-icon">â–¦</span> Fecha</span>
     </div>
     ${sorted.map((task) => `
       <article class="detail-row">
@@ -2614,7 +2638,7 @@ function openAdminLeadEditor(id) {
   adminLeadForm.elements.ciudad.value = task.ciudad || "";
   adminLeadForm.elements.observaciones.value = task.observaciones || "";
   if (adminLeadModalTitle) adminLeadModalTitle.textContent = `Modificar lead ${task.placa || ""}`;
-  if (adminLeadTimeInfo) adminLeadTimeInfo.textContent = `Tomado: ${formatDateTime(task.takenAt)} · Cerrado: ${formatDateTime(task.completedAt)}`;
+  if (adminLeadTimeInfo) adminLeadTimeInfo.textContent = `Tomado: ${formatDateTime(task.takenAt)} Â· Cerrado: ${formatDateTime(task.completedAt)}`;
   adminLeadModal.hidden = false;
 }
 
@@ -3173,14 +3197,14 @@ function renderPurchaseExecutiveCards(records, stats) {
   if (!container) return;
   const summary = getPurchaseOperationalSummary(records);
   const cards = [
-    ["pendingApproval", "Falta aprobar", summary.pendingApproval.length, "Placas rechazadas sin aprobacion posterior", "is-critical", "🚨"],
-    ["pendingReview", "Pendientes por revisar", summary.pendingReview.length, "Pendiente o reproceso pendiente sin cierre de coordinacion", "is-warning", "⏳"],
-    ["riskMedium", "Riesgo medio", summary.riskMediumPending.length, "Debe estar revisado por Santiago Ortiz", summary.riskMediumPending.length ? "is-warning" : "is-success", "⚠️"],
-    ["approvedPlates", "Placas aprobadas", summary.approvedPlates.length, "Placas con pago, salida o reproceso aprobado", "is-success", "✅"],
-    ["unique", "Placas unicas", summary.allPlates.length, "Vehiculos distintos conciliados", "is-plain", "🚗"],
-    ["duplicates", "Duplicados / reprocesos", summary.pendingDuplicates.length, `${summary.approvedDuplicates.length} autorizados entre meses`, summary.pendingDuplicates.length ? "is-warning" : "is-success", "🔁"],
-    ["records", "Solicitudes filtradas", stats.total, "Filas con la fecha/filtro seleccionado", "is-plain", "📊"],
-    ["movement", "Movimientos pago/salida", stats.pagoApproved + stats.pagoRejected + stats.salidaApproved + stats.salidaRejected, "Eventos detectados, pueden repetirse por placa", "is-neutral", "💳"]
+    ["pendingApproval", "Falta aprobar", summary.pendingApproval.length, "Placas rechazadas sin aprobacion posterior", "is-critical", "ðŸš¨"],
+    ["pendingReview", "Pendientes por revisar", summary.pendingReview.length, "Pendiente o reproceso pendiente sin cierre de coordinacion", "is-warning", "â³"],
+    ["riskMedium", "Riesgo medio", summary.riskMediumPending.length, "Debe estar revisado por Santiago Ortiz", summary.riskMediumPending.length ? "is-warning" : "is-success", "âš ï¸"],
+    ["approvedPlates", "Placas aprobadas", summary.approvedPlates.length, "Placas con pago, salida o reproceso aprobado", "is-success", "âœ…"],
+    ["unique", "Placas unicas", summary.allPlates.length, "Vehiculos distintos conciliados", "is-plain", "ðŸš—"],
+    ["duplicates", "Duplicados / reprocesos", summary.pendingDuplicates.length, `${summary.approvedDuplicates.length} autorizados entre meses`, summary.pendingDuplicates.length ? "is-warning" : "is-success", "ðŸ”"],
+    ["records", "Solicitudes filtradas", stats.total, "Filas con la fecha/filtro seleccionado", "is-plain", "ðŸ“Š"],
+    ["movement", "Movimientos pago/salida", stats.pagoApproved + stats.pagoRejected + stats.salidaApproved + stats.salidaRejected, "Eventos detectados, pueden repetirse por placa", "is-neutral", "ðŸ’³"]
   ];
   container.innerHTML = cards.map(([key, label, value, hint, tone, icon]) => `
     <button class="kpi-card executive-kpi ${tone}" type="button" data-purchase-detail="${key}">
@@ -3213,12 +3237,12 @@ function renderPurchaseExecutiveDashboard(records, stats) {
   const maxLegal = Math.max(...metrics.legals.map((item) => item.total), 1);
   purchaseExecutiveDashboard.innerHTML = `
     <section class="purchase-top-dashboard">
-      <button class="payment-card purchase-mini-kpi" type="button" data-purchase-detail="records"><span>📋 Total solicitudes</span><strong>${metrics.total}</strong><small>Registros filtrados</small></button>
-      <button class="payment-card purchase-mini-kpi" type="button" data-purchase-detail="unique"><span>🚗 Placas unicas</span><strong>${metrics.uniquePlates}</strong><small>Vehiculos distintos</small></button>
-      <article class="payment-card purchase-mini-kpi"><span>🏢 Agencias</span><strong>${metrics.agenciesTotal}</strong><small>Activas</small></article>
-      <article class="payment-card purchase-mini-kpi"><span>👥 Coordinadores</span><strong>${metrics.legalTotal}</strong><small>Con carga asignada</small></article>
-      <button class="payment-card purchase-mini-kpi" type="button" data-purchase-detail="approvedPlates"><span>✅ Cerradas</span><strong>${metrics.completed}</strong><small>${metrics.complianceRate}% de placas</small></button>
-      <button class="payment-card purchase-mini-kpi" type="button" data-purchase-detail="pendingApproval"><span>🚨 Seguimiento</span><strong>${metrics.notCompleted}</strong><small>${metrics.notCompletedRate}% de placas</small></button>
+      <button class="payment-card purchase-mini-kpi" type="button" data-purchase-detail="records"><span>ðŸ“‹ Total solicitudes</span><strong>${metrics.total}</strong><small>Registros filtrados</small></button>
+      <button class="payment-card purchase-mini-kpi" type="button" data-purchase-detail="unique"><span>ðŸš— Placas unicas</span><strong>${metrics.uniquePlates}</strong><small>Vehiculos distintos</small></button>
+      <article class="payment-card purchase-mini-kpi"><span>ðŸ¢ Agencias</span><strong>${metrics.agenciesTotal}</strong><small>Activas</small></article>
+      <article class="payment-card purchase-mini-kpi"><span>ðŸ‘¥ Coordinadores</span><strong>${metrics.legalTotal}</strong><small>Con carga asignada</small></article>
+      <button class="payment-card purchase-mini-kpi" type="button" data-purchase-detail="approvedPlates"><span>âœ… Cerradas</span><strong>${metrics.completed}</strong><small>${metrics.complianceRate}% de placas</small></button>
+      <button class="payment-card purchase-mini-kpi" type="button" data-purchase-detail="pendingApproval"><span>ðŸš¨ Seguimiento</span><strong>${metrics.notCompleted}</strong><small>${metrics.notCompletedRate}% de placas</small></button>
       <article class="payment-card payment-gauge-card purchase-gauge-wide">
         <p class="eyebrow">Cumplimiento general</p>
         <div class="payment-gauge" style="--score:${metrics.complianceRate}"><span>${metrics.complianceRate}%</span></div>
@@ -3421,12 +3445,12 @@ function renderPurchaseCoordinatorProductivity(records) {
       <button class="btn secondary mini-btn" type="button" data-purchase-detail="records">Ver base filtrada</button>
     </div>
     <div class="coordinator-summary-strip">
-      <article><span>📥 Solicitudes</span><strong>${totals.total}</strong></article>
-      <article><span>🚗 Placas unicas</span><strong>${totals.unique}</strong></article>
-      <article class="is-ok"><span>✅ Aprobadas</span><strong>${totals.approved}</strong></article>
-      <article class="is-alert"><span>🚨 Rechazadas seg.</span><strong>${totals.rejected}</strong></article>
-      <article class="is-warn"><span>⏳ Pendientes</span><strong>${totals.pending}</strong></article>
-      <article class="is-risk"><span>⚠️ Riesgo</span><strong>${totals.risk}</strong></article>
+      <article><span>ðŸ“¥ Solicitudes</span><strong>${totals.total}</strong></article>
+      <article><span>ðŸš— Placas unicas</span><strong>${totals.unique}</strong></article>
+      <article class="is-ok"><span>âœ… Aprobadas</span><strong>${totals.approved}</strong></article>
+      <article class="is-alert"><span>ðŸš¨ Rechazadas seg.</span><strong>${totals.rejected}</strong></article>
+      <article class="is-warn"><span>â³ Pendientes</span><strong>${totals.pending}</strong></article>
+      <article class="is-risk"><span>âš ï¸ Riesgo</span><strong>${totals.risk}</strong></article>
     </div>
     <p class="coordinator-reading">${escapeHtml(explanation)}</p>
     <div class="coordinator-productivity-grid">
@@ -3636,22 +3660,22 @@ function renderPurchaseStatusComparison(status, plateItems) {
   return `
     <section class="status-comparison-panel">
       <article>
-        <span>📌 Placas del estatus</span>
+        <span>ðŸ“Œ Placas del estatus</span>
         <strong>${plateItems.length}</strong>
         <small>${escapeHtml(status)}</small>
       </article>
       <article class="is-success">
-        <span>✅ Ya aprobadas</span>
+        <span>âœ… Ya aprobadas</span>
         <strong>${approved.length}</strong>
         <small>Con pago, salida o reproceso aprobado</small>
       </article>
       <article class="is-warning">
-        <span>⏳ Siguen pendientes</span>
+        <span>â³ Siguen pendientes</span>
         <strong>${stillPending.length}</strong>
         <small>${escapeHtml(topPending)}</small>
       </article>
       <article class="is-neutral">
-        <span>🔀 Con otro estatus</span>
+        <span>ðŸ”€ Con otro estatus</span>
         <strong>${mixed.length}</strong>
         <small>Placas con historial cruzado</small>
       </article>
@@ -3674,18 +3698,18 @@ function getPurchaseStatusTone(status) {
 }
 
 function getPurchaseStatusIcon(status) {
-  if (status === "PAGO APROBADO") return "✅";
-  if (status === "PAGO RECHAZADO") return "⛔";
-  if (status === "SALIDA APROBADA") return "🟢";
-  if (status === "SALIDA RECHAZADA") return "🔴";
-  if (status === "PAGADO SIN VALIDACION") return "🧾";
-  if (status === "PENDIENTE") return "⏳";
-  if (status === "REPROCESO") return "🔁";
-  if (status === "REPROCESO APROBADO") return "✅";
-  if (status === "REPROCESO RECHAZADO") return "⛔";
-  if (status === "RIESGO MEDIO") return "⚠️";
-  if (status === "RIESGO ALTO") return "🚨";
-  return "•";
+  if (status === "PAGO APROBADO") return "âœ…";
+  if (status === "PAGO RECHAZADO") return "â›”";
+  if (status === "SALIDA APROBADA") return "ðŸŸ¢";
+  if (status === "SALIDA RECHAZADA") return "ðŸ”´";
+  if (status === "PAGADO SIN VALIDACION") return "ðŸ§¾";
+  if (status === "PENDIENTE") return "â³";
+  if (status === "REPROCESO") return "ðŸ”";
+  if (status === "REPROCESO APROBADO") return "âœ…";
+  if (status === "REPROCESO RECHAZADO") return "â›”";
+  if (status === "RIESGO MEDIO") return "âš ï¸";
+  if (status === "RIESGO ALTO") return "ðŸš¨";
+  return "â€¢";
 }
 
 function getPurchaseOperationalSummary(records) {
@@ -4470,12 +4494,12 @@ function renderContractKpis(records) {
   if (!container) return;
   const stats = getContractStats(records);
   const cards = [
-    ["Contratos", stats.total, "Filas procesadas", "is-neutral", "📄"],
-    ["Cerrados", stats.closed, "Con cierre o estatus final", "is-success", "✅"],
-    ["Pendientes", stats.pending, "Sin cierre de contrato", stats.pending ? "is-warning" : "is-success", "⏳"],
-    ["Placas unicas", stats.uniquePlates, "Vehiculos distintos", "is-neutral", "🚘"],
-    ["Duplicados", stats.duplicatePlates + stats.duplicateClients, "Placas o cedulas repetidas", stats.duplicatePlates || stats.duplicateClients ? "is-critical" : "is-success", "🔁"],
-    ["Valor venta", `$ ${stats.value.toFixed(2)}`, "Suma filtrada", "is-success", "💵"]
+    ["Contratos", stats.total, "Filas procesadas", "is-neutral", "ðŸ“„"],
+    ["Cerrados", stats.closed, "Con cierre o estatus final", "is-success", "âœ…"],
+    ["Pendientes", stats.pending, "Sin cierre de contrato", stats.pending ? "is-warning" : "is-success", "â³"],
+    ["Placas unicas", stats.uniquePlates, "Vehiculos distintos", "is-neutral", "ðŸš˜"],
+    ["Duplicados", stats.duplicatePlates + stats.duplicateClients, "Placas o cedulas repetidas", stats.duplicatePlates || stats.duplicateClients ? "is-critical" : "is-success", "ðŸ”"],
+    ["Valor venta", `$ ${stats.value.toFixed(2)}`, "Suma filtrada", "is-success", "ðŸ’µ"]
   ];
   container.innerHTML = cards.map(([label, value, hint, tone, icon]) => `
     <button class="kpi-card executive-kpi ${tone}" type="button" data-contract-detail="${escapeHtml(label)}">
@@ -4499,7 +4523,7 @@ function renderContractStatusModules(records) {
       <span>${counts.length} estatus activos</span>
     </div>
     <div class="status-board-grid">
-      ${counts.map(([status, count]) => `<button class="status-module ${isContractClosed({ ESTATUS: status }) ? "is-success" : "is-warning"}" type="button" data-contract-status="${escapeHtml(status)}"><span><i>${isContractClosed({ ESTATUS: status }) ? "✅" : "⏳"}</i>${escapeHtml(status || "SIN ESTATUS")}</span><strong>${count}</strong></button>`).join("") || `<div class="empty compact-empty">Sin estatus para mostrar.</div>`}
+      ${counts.map(([status, count]) => `<button class="status-module ${isContractClosed({ ESTATUS: status }) ? "is-success" : "is-warning"}" type="button" data-contract-status="${escapeHtml(status)}"><span><i>${isContractClosed({ ESTATUS: status }) ? "âœ…" : "â³"}</i>${escapeHtml(status || "SIN ESTATUS")}</span><strong>${count}</strong></button>`).join("") || `<div class="empty compact-empty">Sin estatus para mostrar.</div>`}
     </div>
   `;
   container.querySelectorAll("[data-contract-status]").forEach((button) => {
@@ -6764,15 +6788,15 @@ function buildProviderReportHtml() {
   </style>
 </head>
 <body>
-  <div class="print-actions"><button onclick="window.print()">📄 Guardar como PDF</button></div>
+  <div class="print-actions"><button onclick="window.print()">ðŸ“„ Guardar como PDF</button></div>
   <main class="sheet">
     <section class="hero">
       <div>
-        <span class="badge">🚘 Proveedores y pagos | Mesa de control</span>
+        <span class="badge">ðŸš˜ Proveedores y pagos | Mesa de control</span>
         <h1>Reporte ejecutivo de cobros y duplicados</h1>
         <p>${escapeHtml(filterText)}<br>Generado: ${escapeHtml(reportDate)}</p>
       </div>
-      <div class="hero-art">📊🚗✅</div>
+      <div class="hero-art">ðŸ“ŠðŸš—âœ…</div>
     </section>
     <section class="kpis">
       <article class="kpi good"><span>Gasto pagado</span><strong>$ ${paidTotal.toFixed(2)}</strong><small>Valores positivos cargados</small></article>
@@ -6783,30 +6807,30 @@ function buildProviderReportHtml() {
     </section>
     <section class="grid">
       <article class="panel analysis">
-        <h2>🧠 Analisis directo</h2>
+        <h2>ðŸ§  Analisis directo</h2>
         <p>${pendingDuplicates.length ? `Hay ${pendingDuplicates.length} duplicado(s) pendientes. El posible sobrecobro referencial es $ ${overcharge.toFixed(2)}.` : `No hay duplicados pendientes por autorizar. ${approvedDuplicates.length} duplicado(s) ya fueron aprobados.`}</p>
         <p>Este reporte separa duplicados autorizados de los pendientes para que la revision no se llene de ruido operativo.</p>
       </article>
       <article class="panel">
-        <h2>🎛️ Estado de duplicados</h2>
+        <h2>ðŸŽ›ï¸ Estado de duplicados</h2>
         <div class="bar"><label><span>Pendientes</span><b>${pendingDuplicates.length}</b></label><div class="track"><span class="fill" style="width:${Math.round((pendingDuplicates.length / Math.max(duplicates.length, 1)) * 100)}%"></span></div></div>
         <div class="bar"><label><span>Aprobados</span><b>${approvedDuplicates.length}</b></label><div class="track"><span class="fill" style="width:${Math.round((approvedDuplicates.length / Math.max(duplicates.length, 1)) * 100)}%"></span></div></div>
         <div class="bar"><label><span>Proveedores</span><b>${providers}</b></label><div class="track"><span class="fill" style="width:${Math.min(100, providers * 16)}%"></span></div></div>
       </article>
     </section>
     <section class="panel">
-      <h2>🏢 Ranking por proveedor</h2>
+      <h2>ðŸ¢ Ranking por proveedor</h2>
       ${topProviders.map((item) => `<div class="bar"><label><span>${escapeHtml(item.provider || "SIN PROVEEDOR")}</span><b>$ ${item.total.toFixed(2)} | ${item.plates} placas</b></label><div class="track"><span class="fill" style="width:${Math.max(4, Math.round((item.total / maxProvider) * 100))}%"></span></div></div>`).join("") || "<p>Sin proveedores para mostrar.</p>"}
     </section>
     <section class="panel">
-      <h2>🚨 Duplicados pendientes</h2>
+      <h2>ðŸš¨ Duplicados pendientes</h2>
       <table>
         <thead><tr><th>Placa</th><th>Registros</th><th>Valor</th><th>Proveedor</th><th>Estado</th></tr></thead>
         <tbody>${duplicateRows.slice(0, 25).map((group) => `<tr><td>${escapeHtml(group.plate)}</td><td>${group.items.length}</td><td>$ ${getProviderDuplicateUnauthorizedAmount(group, records).toFixed(2)}</td><td>${escapeHtml(group.providers.join(", "))}</td><td><span class="pill ${isProviderDuplicateApproved(group) ? "ok" : ""}">${isProviderDuplicateApproved(group) ? "Aprobado" : "Pendiente"}</span></td></tr>`).join("") || `<tr><td colspan="5">Sin duplicados pendientes.</td></tr>`}</tbody>
       </table>
     </section>
     <section class="panel">
-      <h2>📋 Muestra de registros</h2>
+      <h2>ðŸ“‹ Muestra de registros</h2>
       <table>
         <thead><tr><th>Proveedor</th><th>Placa</th><th>Fecha</th><th>Valor</th><th>Asesor</th><th>Agencia</th></tr></thead>
         <tbody>${records.slice(0, 40).map((record) => `<tr><td>${escapeHtml(record.provider)}</td><td>${escapeHtml(getProviderRecordPlate(record))}</td><td>${escapeHtml(record.FECHA || "")}</td><td>$ ${getProviderRecordDisplayAmount(record, records).toFixed(2)}</td><td>${escapeHtml(getProviderAdvisor(record))}</td><td>${escapeHtml(getProviderAgency(record))}</td></tr>`).join("") || `<tr><td colspan="6">Sin registros.</td></tr>`}</tbody>
@@ -7188,7 +7212,7 @@ function renderFileLibrary() {
   }
 
   if (!filtered.length) {
-    fileLibraryList.innerHTML = `<div class="empty compact-empty">📁 No hay archivos guardados con esos filtros.</div>`;
+    fileLibraryList.innerHTML = `<div class="empty compact-empty">ðŸ“ No hay archivos guardados con esos filtros.</div>`;
     return;
   }
 
@@ -7927,6 +7951,15 @@ function renderAll() {
   renderInternalBackupStatus();
   updateDuplicatePreview();
   applyCommercialSessionToForm();
+}
+
+function safeRenderAll() {
+  try {
+    renderAll();
+  } catch (error) {
+    console.error("Error al refrescar la interfaz:", error);
+    showToast("Se cargo la pagina. Hay un dato del respaldo que necesita revision.");
+  }
 }
 
 function shadeColor(hex, percent) {
@@ -8734,7 +8767,9 @@ document.addEventListener("change", (event) => {
 
 window.setInterval(checkSessionExpiry, 60000);
 
-renderAll();
-sincronizarEstadoSupabaseInicial();
+safeRenderAll();
 restoreStateFromInternalBackupIfNeeded();
+restoreStateFromSupabaseIfNeeded();
 migrateIndexedDbFilesToSharedPc();
+
+  if (!source.schemaVersion || source.schemaVersion < STATE_SCHEMA_VERSION || oldHeroTitles.has(currentTitle)) {
