@@ -5225,6 +5225,77 @@ textarea:focus {
   font-weight: 700;
 }
 
+.legal-task-full-details {
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 7px;
+}
+
+.legal-task-full-details summary {
+  width: fit-content;
+  padding: 6px 10px;
+  border: 1px solid rgba(239, 61, 53, 0.24);
+  border-radius: 999px;
+  color: var(--red-dark);
+  background: rgba(239, 61, 53, 0.06);
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+  list-style: none;
+}
+
+.legal-task-full-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.legal-task-full-details summary::before {
+  content: "+";
+  margin-right: 6px;
+}
+
+.legal-task-full-details[open] summary::before {
+  content: "-";
+}
+
+.legal-task-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 9px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f7f8fb;
+}
+
+.legal-task-detail-grid > div {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid rgba(221, 223, 229, 0.9);
+  border-radius: 7px;
+  background: #fff;
+}
+
+.legal-task-detail-grid > div.is-wide {
+  grid-column: 1 / -1;
+}
+
+.legal-task-detail-grid span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.legal-task-detail-grid strong {
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
 .task-detail {
   color: var(--muted);
   font-size: 0.76rem;
@@ -5599,6 +5670,10 @@ textarea:focus {
     grid-template-columns: 1fr;
   }
 
+  .legal-task-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .report-hero,
   .card-title-row,
   .report-stage-head,
@@ -5813,6 +5888,14 @@ textarea:focus {
 
   .commercial-sidebar-group {
     grid-template-columns: 1fr;
+  }
+
+  .legal-task-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .legal-task-detail-grid > div.is-wide {
+    grid-column: auto;
   }
 
   .hero-copy h1,
