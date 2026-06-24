@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260624-sync-stability-2";
+const APP_BUILD_VERSION = "20260624-text-encoding-fix";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -183,7 +183,7 @@ const defaultState = {
     managerTitle: "Acceso consulta de saneamientos",
     managerText: "Dashboard gerencial con filtros, graficos e indicadores de operacion.",
     supportTitle: "Soporte",
-    supportQuestion: "Necesitas ayuda?",
+    supportQuestion: "\u00BFNecesitas ayuda?",
     supportButton: "Consultar",
     supportMessage: "Tienes problemas con tu sistema? Contactate con soporte.",
     supportEmail: "sortiz@autocor.com.ec",
@@ -2203,9 +2203,11 @@ function normalizeImportedState(importedState) {
 }
 
 function sanitizeStateVisuals(snapshot) {
-  if (!snapshot.copy || hasBrokenEncoding(Object.values(snapshot.copy).join(" "))) {
-    snapshot.copy = structuredClone(defaultState.copy);
-  }
+  const sourceCopy = isPlainObject(snapshot.copy) ? snapshot.copy : {};
+  snapshot.copy = Object.fromEntries(
+    Object.entries({ ...structuredClone(defaultState.copy), ...sourceCopy })
+      .map(([key, value]) => [key, repairBrokenEncoding(value)])
+  );
   if (snapshot.logoDataUrl && !String(snapshot.logoDataUrl).startsWith("data:image/")) {
     snapshot.logoDataUrl = "";
   }
@@ -2216,6 +2218,31 @@ function sanitizeStateVisuals(snapshot) {
 
 function hasBrokenEncoding(value = "") {
   return /ð|Ã|Â|â|ï¸|�/.test(String(value));
+}
+
+function repairBrokenEncoding(value = "") {
+  if (typeof value !== "string" || !hasBrokenEncoding(value)) return value;
+  const replacements = [
+    ["Â¿", "\u00BF"],
+    ["Â¡", "\u00A1"],
+    ["Ã±", "\u00F1"],
+    ["Ã‘", "\u00D1"],
+    ["Ã¡", "\u00E1"],
+    ["Ã©", "\u00E9"],
+    ["Ã­", "\u00ED"],
+    ["Ã³", "\u00F3"],
+    ["Ãº", "\u00FA"],
+    ["ÃÁ", "\u00C1"],
+    ["Ã‰", "\u00C9"],
+    ["ÃÍ", "\u00CD"],
+    ["Ã“", "\u00D3"],
+    ["Ãš", "\u00DA"],
+    ["Â", ""]
+  ];
+  return replacements.reduce(
+    (text, [broken, fixed]) => text.split(broken).join(fixed),
+    value
+  );
 }
 
 function parseMaybeJson(value) {
@@ -2504,6 +2531,11 @@ function applyTheme() {
 }
 
 function applyCopy() {
+  const repairedCopy = Object.fromEntries(
+    Object.entries(state.copy || {}).map(([key, value]) => [key, repairBrokenEncoding(value)])
+  );
+  const copyChanged = JSON.stringify(repairedCopy) !== JSON.stringify(state.copy || {});
+  state.copy = { ...structuredClone(defaultState.copy), ...repairedCopy };
   document.querySelector("#heroEyebrow").textContent = state.copy.heroEyebrow;
   document.querySelector("#access-title").textContent = state.copy.heroTitle;
   document.querySelector("#heroSubtitle").textContent = state.copy.heroSubtitle;
@@ -2527,6 +2559,7 @@ function applyCopy() {
   Object.entries(state.copy).forEach(([key, value]) => {
     if (copyForm.elements[key]) copyForm.elements[key].value = value;
   });
+  if (copyChanged) saveState();
 }
 
 function canOpenTasks() {
@@ -10180,7 +10213,10 @@ resetThemeBtn.addEventListener("click", () => {
 
 copyForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  state.copy = Object.fromEntries(new FormData(copyForm).entries());
+  state.copy = Object.fromEntries(
+    [...new FormData(copyForm).entries()]
+      .map(([key, value]) => [key, repairBrokenEncoding(value)])
+  );
   saveState();
   guardarBrandingSupabase();
   renderAll();
