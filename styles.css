@@ -6674,3 +6674,97 @@ button.purchase-mini-kpi:hover {
     grid-template-columns: 1fr;
   }
 }
+
+.support-modal[hidden] {
+  display: none;
+}
+
+.support-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: end;
+  padding: 24px;
+}
+
+.support-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.42);
+  backdrop-filter: blur(3px);
+}
+
+.support-bubble {
+  position: relative;
+  width: min(390px, calc(100vw - 32px));
+  padding: 26px;
+  border: 1px solid #f0d3d0;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(31, 36, 48, 0.24);
+}
+
+.support-bubble h2 {
+  margin: 8px 0;
+  font-size: 22px;
+}
+
+.support-bubble p {
+  margin: 0 0 16px;
+  color: #5d6677;
+  line-height: 1.55;
+}
+
+.support-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff0ef;
+  font-size: 22px;
+}
+
+.support-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: #f3f4f6;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.support-contact {
+  display: block;
+  margin-top: 8px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  color: #20242d;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.support-contact:hover {
+  border-color: #ef3f38;
+  background: #fff7f6;
+}
+
+.support-contact.is-whatsapp {
+  color: #087f5b;
+}
+
+@media (max-width: 600px) {
+  .support-modal {
+    padding: 14px;
+  }
+
+  .support-bubble {
+    width: 100%;
+  }
+}
