@@ -132,6 +132,32 @@ const DEFAULT_PROVIDER_PROFILES = [
   }
 ];
 
+const DEFAULT_FORM_CONFIG = {
+  compra: [
+    ["cliente", "Nombre del cliente completo", "text", true],
+    ["cedula", "Numero de cedula del titular", "text", true],
+    ["placa", "Placa", "text", true],
+    ["valorToma", "Valor de toma", "number", true],
+    ["kilometraje", "Kilometraje", "number", true],
+    ["agencia", "Agencia", "select", true],
+    ["ciudad", "Ciudad", "text", true],
+    ["asesor", "Nombre del asesor", "select", true],
+    ["tipoCompra", "Tipo de compra - solo Guayaquil", "select", true],
+    ["tipoSaneamiento", "Tipo de saneamiento", "select", true],
+    ["observaciones", "Observaciones", "textarea", true]
+  ].map(([name, label, type, required]) => ({ id: `base-compra-${name}`, name, label, type, required, visible: true, isBase: true, placeholder: "" })),
+  venta: [
+    ["placa", "Placa", "text", true],
+    ["agencia", "Agencia", "select", true],
+    ["vendedor", "Vendedor", "text", true],
+    ["precioContrato", "Precio de contrato", "number", true],
+    ["cedulaVendedor", "Cedula del vendedor", "text", true],
+    ["telefono", "Telefono", "text", true],
+    ["direccion", "Direccion", "text", true],
+    ["correo", "Correo", "email", true]
+  ].map(([name, label, type, required]) => ({ id: `base-venta-${name}`, name, label, type, required, visible: true, isBase: true, placeholder: "" }))
+};
+
 const defaultState = {
   schemaVersion: STATE_SCHEMA_VERSION,
   logoDataUrl: "",
@@ -167,6 +193,7 @@ const defaultState = {
     { id: "status-rechazado", label: "Rechazado por saneamiento", value: "rechazado por saneamiento", color: "#c92520", closes: true, isDefault: false },
     { id: "status-pilot", label: "Saneamiento realizado y subido a Pilot", value: "saneamiento realizado y subido a pilot", color: "#23865d", closes: true, isDefault: false }
   ],
+  formConfig: structuredClone(DEFAULT_FORM_CONFIG),
   agencies: ["Matriz Guayaquil", "Sucursal Norte", "Sucursal Sur", "Via Daule", "Samborondon", "Duran", "Quito", "Cuenca", "Manta"],
   commercialAdvisors: [
     { id: "comercial-1", name: "Asesor comercial 1", agency: "Matriz Guayaquil", username: "comercial1", password: "Comercial123" },
@@ -332,6 +359,11 @@ const asesorSelect = document.querySelector("#asesorSelect");
 const saleAgencySelect = document.querySelector("#saleAgencySelect");
 const advisorAgencyInput = document.querySelector("#advisorAgencyInput");
 const commercialAdvisorForm = document.querySelector("#commercialAdvisorForm");
+const adminFormProcessSelect = document.querySelector("#adminFormProcessSelect");
+const adminFormFieldsList = document.querySelector("#adminFormFieldsList");
+const customFormFieldForm = document.querySelector("#customFormFieldForm");
+const purchaseCustomFields = document.querySelector("#purchaseCustomFields");
+const saleCustomFields = document.querySelector("#saleCustomFields");
 const announcementForm = document.querySelector("#announcementForm");
 const adminLegalFilter = document.querySelector("#adminLegalFilter");
 const adminCommercialFilter = document.querySelector("#adminCommercialFilter");
@@ -530,6 +562,7 @@ function loadState() {
     merged.dataProcessing.folders = normalizeFileFolders(merged.dataProcessing.folders || []);
     merged.dataProcessing.files = (merged.dataProcessing.files || []).map(normalizeStoredFile);
     merged.statusOptions = normalizeStatusOptions(merged.statusOptions || defaultState.statusOptions);
+    merged.formConfig = normalizeFormConfig(merged.formConfig);
     merged.taskDeletions = Array.isArray(merged.taskDeletions) ? merged.taskDeletions.filter((item) => item?.id) : [];
     merged.tasks = (merged.tasks || [])
       .map(normalizeTask)
@@ -949,7 +982,8 @@ function getSupabaseModuleSnapshots() {
       agencies: structuredClone(state.agencies || []),
       purchaseTypes: structuredClone(state.purchaseTypes || []),
       sanitationTypes: structuredClone(state.sanitationTypes || []),
-      statusOptions: structuredClone(state.statusOptions || [])
+      statusOptions: structuredClone(state.statusOptions || []),
+      formConfig: structuredClone(state.formConfig || DEFAULT_FORM_CONFIG)
     },
     saneamientos: {
       announcements: structuredClone(state.announcements || [])
@@ -1148,6 +1182,7 @@ function applySupabaseModuleSnapshot(modulo, snapshot) {
       state.purchaseTypes = Array.isArray(snapshot.purchaseTypes) ? snapshot.purchaseTypes : (state.purchaseTypes || []);
       state.sanitationTypes = Array.isArray(snapshot.sanitationTypes) ? snapshot.sanitationTypes : (state.sanitationTypes || []);
       state.statusOptions = normalizeStatusOptions(snapshot.statusOptions || state.statusOptions || []);
+      state.formConfig = normalizeFormConfig(snapshot.formConfig || state.formConfig);
       return true;
     case "saneamientos":
       {
@@ -1444,6 +1479,30 @@ function normalizeCommercialAdvisors(advisors) {
       password: advisor.password || "Comercial123"
     };
   }).filter((advisor) => advisor.name);
+}
+
+function normalizeFormConfig(config) {
+  const source = config && typeof config === "object" ? config : {};
+  return ["compra", "venta"].reduce((result, process) => {
+    const saved = Array.isArray(source[process]) ? source[process] : [];
+    const savedMap = new Map(saved.map((field) => [field.name, field]));
+    const base = DEFAULT_FORM_CONFIG[process].map((field) => ({ ...field, ...(savedMap.get(field.name) || {}), isBase: true }));
+    const custom = saved
+      .filter((field) => field && !DEFAULT_FORM_CONFIG[process].some((baseField) => baseField.name === field.name))
+      .map((field) => ({
+        id: field.id || crypto.randomUUID(),
+        name: field.name || `custom_${crypto.randomUUID().slice(0, 8)}`,
+        label: field.label || "Campo personalizado",
+        type: ["text", "number", "date", "email", "select", "textarea"].includes(field.type) ? field.type : "text",
+        required: Boolean(field.required),
+        visible: field.visible !== false,
+        isBase: false,
+        placeholder: field.placeholder || "",
+        options: Array.isArray(field.options) ? field.options : []
+      }));
+    result[process] = [...base, ...custom];
+    return result;
+  }, {});
 }
 
 function normalizeTask(task) {
@@ -2021,6 +2080,7 @@ function normalizeImportedState(importedState) {
   merged.dataProcessing.folders = normalizeFileFolders(merged.dataProcessing.folders || []);
   merged.dataProcessing.files = (merged.dataProcessing.files || []).map(normalizeStoredFile);
   merged.statusOptions = normalizeStatusOptions(merged.statusOptions || defaultState.statusOptions);
+  merged.formConfig = normalizeFormConfig(merged.formConfig);
   merged.taskDeletions = Array.isArray(merged.taskDeletions) ? merged.taskDeletions.filter((item) => item?.id) : [];
   merged.tasks = (merged.tasks || [])
     .map(normalizeTask)
@@ -2529,6 +2589,121 @@ function renderOptions() {
   renderCommercialAdvisors();
   renderStatusOptions();
   renderStatusFilters();
+  renderFormAdministration();
+  applyFormConfiguration();
+}
+
+function getFormFields(process) {
+  state.formConfig = normalizeFormConfig(state.formConfig);
+  return state.formConfig[process] || [];
+}
+
+function applyFormConfiguration() {
+  applyBaseFormFields(form, getFormFields("compra"));
+  applyBaseFormFields(saleContractForm, getFormFields("venta"));
+  renderCustomFormFields("compra", purchaseCustomFields);
+  renderCustomFormFields("venta", saleCustomFields);
+}
+
+function applyBaseFormFields(formElement, fields) {
+  if (!formElement) return;
+  fields.filter((field) => field.isBase).forEach((field) => {
+    const control = formElement.elements[field.name];
+    const label = control?.closest("label");
+    if (!control || !label) return;
+    label.hidden = field.visible === false;
+    control.required = field.visible !== false && Boolean(field.required);
+    if (field.placeholder) control.placeholder = field.placeholder;
+    const textNode = [...label.childNodes].find((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
+    if (textNode) textNode.nodeValue = `\n            ${field.label}\n            `;
+  });
+}
+
+function renderCustomFormFields(process, container) {
+  if (!container) return;
+  const fields = getFormFields(process).filter((field) => !field.isBase && field.visible !== false);
+  container.innerHTML = fields.map((field) => {
+    const name = `custom__${field.id}`;
+    const required = field.required ? "required" : "";
+    const placeholder = field.placeholder ? `placeholder="${escapeHtml(field.placeholder)}"` : "";
+    let control = `<input name="${escapeHtml(name)}" type="${escapeHtml(field.type === "select" || field.type === "textarea" ? "text" : field.type)}" ${placeholder} ${required}>`;
+    if (field.type === "textarea") {
+      control = `<textarea name="${escapeHtml(name)}" rows="3" ${placeholder} ${required}></textarea>`;
+    } else if (field.type === "select") {
+      control = `<select name="${escapeHtml(name)}" ${required}><option value="">Seleccione</option>${(field.options || []).map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`).join("")}</select>`;
+    }
+    return `<label class="${field.type === "textarea" ? "span-2" : ""}">${escapeHtml(field.label)}${control}</label>`;
+  }).join("");
+}
+
+function renderFormAdministration() {
+  if (!adminFormFieldsList || !adminFormProcessSelect) return;
+  const process = adminFormProcessSelect.value || "compra";
+  adminFormFieldsList.innerHTML = getFormFields(process).map((field) => `
+    <article class="form-builder-row" data-form-field="${escapeHtml(field.id)}">
+      <div>
+        <strong>${escapeHtml(field.label)}</strong>
+        <span>${field.isBase ? "Campo base" : "Campo personalizado"} · ${escapeHtml(field.type)}</span>
+      </div>
+      <input data-field-label value="${escapeHtml(field.label)}" aria-label="Etiqueta">
+      <input data-field-placeholder value="${escapeHtml(field.placeholder || "")}" placeholder="Texto de ayuda" aria-label="Texto de ayuda">
+      <label class="check-row"><input data-field-required type="checkbox" ${field.required ? "checked" : ""}> Obligatorio</label>
+      <label class="check-row"><input data-field-visible type="checkbox" ${field.visible !== false ? "checked" : ""}> Visible</label>
+      <button class="btn secondary" type="button" data-save-form-field>Guardar</button>
+      ${field.isBase ? "" : `<button class="btn danger" type="button" data-delete-form-field>Eliminar</button>`}
+    </article>
+  `).join("");
+}
+
+function saveFormFieldConfiguration(row) {
+  const process = adminFormProcessSelect?.value || "compra";
+  const field = getFormFields(process).find((item) => item.id === row.dataset.formField);
+  if (!field) return;
+  field.label = row.querySelector("[data-field-label]").value.trim() || field.label;
+  field.placeholder = row.querySelector("[data-field-placeholder]").value.trim();
+  field.required = row.querySelector("[data-field-required]").checked;
+  field.visible = row.querySelector("[data-field-visible]").checked;
+  saveState();
+  renderAll();
+  showToast("Campo actualizado.");
+}
+
+function deleteCustomFormField(id) {
+  const process = adminFormProcessSelect?.value || "compra";
+  state.formConfig[process] = getFormFields(process).filter((field) => field.id !== id || field.isBase);
+  saveState();
+  renderAll();
+  showToast("Campo personalizado eliminado.");
+}
+
+function addCustomFormField(data) {
+  const process = adminFormProcessSelect?.value || "compra";
+  const label = String(data.label || "").trim();
+  if (!label) return;
+  getFormFields(process).push({
+    id: crypto.randomUUID(),
+    name: `custom_${Date.now()}`,
+    label,
+    type: data.type || "text",
+    required: data.required === "on",
+    visible: true,
+    isBase: false,
+    placeholder: "",
+    options: String(data.options || "").split(",").map((item) => item.trim()).filter(Boolean)
+  });
+  saveState();
+  renderAll();
+  showToast("Campo agregado al formulario.");
+}
+
+function extractCustomFields(data, process) {
+  return getFormFields(process).filter((field) => !field.isBase).reduce((result, field) => {
+    const value = data[`custom__${field.id}`];
+    if (value !== undefined && String(value).trim() !== "") {
+      result[field.id] = { label: field.label, value: String(value).trim() };
+    }
+    return result;
+  }, {});
 }
 
 function renderOptionList(containerId, key) {
@@ -2867,6 +3042,7 @@ async function createTask(data) {
     legalAdvisor: "",
     duplicateWarnings,
     ...data,
+    customFields: extractCustomFields(data, "compra"),
     commercialUserId: commercialOwner.id,
     commercialUserName: commercialOwner.name,
     commercialAgency: commercialOwner.agency,
@@ -2924,6 +3100,7 @@ async function createSaleContractTask(data) {
     correo: String(data.correo || "").trim().toLowerCase(),
     ciudad: "",
     valorToma: data.precioContrato,
+    customFields: extractCustomFields(data, "venta"),
     kilometraje: "",
     observaciones: `CONTRATO COMPRAVENTA | Vendedor: ${normalizeLooseText(data.vendedor)} | Direccion: ${normalizeLooseText(data.direccion)} | Telefono: ${String(data.telefono || "").trim()} | Correo: ${String(data.correo || "").trim().toLowerCase()}`,
     duplicateWarnings: getDuplicateWarnings({ placa: data.placa, cedula: data.cedulaVendedor }),
@@ -3201,9 +3378,13 @@ function renderLegalTaskFullDetails(task) {
     ["Asistente legal", task.legalAdvisor || "Sin asignar"],
     ["ID de tarea", task.id]
   ];
+  const customFields = Object.values(task.customFields || {}).map((field) => [
+    field.label || "Campo personalizado",
+    field.value
+  ]);
   return `
     <div class="legal-task-detail-grid">
-      ${[...fields, ...operationalFields].map(([label, value]) => `
+      ${[...fields, ...customFields, ...operationalFields].map(([label, value]) => `
         <div class="${label === "Observaciones" || label === "Direccion" ? "is-wide" : ""}">
           <span>${escapeHtml(label)}</span>
           <strong>${escapeHtml(value || "Sin informacion")}</strong>
@@ -9556,6 +9737,27 @@ adminModuleButtons.forEach((button) => {
     });
   });
 });
+
+if (adminFormProcessSelect) {
+  adminFormProcessSelect.addEventListener("change", renderFormAdministration);
+}
+
+if (adminFormFieldsList) {
+  adminFormFieldsList.addEventListener("click", (event) => {
+    const row = event.target.closest("[data-form-field]");
+    if (!row) return;
+    if (event.target.closest("[data-save-form-field]")) saveFormFieldConfiguration(row);
+    if (event.target.closest("[data-delete-form-field]")) deleteCustomFormField(row.dataset.formField);
+  });
+}
+
+if (customFormFieldForm) {
+  customFormFieldForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    addCustomFormField(Object.fromEntries(new FormData(customFormFieldForm).entries()));
+    customFormFieldForm.reset();
+  });
+}
 
 commercialModuleButtons.forEach((button) => {
   button.addEventListener("click", () => {
