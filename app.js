@@ -198,6 +198,7 @@ const defaultState = {
       { id: "folder-saneamientos", name: "Saneamientos", createdAt: new Date().toISOString(), isDefault: true }
     ]
   },
+  taskDeletions: [],
   tasks: []
 };
 
@@ -526,7 +527,10 @@ function loadState() {
     merged.dataProcessing.folders = normalizeFileFolders(merged.dataProcessing.folders || []);
     merged.dataProcessing.files = (merged.dataProcessing.files || []).map(normalizeStoredFile);
     merged.statusOptions = normalizeStatusOptions(merged.statusOptions || defaultState.statusOptions);
-    merged.tasks = (merged.tasks || []).map(normalizeTask);
+    merged.taskDeletions = Array.isArray(merged.taskDeletions) ? merged.taskDeletions.filter((item) => item?.id) : [];
+    merged.tasks = (merged.tasks || [])
+      .map(normalizeTask)
+      .filter((task) => !merged.taskDeletions.some((deletion) => deletion.id === task.id));
     merged.schemaVersion = STATE_SCHEMA_VERSION;
     applyCachedAccessUsers(merged);
     if (parsed.schemaVersion !== STATE_SCHEMA_VERSION || (sharedPcStorageAvailable && !stateLoadedFromPc)) {
@@ -807,10 +811,15 @@ async function guardarTareaSupabase(task, action = "guardar") {
 async function sincronizarTareasPendientesSupabase() {
   if (!SUPABASE_URL || !SUPABASE_KEY || !supabaseModulesReady) return;
   const pendingTasks = (state.tasks || []).filter((task) => task.syncStatus === "pending");
-  if (!pendingTasks.length) return;
+  const pendingDeletions = (state.taskDeletions || []).filter((task) => task.syncStatus === "pending");
+  if (!pendingTasks.length && !pendingDeletions.length) return;
   let synced = 0;
   for (const task of pendingTasks.slice(0, 10)) {
     const ok = await guardarTareaSupabase(task, task.syncAction || "reintento");
+    if (ok) synced += 1;
+  }
+  for (const deletion of pendingDeletions.slice(0, Math.max(0, 10 - synced))) {
+    const ok = await guardarEliminacionTareaSupabase(deletion);
     if (ok) synced += 1;
   }
   if (synced) {
@@ -818,6 +827,26 @@ async function sincronizarTareasPendientesSupabase() {
     safeRenderAll();
     showToast(`${synced} tarea(s) pendiente(s) sincronizada(s).`);
   }
+}
+
+async function guardarEliminacionTareaSupabase(deletion) {
+  if (!deletion?.id) return false;
+  const snapshot = {
+    ...deletion,
+    deleted: true,
+    deletedAt: deletion.deletedAt || new Date().toISOString(),
+    updatedAt: deletion.updatedAt || deletion.deletedAt || new Date().toISOString(),
+    syncAction: "eliminar"
+  };
+  const ok = await guardarRegistroSupabase(
+    "saneamientos",
+    "tarea",
+    snapshot,
+    session?.name || session?.role || "sistema"
+  );
+  const local = (state.taskDeletions || []).find((item) => item.id === deletion.id);
+  if (local) local.syncStatus = ok ? "synced" : "pending";
+  return ok;
 }
 
 function getSupabaseModuleSnapshots() {
@@ -944,7 +973,9 @@ async function restoreModulesFromSupabaseIfNeeded() {
     changed = applySupabaseModuleSnapshot("saneamientos", saneamientos) || changed;
     if (tareasIndividuales.length) {
       const before = JSON.stringify((state.tasks || []).map((task) => [task.id, task.updatedAt, task.status, task.legalUserId, task.completedAt]));
-      state.tasks = mergeTasksByFreshness(state.tasks || [], tareasIndividuales);
+      const mergedChanges = mergeTaskChanges(state.tasks || [], tareasIndividuales, state.taskDeletions || []);
+      state.tasks = mergedChanges.tasks;
+      state.taskDeletions = mergedChanges.deletions;
       const after = JSON.stringify((state.tasks || []).map((task) => [task.id, task.updatedAt, task.status, task.legalUserId, task.completedAt]));
       changed = before !== after || changed;
     }
@@ -1020,7 +1051,11 @@ function applySupabaseModuleSnapshot(modulo, snapshot) {
       state.statusOptions = normalizeStatusOptions(snapshot.statusOptions || state.statusOptions || []);
       return true;
     case "saneamientos":
-      state.tasks = mergeTasksByFreshness(state.tasks || [], snapshot.tasks || []);
+      {
+        const mergedChanges = mergeTaskChanges(state.tasks || [], snapshot.tasks || [], state.taskDeletions || []);
+        state.tasks = mergedChanges.tasks;
+        state.taskDeletions = mergedChanges.deletions;
+      }
       state.announcements = Array.isArray(snapshot.announcements) ? snapshot.announcements : (state.announcements || []);
       return true;
     case "compras":
@@ -1122,6 +1157,10 @@ function mergePcStates(baseState, extraState) {
   merged.commercialAdvisors = mergeByKey(merged.commercialAdvisors || [], extraState.commercialAdvisors || [], "id");
   merged.legalUsers = mergeByKey(merged.legalUsers || [], extraState.legalUsers || [], "id");
   merged.managerUsers = mergeByKey(merged.managerUsers || [], extraState.managerUsers || [], "id");
+  merged.taskDeletions = mergeByKey(merged.taskDeletions || [], extraState.taskDeletions || [], "id");
+  merged.tasks = (merged.tasks || []).filter((task) =>
+    !merged.taskDeletions.some((deletion) => deletion.id === task.id)
+  );
   baseProcessing.compras = mergeByKey(baseProcessing.compras || [], extraProcessing.compras || [], "id");
   baseProcessing.loads = mergeByKey(baseProcessing.loads || [], extraProcessing.loads || [], "id");
   baseProcessing.contratos = mergeByKey(baseProcessing.contratos || [], extraProcessing.contratos || [], "id");
@@ -1169,6 +1208,27 @@ function mergeTasksByFreshness(baseItems = [], extraItems = []) {
     }
   });
   return [...map.values()].map(normalizeTask);
+}
+
+function mergeTaskChanges(baseItems = [], extraItems = [], existingDeletions = []) {
+  const deletionMap = new Map(
+    (existingDeletions || [])
+      .filter((item) => item?.id)
+      .map((item) => [item.id, { ...item, deleted: true }])
+  );
+  (extraItems || []).filter((item) => item?.id && item.deleted).forEach((item) => {
+    const current = deletionMap.get(item.id);
+    if (!current || getTaskFreshness(item) >= getTaskFreshness(current)) {
+      deletionMap.set(item.id, { ...item, deleted: true, syncStatus: "synced" });
+    }
+  });
+  const activeExtraItems = (extraItems || []).filter((item) => item && !item.deleted);
+  const tasks = mergeTasksByFreshness(baseItems, activeExtraItems)
+    .filter((task) => !deletionMap.has(task.id));
+  return {
+    tasks,
+    deletions: [...deletionMap.values()]
+  };
 }
 
 function writeSharedPcState(snapshot) {
@@ -1862,7 +1922,10 @@ function normalizeImportedState(importedState) {
   merged.dataProcessing.folders = normalizeFileFolders(merged.dataProcessing.folders || []);
   merged.dataProcessing.files = (merged.dataProcessing.files || []).map(normalizeStoredFile);
   merged.statusOptions = normalizeStatusOptions(merged.statusOptions || defaultState.statusOptions);
-  merged.tasks = (merged.tasks || []).map(normalizeTask);
+  merged.taskDeletions = Array.isArray(merged.taskDeletions) ? merged.taskDeletions.filter((item) => item?.id) : [];
+  merged.tasks = (merged.tasks || [])
+    .map(normalizeTask)
+    .filter((task) => !merged.taskDeletions.some((deletion) => deletion.id === task.id));
   merged.schemaVersion = STATE_SCHEMA_VERSION;
   return merged;
 }
@@ -3877,11 +3940,18 @@ function saveAdminLead(id, card) {
   }
   if (!isClosedStatus(task.status)) task.completedAt = "";
   task.duplicateWarnings = getDuplicateWarnings(task, task.id);
+  task.updatedAt = new Date().toISOString();
+  task.syncStatus = "pending";
+  task.syncAction = "editar-admin";
 
   saveState();
   renderAll();
   closeAdminLeadEditor();
   showToast("Lead actualizado.");
+  guardarTareaSupabase(task, "editar-admin").then((ok) => {
+    saveState();
+    if (!ok) showToast("Edicion guardada localmente. Quedo pendiente de sincronizar.");
+  });
 }
 
 function deleteAdminLead(id) {
@@ -3890,10 +3960,28 @@ function deleteAdminLead(id) {
   if (!task) return;
   const confirmed = window.confirm(`Va a borrar definitivamente el lead ${task.placa || ""}. Esta accion no se puede deshacer. Desea continuar?`);
   if (!confirmed) return;
+  const deletedAt = new Date().toISOString();
+  const deletion = {
+    id: task.id,
+    placa: task.placa || "",
+    processType: task.processType || "compra",
+    deleted: true,
+    deletedAt,
+    updatedAt: deletedAt,
+    deletedBy: session.name || "Administrador",
+    syncStatus: "pending",
+    syncAction: "eliminar"
+  };
+  state.taskDeletions = (state.taskDeletions || []).filter((item) => item.id !== id);
+  state.taskDeletions.push(deletion);
   state.tasks = state.tasks.filter((item) => item.id !== id);
   saveState();
   renderAll();
-  showToast("Lead borrado.");
+  showToast("Lead borrado y sincronizando.");
+  guardarEliminacionTareaSupabase(deletion).then((ok) => {
+    saveState();
+    if (!ok) showToast("Lead borrado localmente. La eliminacion se sincronizara al recuperar conexion.");
+  });
 }
 
 function exportDataBackup() {
