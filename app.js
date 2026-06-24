@@ -4,14 +4,14 @@ const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
 const SUPABASE_AUTO_RESTORE = false;
 const SUPABASE_MODULE_SYNC = true;
 const SUPABASE_FULL_STATE_SYNC = false;
-const SUPABASE_POLL_INTERVAL_MS = 60 * 1000;
-const SUPABASE_FOCUS_REFRESH_MIN_MS = 15 * 1000;
+const SUPABASE_FOCUS_REFRESH_MIN_MS = 30 * 1000;
 const OLD_STORAGE_KEY = "autocor-saneamiento";
 const STATE_SCHEMA_VERSION = 20260520;
 const REMEMBER_ACCESS_KEY = "autocor-remembered-access";
 const SESSION_STORAGE_KEY = "autocor-active-session";
 const VIEW_STORAGE_KEY = "autocor-active-view";
 const AUTH_STORAGE_KEY = "autocor-access-users";
+const TASK_SYNC_CURSOR_KEY = "autocor-task-sync-cursor";
 const BACKUP_DB_NAME = "autocor-control-legal-backups";
 const BACKUP_STORE_NAME = "snapshots";
 const FILE_PAYLOAD_STORE_NAME = "filePayloads";
@@ -208,10 +208,11 @@ let supabaseModuleSyncTimer = null;
 let restoringSupabaseModules = false;
 let supabaseModulesReady = false;
 let pollingSupabaseModules = false;
+let supabasePollingTimer = null;
 const supabaseModuleVersions = {};
 const supabaseRemoteVersions = {};
 const supabasePublishedHashes = {};
-let supabaseTaskCursor = "";
+let supabaseTaskCursor = localStorage.getItem(TASK_SYNC_CURSOR_KEY) || "";
 let supabaseLastRefreshAt = 0;
 const state = loadState();
 hydrateCommercialOwners();
@@ -687,8 +688,32 @@ async function leerVersionModuloSupabase(modulo, tipo = "base") {
   }
 }
 
-async function leerModuloSupabaseSiCambio(modulo, tipo = "base") {
-  const remoteVersion = await leerVersionModuloSupabase(modulo, tipo);
+async function leerVersionesModulosSupabase() {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return {};
+  const modules = ["usuarios", "catalogos", "saneamientos", "compras", "contratos", "proveedores", "archivos"];
+  const query = `${SUPABASE_URL}/REGISTROS?modulo=in.(${modules.join(",")})&tipo=eq.base&select=modulo,created_at&order=created_at.desc&limit=100`;
+  try {
+    const response = await fetch(query, {
+      method: "GET",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`
+      }
+    });
+    if (!response.ok) return {};
+    const rows = await response.json();
+    return (Array.isArray(rows) ? rows : []).reduce((versions, row) => {
+      if (row?.modulo && !versions[row.modulo]) versions[row.modulo] = String(row.created_at || "");
+      return versions;
+    }, {});
+  } catch (error) {
+    console.warn("No se pudieron revisar las versiones de Supabase:", error);
+    return {};
+  }
+}
+
+async function leerModuloSupabaseSiCambio(modulo, remoteVersions, tipo = "base") {
+  const remoteVersion = remoteVersions?.[modulo] || "";
   if (!remoteVersion) return { snapshot: null, exists: false, changed: false };
   if (supabaseRemoteVersions[modulo] === remoteVersion) {
     return { snapshot: null, exists: true, changed: false };
@@ -722,6 +747,7 @@ async function leerTareasSupabase() {
     const orderedRows = incremental ? rows : [...rows].reverse();
     if (orderedRows.length) {
       supabaseTaskCursor = String(orderedRows[orderedRows.length - 1].created_at || supabaseTaskCursor);
+      localStorage.setItem(TASK_SYNC_CURSOR_KEY, supabaseTaskCursor);
     }
     return orderedRows.map((row) => parseMaybeJson(row.datos)).filter(Boolean).map((task) => normalizeTask(task));
   } catch (error) {
@@ -881,19 +907,20 @@ async function actualizarUsuariosDesdeSupabaseParaLogin() {
 }
 
 async function restoreModulesFromSupabaseIfNeeded() {
-  if (!SUPABASE_MODULE_SYNC || pollingSupabaseModules) return;
+  if (!SUPABASE_MODULE_SYNC || pollingSupabaseModules || session.role === "public") return;
   pollingSupabaseModules = true;
   restoringSupabaseModules = true;
   try {
+    const remoteVersions = await leerVersionesModulosSupabase();
     const [usuariosResult, catalogosResult, saneamientosResult, tareasIndividuales, comprasResult, contratosResult, proveedoresResult, archivosResult] = await Promise.all([
-      leerModuloSupabaseSiCambio("usuarios"),
-      leerModuloSupabaseSiCambio("catalogos"),
-      leerModuloSupabaseSiCambio("saneamientos"),
+      leerModuloSupabaseSiCambio("usuarios", remoteVersions),
+      leerModuloSupabaseSiCambio("catalogos", remoteVersions),
+      leerModuloSupabaseSiCambio("saneamientos", remoteVersions),
       leerTareasSupabase(),
-      leerModuloSupabaseSiCambio("compras"),
-      leerModuloSupabaseSiCambio("contratos"),
-      leerModuloSupabaseSiCambio("proveedores"),
-      leerModuloSupabaseSiCambio("archivos")
+      leerModuloSupabaseSiCambio("compras", remoteVersions),
+      leerModuloSupabaseSiCambio("contratos", remoteVersions),
+      leerModuloSupabaseSiCambio("proveedores", remoteVersions),
+      leerModuloSupabaseSiCambio("archivos", remoteVersions)
     ]);
     const usuarios = usuariosResult.snapshot;
     const catalogos = catalogosResult.snapshot;
@@ -951,11 +978,25 @@ async function restoreModulesFromSupabaseIfNeeded() {
 
 function startSupabaseModulePolling() {
   if (!SUPABASE_MODULE_SYNC) return;
-  window.setInterval(() => {
-    if (document.hidden || !navigator.onLine) return;
-    restoreModulesFromSupabaseIfNeeded();
-    sincronizarTareasPendientesSupabase();
-  }, SUPABASE_POLL_INTERVAL_MS);
+  if (supabasePollingTimer) window.clearTimeout(supabasePollingTimer);
+  supabasePollingTimer = null;
+  const interval = getSupabasePollInterval();
+  if (!interval) return;
+  supabasePollingTimer = window.setTimeout(async () => {
+    if (!document.hidden && navigator.onLine && session.role !== "public") {
+      await restoreModulesFromSupabaseIfNeeded();
+      await sincronizarTareasPendientesSupabase();
+    }
+    startSupabaseModulePolling();
+  }, interval);
+}
+
+function getSupabasePollInterval() {
+  if (session.role === "legal") return 45 * 1000;
+  if (session.role === "admin") return 60 * 1000;
+  if (session.role === "commercial") return 2 * 60 * 1000;
+  if (session.role === "manager") return 3 * 60 * 1000;
+  return 0;
 }
 
 function applySupabaseModuleSnapshot(modulo, snapshot) {
@@ -2120,6 +2161,11 @@ function setSession(nextSession) {
   document.body.dataset.session = session.role;
   persistSession();
   safeRenderAll();
+  startSupabaseModulePolling();
+  if (session.role !== "public" && navigator.onLine) {
+    restoreModulesFromSupabaseIfNeeded();
+    sincronizarTareasPendientesSupabase();
+  }
 }
 
 function touchSession() {
@@ -10085,13 +10131,14 @@ document.addEventListener("change", (event) => {
 window.setInterval(checkSessionExpiry, 60000);
 
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden || !navigator.onLine) return;
+  if (document.hidden || !navigator.onLine || session.role === "public") return;
   if (Date.now() - supabaseLastRefreshAt < SUPABASE_FOCUS_REFRESH_MIN_MS) return;
   restoreModulesFromSupabaseIfNeeded();
   sincronizarTareasPendientesSupabase();
 });
 
 window.addEventListener("online", () => {
+  if (session.role === "public") return;
   restoreModulesFromSupabaseIfNeeded();
   sincronizarTareasPendientesSupabase();
 });
@@ -10101,6 +10148,6 @@ restorePersistedViewAfterLoad();
 restoreStateFromInternalBackupIfNeeded();
 restoreStateFromSupabaseIfNeeded();
 restoreBrandingFromSupabaseIfNeeded();
-restoreModulesFromSupabaseIfNeeded();
+if (session.role !== "public") restoreModulesFromSupabaseIfNeeded();
 startSupabaseModulePolling();
 migrateIndexedDbFilesToSharedPc();
