@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260624-sync-stability";
+const APP_BUILD_VERSION = "20260624-sync-stability-2";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -802,7 +802,10 @@ async function leerTareasSupabase(forceFull = false) {
       supabaseTaskCursor = String(orderedRows[orderedRows.length - 1].created_at || supabaseTaskCursor);
       localStorage.setItem(TASK_SYNC_CURSOR_KEY, supabaseTaskCursor);
     }
-    return orderedRows.map((row) => parseMaybeJson(row.datos)).filter(Boolean).map((task) => normalizeTask(task));
+    return orderedRows
+      .map((row) => parseMaybeJson(row.datos))
+      .filter(Boolean)
+      .map((task) => normalizeTask({ ...task, syncStatus: "synced" }));
   } catch (error) {
     console.warn("No se pudieron leer tareas individuales de Supabase:", error);
     return [];
@@ -830,7 +833,10 @@ async function leerEliminacionesTareasSupabase(forceFull = false) {
       supabaseTaskDeleteCursor = String(rows[rows.length - 1].created_at || supabaseTaskDeleteCursor);
       localStorage.setItem(TASK_DELETE_CURSOR_KEY, supabaseTaskDeleteCursor);
     }
-    return rows.map((row) => parseMaybeJson(row.datos)).filter(Boolean);
+    return rows
+      .map((row) => parseMaybeJson(row.datos))
+      .filter(Boolean)
+      .map((deletion) => ({ ...deletion, syncStatus: "synced" }));
   } catch (error) {
     console.warn("No se pudieron leer eliminaciones de tareas:", error);
     return [];
@@ -870,7 +876,11 @@ async function obtenerUltimaTareaRemota(taskId) {
     if (!response.ok) return null;
     const rows = await response.json();
     if (!Array.isArray(rows) || !rows.length) return null;
-    return { ...parseMaybeJson(rows[0].datos), remoteCreatedAt: rows[0].created_at };
+    return {
+      ...parseMaybeJson(rows[0].datos),
+      syncStatus: "synced",
+      remoteCreatedAt: rows[0].created_at
+    };
   } catch {
     return null;
   }
@@ -997,7 +1007,8 @@ async function guardarTareaSupabase(task, action = "guardar") {
   const snapshot = normalizeTask({
     ...task,
     updatedAt: new Date().toISOString(),
-    syncAction: action
+    syncAction: action,
+    syncStatus: "synced"
   });
   const ok = await guardarRegistroSupabase("saneamientos", "tarea", snapshot, session?.name || session?.role || "sistema");
   if (ok) {
@@ -1052,7 +1063,8 @@ async function guardarEliminacionTareaSupabase(deletion) {
     deleted: true,
     deletedAt: deletion.deletedAt || new Date().toISOString(),
     updatedAt: deletion.updatedAt || deletion.deletedAt || new Date().toISOString(),
-    syncAction: "eliminar"
+    syncAction: "eliminar",
+    syncStatus: "synced"
   };
   const ok = await guardarRegistroSupabase(
     "saneamientos",
@@ -1286,7 +1298,8 @@ function applySupabaseModuleSnapshot(modulo, snapshot) {
       return true;
     case "saneamientos":
       {
-        const mergedChanges = mergeTaskChanges(state.tasks || [], snapshot.tasks || [], state.taskDeletions || []);
+        const remoteTasks = (snapshot.tasks || []).map((task) => ({ ...task, syncStatus: "synced" }));
+        const mergedChanges = mergeTaskChanges(state.tasks || [], remoteTasks, state.taskDeletions || []);
         state.tasks = mergedChanges.tasks;
         state.taskDeletions = mergedChanges.deletions;
       }
