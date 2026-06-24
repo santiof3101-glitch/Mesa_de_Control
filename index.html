@@ -1,10 +1,13 @@
 ﻿<!doctype html>
-<html lang="es">
+<html lang="es" data-app-version="20260624-sync-stability">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Autocor | Control Legal</title>
-  <link rel="stylesheet" href="styles.css?v=20260623-efficient-sync">
+  <link rel="stylesheet" href="styles.css?v=20260624-sync-stability">
 </head>
 <body>
   <header class="topbar">
@@ -148,7 +151,7 @@
             <div class="purchase-filter-grid">
               <label>Mes<select id="purchaseMonthFilter"></select></label>
               <label>Carga<select id="purchaseLoadFilter"></select></label>
-              <label>DÃ­a de solicitud<input id="purchaseDateFilter" type="date"></label>
+              <label>D&iacute;a de solicitud<input id="purchaseDateFilter" type="date"></label>
               <label>Agencia<select id="purchaseAgencyFilter"></select></label>
               <div class="check-filter">
                 <span>Asesor</span>
@@ -734,9 +737,9 @@
             <button class="commercial-side-link" type="button" data-commercial-area="requests" data-commercial-status-view="cerradas"><span>&#9989;</span> Cerradas</button>
           </div>
           <div class="commercial-support-card">
-            <strong>Soporte</strong>
-            <span>Â¿Necesitas ayuda?</span>
-            <button class="btn primary" type="button" data-commercial-area="lookup">Consultar</button>
+            <strong id="commercialSupportTitle">Soporte</strong>
+            <span id="commercialSupportQuestion">&iquest;Necesitas ayuda?</span>
+            <button id="commercialSupportBtn" class="btn primary" type="button">Consultar</button>
           </div>
         </aside>
 
@@ -1217,6 +1220,12 @@
             <label>Texto comunicados<textarea name="announcementsText" rows="2" required></textarea></label>
             <label>Titulo gerencial<input name="managerTitle" required></label>
             <label>Texto gerencial<textarea name="managerText" rows="2" required></textarea></label>
+            <label>Titulo de soporte<input name="supportTitle" required></label>
+            <label>Pregunta de soporte<input name="supportQuestion" required></label>
+            <label>Texto del boton de soporte<input name="supportButton" required></label>
+            <label>Mensaje de soporte<textarea name="supportMessage" rows="2" required></textarea></label>
+            <label>Correo de soporte<input name="supportEmail" type="email" required></label>
+            <label>WhatsApp de soporte<input name="supportWhatsapp" required></label>
             <div class="form-actions span-admin">
               <button class="btn secondary" id="resetCopyBtn" type="button">Restaurar textos</button>
               <button class="btn primary" type="submit">Guardar textos</button>
@@ -1303,7 +1312,7 @@
           <div class="panel-title-row">
             <div>
               <p class="eyebrow">Acceso comercial</p>
-              <h2>Asesores comerciales, usuarios y contraseÃ±as</h2>
+              <h2>Asesores comerciales, usuarios y contrase&ntilde;as</h2>
             </div>
           </div>
           <form id="commercialAdvisorForm" class="advisor-form">
@@ -1442,6 +1451,18 @@
     </form>
   </div>
 
+  <div id="supportModal" class="support-modal" hidden>
+    <div class="support-modal-backdrop" data-close-support></div>
+    <section class="support-bubble" role="dialog" aria-modal="true" aria-labelledby="supportBubbleTitle">
+      <button class="support-close" type="button" data-close-support aria-label="Cerrar">x</button>
+      <span class="support-icon">&#127911;</span>
+      <h2 id="supportBubbleTitle">Soporte Autocor</h2>
+      <p id="supportBubbleMessage"></p>
+      <a id="supportEmailLink" class="support-contact" href="#"></a>
+      <a id="supportWhatsappLink" class="support-contact is-whatsapp" href="#" target="_blank" rel="noopener"></a>
+    </section>
+  </div>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script>
     window.autocorFallbackView = function autocorFallbackView(viewId) {
@@ -1473,7 +1494,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260623-form-admin"></script>
+  <script src="app.js?v=20260624-sync-stability"></script>
 </body>
 </html>
 
