@@ -3127,6 +3127,10 @@ function renderTasks() {
         ` : ""}
         ${warnings.length ? `<p class="warning-line">${escapeHtml(warnings.join(" "))}</p>` : ""}
         <p class="observations">${escapeHtml(task.observaciones || "Sin observaciones")}</p>
+        <details class="legal-task-full-details">
+          <summary>Ver ficha completa</summary>
+          ${renderLegalTaskFullDetails(task)}
+        </details>
       </div>
       <div class="task-detail">
         <strong>Asistente legal</strong><br>
@@ -3158,6 +3162,67 @@ function renderTasks() {
   });
 }
 
+function renderLegalTaskFullDetails(task) {
+  const isSale = getTaskProcess(task) === "venta";
+  const fields = isSale
+    ? [
+        ["Proceso", "Contrato de compraventa"],
+        ["Placa", task.placa],
+        ["Agencia", task.agencia],
+        ["Vendedor", task.vendedor || task.cliente],
+        ["Precio del contrato", formatCurrencyValue(task.precioContrato)],
+        ["Cedula del vendedor", task.cedulaVendedor || task.cedula],
+        ["Direccion", task.direccion],
+        ["Telefono", task.telefono],
+        ["Correo", task.correo],
+        ["Asesor comercial", task.asesor || task.commercialUserName],
+        ["Estatus", getStatusOption(task.status)?.label || task.status],
+        ["Observaciones", task.observaciones]
+      ]
+    : [
+        ["Proceso", "Compra y saneamiento"],
+        ["Nombre completo del cliente", task.cliente],
+        ["Cedula del titular", task.cedula],
+        ["Placa", task.placa],
+        ["Valor de toma", formatCurrencyValue(task.valorToma)],
+        ["Kilometraje", formatIntegerValue(task.kilometraje)],
+        ["Agencia", task.agencia],
+        ["Ciudad", task.ciudad],
+        ["Asesor comercial", task.asesor || task.commercialUserName],
+        ["Tipo de compra", task.tipoCompra],
+        ["Tipo de saneamiento", task.tipoSaneamiento],
+        ["Estatus", getStatusOption(task.status)?.label || task.status],
+        ["Observaciones", task.observaciones]
+      ];
+  const operationalFields = [
+    ["Fecha y hora de solicitud", formatDateTime(task.createdAt)],
+    ["Fecha y hora de toma", formatDateTime(task.takenAt)],
+    ["Fecha y hora de cierre", formatDateTime(task.completedAt)],
+    ["Asistente legal", task.legalAdvisor || "Sin asignar"],
+    ["ID de tarea", task.id]
+  ];
+  return `
+    <div class="legal-task-detail-grid">
+      ${[...fields, ...operationalFields].map(([label, value]) => `
+        <div class="${label === "Observaciones" || label === "Direccion" ? "is-wide" : ""}">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value || "Sin informacion")}</strong>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function formatCurrencyValue(value) {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? `$ ${amount.toLocaleString("es-EC", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "";
+}
+
+function formatIntegerValue(value) {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount.toLocaleString("es-EC") : "";
+}
+
 function renderInfoRequestTaskCard(task, index) {
   const assignedToAnother = task.legalUserId && task.legalUserId !== session.userId && session.role !== "admin";
   const canTake = session.role === "legal" && !task.legalUserId && !isClosedStatus(task.status);
@@ -3181,6 +3246,12 @@ function renderInfoRequestTaskCard(task, index) {
         <span>Agencia original: ${escapeHtml(task.sourceAgencia || sourceTask?.agencia || "Sin registro")}</span>
       </p>
       <p class="observations">${escapeHtml(task.observaciones || "Solicitud pendiente de revision.")}</p>
+      ${sourceTask ? `
+        <details class="legal-task-full-details">
+          <summary>Ver ficha del registro consultado</summary>
+          ${renderLegalTaskFullDetails(sourceTask)}
+        </details>
+      ` : ""}
     </div>
     <div class="task-detail">
       <strong>Revision mesa de control</strong><br>
