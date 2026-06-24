@@ -1,4 +1,6 @@
 const STORAGE_KEY = "autocor-control-legal";
+const APP_BUILD_VERSION = "20260624-sync-stability";
+const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
 const SUPABASE_AUTO_RESTORE = false;
@@ -179,7 +181,13 @@ const defaultState = {
     announcementsTitle: "Acceso a comunicados",
     announcementsText: "Cartelera completa de anuncios, novedades y procesos internos.",
     managerTitle: "Acceso consulta de saneamientos",
-    managerText: "Dashboard gerencial con filtros, graficos e indicadores de operacion."
+    managerText: "Dashboard gerencial con filtros, graficos e indicadores de operacion.",
+    supportTitle: "Soporte",
+    supportQuestion: "Necesitas ayuda?",
+    supportButton: "Consultar",
+    supportMessage: "Tienes problemas con tu sistema? Contactate con soporte.",
+    supportEmail: "sortiz@autocor.com.ec",
+    supportWhatsapp: "0996387526"
   },
   announcements: [
     { id: "com-1", title: "Bandeja legal activa", body: "Los asistentes legales pueden tomar leads disponibles por orden de prioridad.", createdAt: new Date().toISOString() }
@@ -395,6 +403,11 @@ const themeForm = document.querySelector("#themeForm");
 const resetThemeBtn = document.querySelector("#resetThemeBtn");
 const copyForm = document.querySelector("#copyForm");
 const resetCopyBtn = document.querySelector("#resetCopyBtn");
+const commercialSupportBtn = document.querySelector("#commercialSupportBtn");
+const supportModal = document.querySelector("#supportModal");
+const supportBubbleMessage = document.querySelector("#supportBubbleMessage");
+const supportEmailLink = document.querySelector("#supportEmailLink");
+const supportWhatsappLink = document.querySelector("#supportWhatsappLink");
 const statusOptionForm = document.querySelector("#statusOptionForm");
 const statusFilterButtons = document.querySelector("#statusFilterButtons");
 const imageModal = document.querySelector("#imageModal");
@@ -796,9 +809,9 @@ async function leerTareasSupabase(forceFull = false) {
   }
 }
 
-async function leerEliminacionesTareasSupabase() {
+async function leerEliminacionesTareasSupabase(forceFull = false) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return [];
-  const cursorFilter = supabaseTaskDeleteCursor
+  const cursorFilter = supabaseTaskDeleteCursor && !forceFull
     ? `&created_at=gt.${encodeURIComponent(supabaseTaskDeleteCursor)}`
     : "";
   const query = `${SUPABASE_URL}/REGISTROS?modulo=eq.saneamientos&tipo=eq.tarea&datos-%3E%3Edeleted=eq.true${cursorFilter}&select=datos,created_at&order=created_at.asc&limit=1000`;
@@ -840,6 +853,88 @@ async function obtenerEliminacionRemotaTarea(taskId) {
     return Array.isArray(rows) && rows.length ? parseMaybeJson(rows[0].datos) : null;
   } catch {
     return null;
+  }
+}
+
+async function obtenerUltimaTareaRemota(taskId) {
+  if (!taskId || !SUPABASE_URL || !SUPABASE_KEY) return null;
+  const query = `${SUPABASE_URL}/REGISTROS?modulo=eq.saneamientos&tipo=eq.tarea&datos-%3E%3Eid=eq.${encodeURIComponent(taskId)}&select=datos,created_at&order=created_at.desc&limit=1`;
+  try {
+    const response = await fetch(query, {
+      method: "GET",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`
+      }
+    });
+    if (!response.ok) return null;
+    const rows = await response.json();
+    if (!Array.isArray(rows) || !rows.length) return null;
+    return { ...parseMaybeJson(rows[0].datos), remoteCreatedAt: rows[0].created_at };
+  } catch {
+    return null;
+  }
+}
+
+function getTaskLifecycleRank(task = {}) {
+  if (task.deleted) return 100;
+  if (isClosedStatus(task.status)) return 80;
+  if (task.completedAt) return 75;
+  if (task.takenAt || task.legalUserId || task.status === "tomado") return 60;
+  if (task.status && !["pendiente", "por asignar"].includes(task.status)) return 40;
+  return 10;
+}
+
+function shouldRemoteTaskReplacePendingLocal(remote, local) {
+  if (!remote) return false;
+  const remoteRank = getTaskLifecycleRank(remote);
+  const localRank = getTaskLifecycleRank(local);
+  if (remoteRank !== localRank) return remoteRank > localRank;
+  const remoteTime = new Date(remote.updatedAt || remote.remoteCreatedAt || 0).getTime() || 0;
+  const localTime = new Date(local.updatedAt || 0).getTime() || 0;
+  return remoteTime >= localTime;
+}
+
+function collapseTaskHistoryByLifecycle(items = []) {
+  const selected = new Map();
+  items.filter((item) => item?.id).forEach((item) => {
+    const normalized = normalizeTask(item);
+    const current = selected.get(normalized.id);
+    if (!current) {
+      selected.set(normalized.id, normalized);
+      return;
+    }
+    const rankDifference = getTaskLifecycleRank(normalized) - getTaskLifecycleRank(current);
+    if (rankDifference > 0 || (rankDifference === 0 && getTaskFreshness(normalized) >= getTaskFreshness(current))) {
+      selected.set(normalized.id, normalized);
+    }
+  });
+  return [...selected.values()];
+}
+
+async function reconcileTasksForCurrentBuild() {
+  if (session.role === "public" || !navigator.onLine) return;
+  if (localStorage.getItem(TASK_RECONCILE_VERSION_KEY) === APP_BUILD_VERSION) return;
+  try {
+    const [remoteHistory, remoteDeletions] = await Promise.all([
+      leerTareasSupabase(true),
+      leerEliminacionesTareasSupabase(true)
+    ]);
+    const authoritativeTasks = collapseTaskHistoryByLifecycle(remoteHistory);
+    const authoritativeIds = new Set(authoritativeTasks.map((task) => task.id));
+    const localWithoutRemoteHistory = (state.tasks || []).filter((task) => !authoritativeIds.has(task.id));
+    const mergedChanges = mergeTaskChanges(
+      localWithoutRemoteHistory,
+      [...authoritativeTasks, ...remoteDeletions],
+      state.taskDeletions || []
+    );
+    state.tasks = mergedChanges.tasks;
+    state.taskDeletions = mergedChanges.deletions;
+    saveState();
+    safeRenderAll();
+    localStorage.setItem(TASK_RECONCILE_VERSION_KEY, APP_BUILD_VERSION);
+  } catch (error) {
+    console.warn("No se pudo realizar la conciliacion completa de tareas:", error);
   }
 }
 
@@ -928,9 +1023,9 @@ async function sincronizarTareasPendientesSupabase() {
   if (!pendingTasks.length && !pendingDeletions.length) return;
   let synced = 0;
   for (const task of pendingTasks.slice(0, 10)) {
-    const remoteDeletion = await obtenerEliminacionRemotaTarea(task.id);
-    if (remoteDeletion?.deleted) {
-      const mergedChanges = mergeTaskChanges(state.tasks || [], [remoteDeletion], state.taskDeletions || []);
+    const remoteTask = await obtenerUltimaTareaRemota(task.id);
+    if (shouldRemoteTaskReplacePendingLocal(remoteTask, task)) {
+      const mergedChanges = mergeTaskChanges(state.tasks || [], [remoteTask], state.taskDeletions || []);
       state.tasks = mergedChanges.tasks;
       state.taskDeletions = mergedChanges.deletions;
       synced += 1;
@@ -1058,7 +1153,7 @@ async function actualizarUsuariosDesdeSupabaseParaLogin() {
 }
 
 async function restoreModulesFromSupabaseIfNeeded() {
-  if (!SUPABASE_MODULE_SYNC || pollingSupabaseModules || session.role === "public") return;
+  if (!SUPABASE_MODULE_SYNC || pollingSupabaseModules || !canSyncCurrentView()) return;
   pollingSupabaseModules = true;
   restoringSupabaseModules = true;
   try {
@@ -1147,7 +1242,7 @@ function startSupabaseModulePolling() {
   const interval = getSupabasePollInterval();
   if (!interval) return;
   supabasePollingTimer = window.setTimeout(async () => {
-    if (!document.hidden && navigator.onLine && session.role !== "public") {
+    if (!document.hidden && navigator.onLine && canSyncCurrentView()) {
       await restoreModulesFromSupabaseIfNeeded();
       await sincronizarTareasPendientesSupabase();
     }
@@ -1160,7 +1255,12 @@ function getSupabasePollInterval() {
   if (session.role === "admin") return 60 * 1000;
   if (session.role === "commercial") return 2 * 60 * 1000;
   if (session.role === "manager") return 3 * 60 * 1000;
+  if (currentViewId === "procesamiento") return 3 * 60 * 1000;
   return 0;
+}
+
+function canSyncCurrentView() {
+  return session.role !== "public" || currentViewId === "procesamiento";
 }
 
 function applySupabaseModuleSnapshot(modulo, snapshot) {
@@ -2298,6 +2398,50 @@ function showToast(message) {
   window.setTimeout(() => toast.classList.remove("is-visible"), 3000);
 }
 
+function getWhatsappUrl(value) {
+  let digits = String(value || "").replace(/\D/g, "");
+  if (digits.startsWith("0")) digits = `593${digits.slice(1)}`;
+  return `https://wa.me/${digits}`;
+}
+
+function openSupportModal() {
+  if (!supportModal) return;
+  const copy = state.copy || defaultState.copy;
+  const email = copy.supportEmail || defaultState.copy.supportEmail;
+  const whatsapp = copy.supportWhatsapp || defaultState.copy.supportWhatsapp;
+  supportBubbleMessage.textContent = copy.supportMessage || defaultState.copy.supportMessage;
+  supportEmailLink.textContent = `Correo: ${email}`;
+  supportEmailLink.href = `mailto:${email}`;
+  supportWhatsappLink.textContent = `WhatsApp: ${whatsapp}`;
+  supportWhatsappLink.href = getWhatsappUrl(whatsapp);
+  supportModal.hidden = false;
+  document.body.classList.add("has-modal");
+}
+
+function closeSupportModal() {
+  if (!supportModal) return;
+  supportModal.hidden = true;
+  document.body.classList.remove("has-modal");
+}
+
+async function checkForAppUpdate() {
+  if (!navigator.onLine) return;
+  try {
+    const response = await fetch(`index.html?version-check=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) return;
+    const html = await response.text();
+    const match = html.match(/data-app-version=["']([^"']+)["']/i);
+    const remoteVersion = match?.[1] || "";
+    if (!remoteVersion || remoteVersion === APP_BUILD_VERSION) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("build") === remoteVersion) return;
+    url.searchParams.set("build", remoteVersion);
+    window.location.replace(url.toString());
+  } catch {
+    // The current version remains usable while offline.
+  }
+}
+
 function setView(viewId) {
   if (!viewId) return;
   checkSessionExpiry();
@@ -2326,6 +2470,8 @@ function setView(viewId) {
   navTabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.view === viewId));
   currentViewId = viewId;
   persistView(viewId);
+  startSupabaseModulePolling();
+  if (canSyncCurrentView() && navigator.onLine) restoreModulesFromSupabaseIfNeeded();
   window.scrollTo({ top: 0, behavior: "smooth" });
   safeRenderAll();
 }
@@ -2358,6 +2504,12 @@ function applyCopy() {
   document.querySelector("#announcementsAccessText").textContent = state.copy.announcementsText;
   document.querySelector("#managerAccessTitle").textContent = state.copy.managerTitle;
   document.querySelector("#managerAccessText").textContent = state.copy.managerText;
+  const supportTitle = document.querySelector("#commercialSupportTitle");
+  const supportQuestion = document.querySelector("#commercialSupportQuestion");
+  const supportButton = document.querySelector("#commercialSupportBtn");
+  if (supportTitle) supportTitle.textContent = state.copy.supportTitle || defaultState.copy.supportTitle;
+  if (supportQuestion) supportQuestion.textContent = state.copy.supportQuestion || defaultState.copy.supportQuestion;
+  if (supportButton) supportButton.textContent = state.copy.supportButton || defaultState.copy.supportButton;
 
   Object.entries(state.copy).forEach(([key, value]) => {
     if (copyForm.elements[key]) copyForm.elements[key].value = value;
@@ -2387,6 +2539,7 @@ function setSession(nextSession) {
   if (session.role !== "public" && navigator.onLine) {
     restoreModulesFromSupabaseIfNeeded();
     sincronizarTareasPendientesSupabase();
+    reconcileTasksForCurrentBuild();
   }
 }
 
@@ -10576,6 +10729,11 @@ document.querySelectorAll("[data-close-file-preview]").forEach((button) => {
   button.addEventListener("click", closeStoredFilePreview);
 });
 
+commercialSupportBtn?.addEventListener("click", openSupportModal);
+document.querySelectorAll("[data-close-support]").forEach((button) => {
+  button.addEventListener("click", closeSupportModal);
+});
+
 document.addEventListener("change", (event) => {
   const groupCheck = event.target.closest?.("[data-provider-duplicate-approval]");
   if (groupCheck) {
@@ -10595,14 +10753,16 @@ document.addEventListener("change", (event) => {
 window.setInterval(checkSessionExpiry, 60000);
 
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden || !navigator.onLine || session.role === "public") return;
+  if (document.hidden || !navigator.onLine) return;
+  checkForAppUpdate();
+  if (!canSyncCurrentView()) return;
   if (Date.now() - supabaseLastRefreshAt < SUPABASE_FOCUS_REFRESH_MIN_MS) return;
   restoreModulesFromSupabaseIfNeeded();
   sincronizarTareasPendientesSupabase();
 });
 
 window.addEventListener("online", () => {
-  if (session.role === "public") return;
+  if (!canSyncCurrentView()) return;
   restoreModulesFromSupabaseIfNeeded();
   sincronizarTareasPendientesSupabase();
 });
@@ -10612,6 +10772,9 @@ restorePersistedViewAfterLoad();
 restoreStateFromInternalBackupIfNeeded();
 restoreStateFromSupabaseIfNeeded();
 restoreBrandingFromSupabaseIfNeeded();
-if (session.role !== "public") restoreModulesFromSupabaseIfNeeded();
+if (canSyncCurrentView()) restoreModulesFromSupabaseIfNeeded();
+if (session.role !== "public") reconcileTasksForCurrentBuild();
 startSupabaseModulePolling();
 migrateIndexedDbFilesToSharedPc();
+checkForAppUpdate();
+window.setInterval(checkForAppUpdate, 5 * 60 * 1000);
