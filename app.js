@@ -11,6 +11,7 @@ const STATE_SCHEMA_VERSION = 20260520;
 const REMEMBER_ACCESS_KEY = "autocor-remembered-access";
 const SESSION_STORAGE_KEY = "autocor-active-session";
 const VIEW_STORAGE_KEY = "autocor-active-view";
+const AUTH_STORAGE_KEY = "autocor-access-users";
 const BACKUP_DB_NAME = "autocor-control-legal-backups";
 const BACKUP_STORE_NAME = "snapshots";
 const FILE_PAYLOAD_STORE_NAME = "filePayloads";
@@ -214,6 +215,7 @@ let supabaseTaskCursor = "";
 let supabaseLastRefreshAt = 0;
 const state = loadState();
 hydrateCommercialOwners();
+persistAccessUsers(state);
 let lastActivityAt = Date.now();
 let lastSessionPersistAt = 0;
 let session = loadPersistedSession();
@@ -471,6 +473,7 @@ function loadState() {
       stateLoadedFromPc = true;
       const sharedState = normalizeImportedState(shared.state);
       const mergedState = browserState ? mergePcStates(sharedState, browserState) : sharedState;
+      applyCachedAccessUsers(mergedState);
       if (browserState && getStateScore(mergedState) > getStateScore(sharedState)) {
         requestAnimationFrame(() => saveState());
       }
@@ -480,11 +483,16 @@ function loadState() {
     }
   }
   if (sharedPcStorageAvailable && browserState) {
+    applyCachedAccessUsers(browserState);
     requestAnimationFrame(() => saveState());
     return browserState;
   }
   const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(OLD_STORAGE_KEY);
-  if (!saved) return structuredClone(defaultState);
+  if (!saved) {
+    const initialState = structuredClone(defaultState);
+    applyCachedAccessUsers(initialState);
+    return initialState;
+  }
 
   try {
     const parsed = JSON.parse(saved);
@@ -519,12 +527,52 @@ function loadState() {
     merged.statusOptions = normalizeStatusOptions(merged.statusOptions || defaultState.statusOptions);
     merged.tasks = (merged.tasks || []).map(normalizeTask);
     merged.schemaVersion = STATE_SCHEMA_VERSION;
+    applyCachedAccessUsers(merged);
     if (parsed.schemaVersion !== STATE_SCHEMA_VERSION || (sharedPcStorageAvailable && !stateLoadedFromPc)) {
       requestAnimationFrame(() => saveState());
     }
     return merged;
   } catch {
-    return structuredClone(defaultState);
+    const fallbackState = structuredClone(defaultState);
+    applyCachedAccessUsers(fallbackState);
+    return fallbackState;
+  }
+}
+
+function readCachedAccessUsers() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || "null");
+    return cached && typeof cached === "object" ? cached : null;
+  } catch {
+    return null;
+  }
+}
+
+function applyCachedAccessUsers(snapshot) {
+  const cached = readCachedAccessUsers();
+  if (!cached || !snapshot) return snapshot;
+  if (Array.isArray(cached.commercialAdvisors) && cached.commercialAdvisors.length) {
+    snapshot.commercialAdvisors = normalizeCommercialAdvisors(cached.commercialAdvisors);
+  }
+  if (Array.isArray(cached.legalUsers) && cached.legalUsers.length) {
+    snapshot.legalUsers = cached.legalUsers;
+  }
+  if (Array.isArray(cached.managerUsers) && cached.managerUsers.length) {
+    snapshot.managerUsers = cached.managerUsers;
+  }
+  return snapshot;
+}
+
+function persistAccessUsers(snapshot = state) {
+  try {
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
+      commercialAdvisors: snapshot.commercialAdvisors || [],
+      legalUsers: snapshot.legalUsers || [],
+      managerUsers: snapshot.managerUsers || [],
+      updatedAt: new Date().toISOString()
+    }));
+  } catch (error) {
+    console.warn("No se pudo guardar la copia local de accesos:", error);
   }
 }
 
@@ -806,6 +854,32 @@ async function guardarModulosSupabase() {
   }
 }
 
+async function guardarUsuariosSupabaseAhora() {
+  if (!SUPABASE_MODULE_SYNC || !SUPABASE_URL || !SUPABASE_KEY) return false;
+  const datos = getSupabaseModuleSnapshots().usuarios;
+  const hash = getSupabaseSnapshotHash(datos);
+  const ok = await guardarRegistroSupabase(
+    "usuarios",
+    "base",
+    { ...datos, updatedAt: new Date().toISOString() },
+    session?.name || session?.role || "sistema"
+  );
+  if (ok) supabasePublishedHashes.usuarios = hash;
+  return ok;
+}
+
+async function actualizarUsuariosDesdeSupabaseParaLogin() {
+  const snapshot = await leerUltimoModuloSupabase("usuarios");
+  if (!snapshot || typeof snapshot !== "object") return false;
+  applySupabaseModuleSnapshot("usuarios", snapshot);
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, schemaVersion: STATE_SCHEMA_VERSION }));
+  } catch {
+    // La copia ligera de accesos ya fue guardada aunque el estado general sea demasiado grande.
+  }
+  return true;
+}
+
 async function restoreModulesFromSupabaseIfNeeded() {
   if (!SUPABASE_MODULE_SYNC || pollingSupabaseModules) return;
   pollingSupabaseModules = true;
@@ -896,6 +970,7 @@ function applySupabaseModuleSnapshot(modulo, snapshot) {
       state.commercialAdvisors = normalizeCommercialAdvisors(snapshot.commercialAdvisors || state.commercialAdvisors || []);
       state.legalUsers = Array.isArray(snapshot.legalUsers) ? snapshot.legalUsers : (state.legalUsers || []);
       state.managerUsers = Array.isArray(snapshot.managerUsers) ? snapshot.managerUsers : (state.managerUsers || []);
+      persistAccessUsers(state);
       return true;
     case "catalogos":
       state.agencies = Array.isArray(snapshot.agencies) ? snapshot.agencies : (state.agencies || []);
@@ -1444,6 +1519,7 @@ function migrateVisualDefaults(merged, source = {}) {
 function saveState() {
   const snapshot = structuredClone(state);
   snapshot.schemaVersion = STATE_SCHEMA_VERSION;
+  persistAccessUsers(snapshot);
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
   } catch {
@@ -2395,6 +2471,7 @@ function addCommercialAdvisor(data) {
 
   state.commercialAdvisors.push({ id: crypto.randomUUID(), name, agency, username, password });
   saveState();
+  guardarUsuariosSupabaseAhora();
   renderAll();
   showToast("Asesor comercial agregado.");
 }
@@ -2402,6 +2479,7 @@ function addCommercialAdvisor(data) {
 function removeCommercialAdvisor(id) {
   state.commercialAdvisors = state.commercialAdvisors.filter((advisor) => advisor.id !== id);
   saveState();
+  guardarUsuariosSupabaseAhora();
   renderAll();
   showToast("Asesor comercial eliminado.");
 }
@@ -2442,6 +2520,7 @@ function createUser(data) {
     password
   });
   saveState();
+  guardarUsuariosSupabaseAhora();
   renderAll();
   showToast("Usuario creado.");
 }
@@ -2454,6 +2533,7 @@ function removeUser(id) {
 
   state.legalUsers = state.legalUsers.filter((user) => user.id !== id);
   saveState();
+  guardarUsuariosSupabaseAhora();
   renderAll();
   showToast("Usuario eliminado.");
 }
@@ -2496,6 +2576,9 @@ function changePassword(collection, id, password) {
   if (!user) return;
   user.password = cleanPassword;
   saveState();
+  guardarUsuariosSupabaseAhora().then((ok) => {
+    if (!ok) showToast("Clave guardada en este equipo. Supabase no esta disponible para compartirla todavia.");
+  });
   showToast("Contrasena actualizada.");
 }
 
@@ -2514,6 +2597,7 @@ function createManagerUser(data) {
     password
   });
   saveState();
+  guardarUsuariosSupabaseAhora();
   renderAll();
   showToast("Usuario gerencial creado.");
 }
@@ -2525,6 +2609,7 @@ function removeManagerUser(id) {
   }
   state.managerUsers = state.managerUsers.filter((user) => user.id !== id);
   saveState();
+  guardarUsuariosSupabaseAhora();
   renderAll();
   showToast("Usuario gerencial eliminado.");
 }
@@ -3016,16 +3101,30 @@ function cleanPasswordValue(value = "") {
   return String(value || "").trim();
 }
 
-function loginLegal(data) {
+async function refreshAccessUsersAfterFailedLogin() {
+  if (!navigator.onLine) return false;
+  return Promise.race([
+    actualizarUsuariosDesdeSupabaseParaLogin(),
+    new Promise((resolve) => window.setTimeout(() => resolve(false), 3500))
+  ]);
+}
+
+async function loginLegal(data) {
   const username = cleanUsernameValue(data.username);
   const password = cleanPasswordValue(data.password);
-  const user = state.legalUsers.find((item) =>
+  let user = state.legalUsers.find((item) =>
     cleanUsernameValue(item.username) === username && cleanPasswordValue(item.password) === password
   );
 
   if (!user) {
-    showToast("Usuario o contrasena incorrectos.");
-    return;
+    await refreshAccessUsersAfterFailedLogin();
+    user = state.legalUsers.find((item) =>
+      cleanUsernameValue(item.username) === username && cleanPasswordValue(item.password) === password
+    );
+    if (!user) {
+      showToast("Usuario o contrasena incorrectos.");
+      return;
+    }
   }
 
   rememberAccessFromLogin("legal", legalLoginForm, data);
@@ -3035,16 +3134,22 @@ function loginLegal(data) {
   showToast(`Bienvenido, ${user.name}.`);
 }
 
-function loginCommercial(data) {
+async function loginCommercial(data) {
   const username = cleanUsernameValue(data.username);
   const password = cleanPasswordValue(data.password);
-  const user = state.commercialAdvisors.find((item) =>
+  let user = state.commercialAdvisors.find((item) =>
     cleanUsernameValue(item.username) === username && cleanPasswordValue(item.password) === password
   );
 
   if (!user) {
-    showToast("Usuario comercial o contrasena incorrectos.");
-    return;
+    await refreshAccessUsersAfterFailedLogin();
+    user = state.commercialAdvisors.find((item) =>
+      cleanUsernameValue(item.username) === username && cleanPasswordValue(item.password) === password
+    );
+    if (!user) {
+      showToast("Usuario comercial o contrasena incorrectos.");
+      return;
+    }
   }
 
   rememberAccessFromLogin("commercial", commercialLoginForm, data);
@@ -3068,16 +3173,22 @@ function loginAdmin(data) {
   showToast("Administrador activo.");
 }
 
-function loginManager(data) {
+async function loginManager(data) {
   const username = cleanUsernameValue(data.username);
   const password = cleanPasswordValue(data.password);
-  const user = state.managerUsers.find((item) =>
+  let user = state.managerUsers.find((item) =>
     cleanUsernameValue(item.username) === username && cleanPasswordValue(item.password) === password
   );
 
   if (!user) {
-    showToast("Usuario gerencial o contrasena incorrectos.");
-    return;
+    await refreshAccessUsersAfterFailedLogin();
+    user = state.managerUsers.find((item) =>
+      cleanUsernameValue(item.username) === username && cleanPasswordValue(item.password) === password
+    );
+    if (!user) {
+      showToast("Usuario gerencial o contrasena incorrectos.");
+      return;
+    }
   }
 
   rememberAccessFromLogin("manager", managerLoginForm, data);
