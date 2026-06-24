@@ -4430,6 +4430,14 @@ button.kpi-card {
   margin-bottom: 14px;
 }
 
+.panel-title-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .soft-badge {
   display: inline-flex;
   align-items: center;
