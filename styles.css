@@ -4438,6 +4438,64 @@ button.kpi-card {
   flex-wrap: wrap;
 }
 
+.form-builder-list {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.form-builder-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(160px, 1fr) minmax(160px, 1fr) auto auto auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.form-builder-row > div {
+  display: grid;
+  gap: 2px;
+}
+
+.form-builder-row span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.form-builder-row input:not([type="checkbox"]),
+.form-builder-add input,
+.form-builder-add select,
+#adminFormProcessSelect {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+}
+
+.form-builder-add {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 150px minmax(180px, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.form-custom-fields:empty {
+  display: none;
+}
+
+.form-custom-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
 .soft-badge {
   display: inline-flex;
   align-items: center;
@@ -5672,6 +5730,12 @@ textarea:focus {
 
   .legal-task-detail-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form-builder-row,
+  .form-builder-add,
+  .form-custom-fields {
+    grid-template-columns: 1fr;
   }
 
   .report-hero,
