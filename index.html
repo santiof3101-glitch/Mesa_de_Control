@@ -1102,9 +1102,12 @@
               <p class="eyebrow">Gestion administrativa</p>
               <h2>Modificar, corregir o borrar leads</h2>
             </div>
-            <span id="adminLeadCount" class="soft-badge">0 leads</span>
+            <div class="panel-title-actions">
+              <button id="reconcileAdminLeadsBtn" class="btn secondary" type="button">Conciliar con Supabase</button>
+              <span id="adminLeadCount" class="soft-badge">0 leads</span>
+            </div>
           </div>
-          <p class="helper-text">Usa los filtros del dashboard superior para acotar la lista. Abre solo el lead que necesites corregir.</p>
+          <p class="helper-text">Usa “Conciliar con Supabase” para recuperar leads antiguos que quedaron visibles en comercial, pero ya no aparecen en este administrador.</p>
           <div id="adminLeadsList" class="admin-leads-list"></div>
         </section>
 
@@ -1435,7 +1438,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260623-delete-sync"></script>
+  <script src="app.js?v=20260623-lead-reconcile"></script>
 </body>
 </html>
 
