@@ -12,6 +12,7 @@ const SESSION_STORAGE_KEY = "autocor-active-session";
 const VIEW_STORAGE_KEY = "autocor-active-view";
 const AUTH_STORAGE_KEY = "autocor-access-users";
 const TASK_SYNC_CURSOR_KEY = "autocor-task-sync-cursor";
+const TASK_DELETE_CURSOR_KEY = "autocor-task-delete-cursor";
 const BACKUP_DB_NAME = "autocor-control-legal-backups";
 const BACKUP_STORE_NAME = "snapshots";
 const FILE_PAYLOAD_STORE_NAME = "filePayloads";
@@ -214,6 +215,7 @@ const supabaseModuleVersions = {};
 const supabaseRemoteVersions = {};
 const supabasePublishedHashes = {};
 let supabaseTaskCursor = localStorage.getItem(TASK_SYNC_CURSOR_KEY) || "";
+let supabaseTaskDeleteCursor = localStorage.getItem(TASK_DELETE_CURSOR_KEY) || "";
 let supabaseLastRefreshAt = 0;
 const state = loadState();
 hydrateCommercialOwners();
@@ -761,6 +763,53 @@ async function leerTareasSupabase(forceFull = false) {
   }
 }
 
+async function leerEliminacionesTareasSupabase() {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
+  const cursorFilter = supabaseTaskDeleteCursor
+    ? `&created_at=gt.${encodeURIComponent(supabaseTaskDeleteCursor)}`
+    : "";
+  const query = `${SUPABASE_URL}/REGISTROS?modulo=eq.saneamientos&tipo=eq.tarea&datos-%3E%3Edeleted=eq.true${cursorFilter}&select=datos,created_at&order=created_at.asc&limit=1000`;
+  try {
+    const response = await fetch(query, {
+      method: "GET",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`
+      }
+    });
+    if (!response.ok) return [];
+    const rows = await response.json();
+    if (!Array.isArray(rows)) return [];
+    if (rows.length) {
+      supabaseTaskDeleteCursor = String(rows[rows.length - 1].created_at || supabaseTaskDeleteCursor);
+      localStorage.setItem(TASK_DELETE_CURSOR_KEY, supabaseTaskDeleteCursor);
+    }
+    return rows.map((row) => parseMaybeJson(row.datos)).filter(Boolean);
+  } catch (error) {
+    console.warn("No se pudieron leer eliminaciones de tareas:", error);
+    return [];
+  }
+}
+
+async function obtenerEliminacionRemotaTarea(taskId) {
+  if (!taskId || !SUPABASE_URL || !SUPABASE_KEY) return null;
+  const query = `${SUPABASE_URL}/REGISTROS?modulo=eq.saneamientos&tipo=eq.tarea&datos-%3E%3Eid=eq.${encodeURIComponent(taskId)}&datos-%3E%3Edeleted=eq.true&select=datos,created_at&order=created_at.desc&limit=1`;
+  try {
+    const response = await fetch(query, {
+      method: "GET",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`
+      }
+    });
+    if (!response.ok) return null;
+    const rows = await response.json();
+    return Array.isArray(rows) && rows.length ? parseMaybeJson(rows[0].datos) : null;
+  } catch {
+    return null;
+  }
+}
+
 async function reconcileAdminLeadsFromSupabase() {
   if (session.role !== "admin" || !reconcileAdminLeadsBtn) return;
   const previousText = reconcileAdminLeadsBtn.textContent;
@@ -846,6 +895,14 @@ async function sincronizarTareasPendientesSupabase() {
   if (!pendingTasks.length && !pendingDeletions.length) return;
   let synced = 0;
   for (const task of pendingTasks.slice(0, 10)) {
+    const remoteDeletion = await obtenerEliminacionRemotaTarea(task.id);
+    if (remoteDeletion?.deleted) {
+      const mergedChanges = mergeTaskChanges(state.tasks || [], [remoteDeletion], state.taskDeletions || []);
+      state.tasks = mergedChanges.tasks;
+      state.taskDeletions = mergedChanges.deletions;
+      synced += 1;
+      continue;
+    }
     const ok = await guardarTareaSupabase(task, task.syncAction || "reintento");
     if (ok) synced += 1;
   }
@@ -972,11 +1029,12 @@ async function restoreModulesFromSupabaseIfNeeded() {
   restoringSupabaseModules = true;
   try {
     const remoteVersions = await leerVersionesModulosSupabase();
-    const [usuariosResult, catalogosResult, saneamientosResult, tareasIndividuales, comprasResult, contratosResult, proveedoresResult, archivosResult] = await Promise.all([
+    const [usuariosResult, catalogosResult, saneamientosResult, tareasIndividuales, eliminacionesIndividuales, comprasResult, contratosResult, proveedoresResult, archivosResult] = await Promise.all([
       leerModuloSupabaseSiCambio("usuarios", remoteVersions),
       leerModuloSupabaseSiCambio("catalogos", remoteVersions),
       leerModuloSupabaseSiCambio("saneamientos", remoteVersions),
       leerTareasSupabase(),
+      leerEliminacionesTareasSupabase(),
       leerModuloSupabaseSiCambio("compras", remoteVersions),
       leerModuloSupabaseSiCambio("contratos", remoteVersions),
       leerModuloSupabaseSiCambio("proveedores", remoteVersions),
@@ -997,17 +1055,27 @@ async function restoreModulesFromSupabaseIfNeeded() {
       contratosResult,
       proveedoresResult,
       archivosResult
-    ].some((result) => result.exists) || tareasIndividuales.length;
+    ].some((result) => result.exists) || tareasIndividuales.length || eliminacionesIndividuales.length;
     let changed = false;
     changed = applySupabaseModuleSnapshot("usuarios", usuarios) || changed;
     changed = applySupabaseModuleSnapshot("catalogos", catalogos) || changed;
     changed = applySupabaseModuleSnapshot("saneamientos", saneamientos) || changed;
-    if (tareasIndividuales.length) {
-      const before = JSON.stringify((state.tasks || []).map((task) => [task.id, task.updatedAt, task.status, task.legalUserId, task.completedAt]));
-      const mergedChanges = mergeTaskChanges(state.tasks || [], tareasIndividuales, state.taskDeletions || []);
+    if (tareasIndividuales.length || eliminacionesIndividuales.length) {
+      const before = JSON.stringify({
+        tasks: (state.tasks || []).map((task) => [task.id, task.updatedAt, task.status, task.legalUserId, task.completedAt]),
+        deletions: (state.taskDeletions || []).map((item) => [item.id, item.deletedAt, item.updatedAt])
+      });
+      const mergedChanges = mergeTaskChanges(
+        state.tasks || [],
+        [...tareasIndividuales, ...eliminacionesIndividuales],
+        state.taskDeletions || []
+      );
       state.tasks = mergedChanges.tasks;
       state.taskDeletions = mergedChanges.deletions;
-      const after = JSON.stringify((state.tasks || []).map((task) => [task.id, task.updatedAt, task.status, task.legalUserId, task.completedAt]));
+      const after = JSON.stringify({
+        tasks: (state.tasks || []).map((task) => [task.id, task.updatedAt, task.status, task.legalUserId, task.completedAt]),
+        deletions: (state.taskDeletions || []).map((item) => [item.id, item.deletedAt, item.updatedAt])
+      });
       changed = before !== after || changed;
     }
     changed = applySupabaseModuleSnapshot("compras", compras) || changed;
