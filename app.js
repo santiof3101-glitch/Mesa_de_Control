@@ -340,6 +340,7 @@ const adminDateTo = document.querySelector("#adminDateTo");
 const clearAdminFilters = document.querySelector("#clearAdminFilters");
 const adminLeadsList = document.querySelector("#adminLeadsList");
 const adminLeadCount = document.querySelector("#adminLeadCount");
+const reconcileAdminLeadsBtn = document.querySelector("#reconcileAdminLeadsBtn");
 const adminLeadModal = document.querySelector("#adminLeadModal");
 const adminLeadForm = document.querySelector("#adminLeadForm");
 const adminLeadModalTitle = document.querySelector("#adminLeadModalTitle");
@@ -729,10 +730,10 @@ async function leerModuloSupabaseSiCambio(modulo, remoteVersions, tipo = "base")
   return { snapshot, exists: true, changed: true };
 }
 
-async function leerTareasSupabase() {
+async function leerTareasSupabase(forceFull = false) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return [];
-  const incremental = Boolean(supabaseTaskCursor);
-  const cursorFilter = supabaseTaskCursor
+  const incremental = Boolean(supabaseTaskCursor) && !forceFull;
+  const cursorFilter = incremental
     ? `&created_at=gt.${encodeURIComponent(supabaseTaskCursor)}`
     : "";
   const order = incremental ? "asc" : "desc";
@@ -757,6 +758,36 @@ async function leerTareasSupabase() {
   } catch (error) {
     console.warn("No se pudieron leer tareas individuales de Supabase:", error);
     return [];
+  }
+}
+
+async function reconcileAdminLeadsFromSupabase() {
+  if (session.role !== "admin" || !reconcileAdminLeadsBtn) return;
+  const previousText = reconcileAdminLeadsBtn.textContent;
+  reconcileAdminLeadsBtn.disabled = true;
+  reconcileAdminLeadsBtn.textContent = "Conciliando...";
+  try {
+    const beforeIds = new Set((state.tasks || []).map((task) => task.id));
+    const remoteChanges = await leerTareasSupabase(true);
+    if (!remoteChanges.length) {
+      showToast("Supabase no devolvio leads para conciliar.");
+      return;
+    }
+    const mergedChanges = mergeTaskChanges(state.tasks || [], remoteChanges, state.taskDeletions || []);
+    state.tasks = mergedChanges.tasks;
+    state.taskDeletions = mergedChanges.deletions;
+    const recovered = state.tasks.filter((task) => !beforeIds.has(task.id)).length;
+    saveState();
+    renderAll();
+    showToast(recovered
+      ? `${recovered} lead(s) remoto(s) recuperado(s). Ya puede revisarlos y borrarlos.`
+      : "La lista ya estaba conciliada con Supabase.");
+  } catch (error) {
+    console.warn("No se pudieron conciliar los leads:", error);
+    showToast("No se pudo conciliar. Revise la conexion e intente nuevamente.");
+  } finally {
+    reconcileAdminLeadsBtn.disabled = false;
+    reconcileAdminLeadsBtn.textContent = previousText;
   }
 }
 
@@ -9725,6 +9756,10 @@ if (adminLeadForm) {
     event.preventDefault();
     saveAdminLead(adminLeadForm.elements.id.value, adminLeadForm);
   });
+}
+
+if (reconcileAdminLeadsBtn) {
+  reconcileAdminLeadsBtn.addEventListener("click", reconcileAdminLeadsFromSupabase);
 }
 
 if (exportDataBtn) exportDataBtn.addEventListener("click", exportDataBackup);
