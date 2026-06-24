@@ -905,6 +905,7 @@
             Observaciones
             <textarea name="observaciones" rows="4" required></textarea>
           </label>
+          <div id="purchaseCustomFields" class="form-custom-fields span-2"></div>
           <div class="form-actions span-2">
             <button type="reset" class="btn secondary">Limpiar</button>
             <button type="submit" class="btn primary">Enviar a control legal</button>
@@ -951,6 +952,7 @@
             Correo
             <input name="correo" type="email" required>
           </label>
+          <div id="saleCustomFields" class="form-custom-fields span-2"></div>
           <div class="form-actions span-2">
             <button type="reset" class="btn secondary">Limpiar</button>
             <button type="submit" class="btn primary">Enviar contrato a mesa</button>
@@ -1042,6 +1044,10 @@
         <button class="admin-module-card" type="button" data-admin-module="admin-catalogs-module">
           <strong>Catalogos</strong>
           <span>Tipos, saneamientos y estatus</span>
+        </button>
+        <button class="admin-module-card" type="button" data-admin-module="admin-forms-module">
+          <strong>Formularios</strong>
+          <span>Campos de compra y venta</span>
         </button>
         <button class="admin-module-card" type="button" data-admin-module="admin-design-module">
           <strong>Diseno</strong>
@@ -1250,6 +1256,35 @@
           <div id="statusOptionsList" class="option-list"></div>
         </section>
 
+        <section id="admin-forms-module" class="panel span-admin admin-module-section" data-admin-section="admin-forms-module">
+          <div class="panel-title-row">
+            <div>
+              <p class="eyebrow">Administracion operativa</p>
+              <h2>Configuracion de formularios</h2>
+            </div>
+            <select id="adminFormProcessSelect" aria-label="Formulario a configurar">
+              <option value="compra">Formulario de compra</option>
+              <option value="venta">Formulario de venta</option>
+            </select>
+          </div>
+          <p class="helper-text">Cambia etiquetas, obligatoriedad y visibilidad. Los campos personalizados apareceran tambien en la ficha de Mesa de Control.</p>
+          <div id="adminFormFieldsList" class="form-builder-list"></div>
+          <form id="customFormFieldForm" class="form-builder-add">
+            <input name="label" placeholder="Nombre del nuevo campo" required>
+            <select name="type">
+              <option value="text">Texto</option>
+              <option value="number">Numero</option>
+              <option value="date">Fecha</option>
+              <option value="email">Correo</option>
+              <option value="textarea">Texto largo</option>
+              <option value="select">Lista de opciones</option>
+            </select>
+            <input name="options" placeholder="Opciones separadas por coma">
+            <label class="check-row"><input name="required" type="checkbox"> Obligatorio</label>
+            <button class="btn primary" type="submit">Agregar campo</button>
+          </form>
+        </section>
+
         <section class="panel span-admin admin-module-section" data-admin-section="admin-commercial-module">
           <div class="panel-title-row">
             <div>
@@ -1438,7 +1473,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260623-legal-full-detail"></script>
+  <script src="app.js?v=20260623-form-admin"></script>
 </body>
 </html>
 
