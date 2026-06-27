@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260627-legal-mailboxes";
+const APP_BUILD_VERSION = "20260627-legal-availability-chat";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -213,8 +213,8 @@ const defaultState = {
     { id: "comercial-3", name: "Asesor comercial 3", agency: "Sucursal Sur", username: "comercial3", password: "Comercial123" }
   ],
   legalUsers: [
-    { id: "legal-1", name: "Asistente legal 1", username: "legal1", password: "Legal123", mailboxes: ["saneamientos"] },
-    { id: "legal-2", name: "Asistente legal 2", username: "legal2", password: "Legal123", mailboxes: ["saneamientos", "contratos"] }
+    { id: "legal-1", name: "Asistente legal 1", username: "legal1", password: "Legal123", mailboxes: ["saneamientos"], legalAvailable: true },
+    { id: "legal-2", name: "Asistente legal 2", username: "legal2", password: "Legal123", mailboxes: ["saneamientos", "contratos"], legalAvailable: true }
   ],
   managerUsers: [
     { id: "gerente-1", name: "Gerente general", username: "gerente1", password: "Gerente123" }
@@ -239,6 +239,7 @@ const defaultState = {
     ]
   },
   taskDeletions: [],
+  legalChatMessages: [],
   tasks: []
 };
 
@@ -345,6 +346,11 @@ const adminLoginForm = document.querySelector("#adminLoginForm");
 const managerLoginForm = document.querySelector("#managerLoginForm");
 const commercialPasswordForm = document.querySelector("#commercialPasswordForm");
 const legalPasswordForm = document.querySelector("#legalPasswordForm");
+const legalAvailabilityToggle = document.querySelector("#legalAvailabilityToggle");
+const legalAvailabilityStatus = document.querySelector("#legalAvailabilityStatus");
+const legalChatForm = document.querySelector("#legalChatForm");
+const legalChatInput = document.querySelector("#legalChatInput");
+const legalChatList = document.querySelector("#legalChatList");
 const userForm = document.querySelector("#userForm");
 const managerUserForm = document.querySelector("#managerUserForm");
 const logoInput = document.querySelector("#logoInput");
@@ -557,12 +563,14 @@ function loadState() {
         name,
         username: `legal${index + 1}`,
         password: "Legal123",
-        mailboxes: ["saneamientos"]
+        mailboxes: ["saneamientos"],
+        legalAvailable: true
       }));
     }
     merged.commercialAdvisors = normalizeCommercialAdvisors(merged.commercialAdvisors || []);
     merged.legalUsers = normalizeLegalUsers(merged.legalUsers || []);
     merged.announcements = merged.announcements || [];
+    merged.legalChatMessages = normalizeLegalChatMessages(merged.legalChatMessages || []);
     merged.theme = { ...structuredClone(defaultState.theme), ...(merged.theme || {}) };
     merged.copy = { ...structuredClone(defaultState.copy), ...(merged.copy || {}) };
     sanitizeStateVisuals(merged);
@@ -1099,7 +1107,8 @@ function getSupabaseModuleSnapshots() {
       formConfig: structuredClone(state.formConfig || DEFAULT_FORM_CONFIG)
     },
     saneamientos: {
-      announcements: structuredClone(state.announcements || [])
+      announcements: structuredClone(state.announcements || []),
+      legalChatMessages: structuredClone(normalizeLegalChatMessages(state.legalChatMessages || []))
     },
     compras: {
       compras: structuredClone(processing.compras || []),
@@ -1311,6 +1320,7 @@ function applySupabaseModuleSnapshot(modulo, snapshot) {
         state.taskDeletions = mergedChanges.deletions;
       }
       state.announcements = Array.isArray(snapshot.announcements) ? snapshot.announcements : (state.announcements || []);
+      state.legalChatMessages = mergeLegalChatMessages(state.legalChatMessages || [], snapshot.legalChatMessages || []);
       return true;
     case "compras":
       processing.compras = (snapshot.compras || []).map(normalizePurchaseRecord);
@@ -1408,8 +1418,9 @@ function mergePcStates(baseState, extraState) {
   const extraProcessing = extraState.dataProcessing || {};
   merged.tasks = mergeByKey(merged.tasks || [], extraState.tasks || [], "id");
   merged.announcements = mergeByKey(merged.announcements || [], extraState.announcements || [], "id");
+  merged.legalChatMessages = mergeLegalChatMessages(merged.legalChatMessages || [], extraState.legalChatMessages || []);
   merged.commercialAdvisors = mergeByKey(merged.commercialAdvisors || [], extraState.commercialAdvisors || [], "id");
-  merged.legalUsers = mergeByKey(merged.legalUsers || [], extraState.legalUsers || [], "id");
+  merged.legalUsers = normalizeLegalUsers(mergeByKey(merged.legalUsers || [], extraState.legalUsers || [], "id"));
   merged.managerUsers = mergeByKey(merged.managerUsers || [], extraState.managerUsers || [], "id");
   merged.taskDeletions = mergeByKey(merged.taskDeletions || [], extraState.taskDeletions || [], "id");
   merged.tasks = (merged.tasks || []).filter((task) =>
@@ -1617,7 +1628,8 @@ function normalizeLegalUsers(users = []) {
         name: user,
         username: `legal${index + 1}`,
         password: "Legal123",
-        mailboxes: ["saneamientos"]
+        mailboxes: ["saneamientos"],
+        legalAvailable: true
       };
     }
     return {
@@ -1625,7 +1637,8 @@ function normalizeLegalUsers(users = []) {
       name: user.name || `Asistente legal ${index + 1}`,
       username: user.username || `legal${index + 1}`,
       password: user.password || "Legal123",
-      mailboxes: normalizeLegalMailboxes(user.mailboxes || user.profiles || user.buzones || user.profile)
+      mailboxes: normalizeLegalMailboxes(user.mailboxes || user.profiles || user.buzones || user.profile),
+      legalAvailable: user.legalAvailable !== false
     };
   }).filter((user) => user.name && user.username);
 }
@@ -2213,6 +2226,7 @@ function normalizeImportedState(importedState) {
   merged.commercialAdvisors = normalizeCommercialAdvisors(merged.commercialAdvisors || []);
   merged.legalUsers = normalizeLegalUsers(merged.legalUsers || []);
   merged.announcements = merged.announcements || [];
+  merged.legalChatMessages = normalizeLegalChatMessages(merged.legalChatMessages || []);
   merged.theme = { ...structuredClone(defaultState.theme), ...(merged.theme || {}) };
   merged.copy = { ...structuredClone(defaultState.copy), ...(merged.copy || {}) };
   sanitizeStateVisuals(merged);
@@ -3150,7 +3164,8 @@ function createUser(data) {
     name: data.name.trim(),
     username,
     password,
-    mailboxes
+    mailboxes,
+    legalAvailable: true
   });
   saveState();
   autoAssignOpenSaneamientos();
@@ -3202,6 +3217,7 @@ function renderUsers() {
         <strong>${escapeHtml(user.name)}</strong>
         <span>Usuario: ${escapeHtml(user.username)}</span>
         <small>Buzones: ${mailboxes.map((mailbox) => LEGAL_MAILBOXES.find((entry) => entry.id === mailbox)?.label || mailbox).join(", ")}</small>
+        <small>Estado: ${user.legalAvailable === false ? "No disponible para saneamientos" : "Disponible para saneamientos"}</small>
       </div>
       <div class="row-actions">
         <div class="mailbox-picker is-inline">
@@ -3257,6 +3273,107 @@ function updateLegalUserMailboxes(id, mailboxes) {
   guardarUsuariosSupabaseAhora();
   renderAll();
   showToast("Buzones del asistente actualizados.");
+}
+
+function normalizeLegalChatMessages(messages = []) {
+  return (Array.isArray(messages) ? messages : [])
+    .filter((message) => message && (message.text || message.message))
+    .map((message) => ({
+      id: message.id || crypto.randomUUID(),
+      text: String(message.text || message.message || "").trim().slice(0, 280),
+      userId: message.userId || "",
+      userName: message.userName || message.author || "Mesa de control",
+      createdAt: message.createdAt || new Date().toISOString()
+    }))
+    .filter((message) => message.text)
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+    .slice(-120);
+}
+
+function mergeLegalChatMessages(local = [], remote = []) {
+  const map = new Map();
+  [...normalizeLegalChatMessages(local), ...normalizeLegalChatMessages(remote)].forEach((message) => {
+    map.set(message.id, message);
+  });
+  return [...map.values()]
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+    .slice(-120);
+}
+
+function renderLegalAvailability() {
+  const user = currentLegalUser();
+  if (!legalAvailabilityStatus || !legalAvailabilityToggle) return;
+  if (session.role !== "legal" || !user) {
+    legalAvailabilityStatus.textContent = session.role === "admin" ? "Vista administrador" : "Sin sesion legal";
+    legalAvailabilityToggle.hidden = true;
+    return;
+  }
+  const available = user.legalAvailable !== false;
+  legalAvailabilityToggle.hidden = false;
+  legalAvailabilityStatus.textContent = available ? "Disponible para recibir saneamientos" : "No disponible";
+  legalAvailabilityStatus.className = available ? "is-available" : "is-unavailable";
+  legalAvailabilityToggle.textContent = available ? "Ponerme no disponible" : "Ponerme disponible";
+  legalAvailabilityToggle.classList.toggle("danger-soft", available);
+}
+
+function renderLegalChat() {
+  if (!legalChatList) return;
+  state.legalChatMessages = normalizeLegalChatMessages(state.legalChatMessages || []);
+  const messages = state.legalChatMessages.slice(-40);
+  if (!canOpenTasks()) {
+    legalChatList.innerHTML = `<div class="empty compact-empty">Ingrese como mesa de control para ver el chat.</div>`;
+    return;
+  }
+  if (!messages.length) {
+    legalChatList.innerHTML = `<div class="empty compact-empty">Aun no hay mensajes internos.</div>`;
+    return;
+  }
+  legalChatList.innerHTML = messages.map((message) => {
+    const mine = session.role === "legal" && message.userId === session.userId;
+    return `
+      <article class="legal-chat-message ${mine ? "is-mine" : ""}">
+        <div>
+          <strong>${escapeHtml(message.userName || "Mesa de control")}</strong>
+          <span>${formatDateTime(message.createdAt)}</span>
+        </div>
+        <p>${escapeHtml(message.text)}</p>
+      </article>
+    `;
+  }).join("");
+  legalChatList.scrollTop = legalChatList.scrollHeight;
+}
+
+function sendLegalChatMessage(text) {
+  if (!canOpenTasks()) return;
+  const clean = String(text || "").trim();
+  if (!clean) return;
+  state.legalChatMessages = normalizeLegalChatMessages([
+    ...(state.legalChatMessages || []),
+    {
+      id: crypto.randomUUID(),
+      text: clean,
+      userId: session.userId || "",
+      userName: session.name || session.role || "Mesa de control",
+      createdAt: new Date().toISOString()
+    }
+  ]);
+  saveState();
+  scheduleSupabaseModuleSync();
+  renderLegalChat();
+}
+
+function toggleLegalAvailability() {
+  const user = currentLegalUser();
+  if (!user) return;
+  user.legalAvailable = user.legalAvailable === false;
+  saveState();
+  if (user.legalAvailable !== false) autoAssignOpenSaneamientos();
+  guardarUsuariosSupabaseAhora();
+  renderAll();
+  showToast(user.legalAvailable === false
+    ? "Quedaste no disponible. No se te asignaran nuevos saneamientos."
+    : "Quedaste disponible. Podras recibir nuevos saneamientos."
+  );
 }
 
 function changePassword(collection, id, password) {
@@ -4027,13 +4144,18 @@ function currentLegalUser() {
 function canLegalUserSeeTask(task = {}, user = currentLegalUser()) {
   if (session.role === "admin") return true;
   if (!user) return false;
-  if (!userHasMailbox(user, getTaskMailbox(task))) return false;
+  const mailbox = getTaskMailbox(task);
+  if (!userHasMailbox(user, mailbox)) return false;
+  if (mailbox === "saneamientos" && !task.legalUserId && user.legalAvailable === false) return false;
   return !task.legalUserId || task.legalUserId === user.id;
 }
 
 function getEligibleLegalUsersForTask(task = {}) {
   const mailbox = getTaskMailbox(task);
-  return normalizeLegalUsers(state.legalUsers || []).filter((user) => userHasMailbox(user, mailbox));
+  return normalizeLegalUsers(state.legalUsers || []).filter((user) =>
+    userHasMailbox(user, mailbox) &&
+    (mailbox !== "saneamientos" || user.legalAvailable !== false)
+  );
 }
 
 function getLegalUserActiveLoad(userId, mailbox = "") {
@@ -10086,6 +10208,8 @@ function renderAll() {
   renderAdminLeads();
   renderCommercialDashboard();
   renderControlDashboard();
+  renderLegalAvailability();
+  renderLegalChat();
   renderManagerDashboard();
   renderPurchaseProcessing();
   renderContractProcessing();
@@ -10375,6 +10499,16 @@ legalPasswordForm.addEventListener("submit", (event) => {
   event.preventDefault();
   changeOwnPassword("legalUsers", new FormData(legalPasswordForm).get("password"));
   legalPasswordForm.reset();
+});
+
+legalAvailabilityToggle?.addEventListener("click", () => {
+  toggleLegalAvailability();
+});
+
+legalChatForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  sendLegalChatMessage(legalChatInput?.value || "");
+  if (legalChatInput) legalChatInput.value = "";
 });
 
 userForm.addEventListener("submit", (event) => {
