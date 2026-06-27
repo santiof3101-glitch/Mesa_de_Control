@@ -5464,15 +5464,20 @@ textarea:focus {
   font-size: 0.78rem;
 }
 
-.legal-chat-head i {
+.legal-chat-recipient {
+  display: grid;
+  grid-template-columns: minmax(140px, 190px) minmax(150px, 220px);
+  gap: 8px;
   margin-left: auto;
-  padding: 5px 9px;
+  align-items: center;
+}
+
+.legal-chat-recipient input,
+.legal-chat-recipient select {
+  min-height: 38px;
   border-radius: 999px;
-  color: #16805a;
-  background: #e8f7f1;
-  font-size: 0.76rem;
-  font-style: normal;
-  font-weight: 800;
+  background: #f1f3f6;
+  font-size: 0.84rem;
 }
 
 .legal-chat-avatar,
@@ -5557,6 +5562,27 @@ textarea:focus {
   color: inherit;
   font-size: 0.88rem;
   line-height: 1.36;
+}
+
+.chat-delete-btn {
+  display: block;
+  width: fit-content;
+  margin-top: 5px;
+  padding: 0;
+  border: 0;
+  color: var(--muted);
+  background: transparent;
+  font-size: 0.68rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.legal-chat-message.is-mine .chat-delete-btn {
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.chat-delete-btn:hover {
+  text-decoration: underline;
 }
 
 .legal-chat-form {
