@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260627-direct-chat";
+const APP_BUILD_VERSION = "20260627-legal-desk-layout";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -353,6 +353,8 @@ const legalChatInput = document.querySelector("#legalChatInput");
 const legalChatList = document.querySelector("#legalChatList");
 const legalChatRecipientSearch = document.querySelector("#legalChatRecipientSearch");
 const legalChatRecipientSelect = document.querySelector("#legalChatRecipientSelect");
+const legalSidebarFilterButtons = document.querySelectorAll("[data-legal-sidebar-filter]");
+const legalSidebarNavButtons = document.querySelectorAll("[data-legal-scroll]");
 const userForm = document.querySelector("#userForm");
 const managerUserForm = document.querySelector("#managerUserForm");
 const logoInput = document.querySelector("#logoInput");
@@ -3787,6 +3789,7 @@ function isInsideDateRange(value, from, to) {
 }
 
 function renderTasks() {
+  syncLegalSidebarFilters();
   const visiblePool = state.tasks.filter((task) => canLegalUserSeeTask(task));
   const pendingTasks = visiblePool.filter((task) => !isClosedStatus(task.status));
   if (queueCount) queueCount.textContent = pendingTasks.length;
@@ -3875,6 +3878,12 @@ function renderTasks() {
     statusSelect.value = task.status;
     statusSelect.addEventListener("change", () => updateTaskStatus(task.id, statusSelect.value));
     taskList.appendChild(card);
+  });
+}
+
+function syncLegalSidebarFilters() {
+  legalSidebarFilterButtons.forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.legalSidebarFilter === activeFilter);
   });
 }
 
@@ -10469,6 +10478,23 @@ filterButtons.forEach((button) => {
     activeFilter = button.dataset.filter;
     filterButtons.forEach((item) => item.classList.toggle("is-active", item === button));
     renderTasks();
+  });
+});
+
+legalSidebarFilterButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    activeFilter = button.dataset.legalSidebarFilter;
+    renderTasks();
+  });
+});
+
+legalSidebarNavButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const target = document.querySelector(`#${button.dataset.legalScroll}`);
+    legalSidebarNavButtons.forEach((item) => item.classList.toggle("is-active", item === button));
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   });
 });
 
