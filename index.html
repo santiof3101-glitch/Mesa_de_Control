@@ -1,5 +1,5 @@
 ﻿<!doctype html>
-<html lang="es" data-app-version="20260627-direct-chat">
+<html lang="es" data-app-version="20260627-legal-desk-layout">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -7,7 +7,7 @@
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Autocor | Control Legal</title>
-  <link rel="stylesheet" href="styles.css?v=20260627-direct-chat">
+  <link rel="stylesheet" href="styles.css?v=20260627-legal-desk-layout">
 </head>
 <body>
   <header class="topbar">
@@ -977,32 +977,88 @@
       </div>
     </section>
 
-    <section id="tareas" class="view" aria-labelledby="tasks-title">
-        <div class="section-head">
-        <div>
-          <p class="eyebrow" id="legalSessionLabel">Asistente de control legal</p>
-          <h1 id="tasks-title">Repositorio de tareas</h1>
+    <section id="tareas" class="view legal-desk" aria-labelledby="tasks-title">
+      <aside class="legal-sidebar">
+        <div class="legal-sidebar-brand">
+          <span class="legal-sidebar-icon">📋</span>
+          <strong>Repositorio de tareas</strong>
         </div>
-        <div id="statusFilterButtons" class="filters" role="group" aria-label="Filtros de tareas"></div>
-      </div>
-      <section class="panel control-dashboard">
-        <div>
-          <p class="eyebrow">Mesa de control</p>
-          <h2>Resumen operativo</h2>
+        <nav class="legal-sidebar-nav" aria-label="Mesa de control">
+          <button class="is-active" type="button" data-legal-scroll="tasks-title">Repositorio de tareas</button>
+          <button type="button" data-legal-scroll="legalControlSummary">Mesa de control</button>
+          <button type="button" data-legal-scroll="legalPasswordForm">Contrasenas</button>
+          <button type="button" data-legal-scroll="taskList">Reportes</button>
+          <button type="button" data-legal-scroll="legalAvailabilityBlock">Configuracion</button>
+        </nav>
+        <div class="legal-sidebar-filters">
+          <span>Filtros rapidos</span>
+          <button class="is-active" type="button" data-legal-sidebar-filter="todos">Todos</button>
+          <button type="button" data-legal-sidebar-filter="por asignar">Por asignar</button>
+          <button type="button" data-legal-sidebar-filter="pendiente">Pendiente</button>
+          <button type="button" data-legal-sidebar-filter="tomado">Tomado</button>
+          <button type="button" data-legal-sidebar-filter="rechazado por saneamiento">Rechazado por saneamiento</button>
+          <button type="button" data-legal-sidebar-filter="saneamiento realizado y subido a pilot">Saneamiento realizado</button>
         </div>
-        <form id="legalPasswordForm" class="password-form">
-          <input name="password" type="password" placeholder="Nueva contrasena" required>
-          <button class="btn secondary" type="submit">Cambiar mi clave</button>
-        </form>
-        <div class="availability-panel">
+        <div class="legal-sidebar-user">
+          <span>SO</span>
           <div>
-            <span>Estado de asignacion</span>
-            <strong id="legalAvailabilityStatus">Disponible</strong>
+            <strong>Mesa de control</strong>
+            <small>Equipo legal</small>
           </div>
-          <button id="legalAvailabilityToggle" class="btn secondary" type="button">Cambiar disponibilidad</button>
         </div>
-        <div id="controlKpis" class="kpi-grid compact-kpis"></div>
-      </section>
+      </aside>
+
+      <div class="legal-main">
+        <div class="section-head legal-task-head">
+          <div>
+            <p class="eyebrow" id="legalSessionLabel">Asistente de control legal</p>
+            <h1 id="tasks-title">Repositorio de tareas</h1>
+            <span>Gestiona y da seguimiento a las tareas del proceso legal.</span>
+          </div>
+          <div id="statusFilterButtons" class="filters" role="group" aria-label="Filtros de tareas"></div>
+        </div>
+
+        <section id="legalControlSummary" class="panel control-dashboard">
+          <div>
+            <p class="eyebrow">Mesa de control</p>
+            <h2>Resumen operativo</h2>
+          </div>
+          <form id="legalPasswordForm" class="password-form" data-legal-anchor="legalPasswordBlock">
+            <input name="password" type="password" placeholder="Nueva contrasena" required>
+            <button class="btn secondary" type="submit">Cambiar mi clave</button>
+          </form>
+          <div id="legalAvailabilityBlock" class="availability-panel">
+            <div>
+              <span>Estado de asignacion</span>
+              <strong id="legalAvailabilityStatus">Disponible</strong>
+            </div>
+            <button id="legalAvailabilityToggle" class="btn secondary" type="button">Cambiar disponibilidad</button>
+          </div>
+          <div id="controlKpis" class="kpi-grid compact-kpis"></div>
+        </section>
+
+        <div class="task-toolbar panel">
+          <label>
+            Buscador general
+            <input id="taskSearch" type="search" placeholder="Buscar por placa, cedula, cliente, asesor, ciudad">
+          </label>
+          <label>
+            Desde
+            <input id="taskDateFrom" type="date">
+          </label>
+          <label>
+            Hasta
+            <input id="taskDateTo" type="date">
+          </label>
+          <div class="mini-kpis">
+            <span><strong id="visibleTaskCount">0</strong> visibles</span>
+            <span><strong id="unassignedTaskCount">0</strong> disponibles</span>
+            <span><strong id="avgLeadTime">0 min</strong> promedio</span>
+          </div>
+        </div>
+        <div id="taskList" class="task-list"></div>
+      </div>
+
       <section class="panel legal-chat-panel">
         <div class="legal-chat-head">
           <div class="legal-chat-avatar">MC</div>
@@ -1018,30 +1074,10 @@
         </div>
         <div id="legalChatList" class="legal-chat-list"></div>
         <form id="legalChatForm" class="legal-chat-form">
-          <input id="legalChatInput" name="message" placeholder="Escribe un mensaje para mesa de control" autocomplete="off" maxlength="280">
+          <input id="legalChatInput" name="message" placeholder="Escribe un mensaje..." autocomplete="off" maxlength="280">
           <button class="btn primary" type="submit" aria-label="Enviar mensaje">Enviar</button>
         </form>
       </section>
-      <div class="task-toolbar panel">
-        <label>
-          Buscador general
-          <input id="taskSearch" type="search" placeholder="Buscar por placa, cedula, cliente, asesor, ciudad">
-        </label>
-        <label>
-          Desde
-          <input id="taskDateFrom" type="date">
-        </label>
-        <label>
-          Hasta
-          <input id="taskDateTo" type="date">
-        </label>
-        <div class="mini-kpis">
-          <span><strong id="visibleTaskCount">0</strong> visibles</span>
-          <span><strong id="unassignedTaskCount">0</strong> disponibles</span>
-          <span><strong id="avgLeadTime">0 min</strong> promedio</span>
-        </div>
-      </div>
-      <div id="taskList" class="task-list"></div>
     </section>
 
     <section id="admin" class="view" aria-labelledby="admin-title">
@@ -1524,7 +1560,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260627-direct-chat"></script>
+  <script src="app.js?v=20260627-legal-desk-layout"></script>
 </body>
 </html>
 
