@@ -1,5 +1,5 @@
 ﻿<!doctype html>
-<html lang="es" data-app-version="20260627-legal-availability-chat">
+<html lang="es" data-app-version="20260627-messenger-chat">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -7,7 +7,7 @@
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Autocor | Control Legal</title>
-  <link rel="stylesheet" href="styles.css?v=20260627-legal-availability-chat">
+  <link rel="stylesheet" href="styles.css?v=20260627-messenger-chat">
 </head>
 <body>
   <header class="topbar">
@@ -1004,17 +1004,19 @@
         <div id="controlKpis" class="kpi-grid compact-kpis"></div>
       </section>
       <section class="panel legal-chat-panel">
-        <div class="mini-list-head">
+        <div class="legal-chat-head">
+          <div class="legal-chat-avatar">MC</div>
           <div>
             <p class="eyebrow">Chat interno</p>
             <h2>Mesa de control</h2>
+            <span>Canal privado del equipo legal</span>
           </div>
-          <span>Equipo legal</span>
+          <i>En linea</i>
         </div>
         <div id="legalChatList" class="legal-chat-list"></div>
         <form id="legalChatForm" class="legal-chat-form">
           <input id="legalChatInput" name="message" placeholder="Escribe un mensaje para mesa de control" autocomplete="off" maxlength="280">
-          <button class="btn primary" type="submit">Enviar</button>
+          <button class="btn primary" type="submit" aria-label="Enviar mensaje">Enviar</button>
         </form>
       </section>
       <div class="task-toolbar panel">
@@ -1519,7 +1521,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260627-legal-availability-chat"></script>
+  <script src="app.js?v=20260627-messenger-chat"></script>
 </body>
 </html>
 
