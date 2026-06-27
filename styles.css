@@ -5560,6 +5560,44 @@ textarea:focus {
   margin-top: 14px;
 }
 
+.mailbox-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.mailbox-picker label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid rgba(239, 61, 53, 0.22);
+  border-radius: 8px;
+  background: #fff6f5;
+  color: var(--dark);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.mailbox-picker input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--primary);
+}
+
+.mailbox-picker.is-inline {
+  justify-content: flex-end;
+}
+
+.user-row small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
 .option-list {
   display: flex;
   flex-wrap: wrap;
