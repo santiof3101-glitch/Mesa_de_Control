@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260627-messenger-chat";
+const APP_BUILD_VERSION = "20260627-direct-chat";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -351,6 +351,8 @@ const legalAvailabilityStatus = document.querySelector("#legalAvailabilityStatus
 const legalChatForm = document.querySelector("#legalChatForm");
 const legalChatInput = document.querySelector("#legalChatInput");
 const legalChatList = document.querySelector("#legalChatList");
+const legalChatRecipientSearch = document.querySelector("#legalChatRecipientSearch");
+const legalChatRecipientSelect = document.querySelector("#legalChatRecipientSelect");
 const userForm = document.querySelector("#userForm");
 const managerUserForm = document.querySelector("#managerUserForm");
 const logoInput = document.querySelector("#logoInput");
@@ -3283,21 +3285,94 @@ function normalizeLegalChatMessages(messages = []) {
       text: String(message.text || message.message || "").trim().slice(0, 280),
       userId: message.userId || "",
       userName: message.userName || message.author || "Mesa de control",
-      createdAt: message.createdAt || new Date().toISOString()
+      recipientUserId: message.recipientUserId || "",
+      recipientUserName: message.recipientUserName || "",
+      conversationKey: message.conversationKey || buildLegalChatConversationKey(message.userId || "", message.recipientUserId || ""),
+      createdAt: message.createdAt || new Date().toISOString(),
+      updatedAt: message.updatedAt || message.createdAt || new Date().toISOString(),
+      deleted: Boolean(message.deleted),
+      deletedAt: message.deletedAt || "",
+      deletedBy: message.deletedBy || ""
     }))
     .filter((message) => message.text)
     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-    .slice(-120);
+    .slice(-240);
 }
 
 function mergeLegalChatMessages(local = [], remote = []) {
   const map = new Map();
   [...normalizeLegalChatMessages(local), ...normalizeLegalChatMessages(remote)].forEach((message) => {
-    map.set(message.id, message);
+    const existing = map.get(message.id);
+    if (!existing || new Date(message.updatedAt || message.createdAt) >= new Date(existing.updatedAt || existing.createdAt)) {
+      map.set(message.id, message);
+    }
   });
   return [...map.values()]
     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-    .slice(-120);
+    .slice(-240);
+}
+
+function getCurrentChatUser() {
+  if (session.role === "legal") {
+    return { id: session.userId || "", name: session.name || "Asistente legal", role: "legal" };
+  }
+  if (session.role === "admin") {
+    return { id: "admin", name: "Administrador", role: "admin" };
+  }
+  return { id: "", name: "", role: session.role || "public" };
+}
+
+function getLegalChatUsers() {
+  const users = normalizeLegalUsers(state.legalUsers || []).map((user) => ({
+    id: user.id,
+    name: user.name,
+    role: "legal"
+  }));
+  return [{ id: "admin", name: "Administrador", role: "admin" }, ...users];
+}
+
+function buildLegalChatConversationKey(userA = "", userB = "") {
+  return [String(userA || ""), String(userB || "")].sort().join("::");
+}
+
+function getSelectedLegalChatRecipient() {
+  const current = getCurrentChatUser();
+  const users = getLegalChatUsers().filter((user) => user.id !== current.id);
+  const selectedId = legalChatRecipientSelect?.value || "";
+  return users.find((user) => user.id === selectedId) || users[0] || null;
+}
+
+function renderLegalChatRecipients() {
+  if (!legalChatRecipientSelect) return;
+  const current = getCurrentChatUser();
+  const search = (legalChatRecipientSearch?.value || "").trim().toLowerCase();
+  const previous = legalChatRecipientSelect.value;
+  const users = getLegalChatUsers()
+    .filter((user) => user.id !== current.id)
+    .filter((user) => !search || `${user.name} ${user.role}`.toLowerCase().includes(search));
+  legalChatRecipientSelect.innerHTML = users.length
+    ? users.map((user) => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)}${user.role === "admin" ? " | Admin" : ""}</option>`).join("")
+    : `<option value="">Sin usuarios</option>`;
+  legalChatRecipientSelect.value = users.some((user) => user.id === previous) ? previous : users[0]?.id || "";
+}
+
+function deleteLegalChatMessage(id) {
+  const message = (state.legalChatMessages || []).find((item) => item.id === id);
+  if (!message) return;
+  const current = getCurrentChatUser();
+  const canDelete = session.role === "admin" || message.userId === current.id;
+  if (!canDelete) {
+    showToast("Solo puede eliminar sus mensajes. El administrador puede borrar cualquier mensaje.");
+    return;
+  }
+  message.deleted = true;
+  message.deletedAt = new Date().toISOString();
+  message.deletedBy = current.name || session.role || "Sistema";
+  message.updatedAt = message.deletedAt;
+  saveState();
+  scheduleSupabaseModuleSync();
+  renderLegalChat();
+  showToast("Mensaje eliminado.");
 }
 
 function renderLegalAvailability() {
@@ -3319,21 +3394,33 @@ function renderLegalAvailability() {
 function renderLegalChat() {
   if (!legalChatList) return;
   state.legalChatMessages = normalizeLegalChatMessages(state.legalChatMessages || []);
-  const messages = state.legalChatMessages.slice(-40);
   if (!canOpenTasks()) {
     legalChatList.innerHTML = `<div class="empty compact-empty">Ingrese como mesa de control para ver el chat.</div>`;
     return;
   }
+  renderLegalChatRecipients();
+  const current = getCurrentChatUser();
+  const recipient = getSelectedLegalChatRecipient();
+  if (!recipient) {
+    legalChatList.innerHTML = `<div class="empty compact-empty">No hay usuarios disponibles para chatear.</div>`;
+    return;
+  }
+  const conversationKey = buildLegalChatConversationKey(current.id, recipient.id);
+  const messages = state.legalChatMessages
+    .filter((message) => !message.deleted)
+    .filter((message) => message.conversationKey === conversationKey)
+    .slice(-80);
   if (!messages.length) {
-    legalChatList.innerHTML = `<div class="empty compact-empty">Aun no hay mensajes internos.</div>`;
+    legalChatList.innerHTML = `<div class="empty compact-empty">Aun no hay mensajes con ${escapeHtml(recipient.name)}.</div>`;
     return;
   }
   legalChatList.innerHTML = messages.map((message) => {
-    const mine = session.role === "legal" && message.userId === session.userId;
+    const mine = message.userId === current.id;
+    const canDelete = session.role === "admin" || mine;
     const author = message.userName || "Mesa de control";
     const initials = author.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "MC";
     return `
-      <article class="legal-chat-message ${mine ? "is-mine" : ""}">
+      <article class="legal-chat-message ${mine ? "is-mine" : ""}" data-chat-message="${escapeHtml(message.id)}">
         <span class="chat-avatar">${escapeHtml(initials)}</span>
         <div class="chat-bubble">
           <div class="chat-meta">
@@ -3341,6 +3428,7 @@ function renderLegalChat() {
             <span>${formatDateTime(message.createdAt)}</span>
           </div>
           <p>${escapeHtml(message.text)}</p>
+          ${canDelete ? `<button class="chat-delete-btn" type="button" data-delete-chat-message="${escapeHtml(message.id)}">Eliminar</button>` : ""}
         </div>
       </article>
     `;
@@ -3352,14 +3440,25 @@ function sendLegalChatMessage(text) {
   if (!canOpenTasks()) return;
   const clean = String(text || "").trim();
   if (!clean) return;
+  const current = getCurrentChatUser();
+  const recipient = getSelectedLegalChatRecipient();
+  if (!recipient) {
+    showToast("Seleccione un usuario para enviar el mensaje.");
+    return;
+  }
+  const now = new Date().toISOString();
   state.legalChatMessages = normalizeLegalChatMessages([
     ...(state.legalChatMessages || []),
     {
       id: crypto.randomUUID(),
       text: clean,
-      userId: session.userId || "",
-      userName: session.name || session.role || "Mesa de control",
-      createdAt: new Date().toISOString()
+      userId: current.id,
+      userName: current.name,
+      recipientUserId: recipient.id,
+      recipientUserName: recipient.name,
+      conversationKey: buildLegalChatConversationKey(current.id, recipient.id),
+      createdAt: now,
+      updatedAt: now
     }
   ]);
   saveState();
@@ -10514,6 +10613,20 @@ legalChatForm?.addEventListener("submit", (event) => {
   event.preventDefault();
   sendLegalChatMessage(legalChatInput?.value || "");
   if (legalChatInput) legalChatInput.value = "";
+});
+
+legalChatRecipientSearch?.addEventListener("input", () => {
+  renderLegalChat();
+});
+
+legalChatRecipientSelect?.addEventListener("change", () => {
+  renderLegalChat();
+});
+
+legalChatList?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-delete-chat-message]");
+  if (!button) return;
+  deleteLegalChatMessage(button.dataset.deleteChatMessage);
 });
 
 userForm.addEventListener("submit", (event) => {
