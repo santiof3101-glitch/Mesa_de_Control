@@ -1,5 +1,5 @@
 ﻿<!doctype html>
-<html lang="es" data-app-version="20260624-support-question-fix">
+<html lang="es" data-app-version="20260627-legal-mailboxes">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -7,7 +7,7 @@
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Autocor | Control Legal</title>
-  <link rel="stylesheet" href="styles.css?v=20260624-support-question-fix">
+  <link rel="stylesheet" href="styles.css?v=20260627-legal-mailboxes">
 </head>
 <body>
   <header class="topbar">
@@ -1331,6 +1331,10 @@
             <input name="name" placeholder="Nombre del asistente" required>
             <input name="username" placeholder="Usuario" required>
             <input name="password" type="password" placeholder="Contrasena" required>
+            <div class="mailbox-picker" aria-label="Buzones de tareas">
+              <label><input type="checkbox" name="mailboxes" value="saneamientos" checked> Saneamientos</label>
+              <label><input type="checkbox" name="mailboxes" value="contratos"> Contratos</label>
+            </div>
             <button class="btn primary" type="submit">Crear usuario</button>
           </form>
           <div id="usersList" class="users-list"></div>
@@ -1494,7 +1498,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260624-support-question-fix"></script>
+  <script src="app.js?v=20260627-legal-mailboxes"></script>
 </body>
 </html>
 
