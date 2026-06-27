@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260627-legal-availability-chat";
+const APP_BUILD_VERSION = "20260627-messenger-chat";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -3330,13 +3330,18 @@ function renderLegalChat() {
   }
   legalChatList.innerHTML = messages.map((message) => {
     const mine = session.role === "legal" && message.userId === session.userId;
+    const author = message.userName || "Mesa de control";
+    const initials = author.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "MC";
     return `
       <article class="legal-chat-message ${mine ? "is-mine" : ""}">
-        <div>
-          <strong>${escapeHtml(message.userName || "Mesa de control")}</strong>
-          <span>${formatDateTime(message.createdAt)}</span>
+        <span class="chat-avatar">${escapeHtml(initials)}</span>
+        <div class="chat-bubble">
+          <div class="chat-meta">
+            <strong>${escapeHtml(author)}</strong>
+            <span>${formatDateTime(message.createdAt)}</span>
+          </div>
+          <p>${escapeHtml(message.text)}</p>
         </div>
-        <p>${escapeHtml(message.text)}</p>
       </article>
     `;
   }).join("");
