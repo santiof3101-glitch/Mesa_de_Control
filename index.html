@@ -1,5 +1,5 @@
 ﻿<!doctype html>
-<html lang="es" data-app-version="20260627-legal-mailboxes">
+<html lang="es" data-app-version="20260627-legal-availability-chat">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -7,7 +7,7 @@
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Autocor | Control Legal</title>
-  <link rel="stylesheet" href="styles.css?v=20260627-legal-mailboxes">
+  <link rel="stylesheet" href="styles.css?v=20260627-legal-availability-chat">
 </head>
 <body>
   <header class="topbar">
@@ -994,7 +994,28 @@
           <input name="password" type="password" placeholder="Nueva contrasena" required>
           <button class="btn secondary" type="submit">Cambiar mi clave</button>
         </form>
+        <div class="availability-panel">
+          <div>
+            <span>Estado de asignacion</span>
+            <strong id="legalAvailabilityStatus">Disponible</strong>
+          </div>
+          <button id="legalAvailabilityToggle" class="btn secondary" type="button">Cambiar disponibilidad</button>
+        </div>
         <div id="controlKpis" class="kpi-grid compact-kpis"></div>
+      </section>
+      <section class="panel legal-chat-panel">
+        <div class="mini-list-head">
+          <div>
+            <p class="eyebrow">Chat interno</p>
+            <h2>Mesa de control</h2>
+          </div>
+          <span>Equipo legal</span>
+        </div>
+        <div id="legalChatList" class="legal-chat-list"></div>
+        <form id="legalChatForm" class="legal-chat-form">
+          <input id="legalChatInput" name="message" placeholder="Escribe un mensaje para mesa de control" autocomplete="off" maxlength="280">
+          <button class="btn primary" type="submit">Enviar</button>
+        </form>
       </section>
       <div class="task-toolbar panel">
         <label>
@@ -1498,7 +1519,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260627-legal-mailboxes"></script>
+  <script src="app.js?v=20260627-legal-availability-chat"></script>
 </body>
 </html>
 
