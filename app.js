@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260624-support-question-fix";
+const APP_BUILD_VERSION = "20260627-legal-mailboxes";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -30,6 +30,10 @@ const ADMIN_PASSWORD = "Autocor2026!";
 const SESSION_TIMEOUT_MS = 5 * 60 * 60 * 1000;
 const MAX_FILE_LIBRARY_SIZE = 50 * 1024 * 1024;
 const MAX_PROVIDER_REASONABLE_AMOUNT = 1000;
+const LEGAL_MAILBOXES = [
+  { id: "saneamientos", label: "Saneamientos", description: "Compra, saneamiento y consultas de placa" },
+  { id: "contratos", label: "Contratos", description: "Tracking de contratos de compraventa" }
+];
 
 const PURCHASE_COLUMNS = [
   "NO.",
@@ -209,8 +213,8 @@ const defaultState = {
     { id: "comercial-3", name: "Asesor comercial 3", agency: "Sucursal Sur", username: "comercial3", password: "Comercial123" }
   ],
   legalUsers: [
-    { id: "legal-1", name: "Asistente legal 1", username: "legal1", password: "Legal123" },
-    { id: "legal-2", name: "Asistente legal 2", username: "legal2", password: "Legal123" }
+    { id: "legal-1", name: "Asistente legal 1", username: "legal1", password: "Legal123", mailboxes: ["saneamientos"] },
+    { id: "legal-2", name: "Asistente legal 2", username: "legal2", password: "Legal123", mailboxes: ["saneamientos", "contratos"] }
   ],
   managerUsers: [
     { id: "gerente-1", name: "Gerente general", username: "gerente1", password: "Gerente123" }
@@ -552,10 +556,12 @@ function loadState() {
         id: crypto.randomUUID(),
         name,
         username: `legal${index + 1}`,
-        password: "Legal123"
+        password: "Legal123",
+        mailboxes: ["saneamientos"]
       }));
     }
     merged.commercialAdvisors = normalizeCommercialAdvisors(merged.commercialAdvisors || []);
+    merged.legalUsers = normalizeLegalUsers(merged.legalUsers || []);
     merged.announcements = merged.announcements || [];
     merged.theme = { ...structuredClone(defaultState.theme), ...(merged.theme || {}) };
     merged.copy = { ...structuredClone(defaultState.copy), ...(merged.copy || {}) };
@@ -609,7 +615,7 @@ function applyCachedAccessUsers(snapshot) {
     snapshot.commercialAdvisors = normalizeCommercialAdvisors(cached.commercialAdvisors);
   }
   if (Array.isArray(cached.legalUsers) && cached.legalUsers.length) {
-    snapshot.legalUsers = cached.legalUsers;
+    snapshot.legalUsers = normalizeLegalUsers(cached.legalUsers);
   }
   if (Array.isArray(cached.managerUsers) && cached.managerUsers.length) {
     snapshot.managerUsers = cached.managerUsers;
@@ -1082,7 +1088,7 @@ function getSupabaseModuleSnapshots() {
   return {
     usuarios: {
       commercialAdvisors: structuredClone(state.commercialAdvisors || []),
-      legalUsers: structuredClone(state.legalUsers || []),
+      legalUsers: structuredClone(normalizeLegalUsers(state.legalUsers || [])),
       managerUsers: structuredClone(state.managerUsers || [])
     },
     catalogos: {
@@ -1225,6 +1231,7 @@ async function restoreModulesFromSupabaseIfNeeded() {
     changed = applySupabaseModuleSnapshot("archivos", archivos) || changed;
     if (changed) {
       hydrateCommercialOwners();
+      autoAssignOpenSaneamientos();
       if (session.role !== "public" && !isPersistedSessionValid(session)) {
         setSession(getPublicSession());
         currentViewId = "acceso";
@@ -1285,7 +1292,7 @@ function applySupabaseModuleSnapshot(modulo, snapshot) {
   switch (modulo) {
     case "usuarios":
       state.commercialAdvisors = normalizeCommercialAdvisors(snapshot.commercialAdvisors || state.commercialAdvisors || []);
-      state.legalUsers = Array.isArray(snapshot.legalUsers) ? snapshot.legalUsers : (state.legalUsers || []);
+      state.legalUsers = normalizeLegalUsers(Array.isArray(snapshot.legalUsers) ? snapshot.legalUsers : (state.legalUsers || []));
       state.managerUsers = Array.isArray(snapshot.managerUsers) ? snapshot.managerUsers : (state.managerUsers || []);
       persistAccessUsers(state);
       return true;
@@ -1594,6 +1601,35 @@ function normalizeCommercialAdvisors(advisors) {
   }).filter((advisor) => advisor.name);
 }
 
+function normalizeLegalMailboxes(mailboxes = []) {
+  const valid = new Set(LEGAL_MAILBOXES.map((item) => item.id));
+  const normalized = (Array.isArray(mailboxes) ? mailboxes : String(mailboxes || "").split(","))
+    .map((item) => String(item || "").trim().toLowerCase())
+    .filter((item) => valid.has(item));
+  return normalized.length ? [...new Set(normalized)] : ["saneamientos"];
+}
+
+function normalizeLegalUsers(users = []) {
+  return users.map((user, index) => {
+    if (typeof user === "string") {
+      return {
+        id: `legal-${index + 1}`,
+        name: user,
+        username: `legal${index + 1}`,
+        password: "Legal123",
+        mailboxes: ["saneamientos"]
+      };
+    }
+    return {
+      id: user.id || crypto.randomUUID(),
+      name: user.name || `Asistente legal ${index + 1}`,
+      username: user.username || `legal${index + 1}`,
+      password: user.password || "Legal123",
+      mailboxes: normalizeLegalMailboxes(user.mailboxes || user.profiles || user.buzones || user.profile)
+    };
+  }).filter((user) => user.name && user.username);
+}
+
 function normalizeFormConfig(config) {
   const source = config && typeof config === "object" ? config : {};
   return ["compra", "venta"].reduce((result, process) => {
@@ -1628,6 +1664,7 @@ function normalizeTask(task) {
     takenAt: task.takenAt || "",
     completedAt: task.completedAt || "",
     status: migratedStatus,
+    processType: task.processType || (task.tipoSaneamiento === "Tracking contrato compraventa" ? "venta" : ""),
     legalUserId: task.takenAt ? task.legalUserId || "" : migratedStatus === "pendiente" ? "" : task.legalUserId || "",
     legalAdvisor: task.takenAt ? task.legalAdvisor || "Sin asignar" : migratedStatus === "pendiente" ? "" : task.legalAdvisor || "",
     commercialUserId: task.commercialUserId || "",
@@ -2174,6 +2211,7 @@ function normalizeImportedState(importedState) {
   if (!Array.isArray(importedState.tasks)) importedState.tasks = [];
   const merged = { ...structuredClone(defaultState), ...importedState };
   merged.commercialAdvisors = normalizeCommercialAdvisors(merged.commercialAdvisors || []);
+  merged.legalUsers = normalizeLegalUsers(merged.legalUsers || []);
   merged.announcements = merged.announcements || [];
   merged.theme = { ...structuredClone(defaultState.theme), ...(merged.theme || {}) };
   merged.copy = { ...structuredClone(defaultState.copy), ...(merged.copy || {}) };
@@ -3100,6 +3138,7 @@ function removeAnnouncement(id) {
 function createUser(data) {
   const username = data.username.trim();
   const password = cleanPasswordValue(data.password);
+  const mailboxes = normalizeLegalMailboxes(data.mailboxes);
   const exists = state.legalUsers.some((user) => user.username.toLowerCase() === username.toLowerCase());
   if (exists) {
     showToast("Ese usuario ya existe.");
@@ -3110,9 +3149,12 @@ function createUser(data) {
     id: crypto.randomUUID(),
     name: data.name.trim(),
     username,
-    password
+    password,
+    mailboxes
   });
   saveState();
+  autoAssignOpenSaneamientos();
+  sincronizarTareasPendientesSupabase();
   guardarUsuariosSupabaseAhora();
   renderAll();
   showToast("Usuario creado.");
@@ -3124,8 +3166,23 @@ function removeUser(id) {
     return;
   }
 
+  state.tasks = (state.tasks || []).map((task) => {
+    if (task.legalUserId !== id || isClosedStatus(task.status)) return task;
+    return {
+      ...task,
+      legalUserId: "",
+      legalAdvisor: "",
+      takenAt: "",
+      status: getTaskMailbox(task) === "contratos" ? "por asignar" : "pendiente",
+      updatedAt: new Date().toISOString(),
+      syncStatus: "pending",
+      syncAction: "reasignar-usuario-eliminado"
+    };
+  });
   state.legalUsers = state.legalUsers.filter((user) => user.id !== id);
   saveState();
+  autoAssignOpenSaneamientos();
+  sincronizarTareasPendientesSupabase();
   guardarUsuariosSupabaseAhora();
   renderAll();
   showToast("Usuario eliminado.");
@@ -3135,15 +3192,27 @@ function renderUsers() {
   const container = document.querySelector("#usersList");
   container.innerHTML = "";
 
+  state.legalUsers = normalizeLegalUsers(state.legalUsers || []);
   state.legalUsers.forEach((user) => {
+    const mailboxes = normalizeLegalMailboxes(user.mailboxes);
     const item = document.createElement("article");
     item.className = "user-row";
     item.innerHTML = `
       <div>
         <strong>${escapeHtml(user.name)}</strong>
         <span>Usuario: ${escapeHtml(user.username)}</span>
+        <small>Buzones: ${mailboxes.map((mailbox) => LEGAL_MAILBOXES.find((entry) => entry.id === mailbox)?.label || mailbox).join(", ")}</small>
       </div>
       <div class="row-actions">
+        <div class="mailbox-picker is-inline">
+          ${LEGAL_MAILBOXES.map((mailbox) => `
+            <label>
+              <input type="checkbox" value="${escapeHtml(mailbox.id)}" ${mailboxes.includes(mailbox.id) ? "checked" : ""}>
+              ${escapeHtml(mailbox.label)}
+            </label>
+          `).join("")}
+        </div>
+        <button class="btn secondary save-mailboxes" type="button">Guardar buzones</button>
         <input type="password" placeholder="Nueva contrasena">
         <button class="btn secondary change-password" type="button">Cambiar</button>
         <button class="btn secondary delete-user" type="button">Eliminar</button>
@@ -3151,12 +3220,43 @@ function renderUsers() {
     `;
     item.querySelector(".delete-user").addEventListener("click", () => removeUser(user.id));
     item.querySelector(".change-password").addEventListener("click", () => {
-      changePassword("legalUsers", user.id, item.querySelector("input").value);
-      item.querySelector("input").value = "";
+      const passwordInput = item.querySelector("input[type='password']");
+      changePassword("legalUsers", user.id, passwordInput.value);
+      passwordInput.value = "";
+    });
+    item.querySelector(".save-mailboxes").addEventListener("click", () => {
+      const selected = [...item.querySelectorAll(".mailbox-picker input:checked")].map((input) => input.value);
+      updateLegalUserMailboxes(user.id, selected);
     });
     container.appendChild(item);
   });
   initPasswordToggles(container);
+}
+
+function updateLegalUserMailboxes(id, mailboxes) {
+  const user = state.legalUsers.find((item) => item.id === id);
+  if (!user) return;
+  const nextMailboxes = normalizeLegalMailboxes(mailboxes);
+  user.mailboxes = nextMailboxes;
+  state.tasks = (state.tasks || []).map((task) => {
+    if (task.legalUserId !== id || isClosedStatus(task.status) || nextMailboxes.includes(getTaskMailbox(task))) return task;
+    return {
+      ...task,
+      legalUserId: "",
+      legalAdvisor: "",
+      takenAt: "",
+      status: getTaskMailbox(task) === "contratos" ? "por asignar" : "pendiente",
+      updatedAt: new Date().toISOString(),
+      syncStatus: "pending",
+      syncAction: "reasignar-buzon"
+    };
+  });
+  saveState();
+  autoAssignOpenSaneamientos();
+  sincronizarTareasPendientesSupabase();
+  guardarUsuariosSupabaseAhora();
+  renderAll();
+  showToast("Buzones del asistente actualizados.");
 }
 
 function changePassword(collection, id, password) {
@@ -3252,6 +3352,7 @@ async function createTask(data) {
     legalAdvisor: "",
     duplicateWarnings,
     ...data,
+    processType: "compra",
     customFields: extractCustomFields(data, "compra"),
     commercialUserId: commercialOwner.id,
     commercialUserName: commercialOwner.name,
@@ -3262,6 +3363,7 @@ async function createTask(data) {
     syncStatus: "pending"
   };
 
+  autoAssignSaneamientoTask(task);
   state.tasks.push(task);
 
   saveState();
@@ -3420,6 +3522,7 @@ function isClosedStatus(value) {
 function getVisibleTasks() {
   const normalizedSearch = searchTerm.trim().toLowerCase();
   return state.tasks
+    .filter((task) => canLegalUserSeeTask(task))
     .filter((task) => activeFilter === "todos" || task.status === activeFilter)
     .filter((task) => isInsideDateRange(task.createdAt, taskDateFrom, taskDateTo))
     .filter((task) => {
@@ -3463,9 +3566,14 @@ function isInsideDateRange(value, from, to) {
 }
 
 function renderTasks() {
-  const pendingTasks = state.tasks.filter((task) => !isClosedStatus(task.status));
+  const visiblePool = state.tasks.filter((task) => canLegalUserSeeTask(task));
+  const pendingTasks = visiblePool.filter((task) => !isClosedStatus(task.status));
   if (queueCount) queueCount.textContent = pendingTasks.length;
-  legalSessionLabel.textContent = session.role === "admin" ? "Administrador" : `Asistente: ${session.name || ""}`;
+  const user = currentLegalUser();
+  const mailboxLabel = user
+    ? normalizeLegalMailboxes(user.mailboxes).map((mailbox) => LEGAL_MAILBOXES.find((item) => item.id === mailbox)?.label || mailbox).join(" + ")
+    : "";
+  legalSessionLabel.textContent = session.role === "admin" ? "Administrador" : `Asistente: ${session.name || ""}${mailboxLabel ? ` | Buzon: ${mailboxLabel}` : ""}`;
   taskList.innerHTML = "";
 
   if (!canOpenTasks()) {
@@ -3475,8 +3583,8 @@ function renderTasks() {
 
   const filteredTasks = getVisibleTasks();
   document.querySelector("#visibleTaskCount").textContent = filteredTasks.length;
-  document.querySelector("#unassignedTaskCount").textContent = state.tasks.filter((task) => !task.legalUserId && !isClosedStatus(task.status)).length;
-  document.querySelector("#avgLeadTime").textContent = formatMinutes(getAverageCompletionMinutes(state.tasks));
+  document.querySelector("#unassignedTaskCount").textContent = visiblePool.filter((task) => !task.legalUserId && !isClosedStatus(task.status)).length;
+  document.querySelector("#avgLeadTime").textContent = formatMinutes(getAverageCompletionMinutes(visiblePool));
 
   if (!filteredTasks.length) {
     taskList.innerHTML = `<div class="empty">No hay tareas para este filtro.</div>`;
@@ -3670,6 +3778,11 @@ function renderInfoRequestTaskCard(task, index) {
 function approvePlateInfoRequest(id) {
   const task = state.tasks.find((item) => item.id === id);
   if (!task || !isInfoRequestTask(task)) return;
+  if (session.role === "legal" && !canLegalUserSeeTask(task)) {
+    showToast("Esta solicitud pertenece a otro buzon legal.");
+    renderTasks();
+    return;
+  }
   if (session.role === "legal" && task.legalUserId && task.legalUserId !== session.userId) {
     showToast("Solo puede autorizar la solicitud que tomo.");
     renderTasks();
@@ -3698,6 +3811,11 @@ function approvePlateInfoRequest(id) {
 function takeTask(id) {
   const task = state.tasks.find((item) => item.id === id);
   if (!task || session.role !== "legal") return;
+  if (!canLegalUserSeeTask(task)) {
+    showToast("Este proceso pertenece a otro buzon legal.");
+    renderTasks();
+    return;
+  }
   if (task.legalUserId) {
     showToast("Este lead ya fue tomado.");
     renderTasks();
@@ -3722,6 +3840,11 @@ function takeTask(id) {
 function updateTaskStatus(id, status) {
   const task = state.tasks.find((item) => item.id === id);
   if (!task) return;
+  if (session.role === "legal" && !canLegalUserSeeTask(task)) {
+    showToast("Este proceso pertenece a otro buzon legal.");
+    renderTasks();
+    return;
+  }
 
   if (session.role === "legal" && !task.legalUserId) {
     takeTask(id);
@@ -3886,6 +4009,81 @@ function getTaskProcess(task = {}) {
   if (task.processType === "cuv") return "cuv";
   if (task.processType === "consulta-info") return "consulta-info";
   return task.processType === "venta" ? "venta" : "compra";
+}
+
+function getTaskMailbox(task = {}) {
+  return getTaskProcess(task) === "venta" ? "contratos" : "saneamientos";
+}
+
+function userHasMailbox(user = {}, mailbox = "saneamientos") {
+  return normalizeLegalMailboxes(user.mailboxes).includes(mailbox);
+}
+
+function currentLegalUser() {
+  if (session.role !== "legal") return null;
+  return state.legalUsers.find((user) => user.id === session.userId) || null;
+}
+
+function canLegalUserSeeTask(task = {}, user = currentLegalUser()) {
+  if (session.role === "admin") return true;
+  if (!user) return false;
+  if (!userHasMailbox(user, getTaskMailbox(task))) return false;
+  return !task.legalUserId || task.legalUserId === user.id;
+}
+
+function getEligibleLegalUsersForTask(task = {}) {
+  const mailbox = getTaskMailbox(task);
+  return normalizeLegalUsers(state.legalUsers || []).filter((user) => userHasMailbox(user, mailbox));
+}
+
+function getLegalUserActiveLoad(userId, mailbox = "") {
+  return (state.tasks || []).filter((task) =>
+    task.legalUserId === userId &&
+    !isClosedStatus(task.status) &&
+    (!mailbox || getTaskMailbox(task) === mailbox)
+  ).length;
+}
+
+function assignTaskToLegalUser(task, user, status = "tomado") {
+  if (!task || !user) return task;
+  const now = new Date().toISOString();
+  task.legalUserId = user.id;
+  task.legalAdvisor = user.name;
+  task.takenAt = task.takenAt || now;
+  task.status = status;
+  task.updatedAt = now;
+  return task;
+}
+
+function autoAssignSaneamientoTask(task) {
+  if (!task || getTaskMailbox(task) !== "saneamientos" || task.legalUserId || isClosedStatus(task.status)) return task;
+  const eligibleUsers = getEligibleLegalUsersForTask(task);
+  if (!eligibleUsers.length) return task;
+  const selected = eligibleUsers
+    .map((user) => ({ user, load: getLegalUserActiveLoad(user.id, "saneamientos") }))
+    .sort((a, b) => a.load - b.load || a.user.name.localeCompare(b.user.name))[0]?.user;
+  if (selected) assignTaskToLegalUser(task, selected, "tomado");
+  return task;
+}
+
+function autoAssignOpenSaneamientos() {
+  let changed = false;
+  (state.tasks || []).forEach((task) => {
+    if (getTaskMailbox(task) === "saneamientos" && !task.legalUserId && !isClosedStatus(task.status)) {
+      const before = task.legalUserId;
+      autoAssignSaneamientoTask(task);
+      if (task.legalUserId && task.legalUserId !== before) {
+        task.syncStatus = "pending";
+        task.syncAction = "auto-asignar";
+        changed = true;
+      }
+    }
+  });
+  if (changed) {
+    saveState();
+    sincronizarTareasPendientesSupabase();
+  }
+  return changed;
 }
 
 function filterTasksByCommercialProcess(tasks = [], process = activeCommercialProcess) {
@@ -4254,8 +4452,15 @@ function renderControlDashboard() {
   const container = document.querySelector("#controlKpis");
   if (!container) return;
   const tasks = session.role === "legal"
-    ? state.tasks.filter((task) => !task.legalUserId || task.legalUserId === session.userId)
+    ? state.tasks.filter((task) => canLegalUserSeeTask(task))
     : state.tasks;
+  const user = currentLegalUser();
+  if (legalSessionLabel && user) {
+    const labels = normalizeLegalMailboxes(user.mailboxes)
+      .map((mailbox) => LEGAL_MAILBOXES.find((item) => item.id === mailbox)?.label || mailbox)
+      .join(" + ");
+    legalSessionLabel.textContent = `Asistente: ${user.name} | Buzon: ${labels}`;
+  }
   const kpis = getKpis(tasks);
   renderKpiCards("#controlKpis", [
     [" Disponibles", kpis.unassigned, "Sin tomar"],
@@ -4428,8 +4633,9 @@ function renderStatusOptionsMarkup(selectedValue = "") {
   ).join("");
 }
 
-function renderLegalUserOptionsMarkup(selectedValue = "") {
-  return `<option value="">Disponible / sin asignar</option>${state.legalUsers.map((user) =>
+function renderLegalUserOptionsMarkup(selectedValue = "", task = null) {
+  const users = task ? getEligibleLegalUsersForTask(task) : normalizeLegalUsers(state.legalUsers || []);
+  return `<option value="">Disponible / sin asignar</option>${users.map((user) =>
     `<option value="${escapeHtml(user.id)}" ${user.id === selectedValue ? "selected" : ""}>${escapeHtml(user.name)}</option>`
   ).join("")}`;
 }
@@ -4442,7 +4648,7 @@ function openAdminLeadEditor(id) {
   adminLeadForm.elements.tipoCompra.innerHTML = renderOptionsMarkup(state.purchaseTypes, task.tipoCompra, "Seleccione tipo");
   adminLeadForm.elements.tipoSaneamiento.innerHTML = renderOptionsMarkup(state.sanitationTypes, task.tipoSaneamiento, "Seleccione saneamiento");
   adminLeadForm.elements.status.innerHTML = renderStatusOptionsMarkup(task.status);
-  adminLeadForm.elements.legalUserId.innerHTML = renderLegalUserOptionsMarkup(task.legalUserId);
+  adminLeadForm.elements.legalUserId.innerHTML = renderLegalUserOptionsMarkup(task.legalUserId, task);
 
   adminLeadForm.elements.id.value = task.id;
   adminLeadForm.elements.cliente.value = task.cliente || "";
@@ -9678,6 +9884,7 @@ async function createPlateInfoRequest(sourceTask) {
     agencyAdvisorKey: `${session.agency || ""}::${session.name || ""}`,
     syncStatus: "pending"
   };
+  autoAssignSaneamientoTask(task);
   state.tasks.push(task);
   saveState();
   renderAll();
@@ -10172,8 +10379,13 @@ legalPasswordForm.addEventListener("submit", (event) => {
 
 userForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  createUser(Object.fromEntries(new FormData(userForm).entries()));
+  const formData = new FormData(userForm);
+  createUser({
+    ...Object.fromEntries(formData.entries()),
+    mailboxes: formData.getAll("mailboxes")
+  });
   userForm.reset();
+  userForm.querySelector("[name='mailboxes'][value='saneamientos']").checked = true;
 });
 
 managerUserForm.addEventListener("submit", (event) => {
