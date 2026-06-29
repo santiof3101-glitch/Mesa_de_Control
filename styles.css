@@ -2861,7 +2861,7 @@ button.kpi-card {
 }
 
 .provider-actions {
-  grid-template-columns: minmax(170px, 0.95fr) minmax(142px, 0.72fr) minmax(132px, 0.6fr) minmax(104px, 0.48fr);
+  grid-template-columns: minmax(150px, 0.8fr) minmax(150px, 0.75fr) minmax(130px, 0.6fr) minmax(120px, 0.55fr) minmax(150px, 0.7fr);
   gap: 12px;
 }
 
@@ -3010,6 +3010,45 @@ button.kpi-card {
     radial-gradient(circle at top right, rgba(16, 158, 111, 0.1), transparent 36%);
 }
 
+.provider-preview-health {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.provider-preview-health article {
+  display: grid;
+  gap: 3px;
+  min-height: 62px;
+  padding: 10px;
+  border: 1px solid rgba(221, 223, 229, 0.9);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.provider-preview-health strong {
+  color: var(--ink);
+  font-size: 1.18rem;
+  line-height: 1;
+}
+
+.provider-preview-health span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.provider-preview-health .is-ok {
+  border-color: rgba(16, 158, 111, 0.24);
+  background: linear-gradient(135deg, rgba(16, 158, 111, 0.08), #fff);
+}
+
+.provider-preview-health .is-warning {
+  border-color: rgba(247, 132, 31, 0.28);
+  background: linear-gradient(135deg, rgba(247, 132, 31, 0.1), #fff);
+}
+
 .provider-paste-preview[hidden] {
   display: none;
 }
@@ -3059,7 +3098,7 @@ button.kpi-card {
 }
 
 .processing-table .provider-compact-table table {
-  min-width: 1080px;
+  min-width: 1280px;
   table-layout: fixed;
 }
 
@@ -3101,7 +3140,33 @@ button.kpi-card {
 
 .provider-compact-table th:nth-child(8),
 .provider-compact-table td:nth-child(8) {
-  width: 360px;
+  width: 420px;
+}
+
+.provider-compact-table th:nth-child(9),
+.provider-compact-table td:nth-child(9) {
+  width: 170px;
+}
+
+.provider-row-ok,
+.provider-row-warning {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 1000;
+}
+
+.provider-row-ok {
+  color: #0b7d58;
+  background: rgba(16, 158, 111, 0.1);
+}
+
+.provider-row-warning {
+  color: #b36300;
+  background: rgba(247, 132, 31, 0.12);
 }
 
 .provider-detail-summary {
