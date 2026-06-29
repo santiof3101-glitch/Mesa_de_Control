@@ -5683,10 +5683,10 @@ textarea:focus {
 }
 
 .legal-chat-message.is-mine .chat-bubble {
-  color: #fff;
+  color: var(--ink);
   border-radius: 18px 18px 6px 18px;
-  background: linear-gradient(135deg, var(--primary), #c92520);
-  box-shadow: 0 10px 24px rgba(239, 61, 53, 0.22);
+  background: linear-gradient(135deg, #fff1f0, #ffffff);
+  box-shadow: 0 10px 24px rgba(239, 61, 53, 0.14);
 }
 
 .chat-meta {
@@ -5706,7 +5706,7 @@ textarea:focus {
 }
 
 .legal-chat-message.is-mine .chat-meta span {
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--muted);
 }
 
 .chat-bubble p {
@@ -5730,7 +5730,7 @@ textarea:focus {
 }
 
 .legal-chat-message.is-mine .chat-delete-btn {
-  color: rgba(255, 255, 255, 0.76);
+  color: var(--red-dark);
 }
 
 .chat-delete-btn:hover {
