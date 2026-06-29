@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260629-provider-preview-fix";
+const APP_BUILD_VERSION = "20260629-provider-interface-redesign";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -497,6 +497,10 @@ const processProviderPasteBtn = document.querySelector("#processProviderPasteBtn
 const clearProvidersBtn = document.querySelector("#clearProvidersBtn");
 const restoreProviderTrashBtn = document.querySelector("#restoreProviderTrashBtn");
 const providerRecordCount = document.querySelector("#providerRecordCount");
+const providerHeroRecords = document.querySelector("#providerHeroRecords");
+const providerHeroProviders = document.querySelector("#providerHeroProviders");
+const providerHeroPending = document.querySelector("#providerHeroPending");
+const providerHeroMonth = document.querySelector("#providerHeroMonth");
 const providerFilterSelect = document.querySelector("#providerFilterSelect");
 const providerMonthFilter = document.querySelector("#providerMonthFilter");
 const providerLoadFilter = document.querySelector("#providerLoadFilter");
@@ -8381,11 +8385,27 @@ function getFilteredProviderRecords() {
     .filter((record) => !providerFilters.plate || getProviderRecordPlate(record).includes(normalizeLooseText(providerFilters.plate)));
 }
 
+function renderProviderHeroMetrics(records, allRecords) {
+  const providers = new Set(records.map((record) => record.provider).filter(Boolean)).size;
+  const pendingDuplicates = getProviderDuplicateGroups(records).filter((group) => !isProviderDuplicateApproved(group)).length;
+  const months = [...new Set(records.map((record) => record.importMonth).filter(Boolean))].sort().reverse();
+  const monthLabel = providerFilters.month
+    ? formatMonthLabel(providerFilters.month)
+    : months.length === 1
+      ? formatMonthLabel(months[0])
+      : "Todos los meses";
+  if (providerHeroRecords) providerHeroRecords.textContent = String(records.length || allRecords.length || 0);
+  if (providerHeroProviders) providerHeroProviders.textContent = String(providers);
+  if (providerHeroPending) providerHeroPending.textContent = String(pendingDuplicates);
+  if (providerHeroMonth) providerHeroMonth.textContent = monthLabel;
+}
+
 function renderProviderProcessing() {
   renderProviderProfileControls();
   const records = getFilteredProviderRecords();
   const allRecords = (state.dataProcessing?.proveedores || []).filter(isValidProviderRecord);
   if (providerRecordCount) providerRecordCount.textContent = `${records.length} de ${allRecords.length} registros`;
+  renderProviderHeroMetrics(records, allRecords);
   renderProviderFilters();
   renderProviderKpis(records);
   renderProviderExecutiveDashboard(records);
@@ -11034,6 +11054,9 @@ if (printPurchaseDetailBtn) printPurchaseDetailBtn.addEventListener("click", pri
 if (exportContractsBtn) exportContractsBtn.addEventListener("click", exportContractsCsv);
 if (exportContractPdfBtn) exportContractPdfBtn.addEventListener("click", exportContractPdfReport);
 if (exportProviderPdfBtn) exportProviderPdfBtn.addEventListener("click", exportProviderPdfReport);
+document.querySelectorAll(".provider-table-panel [data-provider-detail]").forEach((button) => {
+  button.addEventListener("click", () => openProviderDetail(button.dataset.providerDetail));
+});
 
 if (processContractPasteBtn) {
   processContractPasteBtn.addEventListener("click", () => {
