@@ -1,5 +1,5 @@
-﻿<!doctype html>
-<html lang="es" data-app-version="20260629-provider-preview-fix">
+<!doctype html>
+<html lang="es" data-app-version="20260629-provider-interface-redesign">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -7,7 +7,7 @@
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Autocor | Control Legal</title>
-  <link rel="stylesheet" href="styles.css?v=20260629-provider-preview-fix">
+  <link rel="stylesheet" href="styles.css?v=20260629-provider-interface-redesign">
 </head>
 <body>
   <header class="topbar">
@@ -94,11 +94,24 @@
       </div>
 
       <div class="processing-tabs">
-        <button class="processing-tab" type="button" data-processing-tab="proveedores">Proveedores</button>
-        <button class="processing-tab is-active" type="button" data-processing-tab="compras">Compras</button>
-        <button class="processing-tab" type="button" data-processing-tab="contratos">Contratos</button>
-        <button class="processing-tab" type="button" data-processing-tab="saneamientos">Saneamientos</button>
-        <button class="processing-tab" type="button" data-processing-tab="archivos">Archivos</button>
+        <button class="processing-tab" type="button" data-processing-tab="proveedores">👥 Proveedores y Pagos</button>
+        <button class="processing-tab is-active" type="button" data-processing-tab="compras">🧾 Compras</button>
+        <button class="processing-tab" type="button" data-processing-tab="contratos">📄 Contratos</button>
+        <button class="processing-tab" type="button" data-processing-tab="saneamientos">🛡️ Saneamientos</button>
+        <button class="processing-tab" type="button" data-processing-tab="archivos">📁 Archivos</button>
+        <div class="processing-sidebar-spacer"></div>
+        <div class="processing-sidebar-help">
+          <strong>Necesitas ayuda?</strong>
+          <span>Mesa de Control</span>
+          <b>099 638 7526</b>
+        </div>
+        <div class="processing-sidebar-user">
+          <span>SO</span>
+          <div>
+            <strong>Santiago Ortiz</strong>
+            <small>Mesa de Control</small>
+          </div>
+        </div>
       </div>
 
       <section class="panel processing-panel is-active processing-workspace" data-processing-panel="compras">
@@ -338,14 +351,21 @@
         <div class="empty compact-empty">Modulo listo para cargas y reportes de saneamientos.</div>
       </section>
 
-      <section class="panel processing-panel processing-workspace" data-processing-panel="proveedores">
-        <div class="report-hero">
+      <section class="panel processing-panel processing-workspace provider-workspace" data-processing-panel="proveedores">
+        <div class="report-hero provider-hero">
+          <div class="provider-hero-icon" aria-hidden="true">📄</div>
           <div>
             <p class="eyebrow">Proveedores</p>
-            <h2>Proveedores y Pagos | Mesa de Control</h2>
+            <h2>Mesa de Control</h2>
             <p>Controla pagos por proveedor, valida placas repetidas y revisa posibles cobros duplicados con detalle operativo.</p>
           </div>
           <div class="title-actions">
+            <div class="provider-hero-metrics">
+              <span><b id="providerHeroRecords">0</b><small>Registros totales</small></span>
+              <span><b id="providerHeroProviders">0</b><small>Proveedores</small></span>
+              <span><b id="providerHeroPending">0</b><small>Sin autorizacion</small></span>
+              <span><b id="providerHeroMonth">Sin mes</b><small>Mes del reporte</small></span>
+            </div>
             <span id="providerRecordCount" class="soft-badge">0 registros</span>
             <button id="toggleProviderProfileManagerBtn" class="btn primary" type="button">Registrar proveedor aqui</button>
           </div>
@@ -419,7 +439,7 @@
             </div>
             <div class="title-actions">
               <span class="soft-badge">Control financiero operativo</span>
-              <button id="exportProviderPdfBtn" class="btn primary" type="button">Descargar reporte PDF</button>
+              <span class="soft-badge">PDF disponible al final de la base</span>
             </div>
           </div>
           <div id="providerKpis" class="kpi-grid compact-kpis report-kpis"></div>
@@ -427,14 +447,19 @@
           <div id="providerDuplicateReport" class="provider-duplicate-report"></div>
         </section>
 
-        <section class="data-table-panel">
+        <section class="data-table-panel provider-table-panel">
           <div class="card-title-row">
             <div>
               <p class="eyebrow">Base de proveedor</p>
               <h3>Ultimos registros cargados</h3>
             </div>
+            <button class="btn secondary" type="button" data-provider-detail="total">Ver todos los registros</button>
           </div>
           <div id="providerTable" class="processing-table"></div>
+          <div class="provider-table-actions">
+            <button class="btn secondary" type="button" data-provider-detail="duplicates">Control financiero operativo</button>
+            <button id="exportProviderPdfBtn" class="btn primary" type="button">Descargar reporte PDF</button>
+          </div>
         </section>
       </section>
 
@@ -1560,7 +1585,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260629-provider-preview-fix"></script>
+  <script src="app.js?v=20260629-provider-interface-redesign"></script>
 </body>
 </html>
 
