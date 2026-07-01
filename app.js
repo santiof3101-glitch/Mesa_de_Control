@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260629-provider-interface-redesign";
+const APP_BUILD_VERSION = "20260701-provider-money-parser";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -29,7 +29,7 @@ const SHARED_PC_BACKUPS_URL = location.protocol === "file:"
 const ADMIN_PASSWORD = "Autocor2026!";
 const SESSION_TIMEOUT_MS = 5 * 60 * 60 * 1000;
 const MAX_FILE_LIBRARY_SIZE = 50 * 1024 * 1024;
-const MAX_PROVIDER_REASONABLE_AMOUNT = 1000;
+const MAX_PROVIDER_REASONABLE_AMOUNT = 100000;
 const LEGAL_MAILBOXES = [
   { id: "saneamientos", label: "Saneamientos", description: "Compra, saneamiento y consultas de placa" },
   { id: "contratos", label: "Contratos", description: "Tracking de contratos de compraventa" }
@@ -8030,17 +8030,28 @@ function extractProviderDateFromText(text = "") {
 function extractProviderAmountFromText(text = "") {
   const raw = String(text || "");
   const candidates = [];
-  [...raw.matchAll(/\$\s*([0-9][0-9.,]*)/g)].forEach((match) => candidates.push(match[1]));
-  [...raw.matchAll(/\b([0-9]{1,4}(?:[,.][0-9]{1,2})?)\b/g)].forEach((match) => {
-    const value = match[1];
+  const moneyPattern = /(?:\$|USD)?\s*([0-9]{1,3}(?:[.,][0-9]{3})+(?:[.,][0-9]{1,2})?|[0-9]{1,6}[.,][0-9]{1,2}|[0-9]{2,6})/gi;
+  [...raw.matchAll(moneyPattern)].forEach((match) => {
+    const value = String(match[1] || "").trim();
+    const start = match.index || 0;
+    const before = raw.slice(Math.max(0, start - 2), start);
+    const after = raw.slice(start + match[0].length, start + match[0].length + 2);
+    if (/[/:-]/.test(before) || /^[/:-]/.test(after)) return;
+    if (/[A-Z]$/i.test(before.trim()) || /^[A-Z]/i.test(after.trim())) return;
     if (/^\d{1,2}$/.test(value)) return;
-    if (/^\d{4}$/.test(value) && Number(value) > MAX_PROVIDER_REASONABLE_AMOUNT) return;
+    if (/^(19|20)\d{2}$/.test(value)) return;
     candidates.push(value);
   });
   const valid = candidates
-    .map((candidate) => normalizeProviderAmountValue(candidate))
-    .filter(Boolean);
-  return valid.length ? valid[valid.length - 1] : "";
+    .map((candidate) => ({
+      raw: candidate,
+      normalized: normalizeProviderAmountValue(candidate),
+      hasDecimal: /[.,]\d{1,2}$/.test(candidate)
+    }))
+    .filter((item) => item.normalized);
+  const decimalValues = valid.filter((item) => item.hasDecimal);
+  const selected = decimalValues.length ? decimalValues[decimalValues.length - 1] : valid[valid.length - 1];
+  return selected?.normalized || "";
 }
 
 function extractProviderStatusFromText(text = "") {
