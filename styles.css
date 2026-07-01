@@ -7516,6 +7516,57 @@ button.purchase-mini-kpi:hover {
   }
 }
 
+.provider-workspace,
+.provider-workspace input,
+.provider-workspace select,
+.provider-workspace textarea,
+.provider-workspace table,
+.provider-workspace p,
+.provider-workspace span,
+.provider-workspace td {
+  font-weight: 400;
+}
+
+.provider-workspace h2,
+.provider-workspace h3,
+.provider-workspace strong,
+.provider-workspace th,
+.provider-workspace .btn,
+.provider-workspace .eyebrow,
+.provider-workspace .provider-row-ok,
+.provider-workspace .provider-row-warning {
+  font-weight: 700;
+}
+
+.provider-preview-input {
+  width: 100%;
+  min-width: 96px;
+  min-height: 34px;
+  padding: 7px 8px;
+  border: 1px solid #dbe3ee;
+  border-radius: 7px;
+  color: #142033;
+  background: #fff;
+  font: inherit;
+}
+
+.provider-preview-input:focus {
+  border-color: #ef3d35;
+  outline: 3px solid rgba(239, 61, 53, 0.12);
+}
+
+.provider-preview-input.is-money {
+  text-align: right;
+}
+
+.provider-preview-input.is-observation {
+  min-width: 260px;
+}
+
+.provider-compact-table td {
+  vertical-align: middle;
+}
+
 @media (max-width: 1200px) {
   #procesamiento.view.is-active {
     grid-template-columns: 1fr;
