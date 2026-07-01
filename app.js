@@ -1,12 +1,13 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260701-provider-money-parser";
+const APP_BUILD_VERSION = "20260701-provider-grid-sync-lite";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
 const SUPABASE_AUTO_RESTORE = false;
 const SUPABASE_MODULE_SYNC = true;
 const SUPABASE_FULL_STATE_SYNC = false;
-const SUPABASE_FOCUS_REFRESH_MIN_MS = 30 * 1000;
+const SUPABASE_FOCUS_REFRESH_MIN_MS = 2 * 60 * 1000;
+const SUPABASE_HEAVY_MODULE_REFRESH_MIN_MS = 10 * 60 * 1000;
 const OLD_STORAGE_KEY = "autocor-saneamiento";
 const STATE_SCHEMA_VERSION = 20260520;
 const REMEMBER_ACCESS_KEY = "autocor-remembered-access";
@@ -763,9 +764,9 @@ async function leerVersionModuloSupabase(modulo, tipo = "base") {
   }
 }
 
-async function leerVersionesModulosSupabase() {
+async function leerVersionesModulosSupabase(modules = ["usuarios", "catalogos", "saneamientos", "compras", "contratos", "proveedores", "archivos"]) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return {};
-  const modules = ["usuarios", "catalogos", "saneamientos", "compras", "contratos", "proveedores", "archivos"];
+  if (!modules.length) return {};
   const query = `${SUPABASE_URL}/REGISTROS?modulo=in.(${modules.join(",")})&tipo=eq.base&select=modulo,created_at&order=created_at.desc&limit=100`;
   try {
     const response = await fetch(query, {
@@ -1187,22 +1188,44 @@ async function actualizarUsuariosDesdeSupabaseParaLogin() {
   return true;
 }
 
+function getActiveProcessingTab() {
+  return document.querySelector("[data-processing-tab].is-active")?.dataset.processingTab || "";
+}
+
+function getSupabaseModulesForCurrentView() {
+  const modules = new Set(["usuarios", "catalogos", "saneamientos"]);
+  if (currentViewId === "procesamiento") {
+    const tab = getActiveProcessingTab();
+    if (tab === "compras") modules.add("compras");
+    if (tab === "contratos") modules.add("contratos");
+    if (tab === "proveedores") modules.add("proveedores");
+    if (tab === "archivos") modules.add("archivos");
+  }
+  if (session.role === "admin") {
+    modules.add("compras");
+    modules.add("contratos");
+    modules.add("proveedores");
+  }
+  return [...modules];
+}
+
 async function restoreModulesFromSupabaseIfNeeded() {
   if (!SUPABASE_MODULE_SYNC || pollingSupabaseModules || !canSyncCurrentView()) return;
   pollingSupabaseModules = true;
   restoringSupabaseModules = true;
   try {
-    const remoteVersions = await leerVersionesModulosSupabase();
+    const modulesToSync = getSupabaseModulesForCurrentView();
+    const remoteVersions = await leerVersionesModulosSupabase(modulesToSync);
     const [usuariosResult, catalogosResult, saneamientosResult, tareasIndividuales, eliminacionesIndividuales, comprasResult, contratosResult, proveedoresResult, archivosResult] = await Promise.all([
-      leerModuloSupabaseSiCambio("usuarios", remoteVersions),
-      leerModuloSupabaseSiCambio("catalogos", remoteVersions),
-      leerModuloSupabaseSiCambio("saneamientos", remoteVersions),
+      modulesToSync.includes("usuarios") ? leerModuloSupabaseSiCambio("usuarios", remoteVersions) : Promise.resolve({ snapshot: null, exists: false, changed: false }),
+      modulesToSync.includes("catalogos") ? leerModuloSupabaseSiCambio("catalogos", remoteVersions) : Promise.resolve({ snapshot: null, exists: false, changed: false }),
+      modulesToSync.includes("saneamientos") ? leerModuloSupabaseSiCambio("saneamientos", remoteVersions) : Promise.resolve({ snapshot: null, exists: false, changed: false }),
       leerTareasSupabase(),
       leerEliminacionesTareasSupabase(),
-      leerModuloSupabaseSiCambio("compras", remoteVersions),
-      leerModuloSupabaseSiCambio("contratos", remoteVersions),
-      leerModuloSupabaseSiCambio("proveedores", remoteVersions),
-      leerModuloSupabaseSiCambio("archivos", remoteVersions)
+      modulesToSync.includes("compras") ? leerModuloSupabaseSiCambio("compras", remoteVersions) : Promise.resolve({ snapshot: null, exists: false, changed: false }),
+      modulesToSync.includes("contratos") ? leerModuloSupabaseSiCambio("contratos", remoteVersions) : Promise.resolve({ snapshot: null, exists: false, changed: false }),
+      modulesToSync.includes("proveedores") ? leerModuloSupabaseSiCambio("proveedores", remoteVersions) : Promise.resolve({ snapshot: null, exists: false, changed: false }),
+      modulesToSync.includes("archivos") ? leerModuloSupabaseSiCambio("archivos", remoteVersions) : Promise.resolve({ snapshot: null, exists: false, changed: false })
     ]);
     const usuarios = usuariosResult.snapshot;
     const catalogos = catalogosResult.snapshot;
@@ -1287,11 +1310,11 @@ function startSupabaseModulePolling() {
 }
 
 function getSupabasePollInterval() {
-  if (session.role === "legal") return 45 * 1000;
-  if (session.role === "admin") return 60 * 1000;
-  if (session.role === "commercial") return 2 * 60 * 1000;
-  if (session.role === "manager") return 3 * 60 * 1000;
-  if (currentViewId === "procesamiento") return 3 * 60 * 1000;
+  if (session.role === "legal") return 2 * 60 * 1000;
+  if (session.role === "admin") return 5 * 60 * 1000;
+  if (session.role === "commercial") return 5 * 60 * 1000;
+  if (session.role === "manager") return 8 * 60 * 1000;
+  if (currentViewId === "procesamiento") return SUPABASE_HEAVY_MODULE_REFRESH_MIN_MS;
   return 0;
 }
 
@@ -8027,17 +8050,19 @@ function extractProviderDateFromText(text = "") {
   return match ? match[0] : "";
 }
 
-function extractProviderAmountFromText(text = "") {
+function extractProviderAmountCandidateFromText(text = "") {
   const raw = String(text || "");
   const candidates = [];
   const moneyPattern = /(?:\$|USD)?\s*([0-9]{1,3}(?:[.,][0-9]{3})+(?:[.,][0-9]{1,2})?|[0-9]{1,6}[.,][0-9]{1,2}|[0-9]{2,6})/gi;
   [...raw.matchAll(moneyPattern)].forEach((match) => {
     const value = String(match[1] || "").trim();
-    const start = match.index || 0;
+    const matchText = String(match[0] || "");
+    const valueOffset = matchText.indexOf(match[1]);
+    const start = (match.index || 0) + Math.max(valueOffset, 0);
     const before = raw.slice(Math.max(0, start - 2), start);
-    const after = raw.slice(start + match[0].length, start + match[0].length + 2);
+    const after = raw.slice(start + value.length, start + value.length + 2);
     if (/[/:-]/.test(before) || /^[/:-]/.test(after)) return;
-    if (/[A-Z]$/i.test(before.trim()) || /^[A-Z]/i.test(after.trim())) return;
+    if (/[A-Z]$/i.test(raw.slice(Math.max(0, start - 1), start)) || /^[A-Z]/i.test(raw.slice(start + value.length, start + value.length + 1))) return;
     if (/^\d{1,2}$/.test(value)) return;
     if (/^(19|20)\d{2}$/.test(value)) return;
     candidates.push(value);
@@ -8051,7 +8076,11 @@ function extractProviderAmountFromText(text = "") {
     .filter((item) => item.normalized);
   const decimalValues = valid.filter((item) => item.hasDecimal);
   const selected = decimalValues.length ? decimalValues[decimalValues.length - 1] : valid[valid.length - 1];
-  return selected?.normalized || "";
+  return selected || { raw: "", normalized: "" };
+}
+
+function extractProviderAmountFromText(text = "") {
+  return extractProviderAmountCandidateFromText(text).normalized || "";
 }
 
 function extractProviderStatusFromText(text = "") {
@@ -8067,6 +8096,43 @@ function extractProviderStatusFromText(text = "") {
     "NO"
   ];
   return statuses.find((status) => new RegExp(`\\b${status}\\b`).test(normalized)) || "";
+}
+
+function cleanProviderObservationText(rawText = "", pieces = {}) {
+  let text = normalizeLooseText(rawText);
+  [
+    pieces.id,
+    pieces.date,
+    pieces.plate,
+    pieces.client,
+    pieces.advisor,
+    pieces.amountRaw,
+    pieces.amount,
+    pieces.status
+  ].filter(Boolean).forEach((piece) => {
+    const safePiece = normalizeLooseText(piece).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (safePiece) text = text.replace(new RegExp(`\\b${safePiece}\\b`, "g"), " ");
+  });
+  text = text
+    .replace(/\$?\s*\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{1,2})?/g, " ")
+    .replace(/\$?\s*\d{1,6}[.,]\d{1,2}/g, " ")
+    .replace(/\b(SI|NO)\b\s*(?=DEVOLUCION|AUTORIZADA|PENDIENTE|APROBADO|RECHAZADO|$)/g, " ")
+    .replace(/\s+\|\s+/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return text || normalizeLooseText(rawText);
+}
+
+function extractProviderClientFromText(rawText = "", plate = "", advisor = "") {
+  const normalized = normalizeLooseText(rawText);
+  const plateIndex = plate ? normalized.indexOf(normalizeLooseText(plate)) : -1;
+  const advisorIndex = advisor ? normalized.indexOf(normalizeLooseText(advisor)) : -1;
+  if (plateIndex < 0 || advisorIndex <= plateIndex) return "";
+  return normalized
+    .slice(plateIndex + normalizeLooseText(plate).length, advisorIndex)
+    .replace(/\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?\b/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 function splitProviderLooseTextRows(text = "") {
@@ -8110,29 +8176,41 @@ function parseProviderLooseTextInput(text, columns, profile, provider, importMon
 
     const plate = raw.match(/\b[A-Z]{3}[-\s]?\d{3,4}\b/i)?.[0] || "";
     const date = extractProviderDateFromText(raw);
-    const amount = extractProviderAmountFromText(raw);
+    const amountCandidate = extractProviderAmountCandidateFromText(raw);
+    const amount = amountCandidate.normalized || "";
     const advisor = findKnownNameInsideText(raw) || guessProviderAdvisorFromText(raw);
     const status = extractProviderStatusFromText(raw);
+    const recordId = raw.match(/^\d+/)?.[0] || "";
+    const client = extractProviderClientFromText(raw, plate, advisor);
 
-    setProviderColumnValue(record, columns, [/^ID$/, /^NO$/], raw.match(/^\d+/)?.[0] || "");
+    setProviderColumnValue(record, columns, [/^ID$/, /^NO$/], recordId);
     setProviderColumnValue(record, columns, [/PLACA/], normalizeProviderPlateValue(plate));
     setProviderColumnValue(record, columns, [/FECHA/, /HORA.*FINALIZACION/], date);
     setProviderColumnValue(record, columns, [/VALOR/], amount);
     setProviderColumnValue(record, columns, [/ASESOR/], advisor);
     setProviderColumnValue(record, columns, [/STATUS/, /ESTATUS/, /ESTADO/], status);
+    setProviderColumnValue(record, columns, [/NOMBRE.*CLIENTE/, /CLIENTE/], client);
 
     const normalizedRaw = normalizeLooseText(raw);
     const plateIndex = plate ? normalizedRaw.indexOf(normalizeLooseText(plate)) : -1;
     const advisorIndex = advisor ? normalizedRaw.indexOf(advisor) : -1;
-    if (plateIndex >= 0) {
+    if (!client && plateIndex >= 0) {
       const afterPlate = normalizedRaw.slice(plateIndex + normalizeLooseText(plate).length).trim();
       const clientText = advisorIndex > plateIndex
         ? normalizedRaw.slice(plateIndex + normalizeLooseText(plate).length, advisorIndex).trim()
         : afterPlate.split(/\s+\$?\d{1,4}(?:[,.]\d{1,2})?\s+/)[0]?.trim() || "";
       setProviderColumnValue(record, columns, [/NOMBRE.*CLIENTE/, /CLIENTE/], clientText);
     }
-    const detailStart = advisorIndex >= 0 ? advisorIndex + advisor.length : (plateIndex >= 0 ? plateIndex + normalizeLooseText(plate).length : 0);
-    const detailText = normalizedRaw.slice(detailStart).trim();
+    const detailText = cleanProviderObservationText(raw, {
+      id: recordId,
+      date,
+      plate,
+      client: client || record["NOMBRE DEL CLIENTE"],
+      advisor,
+      amountRaw: amountCandidate.raw,
+      amount,
+      status
+    });
     setProviderColumnValue(record, columns, [/DETALLE/, /OBSERVACION/, /WHATSAPP/], detailText || raw);
     if (!record.PLACA && normalizeProviderPlateValue(plate)) record.PLACA = normalizeProviderPlateValue(plate);
     if (!record.VALOR && amount) record.VALOR = amount;
@@ -8262,6 +8340,30 @@ function getProviderPreviewHealth(records = []) {
   return { missingPlate, missingAmount, missingAdvisor, rawRecovered };
 }
 
+function updatePendingProviderCell(index, key, value) {
+  const record = pendingProviderRecords[index];
+  if (!record) return;
+  const normalizedValue = key === "PLACA"
+    ? normalizeProviderPlateValue(value) || normalizeLooseText(value)
+    : key === "VALOR"
+      ? normalizeProviderAmountValue(value) || normalizeLooseText(value)
+      : normalizeLooseText(value);
+  record[key] = normalizedValue;
+  record._WARNINGS = [];
+  const normalized = normalizeProviderRecord(record);
+  if (!getProviderRecordPlate(normalized)) normalized._WARNINGS.push("Sin placa detectada");
+  if (!getProviderRecordAmount(normalized)) normalized._WARNINGS.push("Sin valor detectado");
+  if (!getProviderAdvisor(normalized)) normalized._WARNINGS.push("Sin asesor detectado");
+  pendingProviderRecords[index] = normalized;
+  renderProviderPastePreview(pendingProviderRecords);
+}
+
+window.updatePendingProviderCell = updatePendingProviderCell;
+
+function renderProviderPreviewInput(index, key, value, extraClass = "") {
+  return `<input class="provider-preview-input ${extraClass}" value="${escapeHtml(value || "")}" onchange="updatePendingProviderCell(${index}, '${escapeHtml(key)}', this.value)">`;
+}
+
 function renderProviderPastePreview(records) {
   if (!providerPastePreview) return;
   if (!records.length) {
@@ -8299,15 +8401,15 @@ function renderProviderPastePreview(records) {
       <table>
         <thead><tr><th>Perfil</th><th>Proveedor</th><th>Placa</th><th>Fecha</th><th>Valor</th><th>Asesor</th><th>Agencia</th><th>Observacion</th><th>Validacion</th></tr></thead>
         <tbody>
-          ${rows.map((row) => `<tr>
+          ${rows.map((row, index) => `<tr>
             <td title="${escapeHtml(row.perfil)}">${escapeHtml(row.perfil)}</td>
             <td title="${escapeHtml(row.proveedor)}">${escapeHtml(row.proveedor)}</td>
-            <td title="${escapeHtml(row.placa)}">${escapeHtml(row.placa)}</td>
-            <td title="${escapeHtml(row.fecha)}">${escapeHtml(row.fecha)}</td>
-            <td title="${escapeHtml(row.valor)}">${escapeHtml(row.valor)}</td>
-            <td title="${escapeHtml(row.asesor)}">${escapeHtml(row.asesor)}</td>
-            <td title="${escapeHtml(row.agencia)}">${escapeHtml(row.agencia)}</td>
-            <td title="${escapeHtml(row.observacion)}">${escapeHtml(row.observacion)}</td>
+            <td>${renderProviderPreviewInput(index, "PLACA", row.placa, "is-plate")}</td>
+            <td>${renderProviderPreviewInput(index, "FECHA", row.fecha)}</td>
+            <td>${renderProviderPreviewInput(index, "VALOR", row.valor.replace("$", "").trim(), "is-money")}</td>
+            <td>${renderProviderPreviewInput(index, "ASESOR", row.asesor)}</td>
+            <td>${renderProviderPreviewInput(index, "AGENCIA", row.agencia)}</td>
+            <td>${renderProviderPreviewInput(index, "OBSERVACIONES", row.observacion, "is-observation")}</td>
             <td>${row.warnings.length ? `<span class="provider-row-warning">${escapeHtml(row.warnings.join(", "))}</span>` : `<span class="provider-row-ok">OK</span>`}</td>
           </tr>`).join("")}
         </tbody>
@@ -10671,6 +10773,9 @@ processingTabButtons.forEach((button) => {
     processingPanels.forEach((panel) => {
       panel.classList.toggle("is-active", panel.dataset.processingPanel === target);
     });
+    if (navigator.onLine && canSyncCurrentView()) {
+      restoreModulesFromSupabaseIfNeeded();
+    }
   });
 });
 
