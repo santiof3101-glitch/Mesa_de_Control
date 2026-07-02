@@ -9318,3 +9318,177 @@ button.purchase-mini-kpi:hover {
     padding: 16px 0 0;
   }
 }
+
+/* Provider dashboard typography polish */
+.provider-workspace .report-dashboard {
+  padding: 18px 22px !important;
+}
+
+.provider-workspace .report-stage-head {
+  margin-bottom: 14px;
+}
+
+.provider-workspace .report-stage-head h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.provider-workspace .report-stage-head .eyebrow,
+.provider-exec-toolbar .eyebrow,
+.provider-exec-panel .eyebrow {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.provider-workspace .title-actions .soft-badge,
+.provider-exec-actions .btn,
+.provider-period-chip {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.provider-exec-shell {
+  gap: 14px;
+}
+
+.provider-exec-toolbar h3 {
+  font-size: clamp(1.35rem, 1.8vw, 1.8rem);
+  font-weight: 700;
+}
+
+.provider-exec-kpi-grid {
+  gap: 12px;
+}
+
+.provider-exec-kpi {
+  min-height: 148px;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  align-content: start;
+  padding: 16px 14px;
+  border-radius: 12px;
+}
+
+.provider-exec-kpi-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  font-size: 1.1rem;
+}
+
+.provider-exec-kpi-copy {
+  gap: 6px;
+}
+
+.provider-exec-kpi small {
+  max-width: 12ch;
+  color: #0d2d63;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: 0.015em;
+}
+
+.provider-exec-kpi strong {
+  font-size: clamp(1.65rem, 1.7vw, 2rem);
+  font-weight: 700;
+  line-height: 1.02;
+  white-space: nowrap;
+}
+
+.provider-exec-kpi em {
+  color: #566176;
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.28;
+}
+
+.provider-exec-grid {
+  gap: 12px;
+}
+
+.provider-exec-panel {
+  min-height: 220px;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.provider-exec-panel h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.payment-bar label {
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
+.payment-bar label b,
+.payment-mini-table th,
+.payment-matrix th {
+  font-weight: 700;
+}
+
+.payment-mini-table,
+.payment-matrix {
+  font-size: 0.74rem;
+}
+
+.payment-gauge {
+  width: 122px;
+}
+
+.payment-gauge span {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.payment-legend {
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
+.payment-insight-list span {
+  grid-template-columns: 82px 1fr;
+  font-size: 0.78rem;
+  font-weight: 400;
+}
+
+.payment-insight-list b {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.provider-alert-list strong {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.provider-alert-list small,
+.provider-exec-note span,
+.provider-exec-footer span {
+  font-weight: 400;
+}
+
+@media (max-width: 1500px) {
+  .provider-exec-kpi {
+    padding: 14px 12px;
+  }
+
+  .provider-exec-kpi small {
+    font-size: 0.64rem;
+  }
+
+  .provider-exec-kpi strong {
+    font-size: clamp(1.45rem, 1.45vw, 1.75rem);
+  }
+
+  .provider-exec-kpi em {
+    font-size: 0.72rem;
+  }
+}
