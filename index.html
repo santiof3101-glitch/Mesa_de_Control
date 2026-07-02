@@ -1,5 +1,5 @@
 ﻿<!doctype html>
-<html lang="es" data-app-version="20260702-mobile-responsive-polish">
+<html lang="es" data-app-version="20260702-home-redesign">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -7,7 +7,7 @@
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Autocor | Control Legal</title>
-  <link rel="stylesheet" href="styles.css?v=20260702-provider-dashboard-mobile">
+  <link rel="stylesheet" href="styles.css?v=20260702-home-redesign">
 </head>
 <body>
   <header class="topbar">
@@ -15,7 +15,7 @@
       <span id="logoSlot" class="logo-slot"></span>
     </button>
     <nav class="nav-tabs" aria-label="Navegacion principal">
-      <button class="tab is-active" data-view="acceso">Inicio</button>
+      <button class="tab is-active" data-view="acceso">▦ Inicio</button>
       <button id="logoutBtn" class="tab muted-tab" type="button" hidden>Salir</button>
     </nav>
   </header>
@@ -23,13 +23,13 @@
   <main>
     <section id="acceso" class="view is-active" aria-labelledby="access-title">
       <div class="hero-dashboard">
-        <form id="heroSearchForm" class="hero-search">
+        <form id="heroSearchForm" class="hero-search" aria-hidden="true">
           <input id="heroSearchInput" type="search" placeholder="Buscar placa o cliente">
           <button class="btn primary" type="submit">Buscar</button>
         </form>
         <div class="hero-copy">
           <p id="heroEyebrow" class="eyebrow">Bienvenido a Autocor</p>
-          <h1 id="access-title">Centro operativo de mesa de control legal</h1>
+          <h1 id="access-title">Centro operativo de mesa de <span>control legal</span></h1>
           <p id="heroSubtitle">Gestiona leads, tiempos de respuesta, duplicados y carga legal desde una sola bandeja.</p>
         </div>
         <div class="hero-panel">
@@ -48,40 +48,71 @@
 
       <div class="access-grid">
         <article class="panel access-card">
+          <span class="access-icon">📋</span>
           <h2 id="commercialAccessTitle">Acceso comercial</h2>
           <p id="commercialAccessText">Formulario de solicitudes y dashboard personal de saneamientos.</p>
-          <button class="btn primary" type="button" data-view="login-comercial">Ingresar</button>
+          <button class="btn primary" type="button" data-view="login-comercial">Ingresar <span>→</span></button>
         </article>
 
         <article class="panel access-card">
+          <span class="access-icon">⚖️</span>
           <h2 id="legalAccessTitle">Acceso mesa de control</h2>
           <p id="legalAccessText">Bandeja legal para tomar, gestionar y cerrar saneamientos.</p>
-          <button class="btn primary" type="button" data-view="login-legal">Ingresar</button>
+          <button class="btn primary" type="button" data-view="login-legal">Ingresar <span>→</span></button>
         </article>
 
         <article class="panel access-card">
+          <span class="access-icon">🛡️</span>
           <h2 id="adminAccessTitle">Acceso administrador</h2>
           <p id="adminAccessText">Configuracion de usuarios, agencias, estados, diseno y comunicados.</p>
-          <button class="btn primary" type="button" data-view="login-admin">Ingresar</button>
+          <button class="btn primary" type="button" data-view="login-admin">Ingresar <span>→</span></button>
         </article>
 
         <article class="panel access-card">
+          <span class="access-icon">📣</span>
           <h2 id="announcementsAccessTitle">Acceso a comunicados</h2>
           <p id="announcementsAccessText">Cartelera completa de anuncios, novedades y procesos internos.</p>
-          <button class="btn primary" type="button" data-view="comunicados">Ver cartelera</button>
+          <button class="btn primary" type="button" data-view="comunicados">Ver cartelera <span>→</span></button>
         </article>
 
         <article class="panel access-card">
+          <span class="access-icon">📊</span>
           <h2 id="managerAccessTitle">Acceso consulta de saneamientos</h2>
           <p id="managerAccessText">Dashboard gerencial con filtros, graficos e indicadores de operacion.</p>
-          <button class="btn primary" type="button" data-view="login-gerencial">Ingresar</button>
+          <button class="btn primary" type="button" data-view="login-gerencial">Ingresar <span>→</span></button>
         </article>
         <article class="panel access-card">
+          <span class="access-icon">🗄️</span>
           <h2>Procesamiento de datos</h2>
           <p>Depura bases mensuales, detecta duplicados y genera reportes operativos estandarizados.</p>
-          <button class="btn primary" type="button" data-view="procesamiento">Abrir modulo</button>
+          <button class="btn primary" type="button" data-view="procesamiento">Abrir modulo <span>→</span></button>
         </article>
       </div>
+
+      <section class="access-trust-panel" aria-label="Resumen operativo">
+        <div class="trust-main">
+          <span class="trust-icon">🛡️</span>
+          <div>
+            <strong>Control centralizado.</strong>
+            <p>Toda la gestion legal en un solo lugar, con informacion confiable y al dia.</p>
+          </div>
+        </div>
+        <div class="trust-stat">
+          <span>👥</span>
+          <strong id="homeProviderMetric">691</strong>
+          <small>Proveedores activos</small>
+        </div>
+        <div class="trust-stat">
+          <span>📄</span>
+          <strong>+16.5K</strong>
+          <small>Registros gestionados</small>
+        </div>
+        <div class="trust-stat">
+          <span>✅</span>
+          <strong>100%</strong>
+          <small>Control y trazabilidad operativa</small>
+        </div>
+      </section>
     </section>
 
     <section id="procesamiento" class="view" aria-labelledby="processing-title">
@@ -1585,7 +1616,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260702-provider-dashboard-mobile"></script>
+  <script src="app.js?v=20260702-home-redesign"></script>
 </body>
 </html>
 
