@@ -8858,6 +8858,82 @@ button.purchase-mini-kpi:hover {
   }
 }
 
+/* Desktop fit guard: prevents the processing workspace from exceeding the viewport at 100% zoom. */
+#procesamiento.view.is-active {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
+#procesamiento > .processing-panel,
+#procesamiento .processing-workspace,
+#procesamiento .report-hero,
+#procesamiento .processing-command-center,
+#procesamiento .processing-upload-card,
+#procesamiento .purchase-report-shell,
+#procesamiento .provider-filter-shell,
+#procesamiento .data-table-panel,
+#procesamiento .report-dashboard {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.provider-hero {
+  grid-template-columns: 72px minmax(260px, 0.86fr) minmax(380px, 1fr) !important;
+  padding: 24px !important;
+}
+
+.provider-hero-metrics {
+  grid-template-columns: repeat(4, minmax(84px, 1fr)) !important;
+}
+
+.provider-hero-metrics span {
+  padding-left: 12px !important;
+}
+
+.provider-hero h2 {
+  font-size: clamp(2rem, 2.5vw, 2.65rem) !important;
+}
+
+.provider-workspace .processing-command-center {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.42fr) !important;
+}
+
+@media (max-width: 1500px) {
+  #procesamiento.view.is-active {
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  #procesamiento > .processing-tabs {
+    padding: 14px 10px;
+  }
+
+  .provider-hero {
+    grid-template-columns: 64px minmax(250px, 0.74fr) minmax(350px, 1fr) !important;
+    gap: 16px !important;
+  }
+
+  .provider-hero-icon {
+    width: 64px;
+    height: 64px;
+    font-size: 1.65rem;
+  }
+
+  .provider-hero-metrics {
+    gap: 8px !important;
+  }
+
+  .provider-hero-metrics b {
+    font-size: 1.08rem;
+  }
+
+  .provider-hero-metrics small {
+    font-size: 0.68rem;
+  }
+}
+
 /* Autocor home redesign */
 #acceso {
   width: min(1760px, calc(100vw - 56px));
