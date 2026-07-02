@@ -255,6 +255,7 @@ let supabasePollingTimer = null;
 const supabaseModuleVersions = {};
 const supabaseRemoteVersions = {};
 const supabasePublishedHashes = {};
+const supabaseProtectedRemoteCounts = {};
 let supabaseTaskCursor = localStorage.getItem(TASK_SYNC_CURSOR_KEY) || "";
 let supabaseTaskDeleteCursor = localStorage.getItem(TASK_DELETE_CURSOR_KEY) || "";
 let supabaseLastRefreshAt = 0;
@@ -1150,6 +1151,35 @@ function scheduleSupabaseModuleSync() {
   }, 2500);
 }
 
+function getProtectedSupabaseModuleCount(modulo, snapshot = {}) {
+  if (!snapshot || typeof snapshot !== "object") return 0;
+  if (modulo === "proveedores") return Array.isArray(snapshot.proveedores) ? snapshot.proveedores.length : 0;
+  return 0;
+}
+
+function shouldProtectSupabaseModule(modulo) {
+  return modulo === "proveedores";
+}
+
+async function shouldSkipUnsafeModulePublish(modulo, datos) {
+  if (!shouldProtectSupabaseModule(modulo)) return false;
+  const localCount = getProtectedSupabaseModuleCount(modulo, datos);
+  const knownRemoteCount = supabaseProtectedRemoteCounts[modulo] || 0;
+  if (knownRemoteCount && localCount >= knownRemoteCount) return false;
+  const remoteSnapshot = await leerUltimoModuloSupabase(modulo);
+  const remoteCount = getProtectedSupabaseModuleCount(modulo, remoteSnapshot);
+  if (!remoteCount) return false;
+  supabaseProtectedRemoteCounts[modulo] = Math.max(knownRemoteCount, remoteCount);
+  if (remoteCount > localCount) {
+    applySupabaseModuleSnapshot(modulo, remoteSnapshot, { allowOlderVersion: true, reason: "protect-larger-remote" });
+    saveState();
+    safeRenderAll();
+    showToast("Proveedores recuperado desde Supabase: se evito publicar una copia incompleta.");
+    return true;
+  }
+  return false;
+}
+
 async function guardarModulosSupabase() {
   if (!SUPABASE_MODULE_SYNC || !SUPABASE_URL || !SUPABASE_KEY) return;
   const snapshots = getSupabaseModuleSnapshots();
@@ -1157,8 +1187,13 @@ async function guardarModulosSupabase() {
   for (const [modulo, datos] of Object.entries(snapshots)) {
     const hash = getSupabaseSnapshotHash(datos);
     if (supabasePublishedHashes[modulo] === hash) continue;
+    if (await shouldSkipUnsafeModulePublish(modulo, datos)) continue;
     const ok = await guardarRegistroSupabase(modulo, "base", { ...datos, updatedAt: new Date().toISOString() }, usuario);
-    if (ok) supabasePublishedHashes[modulo] = hash;
+    if (ok) {
+      supabasePublishedHashes[modulo] = hash;
+      const count = getProtectedSupabaseModuleCount(modulo, datos);
+      if (count) supabaseProtectedRemoteCounts[modulo] = Math.max(supabaseProtectedRemoteCounts[modulo] || 0, count);
+    }
   }
 }
 
@@ -1322,11 +1357,11 @@ function canSyncCurrentView() {
   return session.role !== "public" || currentViewId === "procesamiento";
 }
 
-function applySupabaseModuleSnapshot(modulo, snapshot) {
+function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
   snapshot = parseMaybeJson(snapshot);
   if (!snapshot || typeof snapshot !== "object") return false;
   const version = getSupabaseSnapshotVersion(snapshot);
-  if (version && supabaseModuleVersions[modulo] === version) return false;
+  if (!options.allowOlderVersion && version && supabaseModuleVersions[modulo] === version) return false;
   const processing = state.dataProcessing || (state.dataProcessing = structuredClone(defaultState.dataProcessing));
   supabaseModuleVersions[modulo] = version || new Date().toISOString();
   switch (modulo) {
@@ -1364,6 +1399,15 @@ function applySupabaseModuleSnapshot(modulo, snapshot) {
       processing.contractLoads = (snapshot.contractLoads || []).map(normalizeContractLoad);
       return true;
     case "proveedores":
+      {
+        const remoteCount = getProtectedSupabaseModuleCount("proveedores", snapshot);
+        const localCount = (processing.proveedores || []).length;
+        supabaseProtectedRemoteCounts.proveedores = Math.max(supabaseProtectedRemoteCounts.proveedores || 0, remoteCount);
+        if (!options.allowSmaller && localCount > remoteCount && remoteCount > 0) {
+          showToast("Supabase tenia una copia menor de proveedores; se mantuvo la base local completa.");
+          return false;
+        }
+      }
       processing.proveedores = (snapshot.proveedores || []).map(normalizeProviderRecord);
       processing.providerLoads = (snapshot.providerLoads || []).map(normalizeProviderLoad);
       processing.providerProfiles = normalizeProviderProfiles(snapshot.providerProfiles || []);
