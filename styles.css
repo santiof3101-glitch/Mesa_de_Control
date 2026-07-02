@@ -3664,12 +3664,23 @@ button.kpi-card {
     radial-gradient(circle at top right, rgba(16, 158, 111, 0.1), transparent 34%);
 }
 
+.provider-alert-card.is-rejected {
+  border-color: rgba(88, 94, 108, 0.24);
+  background:
+    linear-gradient(135deg, rgba(88, 94, 108, 0.09), #fff 58%),
+    radial-gradient(circle at top right, rgba(88, 94, 108, 0.08), transparent 34%);
+}
+
 .provider-alert-card summary strong {
   color: var(--red-dark);
 }
 
 .provider-alert-card.is-approved summary strong {
   color: #109e6f;
+}
+
+.provider-alert-card.is-rejected summary strong {
+  color: #596273;
 }
 
 .provider-alert-card summary em {
@@ -3686,6 +3697,30 @@ button.kpi-card {
 
 .provider-alert-card.is-approved summary em {
   background: #109e6f;
+}
+
+.provider-alert-card.is-rejected summary em {
+  background: #596273;
+}
+
+.provider-duplicate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.provider-duplicate-actions .btn {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+}
+
+.provider-duplicate-actions .btn.danger,
+.provider-bulk-actions .is-danger {
+  color: #fff;
+  border-color: #596273;
+  background: #596273;
 }
 
 .provider-approval-check {
