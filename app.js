@@ -9036,6 +9036,9 @@ window.handleProviderItemApprovalChange = handleProviderItemApprovalChange;
 
 function renderProviderKpis(records) {
   if (!providerKpis) return;
+  providerKpis.hidden = true;
+  providerKpis.innerHTML = "";
+  return;
   const paidTotal = getProviderPaidAmount(records);
   const authorizedOvercharge = getProviderAuthorizedOverchargeAmount(records);
   const uniquePlates = new Set(records.map(getProviderRecordPlate).filter(Boolean)).size;
@@ -9073,63 +9076,162 @@ function renderProviderExecutiveDashboard(records) {
   const maxAdvisor = Math.max(...metrics.advisors.map((item) => item.total), 1);
   const maxProvider = Math.max(...metrics.providers.map((item) => item.amount), 1);
   providerExecutiveDashboard.innerHTML = `
-    <section class="payment-dashboard-grid">
-      <article class="payment-card payment-gauge-card">
-        <p class="eyebrow">Cumplimiento financiero</p>
-        <div class="payment-gauge" style="--score:${metrics.cleanRate}">
-          <span>${metrics.cleanRate}%</span>
+    <section class="provider-exec-shell">
+      <div class="provider-exec-toolbar">
+        <div>
+          <p class="eyebrow">Bienvenido, Santiago</p>
+          <h3>Mesa de Control Financiero</h3>
         </div>
-        <div class="payment-legend">
-          <span><i class="ok-dot"></i>Sin alerta ${metrics.cleanRecords}</span>
-          <span><i class="bad-dot"></i>Por revisar ${metrics.flaggedRecords}</span>
+        <div class="provider-exec-actions">
+          <button class="btn primary" type="button" data-provider-detail="duplicates">Control financiero operativo</button>
+          <button class="btn secondary" type="button" id="providerExecPdfBtn">PDF disponible al final de la base</button>
+          <span class="provider-period-chip">Periodo <b>${escapeHtml(metrics.period)}</b></span>
         </div>
-      </article>
-      <article class="payment-card">
-        <p class="eyebrow">Distribucion por proveedor</p>
-        <h3>Gasto pagado</h3>
-        ${metrics.providers.map((item) => renderPaymentBar(item.provider, `$ ${item.amount.toFixed(2)}`, item.amount / maxProvider)).join("") || `<div class="empty compact-empty">Sin proveedores.</div>`}
-      </article>
-      <article class="payment-card payment-wide">
-        <p class="eyebrow">Solicitudes por agencia</p>
-        <div class="payment-split">
-          <div>
-            ${metrics.agencies.map((item) => renderPaymentBar(item.agency, item.total, item.total / maxAgency)).join("") || `<div class="empty compact-empty">Sin agencias.</div>`}
+      </div>
+
+      <div class="provider-exec-kpi-grid">
+        ${renderProviderExecKpi("💵", "Gasto pagado", `$ ${metrics.paidTotal.toFixed(2)}`, "Suma de valores positivos cargados", "paid", "success")}
+        ${renderProviderExecKpi("🛡️", "Sobrecobro autorizado", `$ ${metrics.authorizedOvercharge.toFixed(2)}`, "Duplicados aprobados", "authorizedOvercharge", "success")}
+        ${renderProviderExecKpi("👥", "Proveedores", metrics.providersCount, "Proveedores filtrados", "providers", "blue")}
+        ${renderProviderExecKpi("🚗", "Placas unicas", metrics.uniquePlates, "Vehiculos distintos", "unique", "purple")}
+        ${renderProviderExecKpi("📄", "Duplicados sin autorizar", metrics.pendingDuplicates, `${metrics.approvedDuplicates} aceptado(s)`, "duplicates", metrics.pendingDuplicates ? "danger" : "success")}
+        ${renderProviderExecKpi("⚠️", "Posible sobrecobro", `$ ${metrics.overcharge.toFixed(2)}`, "Solo duplicados sin autorizacion", "overcharge", metrics.overcharge ? "warning" : "success")}
+      </div>
+
+      <section class="provider-exec-grid">
+        <article class="provider-exec-panel provider-exec-gauge">
+          <p class="eyebrow">Cumplimiento financiero</p>
+          <div class="payment-gauge" style="--score:${metrics.cleanRate}">
+            <span>${metrics.cleanRate}%</span>
           </div>
-          ${renderPaymentMiniTable(["Agencia", "Casos", "%"], metrics.agencies.map((item) => [item.agency, item.total, `${item.share}%`]), "Total", [metrics.records, "100%"])}
-        </div>
-      </article>
-      <article class="payment-card">
-        <p class="eyebrow">Solicitudes por asesor</p>
-        ${metrics.advisors.map((item) => renderPaymentBar(item.advisor, item.total, item.total / maxAdvisor)).join("") || `<div class="empty compact-empty">Sin asesores.</div>`}
-      </article>
-      <article class="payment-card payment-wide">
-        <p class="eyebrow">Distribucion agencia vs asesor</p>
-        ${renderProviderAgencyAdvisorMatrix(metrics.matrix)}
-      </article>
-      <article class="payment-card">
-        <p class="eyebrow">Indicadores clave</p>
-        <div class="payment-insight-list">
-          <span><b>${metrics.uniquePlates}</b> placas unicas</span>
-          <span><b>${metrics.pendingDuplicates}</b> duplicados sin autorizar</span>
-          <span><b>$ ${metrics.overcharge.toFixed(2)}</b> posible sobrecobro</span>
-          <span><b>${metrics.duplicateRate}%</b> concentracion duplicada</span>
-        </div>
-      </article>
-      <article class="payment-card">
-        <p class="eyebrow">Hallazgos principales</p>
-        <div class="payment-finding-list">
-          ${metrics.findings.map((finding) => `<p><strong>${escapeHtml(finding.title)}</strong><span>${escapeHtml(finding.text)}</span></p>`).join("")}
-        </div>
-      </article>
+          <div class="payment-legend">
+            <span><i class="ok-dot"></i>Sin alerta ${metrics.cleanRecords}</span>
+            <span><i class="bad-dot"></i>Por revisar ${metrics.flaggedRecords}</span>
+          </div>
+          <div class="provider-exec-note ${metrics.pendingDuplicates ? "is-warning" : "is-ok"}">
+            <strong>${metrics.pendingDuplicates ? "Revisar posibles sobrecobros." : "Excelente gestion financiera."}</strong>
+            <span>${metrics.pendingDuplicates ? `Existen $ ${metrics.overcharge.toFixed(2)} sin autorizacion.` : "Continua asi."}</span>
+          </div>
+        </article>
+
+        <article class="provider-exec-panel provider-exec-wide">
+          <p class="eyebrow">Distribucion por proveedor</p>
+          <h3>Gasto pagado</h3>
+          ${metrics.providers.map((item) => renderPaymentBar(item.provider, `$ ${item.amount.toFixed(2)} · ${item.share}%`, item.amount / maxProvider)).join("") || `<div class="empty compact-empty">Sin proveedores.</div>`}
+          <div class="provider-total-line"><span>Total general</span><b>$ ${metrics.paidTotal.toFixed(2)}</b><strong>100%</strong></div>
+        </article>
+
+        <article class="provider-exec-panel provider-exec-wide">
+          <p class="eyebrow">Solicitudes por agencia</p>
+          <div class="payment-split">
+            <div>
+              ${metrics.agencies.map((item) => renderPaymentBar(item.agency, item.total, item.total / maxAgency)).join("") || `<div class="empty compact-empty">Sin agencias.</div>`}
+            </div>
+            ${renderPaymentMiniTable(["Agencia", "Casos", "%"], metrics.agencies.map((item) => [item.agency, item.total, `${item.share}%`]), "Total", [metrics.records, "100%"])}
+          </div>
+        </article>
+
+        <article class="provider-exec-panel">
+          <p class="eyebrow">Solicitudes por asesor</p>
+          ${metrics.advisors.map((item) => renderPaymentBar(item.advisor, item.total, item.total / maxAdvisor)).join("") || `<div class="empty compact-empty">Sin asesores.</div>`}
+          ${renderPaymentMiniTable(["Asesor", "Casos", "%"], metrics.advisors.slice(0, 5).map((item) => [item.advisor, item.total, `${item.share}%`]), "Total", [metrics.records, "100%"])}
+        </article>
+
+        <article class="provider-exec-panel">
+          <p class="eyebrow">Distribucion agencia vs asesor</p>
+          ${renderProviderAgencyAdvisorDonut(metrics)}
+        </article>
+
+        <article class="provider-exec-panel">
+          <p class="eyebrow">Alertas y observaciones</p>
+          <div class="provider-alert-list">
+            ${metrics.findings.map((finding) => `<p class="${escapeHtml(finding.tone)}"><b>${escapeHtml(finding.icon)}</b><span><strong>${escapeHtml(finding.title)}</strong><small>${escapeHtml(finding.text)}</small></span></p>`).join("")}
+          </div>
+        </article>
+
+        <article class="provider-exec-panel">
+          <p class="eyebrow">Indicadores clave</p>
+          <div class="payment-insight-list">
+            <span><b>$ ${metrics.averagePerPlate.toFixed(2)}</b> gasto promedio por placa</span>
+            <span><b>${metrics.pendingDuplicates}</b> duplicados sin autorizar</span>
+            <span><b>$ ${metrics.overcharge.toFixed(2)}</b> posible sobrecobro</span>
+            <span><b>${metrics.records}</b> cargas procesadas</span>
+          </div>
+        </article>
+      </section>
+
+      <footer class="provider-exec-footer">
+        <span>📅 Periodo <b>${escapeHtml(metrics.period)}</b></span>
+        <span>🗄️ Fuente de datos <b>Base de datos Control Financiero</b></span>
+        <span>⏱️ Fecha de corte <b>${escapeHtml(metrics.cutoff)}</b></span>
+        <span>🔄 Ultima actualizacion <b>${escapeHtml(metrics.updatedAt)}</b></span>
+      </footer>
     </section>
   `;
+  providerExecutiveDashboard.querySelectorAll("[data-provider-detail]").forEach((button) => {
+    button.addEventListener("click", () => openProviderDetail(button.dataset.providerDetail));
+  });
+  providerExecutiveDashboard.querySelector("#providerExecPdfBtn")?.addEventListener("click", () => exportProviderPdfBtn?.click());
+}
+
+function renderProviderExecKpi(icon, label, value, hint, detail, tone = "blue") {
+  return `
+    <button class="provider-exec-kpi is-${escapeHtml(tone)}" type="button" data-provider-detail="${escapeHtml(detail)}">
+      <span class="provider-exec-kpi-icon">${escapeHtml(icon)}</span>
+      <span class="provider-exec-kpi-copy">
+        <small>${escapeHtml(label)}</small>
+        <strong>${escapeHtml(value)}</strong>
+        <em>${escapeHtml(hint)}</em>
+      </span>
+    </button>
+  `;
+}
+
+function renderProviderAgencyAdvisorDonut(metrics) {
+  const agencyTotal = metrics.agencies.reduce((sum, item) => sum + item.total, 0);
+  const advisorTotal = metrics.advisors.reduce((sum, item) => sum + item.total, 0);
+  const total = Math.max(agencyTotal + advisorTotal, 1);
+  const agencyShare = Math.round((agencyTotal / total) * 100);
+  return `
+    <div class="provider-donut-wrap">
+      <div class="provider-donut" style="--agency:${agencyShare}">
+        <span>${metrics.records}</span>
+        <small>Total</small>
+      </div>
+      <div class="provider-donut-legend">
+        <p><i class="agency"></i><span>Agencia</span><b>${agencyTotal}</b></p>
+        <p><i class="advisor"></i><span>Asesor</span><b>${advisorTotal}</b></p>
+      </div>
+    </div>
+  `;
+}
+
+function getProviderMonthLabel() {
+  const value = providerFilters.month || providerMonthInput?.value || "";
+  if (!value) return "Todos los periodos";
+  const [year, month] = value.split("-");
+  const date = new Date(Number(year), Number(month) - 1, 1);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("es-EC", { month: "long", year: "numeric" });
+}
+
+function getProviderCurrentDateTime() {
+  return new Date().toLocaleString("es-EC", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
 
 function getProviderDashboardMetrics(records) {
   const duplicates = getProviderDuplicateGroups(records);
   const pendingDuplicates = duplicates.filter(isProviderDuplicatePending);
+  const approvedDuplicates = duplicates.filter(isProviderDuplicateApproved);
   const overcharge = pendingDuplicates.reduce((sum, group) => sum + getProviderDuplicateUnauthorizedAmount(group, records), 0);
   const paidTotal = getProviderPaidAmount(records);
+  const authorizedOvercharge = getProviderAuthorizedOverchargeAmount(records);
   const cleanRecords = Math.max(0, records.length - pendingDuplicates.reduce((sum, group) => sum + Math.max(0, group.items.length - 1), 0));
   const flaggedRecords = records.length - cleanRecords;
   const cleanRate = records.length ? Math.round((cleanRecords / records.length) * 1000) / 10 : 0;
@@ -9137,11 +9239,14 @@ function getProviderDashboardMetrics(records) {
   const agencies = groupProviderMetric(records, getProviderAgency, "agency")
     .map((item) => ({ ...item, share: records.length ? Math.round((item.total / records.length) * 1000) / 10 : 0 }))
     .slice(0, 9);
-  const advisors = groupProviderMetric(records, getProviderAdvisor, "advisor").slice(0, 8);
+  const advisors = groupProviderMetric(records, getProviderAdvisor, "advisor")
+    .map((item) => ({ ...item, share: records.length ? Math.round((item.total / records.length) * 1000) / 10 : 0 }))
+    .slice(0, 8);
   const providers = [...new Set(records.map((record) => record.provider || "SIN PROVEEDOR"))]
     .map((provider) => {
       const providerRecords = records.filter((record) => (record.provider || "SIN PROVEEDOR") === provider);
-      return { provider, total: providerRecords.length, amount: getProviderPaidAmount(providerRecords) };
+      const amount = getProviderPaidAmount(providerRecords);
+      return { provider, total: providerRecords.length, amount, share: paidTotal ? Math.round((amount / paidTotal) * 1000) / 10 : 0 };
     })
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 8);
@@ -9150,28 +9255,45 @@ function getProviderDashboardMetrics(records) {
   const topAdvisor = advisors[0];
   const findings = [
     {
+      icon: "🏢",
       title: "Concentracion por agencia",
-      text: topAgency ? `${topAgency.agency} concentra ${topAgency.share}% de los registros filtrados.` : "Sin agencias para analizar."
+      text: topAgency ? `${topAgency.agency} concentra ${topAgency.share}% de los registros filtrados.` : "Sin agencias para analizar.",
+      tone: "is-info"
     },
     {
+      icon: "👤",
       title: "Carga operativa",
-      text: topAdvisor ? `${topAdvisor.advisor} administra ${topAdvisor.total} registro(s) en la base filtrada.` : "Sin asesores para analizar."
+      text: topAdvisor ? `${topAdvisor.advisor} administra ${topAdvisor.total} registro(s) en la base filtrada.` : "Sin asesores para analizar.",
+      tone: "is-blue"
     },
     {
+      icon: pendingDuplicates.length ? "⚠️" : "✅",
       title: "Control de cobros",
-      text: pendingDuplicates.length ? `${pendingDuplicates.length} placa(s) repetidas necesitan autorizacion. Priorice el posible sobrecobro.` : "No hay duplicados pendientes de autorizacion."
+      text: pendingDuplicates.length ? `${pendingDuplicates.length} placa(s) repetidas necesitan autorizacion. Priorice el posible sobrecobro.` : "No hay duplicados pendientes de autorizacion.",
+      tone: pendingDuplicates.length ? "is-warning" : "is-ok"
     },
     {
-      title: "Gasto pagado",
-      text: `El valor pagado filtrado es $ ${paidTotal.toFixed(2)}.`
+      icon: "👥",
+      title: "Proveedores activos",
+      text: `${new Set(records.map((record) => record.provider).filter(Boolean)).size} proveedor(es) gestionados en el periodo actual.`,
+      tone: "is-purple"
     }
   ];
+  const uniquePlates = new Set(records.map(getProviderRecordPlate).filter(Boolean)).size;
+  const now = getProviderCurrentDateTime();
   return {
+    period: getProviderMonthLabel(),
+    cutoff: now,
+    updatedAt: now,
     records: records.length,
     paidTotal,
-    uniquePlates: new Set(records.map(getProviderRecordPlate).filter(Boolean)).size,
+    authorizedOvercharge,
+    providersCount: new Set(records.map((record) => record.provider).filter(Boolean)).size,
+    uniquePlates,
+    approvedDuplicates: approvedDuplicates.length,
     pendingDuplicates: pendingDuplicates.length,
     overcharge,
+    averagePerPlate: uniquePlates ? paidTotal / uniquePlates : 0,
     cleanRecords,
     flaggedRecords,
     cleanRate,
