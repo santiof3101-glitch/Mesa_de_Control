@@ -9492,3 +9492,25 @@ button.purchase-mini-kpi:hover {
     font-size: 0.72rem;
   }
 }
+
+/* Mobile view isolation: keep processing hidden from the public home until the user opens it. */
+@media (max-width: 760px) {
+  .view:not(.is-active),
+  #procesamiento.view:not(.is-active),
+  #procesamiento.view:not(.is-active) *,
+  .processing-panel:not(.is-active) {
+    display: none !important;
+  }
+
+  #procesamiento.view.is-active {
+    display: grid !important;
+  }
+
+  #procesamiento.view.is-active .processing-panel:not(.is-active) {
+    display: none !important;
+  }
+
+  #procesamiento.view.is-active .processing-panel.is-active {
+    display: grid !important;
+  }
+}
