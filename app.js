@@ -9090,12 +9090,12 @@ function renderProviderExecutiveDashboard(records) {
       </div>
 
       <div class="provider-exec-kpi-grid">
-        ${renderProviderExecKpi("USD", "Gasto pagado", `$ ${metrics.paidTotal.toFixed(2)}`, "Suma de valores positivos cargados", "paid", "success")}
-        ${renderProviderExecKpi("OK", "Sobrecobro autorizado", `$ ${metrics.authorizedOvercharge.toFixed(2)}`, "Duplicados aprobados", "authorizedOvercharge", "success")}
-        ${renderProviderExecKpi("PROV", "Proveedores", metrics.providersCount, "Proveedores filtrados", "providers", "blue")}
-        ${renderProviderExecKpi("AUTO", "Placas unicas", metrics.uniquePlates, "Vehiculos distintos", "unique", "purple")}
-        ${renderProviderExecKpi("DOC", "Duplicados sin autorizar", metrics.pendingDuplicates, `${metrics.approvedDuplicates} aceptado(s)`, "duplicates", metrics.pendingDuplicates ? "danger" : "success")}
-        ${renderProviderExecKpi("ALERTA", "Posible sobrecobro", `$ ${metrics.overcharge.toFixed(2)}`, "Solo duplicados sin autorizacion", "overcharge", metrics.overcharge ? "warning" : "success")}
+        ${renderProviderExecKpi("&#128176;", "Gasto pagado", `$ ${metrics.paidTotal.toFixed(2)}`, "Suma de valores positivos cargados", "paid", "success")}
+        ${renderProviderExecKpi("&#128737;&#65039;", "Sobrecobro autorizado", `$ ${metrics.authorizedOvercharge.toFixed(2)}`, "Duplicados aprobados", "authorizedOvercharge", "success")}
+        ${renderProviderExecKpi("&#128101;", "Proveedores", metrics.providersCount, "Proveedores filtrados", "providers", "blue")}
+        ${renderProviderExecKpi("&#128663;", "Placas unicas", metrics.uniquePlates, "Vehiculos distintos", "unique", "purple")}
+        ${renderProviderExecKpi("&#128196;", "Duplicados sin autorizar", metrics.pendingDuplicates, `${metrics.approvedDuplicates} aceptado(s)`, "duplicates", metrics.pendingDuplicates ? "danger" : "success")}
+        ${renderProviderExecKpi("&#9888;&#65039;", "Posible sobrecobro", `$ ${metrics.overcharge.toFixed(2)}`, "Solo duplicados sin autorizacion", "overcharge", metrics.overcharge ? "warning" : "success")}
       </div>
 
       <section class="provider-exec-grid">
@@ -9177,7 +9177,7 @@ function renderProviderExecutiveDashboard(records) {
 function renderProviderExecKpi(icon, label, value, hint, detail, tone = "blue") {
   return `
     <button class="provider-exec-kpi is-${escapeHtml(tone)}" type="button" data-provider-detail="${escapeHtml(detail)}">
-      <span class="provider-exec-kpi-icon">${escapeHtml(icon)}</span>
+      <span class="provider-exec-kpi-icon">${icon}</span>
       <span class="provider-exec-kpi-copy">
         <small>${escapeHtml(label)}</small>
         <strong>${escapeHtml(value)}</strong>
