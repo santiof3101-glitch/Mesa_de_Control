@@ -1,4 +1,4 @@
-const STORAGE_KEY = "autocor-control-legal";
+﻿const STORAGE_KEY = "autocor-control-legal";
 const APP_BUILD_VERSION = "20260701-provider-rejected-duplicates";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
@@ -1823,15 +1823,15 @@ function normalizeContractLoad(load) {
 
 function getContractColumnAliases(column) {
   const aliases = {
-    "HORA DE FINALIZACION": ["Hora de finalizacion", "Hora de finalización"],
-    "CORREO ELECTRONICO": ["Correo electronico", "Correo electrónico"],
+    "HORA DE FINALIZACION": ["Hora de finalizacion", "Hora de finalizaciÃ³n"],
+    "CORREO ELECTRONICO": ["Correo electronico", "Correo electrÃ³nico"],
     "NOMBRE COMPLETO CLIENTE": ["Nombre completo cliente", "Cliente"],
-    "CEDULA DE IDENTIDAD": ["Cedula de identidad", "Cedula", "Cédula de identidad"],
+    "CEDULA DE IDENTIDAD": ["Cedula de identidad", "Cedula", "CÃ©dula de identidad"],
     "PLACAS": ["Placa", "Placas"],
     "VALOR DE VENTA": [" Valor de venta: ", "Valor de venta:", "Valor venta"],
     "MARCA Y MODELO (MATRICULA )": ["Marca y modelo (matricula )", "Marca y modelo", "Matricula"],
-    "DIRECCION EXACTA DE VIVIENDA": ["Direccion exacta de vivienda", "Dirección exacta de vivienda"],
-    "CORREO ELECTRONICO CLIENTE": ["Correo electronico cliente", "Correo electrónico cliente"],
+    "DIRECCION EXACTA DE VIVIENDA": ["Direccion exacta de vivienda", "DirecciÃ³n exacta de vivienda"],
+    "CORREO ELECTRONICO CLIENTE": ["Correo electronico cliente", "Correo electrÃ³nico cliente"],
     "AGENCIA DE VENTA": ["Agencia de venta", "Agencia"],
     "NOMBRE DEL ASESOR": ["Nombre del asesor", "Asesor"],
     "ESTADO CIVIL COMPRADOR": ["Estado civil comprador"],
@@ -2002,7 +2002,7 @@ function migrateVisualDefaults(merged, source = {}) {
     "CENTRO OPERATIVO DE SANEAMIENTO",
     "CENTRO OPERATIVO DE MESA DE CONTROL",
     "OPERACION DE SANEAMIENTO",
-    "OPERACIÓN DE SANEAMIENTO"
+    "OPERACIÃ“N DE SANEAMIENTO"
   ]);
   const currentTitle = normalizeLooseText(source.copy?.heroTitle || merged.copy?.heroTitle);
   if (!source.schemaVersion || source.schemaVersion < STATE_SCHEMA_VERSION || oldHeroTitles.has(currentTitle)) {
@@ -2346,27 +2346,27 @@ function sanitizeStateVisuals(snapshot) {
 }
 
 function hasBrokenEncoding(value = "") {
-  return /ð|Ã|Â|â|ï¸|�/.test(String(value));
+  return /Ã°|Ãƒ|Ã‚|Ã¢|Ã¯Â¸|ï¿½/.test(String(value));
 }
 
 function repairBrokenEncoding(value = "") {
   if (typeof value !== "string" || !hasBrokenEncoding(value)) return value;
   const replacements = [
-    ["Â¿", "\u00BF"],
-    ["Â¡", "\u00A1"],
-    ["Ã±", "\u00F1"],
-    ["Ã‘", "\u00D1"],
-    ["Ã¡", "\u00E1"],
-    ["Ã©", "\u00E9"],
-    ["Ã­", "\u00ED"],
-    ["Ã³", "\u00F3"],
-    ["Ãº", "\u00FA"],
-    ["ÃÁ", "\u00C1"],
-    ["Ã‰", "\u00C9"],
-    ["ÃÍ", "\u00CD"],
-    ["Ã“", "\u00D3"],
-    ["Ãš", "\u00DA"],
-    ["Â", ""]
+    ["Ã‚Â¿", "\u00BF"],
+    ["Ã‚Â¡", "\u00A1"],
+    ["ÃƒÂ±", "\u00F1"],
+    ["Ãƒâ€˜", "\u00D1"],
+    ["ÃƒÂ¡", "\u00E1"],
+    ["ÃƒÂ©", "\u00E9"],
+    ["ÃƒÂ­", "\u00ED"],
+    ["ÃƒÂ³", "\u00F3"],
+    ["ÃƒÂº", "\u00FA"],
+    ["ÃƒÃ", "\u00C1"],
+    ["Ãƒâ€°", "\u00C9"],
+    ["ÃƒÃ", "\u00CD"],
+    ["Ãƒâ€œ", "\u00D3"],
+    ["ÃƒÅ¡", "\u00DA"],
+    ["Ã‚", ""]
   ];
   return replacements.reduce(
     (text, [broken, fixed]) => text.split(broken).join(fixed),
@@ -2821,7 +2821,7 @@ function applyCommercialSessionToForm() {
   agenciaSelect.value = session.agency || "";
   if (saleAgencySelect) saleAgencySelect.value = session.agency || "";
   const welcomeTitle = document.querySelector("#commercialWelcomeTitle");
-  if (welcomeTitle) welcomeTitle.textContent = `Bienvenido, ${session.name || "asesor comercial"}`;
+  if (welcomeTitle) { welcomeTitle.innerHTML = `Bienvenido,<br><span>${escapeHtml(session.name || "Asesor comercial")}</span>`; }
   renderAdvisorSelect();
   asesorSelect.value = session.name || "";
 }
@@ -2982,7 +2982,7 @@ function renderFormAdministration() {
     <article class="form-builder-row" data-form-field="${escapeHtml(field.id)}">
       <div>
         <strong>${escapeHtml(field.label)}</strong>
-        <span>${field.isBase ? "Campo base" : "Campo personalizado"} · ${escapeHtml(field.type)}</span>
+        <span>${field.isBase ? "Campo base" : "Campo personalizado"} Â· ${escapeHtml(field.type)}</span>
       </div>
       <input data-field-label value="${escapeHtml(field.label)}" aria-label="Etiqueta">
       <input data-field-placeholder value="${escapeHtml(field.placeholder || "")}" placeholder="Texto de ayuda" aria-label="Texto de ayuda">
@@ -3064,7 +3064,7 @@ function renderCommercialAdvisors() {
   state.commercialAdvisors.forEach((advisor) => {
     const item = document.createElement("span");
     item.className = "option-item";
-    item.innerHTML = `<span>${escapeHtml(advisor.name)} <small>${escapeHtml(advisor.agency || "Sin agencia")} · Usuario: ${escapeHtml(advisor.username || "")}</small></span><input type="password" placeholder="Nueva contrasena"><button class="btn secondary change-password" type="button">Cambiar</button><button class="remove-option" type="button" aria-label="Eliminar ${escapeHtml(advisor.name)}">x</button>`;
+    item.innerHTML = `<span>${escapeHtml(advisor.name)} <small>${escapeHtml(advisor.agency || "Sin agencia")} Â· Usuario: ${escapeHtml(advisor.username || "")}</small></span><input type="password" placeholder="Nueva contrasena"><button class="btn secondary change-password" type="button">Cambiar</button><button class="remove-option" type="button" aria-label="Eliminar ${escapeHtml(advisor.name)}">x</button>`;
     item.querySelector(".remove-option").addEventListener("click", () => removeCommercialAdvisor(advisor.id));
     item.querySelector(".change-password").addEventListener("click", () => {
       changePassword("commercialAdvisors", advisor.id, item.querySelector("input").value);
@@ -3083,7 +3083,7 @@ function renderStatusOptions() {
     item.className = "option-item status-admin-item";
     item.innerHTML = `
       <i style="background:${escapeHtml(status.color)}"></i>
-      <span>${escapeHtml(status.label)}${status.closes ? " · cierra tarea" : ""}</span>
+      <span>${escapeHtml(status.label)}${status.closes ? " Â· cierra tarea" : ""}</span>
       ${status.isDefault ? "" : `<button class="remove-option" type="button" aria-label="Eliminar ${escapeHtml(status.label)}">x</button>`}
     `;
     const button = item.querySelector("button");
@@ -4452,24 +4452,24 @@ function renderDashboards() {
   const cards = [
     [" Total leads", kpis.total, "Solicitudes registradas"],
     [" Placas unicas", kpis.uniquePlates, "Vehiculos sin repetir"],
-    ["⏳ Pendientes", kpis.pending, "Sin tomar"],
+    ["â³ Pendientes", kpis.pending, "Sin tomar"],
     [" En proceso", kpis.inProgress, "Trabajandose"],
     [" Completados", kpis.completed, "Cerrados"],
     [" Disponibles", kpis.unassigned, "Para tomar"],
     [" Duplicados", kpis.duplicates, "Placa o cliente repetido"],
-    ["⏱ Prom. toma", formatMinutes(kpis.avgTake), "Ingreso a toma"],
+    ["â± Prom. toma", formatMinutes(kpis.avgTake), "Ingreso a toma"],
     [" Prom. cierre", formatMinutes(kpis.avgCompletion), "Toma a cierre"]
   ];
 
   const adminCards = [
     [" Total leads", adminKpis.total, "Segun filtros"],
     [" Placas unicas", adminKpis.uniquePlates, "Vehiculos sin repetir"],
-    ["⏳ Pendientes", adminKpis.pending, "Sin tomar"],
+    ["â³ Pendientes", adminKpis.pending, "Sin tomar"],
     [" En proceso", adminKpis.inProgress, "Trabajandose"],
     [" Completados", adminKpis.completed, "Cerrados"],
     [" Disponibles", adminKpis.unassigned, "Para tomar"],
     [" Duplicados", adminKpis.duplicates, "Placa o cliente repetido"],
-    ["⏱ Prom. toma", formatMinutes(adminKpis.avgTake), "Ingreso a toma"],
+    ["â± Prom. toma", formatMinutes(adminKpis.avgTake), "Ingreso a toma"],
     [" Prom. cierre", formatMinutes(adminKpis.avgCompletion), "Toma a cierre"],
     [" Cerrados hoy", adminKpis.completedToday, "Gestion filtrada"]
   ];
@@ -4499,9 +4499,9 @@ function renderCommercialDashboard() {
   const kpis = getKpis(tasks);
   renderKpiCards("#commercialKpis", [
     [" Mis solicitudes", kpis.total, "Registradas por tu usuario"],
-    ["⏳ Pendientes", kpis.pending, "Aun sin tomar"],
-    [" En proceso", kpis.inProgress, "Tomadas por mesa"],
-    [" Cerradas", kpis.completed, "Finalizadas"]
+    ["â³ Pendientes", kpis.pending, "Aun sin tomar"],
+    ["En proceso", kpis.inProgress, "Tomadas por mesa"],
+    ["Cerradas", kpis.completed, "Finalizadas"]
   ]);
   chartContainer.innerHTML = renderBarRows(groupByStatus(tasks), Math.max(tasks.length, 1));
   if (leadList) renderCommercialLeadList(leadList, tasks);
@@ -4515,9 +4515,9 @@ function renderCommercialGeneralDashboard() {
   const kpis = getKpis(tasks);
   renderKpiCards("#commercialGeneralKpis", [
     [" Disponibles", kpis.unassigned, "Por tomar en mesa"],
-    [" En proceso", kpis.inProgress, "Gestion legal activa"],
-    [" Cerrados", kpis.completed, "Finalizados"],
-    ["⏱ Prom. cierre", formatMinutes(kpis.avgCompletion), "Tomado a cerrado"]
+    ["En proceso", kpis.inProgress, "Gestion legal activa"],
+    ["Cerrados", kpis.completed, "Finalizados"],
+    ["â± Prom. cierre", formatMinutes(kpis.avgCompletion), "Tomado a cerrado"]
   ]);
   document.querySelector("#commercialGeneralChart").innerHTML = renderBarRows(groupByStatus(tasks), Math.max(tasks.length, 1));
 }
@@ -4598,11 +4598,11 @@ function renderCommercialDashboard() {
   if (lookupTitle) lookupTitle.textContent = activeCommercialProcess === "venta" ? "Revisa el estatus de tus contratos" : "Revisa el estatus de tus saneamientos";
 
   renderKpiCards("#commercialKpis", [
-    ["🧾 Saneamientos", purchaseTasks.length, "Solicitudes de compra"],
-    ["🚗 Contratos", saleTasks.length, "Tracking de compraventa"],
-    ["📌 CUV", cuvTasks.length, "Proceso comercial separado"],
-    ["🔐 Info pendiente", infoRequests.filter((task) => task.infoAccessStatus !== "approved" && !isClosedStatus(task.status)).length, "Solicitudes por autorizar"],
-    ["✅ Total cerradas", kpis.completed, "Compra, venta y CUV"]
+    ["Saneamientos", purchaseTasks.length, "Solicitudes de compra"],
+    ["Contratos", saleTasks.length, "Tracking de compraventa"],
+    ["CUV", cuvTasks.length, "Proceso comercial separado"],
+    ["Info pendiente", infoRequests.filter((task) => task.infoAccessStatus !== "approved" && !isClosedStatus(task.status)).length, "Solicitudes por autorizar"],
+    ["Total cerradas", kpis.completed, "Compra, venta y CUV"]
   ]);
   chartContainer.innerHTML = renderBarRows(groupByStatus(dashboardTasks), Math.max(dashboardTasks.length, 1));
   if (leadList) renderCommercialLeadList(leadList, dashboardTasks);
@@ -4616,11 +4616,11 @@ function renderCommercialGeneralDashboard() {
   const cuvTasks = filterTasksByCommercialProcess(tasks, "cuv");
   const kpis = getKpis(tasks);
   renderKpiCards("#commercialGeneralKpis", [
-    ["🧾 Saneamientos", purchaseTasks.length, "Toda el area comercial"],
-    ["🚗 Contratos", saleTasks.length, "Tracking compraventa"],
-    ["📌 CUV", cuvTasks.length, "Control CUV"],
-    ["⚙️ En proceso", kpis.inProgress, "Gestion legal activa"],
-    ["✅ Cerrados", kpis.completed, "Finalizados"]
+    ["Saneamientos", purchaseTasks.length, "Toda el area comercial"],
+    ["Contratos", saleTasks.length, "Tracking compraventa"],
+    ["CUV", cuvTasks.length, "Control CUV"],
+    ["En proceso", kpis.inProgress, "Gestion legal activa"],
+    ["Cerrados", kpis.completed, "Finalizados"]
   ]);
   document.querySelector("#commercialGeneralChart").innerHTML = renderBarRows(groupByStatus(tasks), Math.max(tasks.length, 1));
 }
@@ -4664,10 +4664,10 @@ function renderCommercialRequests() {
   if (title) title.textContent = activeCommercialRequestFilter === "todos" ? "Registro completo del asesor" : getCommercialRequestFilterLabel();
   if (badge) badge.textContent = `${filteredTasks.length} registro${filteredTasks.length === 1 ? "" : "s"}`;
   renderKpiCards("#commercialRequestsKpis", [
-    ["📋 Registros", filteredTasks.length, "Segun filtro seleccionado"],
-    ["⏳ Pendientes", kpis.pending + kpis.unassigned, "Aun sin cierre"],
-    ["⚙️ En proceso", kpis.inProgress, "Tomadas por mesa"],
-    ["✅ Cerradas", kpis.completed, "Finalizadas"]
+    ["Registros", filteredTasks.length, "Segun filtro seleccionado"],
+    ["Pendientes", kpis.pending + kpis.unassigned, "Aun sin cierre"],
+    ["En proceso", kpis.inProgress, "Tomadas por mesa"],
+    ["Cerradas", kpis.completed, "Finalizadas"]
   ]);
   listContainer.innerHTML = `
     <div class="commercial-request-group">
@@ -4697,11 +4697,11 @@ function renderCommercialControlSummary() {
   const infoRequests = getCommercialInfoRequests(ownedTasks);
   const kpis = getKpis(tasks);
   renderKpiCards("#commercialControlKpis", [
-    ["🛡️ Mis tareas", tasks.length, "Compra, venta y CUV"],
-    ["⏳ Pendientes", kpis.pending + kpis.unassigned, "Por asignar o tomar"],
-    ["⚙️ En proceso", kpis.inProgress, "Gestion activa"],
-    ["🔐 Info solicitada", infoRequests.length, "Autorizaciones de placa"],
-    ["✅ Cerradas", kpis.completed, "Finalizadas"]
+    ["Mis tareas", tasks.length, "Compra, venta y CUV"],
+    ["Pendientes", kpis.pending + kpis.unassigned, "Por asignar o tomar"],
+    ["En proceso", kpis.inProgress, "Gestion activa"],
+    ["Info solicitada", infoRequests.length, "Autorizaciones de placa"],
+    ["Cerradas", kpis.completed, "Finalizadas"]
   ]);
   chartContainer.innerHTML = renderBarRows(groupByStatus([...tasks, ...infoRequests]), Math.max(tasks.length + infoRequests.length, 1));
 }
@@ -4773,7 +4773,7 @@ function renderControlDashboard() {
   renderKpiCards("#controlKpis", [
     [" Disponibles", kpis.unassigned, "Sin tomar"],
     [" Tomados", kpis.inProgress, "En mesa"],
-    [" Cerrados", kpis.completed, "Finalizados"],
+    ["Cerrados", kpis.completed, "Finalizados"],
     [" Placas unicas", kpis.uniquePlates, "Vehiculos"]
   ]);
 }
@@ -4782,15 +4782,15 @@ function renderManagerDashboard() {
   const tasks = state.tasks;
   const kpis = getKpis(tasks);
   renderKpiCards("#managerKpis", [
-    ["▦ Total saneamientos", kpis.total, "Operacion completa"],
-    ["▰ Placas unicas", kpis.uniquePlates, "Vehiculos sin repetir"],
-    ["◷ Pendientes", kpis.pending, "Sin tomar"],
-    ["◆ Tomados / proceso", kpis.inProgress, "En gestion"],
+    ["â–¦ Total saneamientos", kpis.total, "Operacion completa"],
+    ["â–° Placas unicas", kpis.uniquePlates, "Vehiculos sin repetir"],
+    ["â—· Pendientes", kpis.pending, "Sin tomar"],
+    ["â—† Tomados / proceso", kpis.inProgress, "En gestion"],
     [" Cerrados", kpis.completed, "Estatus de cierre"],
     ["! Duplicados", kpis.duplicates, "Alertas de placa/cliente"],
-    ["◴ Prom. toma", formatMinutes(kpis.avgTake), "Ingreso a tomado"],
-    ["◇ Prom. cierre", formatMinutes(kpis.avgCompletion), "Tomado a cerrado"],
-    ["▦ Cerrados hoy", kpis.completedToday, "Resultado del dia"]
+    ["â—´ Prom. toma", formatMinutes(kpis.avgTake), "Ingreso a tomado"],
+    ["â—‡ Prom. cierre", formatMinutes(kpis.avgCompletion), "Tomado a cerrado"],
+    ["â–¦ Cerrados hoy", kpis.completedToday, "Resultado del dia"]
   ]);
 
   const hero = document.querySelector("#managerHeroMetric");
@@ -4824,7 +4824,7 @@ function renderManagerDetails(tasks) {
   }
   container.innerHTML = `
     <div class="detail-header">
-      <span><span class="mono-icon">▰</span> Placa</span><span><span class="mono-icon">▥</span> Agencia</span><span><span class="mono-icon">●</span> Asesor</span><span><span class="mono-icon">◆</span> Estatus</span><span><span class="mono-icon">▦</span> Fecha</span>
+      <span><span class="mono-icon">â–°</span> Placa</span><span><span class="mono-icon">â–¥</span> Agencia</span><span><span class="mono-icon">â—</span> Asesor</span><span><span class="mono-icon">â—†</span> Estatus</span><span><span class="mono-icon">â–¦</span> Fecha</span>
     </div>
     ${sorted.map((task) => `
       <article class="detail-row">
@@ -4967,7 +4967,7 @@ function openAdminLeadEditor(id) {
   adminLeadForm.elements.ciudad.value = task.ciudad || "";
   adminLeadForm.elements.observaciones.value = task.observaciones || "";
   if (adminLeadModalTitle) adminLeadModalTitle.textContent = `Modificar lead ${task.placa || ""}`;
-  if (adminLeadTimeInfo) adminLeadTimeInfo.textContent = `Tomado: ${formatDateTime(task.takenAt)} · Cerrado: ${formatDateTime(task.completedAt)}`;
+  if (adminLeadTimeInfo) adminLeadTimeInfo.textContent = `Tomado: ${formatDateTime(task.takenAt)} Â· Cerrado: ${formatDateTime(task.completedAt)}`;
   adminLeadModal.hidden = false;
 }
 
@@ -5552,7 +5552,7 @@ function renderPurchaseExecutiveCards(records, stats) {
   const summary = getPurchaseOperationalSummary(records);
   const cards = [
     ["pendingApproval", "Falta aprobar", summary.pendingApproval.length, "Placas rechazadas sin aprobacion posterior", "is-critical", ""],
-    ["pendingReview", "Pendientes por revisar", summary.pendingReview.length, "Pendiente o reproceso pendiente sin cierre de coordinacion", "is-warning", "⏳"],
+    ["pendingReview", "Pendientes por revisar", summary.pendingReview.length, "Pendiente o reproceso pendiente sin cierre de coordinacion", "is-warning", "â³"],
     ["riskMedium", "Riesgo medio", summary.riskMediumPending.length, "Debe estar revisado por Santiago Ortiz", summary.riskMediumPending.length ? "is-warning" : "is-success", ""],
     ["approvedPlates", "Placas aprobadas", summary.approvedPlates.length, "Placas con pago, salida o reproceso aprobado", "is-success", ""],
     ["unique", "Placas unicas", summary.allPlates.length, "Vehiculos distintos conciliados", "is-plain", ""],
@@ -5803,7 +5803,7 @@ function renderPurchaseCoordinatorProductivity(records) {
       <article><span> Placas unicas</span><strong>${totals.unique}</strong></article>
       <article class="is-ok"><span> Aprobadas</span><strong>${totals.approved}</strong></article>
       <article class="is-alert"><span> Rechazadas seg.</span><strong>${totals.rejected}</strong></article>
-      <article class="is-warn"><span>⏳ Pendientes</span><strong>${totals.pending}</strong></article>
+      <article class="is-warn"><span>â³ Pendientes</span><strong>${totals.pending}</strong></article>
       <article class="is-risk"><span> Riesgo</span><strong>${totals.risk}</strong></article>
     </div>
     <p class="coordinator-reading">${escapeHtml(explanation)}</p>
@@ -6024,7 +6024,7 @@ function renderPurchaseStatusComparison(status, plateItems) {
         <small>Con pago, salida o reproceso aprobado</small>
       </article>
       <article class="is-warning">
-        <span>⏳ Siguen pendientes</span>
+        <span>â³ Siguen pendientes</span>
         <strong>${stillPending.length}</strong>
         <small>${escapeHtml(topPending)}</small>
       </article>
@@ -6057,13 +6057,13 @@ function getPurchaseStatusIcon(status) {
   if (status === "SALIDA APROBADA") return "";
   if (status === "SALIDA RECHAZADA") return "";
   if (status === "PAGADO SIN VALIDACION") return "";
-  if (status === "PENDIENTE") return "⏳";
+  if (status === "PENDIENTE") return "â³";
   if (status === "REPROCESO") return "";
   if (status === "REPROCESO APROBADO") return "";
   if (status === "REPROCESO RECHAZADO") return "";
   if (status === "RIESGO MEDIO") return "";
   if (status === "RIESGO ALTO") return "";
-  return "•";
+  return "â€¢";
 }
 
 function getPurchaseOperationalSummary(records) {
@@ -6850,7 +6850,7 @@ function renderContractKpis(records) {
   const cards = [
     ["Contratos", stats.total, "Filas procesadas", "is-neutral", ""],
     ["Cerrados", stats.closed, "Con cierre o estatus final", "is-success", ""],
-    ["Pendientes", stats.pending, "Sin cierre de contrato", stats.pending ? "is-warning" : "is-success", "⏳"],
+    ["Pendientes", stats.pending, "Sin cierre de contrato", stats.pending ? "is-warning" : "is-success", "â³"],
     ["Placas unicas", stats.uniquePlates, "Vehiculos distintos", "is-neutral", ""],
     ["Duplicados", stats.duplicatePlates + stats.duplicateClients, "Placas o cedulas repetidas", stats.duplicatePlates || stats.duplicateClients ? "is-critical" : "is-success", ""],
     ["Valor venta", `$ ${stats.value.toFixed(2)}`, "Suma filtrada", "is-success", ""]
@@ -6877,7 +6877,7 @@ function renderContractStatusModules(records) {
       <span>${counts.length} estatus activos</span>
     </div>
     <div class="status-board-grid">
-      ${counts.map(([status, count]) => `<button class="status-module ${isContractClosed({ ESTATUS: status }) ? "is-success" : "is-warning"}" type="button" data-contract-status="${escapeHtml(status)}"><span><i>${isContractClosed({ ESTATUS: status }) ? "" : "⏳"}</i>${escapeHtml(status || "SIN ESTATUS")}</span><strong>${count}</strong></button>`).join("") || `<div class="empty compact-empty">Sin estatus para mostrar.</div>`}
+      ${counts.map(([status, count]) => `<button class="status-module ${isContractClosed({ ESTATUS: status }) ? "is-success" : "is-warning"}" type="button" data-contract-status="${escapeHtml(status)}"><span><i>${isContractClosed({ ESTATUS: status }) ? "" : "â³"}</i>${escapeHtml(status || "SIN ESTATUS")}</span><strong>${count}</strong></button>`).join("") || `<div class="empty compact-empty">Sin estatus para mostrar.</div>`}
     </div>
   `;
   container.querySelectorAll("[data-contract-status]").forEach((button) => {
@@ -8294,7 +8294,7 @@ function getProviderObservation(record) {
     record?.["OBSERVACIONES - WHATSAPP"],
     record?.OBSERVACIONES,
     record?.["DETALLE DE LA DEVOLUCION"],
-    record?.["DETALLE DE LA DEVOLUCIÓN"],
+    record?.["DETALLE DE LA DEVOLUCIÃ“N"],
     record?.["ASESOR COMPRA"],
     record?.["ASESOR VENTA"],
     record?.ASESOR,
@@ -9090,12 +9090,12 @@ function renderProviderExecutiveDashboard(records) {
       </div>
 
       <div class="provider-exec-kpi-grid">
-        ${renderProviderExecKpi("💵", "Gasto pagado", `$ ${metrics.paidTotal.toFixed(2)}`, "Suma de valores positivos cargados", "paid", "success")}
-        ${renderProviderExecKpi("🛡️", "Sobrecobro autorizado", `$ ${metrics.authorizedOvercharge.toFixed(2)}`, "Duplicados aprobados", "authorizedOvercharge", "success")}
-        ${renderProviderExecKpi("👥", "Proveedores", metrics.providersCount, "Proveedores filtrados", "providers", "blue")}
-        ${renderProviderExecKpi("🚗", "Placas unicas", metrics.uniquePlates, "Vehiculos distintos", "unique", "purple")}
-        ${renderProviderExecKpi("📄", "Duplicados sin autorizar", metrics.pendingDuplicates, `${metrics.approvedDuplicates} aceptado(s)`, "duplicates", metrics.pendingDuplicates ? "danger" : "success")}
-        ${renderProviderExecKpi("⚠️", "Posible sobrecobro", `$ ${metrics.overcharge.toFixed(2)}`, "Solo duplicados sin autorizacion", "overcharge", metrics.overcharge ? "warning" : "success")}
+        ${renderProviderExecKpi("ðŸ’µ", "Gasto pagado", `$ ${metrics.paidTotal.toFixed(2)}`, "Suma de valores positivos cargados", "paid", "success")}
+        ${renderProviderExecKpi("ðŸ›¡ï¸", "Sobrecobro autorizado", `$ ${metrics.authorizedOvercharge.toFixed(2)}`, "Duplicados aprobados", "authorizedOvercharge", "success")}
+        ${renderProviderExecKpi("ðŸ‘¥", "Proveedores", metrics.providersCount, "Proveedores filtrados", "providers", "blue")}
+        ${renderProviderExecKpi("ðŸš—", "Placas unicas", metrics.uniquePlates, "Vehiculos distintos", "unique", "purple")}
+        ${renderProviderExecKpi("ðŸ“„", "Duplicados sin autorizar", metrics.pendingDuplicates, `${metrics.approvedDuplicates} aceptado(s)`, "duplicates", metrics.pendingDuplicates ? "danger" : "success")}
+        ${renderProviderExecKpi("âš ï¸", "Posible sobrecobro", `$ ${metrics.overcharge.toFixed(2)}`, "Solo duplicados sin autorizacion", "overcharge", metrics.overcharge ? "warning" : "success")}
       </div>
 
       <section class="provider-exec-grid">
@@ -9117,7 +9117,7 @@ function renderProviderExecutiveDashboard(records) {
         <article class="provider-exec-panel provider-exec-wide">
           <p class="eyebrow">Distribucion por proveedor</p>
           <h3>Gasto pagado</h3>
-          ${metrics.providers.map((item) => renderPaymentBar(item.provider, `$ ${item.amount.toFixed(2)} · ${item.share}%`, item.amount / maxProvider)).join("") || `<div class="empty compact-empty">Sin proveedores.</div>`}
+          ${metrics.providers.map((item) => renderPaymentBar(item.provider, `$ ${item.amount.toFixed(2)} Â· ${item.share}%`, item.amount / maxProvider)).join("") || `<div class="empty compact-empty">Sin proveedores.</div>`}
           <div class="provider-total-line"><span>Total general</span><b>$ ${metrics.paidTotal.toFixed(2)}</b><strong>100%</strong></div>
         </article>
 
@@ -9161,10 +9161,10 @@ function renderProviderExecutiveDashboard(records) {
       </section>
 
       <footer class="provider-exec-footer">
-        <span>📅 Periodo <b>${escapeHtml(metrics.period)}</b></span>
-        <span>🗄️ Fuente de datos <b>Base de datos Control Financiero</b></span>
-        <span>⏱️ Fecha de corte <b>${escapeHtml(metrics.cutoff)}</b></span>
-        <span>🔄 Ultima actualizacion <b>${escapeHtml(metrics.updatedAt)}</b></span>
+        <span>ðŸ“… Periodo <b>${escapeHtml(metrics.period)}</b></span>
+        <span>ðŸ—„ï¸ Fuente de datos <b>Base de datos Control Financiero</b></span>
+        <span>â±ï¸ Fecha de corte <b>${escapeHtml(metrics.cutoff)}</b></span>
+        <span>ðŸ”„ Ultima actualizacion <b>${escapeHtml(metrics.updatedAt)}</b></span>
       </footer>
     </section>
   `;
@@ -9255,25 +9255,25 @@ function getProviderDashboardMetrics(records) {
   const topAdvisor = advisors[0];
   const findings = [
     {
-      icon: "🏢",
+      icon: "ðŸ¢",
       title: "Concentracion por agencia",
       text: topAgency ? `${topAgency.agency} concentra ${topAgency.share}% de los registros filtrados.` : "Sin agencias para analizar.",
       tone: "is-info"
     },
     {
-      icon: "👤",
+      icon: "ðŸ‘¤",
       title: "Carga operativa",
       text: topAdvisor ? `${topAdvisor.advisor} administra ${topAdvisor.total} registro(s) en la base filtrada.` : "Sin asesores para analizar.",
       tone: "is-blue"
     },
     {
-      icon: pendingDuplicates.length ? "⚠️" : "✅",
+      icon: pendingDuplicates.length ? "âš ï¸" : "âœ…",
       title: "Control de cobros",
       text: pendingDuplicates.length ? `${pendingDuplicates.length} placa(s) repetidas necesitan autorizacion. Priorice el posible sobrecobro.` : "No hay duplicados pendientes de autorizacion.",
       tone: pendingDuplicates.length ? "is-warning" : "is-ok"
     },
     {
-      icon: "👥",
+      icon: "ðŸ‘¥",
       title: "Proveedores activos",
       text: `${new Set(records.map((record) => record.provider).filter(Boolean)).size} proveedor(es) gestionados en el periodo actual.`,
       tone: "is-purple"
@@ -11929,3 +11929,5 @@ startSupabaseModulePolling();
 migrateIndexedDbFilesToSharedPc();
 checkForAppUpdate();
 window.setInterval(checkForAppUpdate, 5 * 60 * 1000);
+
+
