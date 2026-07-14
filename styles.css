@@ -10153,3 +10153,599 @@ body:has(#procesamiento.view.is-active) main {
     flex: 1 1 auto;
   }
 }
+/* Comercial launch polish 20260714 */
+#formulario {
+  --commercial-navy: #0b1d39;
+  --commercial-ink: #172033;
+  --commercial-muted: #667085;
+  --commercial-line: #e5eaf2;
+  --commercial-soft: #f7f9fc;
+  --commercial-red: #ef3d35;
+  --commercial-radius: 18px;
+  --commercial-shadow: 0 24px 60px rgba(15, 23, 42, 0.09);
+}
+
+#formulario.view.is-active {
+  width: min(100%, 1480px);
+  margin-inline: auto;
+  padding-inline: clamp(14px, 2.4vw, 32px);
+}
+
+#formulario .section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+  padding: 0;
+}
+
+#formulario .section-head .eyebrow,
+#formulario .commercial-panel-heading .eyebrow,
+#formulario .panel-title-row .eyebrow {
+  color: var(--commercial-red);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+}
+
+#formulario .section-head h1 {
+  margin: 2px 0 0;
+  color: var(--commercial-ink);
+  font-size: clamp(1.55rem, 2.2vw, 2.15rem);
+  line-height: 1.08;
+  font-weight: 760;
+}
+
+#formulario .section-subtitle {
+  margin: 7px 0 0;
+  max-width: 680px;
+  color: var(--commercial-muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+#formulario .commercial-workspace {
+  display: grid;
+  grid-template-columns: minmax(200px, 230px) minmax(0, 1fr);
+  gap: clamp(16px, 2vw, 26px);
+  align-items: start;
+  width: 100%;
+}
+
+#formulario .commercial-sidebar {
+  position: sticky;
+  top: 98px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: var(--commercial-radius);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.06);
+}
+
+#formulario .commercial-sidebar-group {
+  display: grid;
+  gap: 5px;
+}
+
+#formulario .commercial-sidebar-group > span {
+  padding: 0 10px 6px;
+  color: #6f7b91;
+  font-size: 0.68rem;
+  font-weight: 760;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+#formulario .commercial-side-link {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  width: 100%;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: #324054;
+  background: transparent;
+  font-size: 0.88rem;
+  line-height: 1.2;
+  font-weight: 560;
+  letter-spacing: 0;
+  text-align: left;
+}
+
+#formulario .commercial-side-link span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  min-width: 24px;
+  margin-right: 8px;
+  font-size: 1rem;
+}
+
+#formulario .commercial-side-link:hover {
+  color: var(--commercial-ink);
+  background: #f7f8fb;
+}
+
+#formulario .commercial-side-link.is-active {
+  color: var(--commercial-red);
+  border-color: rgba(239, 61, 53, 0.15);
+  background: #fff1f0;
+  box-shadow: none;
+}
+
+#formulario .commercial-side-link::before {
+  display: none;
+}
+
+#formulario .commercial-support-card {
+  margin-top: auto;
+  padding: 16px;
+  border: 1px solid #dde4ef;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  box-shadow: none;
+}
+
+#formulario .commercial-support-card strong {
+  color: var(--commercial-ink);
+  font-size: 0.86rem;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+#formulario .commercial-support-card span {
+  color: var(--commercial-muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+#formulario .commercial-support-card .btn {
+  width: 100%;
+  min-height: 38px;
+  margin-top: 8px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+}
+
+#formulario .commercial-content {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+#formulario .commercial-content > [data-commercial-area-section] {
+  min-width: 0;
+}
+
+#formulario .commercial-start-hero {
+  position: relative;
+  min-height: clamp(280px, 27vw, 390px);
+  overflow: hidden;
+  padding: clamp(28px, 4vw, 48px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  background:
+    linear-gradient(90deg, rgba(8, 20, 40, 0.98) 0%, rgba(10, 30, 58, 0.9) 42%, rgba(10, 30, 58, 0.26) 72%, rgba(10, 30, 58, 0.1) 100%),
+    url("autocor-local-3.webp") center right / cover no-repeat;
+  box-shadow: var(--commercial-shadow);
+}
+
+#formulario .commercial-start-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(110deg, transparent 0 48%, rgba(239, 61, 53, 0.74) 48% 53%, rgba(239, 61, 53, 0.35) 53% 57%, transparent 57%),
+    linear-gradient(180deg, rgba(255,255,255,0.08), transparent 45%);
+  mix-blend-mode: normal;
+}
+
+#formulario .commercial-start-copy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 13px;
+  max-width: 560px;
+  color: #fff;
+}
+
+#formulario .commercial-start-copy .eyebrow {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+#formulario .commercial-start-copy h2 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(2.15rem, 4vw, 4rem);
+  line-height: 0.98;
+  font-weight: 780;
+  letter-spacing: -0.01em;
+}
+
+#formulario .commercial-start-copy h2 span {
+  color: var(--commercial-red);
+}
+
+#formulario .commercial-start-copy p:not(.eyebrow) {
+  max-width: 500px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: clamp(0.92rem, 1vw, 1.03rem);
+  line-height: 1.5;
+}
+
+#formulario .commercial-start-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+#formulario .commercial-start-actions .btn {
+  min-width: 136px;
+  min-height: 48px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 780;
+}
+
+#formulario .commercial-start-actions .light-btn {
+  color: var(--commercial-ink);
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+}
+
+#formulario .commercial-dashboard,
+#formulario .commercial-requests-panel,
+#formulario .commercial-control-panel,
+#formulario .status-lookup,
+#formulario .commercial-process-shell,
+#formulario .commercial-process-panel > .panel {
+  border: 1px solid var(--commercial-line);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--commercial-shadow);
+}
+
+#formulario .commercial-dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  padding: clamp(18px, 2vw, 28px);
+}
+
+#formulario .commercial-dashboard > div:first-child h2,
+#formulario .panel-title-row h2,
+#formulario .commercial-panel-heading h3 {
+  margin: 0;
+  color: var(--commercial-ink);
+  font-size: clamp(1.05rem, 1.4vw, 1.32rem);
+  line-height: 1.18;
+  font-weight: 760;
+}
+
+#formulario .commercial-dashboard .session-actions {
+  justify-self: end;
+  width: min(100%, 480px);
+}
+
+#formulario .commercial-dashboard .password-form {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto;
+  gap: 10px;
+}
+
+#formulario .commercial-dashboard .password-form input,
+#formulario .commercial-dashboard .password-form .btn {
+  min-height: 42px;
+  border-radius: 12px;
+  font-size: 0.84rem;
+}
+
+#formulario .commercial-dashboard .commercial-module-grid {
+  display: none;
+}
+
+#formulario .commercial-module-panel {
+  grid-column: 1 / -1;
+  display: none;
+  gap: 16px;
+}
+
+#formulario .commercial-module-panel.is-active {
+  display: grid;
+}
+
+#formulario .commercial-panel-heading {
+  display: grid;
+  gap: 5px;
+  padding-top: 4px;
+}
+
+#formulario .commercial-panel-heading::after {
+  content: "";
+  width: 34px;
+  height: 2px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: var(--commercial-red);
+}
+
+#formulario .commercial-dashboard .kpi-grid,
+#formulario .commercial-requests-panel .kpi-grid,
+#formulario .commercial-control-panel .kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+  gap: 14px;
+}
+
+#formulario .kpi-card {
+  min-width: 0;
+  min-height: 126px;
+  padding: 18px;
+  border: 1px solid var(--commercial-line);
+  border-radius: 16px;
+  background: linear-gradient(145deg, #ffffff, #fbfcff);
+  box-shadow: none;
+}
+
+#formulario .kpi-card span {
+  color: #25324a;
+  font-size: 0.8rem;
+  line-height: 1.25;
+  font-weight: 720;
+}
+
+#formulario .kpi-card strong {
+  margin-top: 10px;
+  color: var(--commercial-ink);
+  font-size: clamp(1.7rem, 2.4vw, 2.35rem);
+  line-height: 1;
+  font-weight: 780;
+}
+
+#formulario .kpi-card small {
+  color: var(--commercial-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+#formulario .personal-chart,
+#formulario .commercial-lead-list {
+  padding: 14px;
+  border: 1px solid var(--commercial-line);
+  border-radius: 16px;
+  background: #fbfcff;
+}
+
+#formulario .commercial-lead-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+}
+
+#formulario .commercial-lead-row > div {
+  min-width: 0;
+}
+
+#formulario .commercial-lead-row strong,
+#formulario .commercial-lead-row span,
+#formulario .commercial-lead-row small {
+  overflow-wrap: anywhere;
+}
+
+#formulario .status-pill,
+#formulario .status-badge {
+  white-space: normal;
+  max-width: 100%;
+}
+
+#formulario .status-lookup,
+#formulario .commercial-process-shell,
+#formulario .commercial-requests-panel,
+#formulario .commercial-control-panel {
+  display: grid;
+  gap: 16px;
+  padding: clamp(18px, 2vw, 24px);
+}
+
+#formulario .status-lookup .lookup-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(140px, 0.8fr)) repeat(2, minmax(128px, 0.7fr)) auto;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid #e8edf5;
+  border-radius: 16px;
+  background: #fbfcff;
+}
+
+#formulario input,
+#formulario select,
+#formulario textarea {
+  min-width: 0;
+}
+
+#formulario .commercial-process-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+#formulario .commercial-process-card {
+  min-height: 90px;
+  padding: 18px;
+  border: 1px solid var(--commercial-line);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: none;
+}
+
+#formulario .commercial-process-card strong {
+  color: var(--commercial-ink);
+  font-size: 1rem;
+  font-weight: 760;
+}
+
+#formulario .commercial-process-card span {
+  color: var(--commercial-muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+#formulario .commercial-process-card.is-active {
+  border-color: rgba(239, 61, 53, 0.35);
+  background: linear-gradient(90deg, #ef3d35 0 10px, #fff4f3 10px, #fff 50%);
+  box-shadow: 0 16px 36px rgba(239, 61, 53, 0.1);
+}
+
+#formulario .commercial-process-panel .form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: clamp(18px, 2vw, 24px);
+}
+
+#formulario .commercial-process-panel label {
+  display: grid;
+  gap: 7px;
+  color: #4a5568;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+#formulario .commercial-process-panel input,
+#formulario .commercial-process-panel select,
+#formulario .commercial-process-panel textarea,
+#formulario .status-lookup input,
+#formulario .status-lookup select {
+  min-height: 42px;
+  border-color: #dbe3ef;
+  border-radius: 11px;
+  font-size: 0.88rem;
+}
+
+#formulario .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+#formulario .form-actions .btn {
+  min-height: 42px;
+  min-width: 150px;
+  border-radius: 11px;
+}
+
+@media (max-width: 1180px) {
+  #formulario.view.is-active {
+    padding-inline: 14px;
+  }
+
+  #formulario .commercial-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  #formulario .commercial-sidebar {
+    position: static;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  #formulario .commercial-sidebar-group {
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  }
+
+  #formulario .commercial-sidebar-group > span {
+    grid-column: 1 / -1;
+  }
+
+  #formulario .commercial-support-card {
+    margin-top: 0;
+  }
+
+  #formulario .status-lookup .lookup-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  #formulario .section-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  #formulario .section-head .btn {
+    width: 100%;
+  }
+
+  #formulario .commercial-start-hero {
+    min-height: 520px;
+    padding: 28px;
+    background:
+      linear-gradient(180deg, rgba(8, 20, 40, 0.96) 0%, rgba(8, 20, 40, 0.78) 54%, rgba(8, 20, 40, 0.22) 100%),
+      url("autocor-local-3.webp") center bottom / cover no-repeat;
+  }
+
+  #formulario .commercial-start-hero::after {
+    opacity: 0.55;
+  }
+
+  #formulario .commercial-start-copy h2 {
+    font-size: clamp(2rem, 12vw, 3rem);
+  }
+
+  #formulario .commercial-start-actions .btn,
+  #formulario .commercial-start-actions .light-btn {
+    width: 100%;
+  }
+
+  #formulario .commercial-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  #formulario .commercial-dashboard .session-actions {
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  #formulario .commercial-dashboard .password-form,
+  #formulario .status-lookup .lookup-form,
+  #formulario .commercial-process-grid,
+  #formulario .commercial-process-panel .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #formulario .span-2 {
+    grid-column: auto;
+  }
+
+  #formulario .commercial-lead-row {
+    grid-template-columns: 1fr;
+  }
+
+  #formulario .form-actions {
+    flex-direction: column;
+  }
+
+  #formulario .form-actions .btn {
+    width: 100%;
+  }
+}
