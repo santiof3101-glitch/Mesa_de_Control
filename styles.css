@@ -9249,6 +9249,49 @@ button.purchase-mini-kpi:hover {
   }
 }
 
+/* Chat interno final: usuarios comerciales + historial con scroll real */
+body.legal-chat-is-open #legalChatOpenBtn {
+  display: none !important;
+}
+
+#tareas #legalChatPanel.legal-chat-panel.is-floating:not([hidden]) {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  overflow: hidden !important;
+}
+
+#tareas #legalChatPanel .legal-chat-list {
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain !important;
+  padding-bottom: 18px !important;
+  scrollbar-width: auto !important;
+  scrollbar-color: #94a3b8 #eef2f7 !important;
+}
+
+#tareas #legalChatPanel .legal-chat-list::-webkit-scrollbar {
+  width: 12px !important;
+}
+
+#tareas #legalChatPanel .legal-chat-list::-webkit-scrollbar-track {
+  background: #eef2f7 !important;
+  border-radius: 999px !important;
+}
+
+#tareas #legalChatPanel .legal-chat-list::-webkit-scrollbar-thumb {
+  background: #94a3b8 !important;
+  border: 3px solid #eef2f7 !important;
+  border-radius: 999px !important;
+}
+
+#tareas #legalChatPanel .legal-chat-form {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
 /* Absolute final chat fix: scroll history and hide launcher while open */
 body.legal-chat-is-open #legalChatOpenBtn,
 #tareas:has(#legalChatPanel:not([hidden])) #legalChatOpenBtn {
