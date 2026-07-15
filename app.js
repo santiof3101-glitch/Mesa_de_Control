@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260715-commercial-sidebar-modal";
+const APP_BUILD_VERSION = "20260715-commercial-chat-advisors";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -3784,6 +3784,9 @@ function getCurrentChatUser() {
   if (session.role === "legal") {
     return { id: session.userId || "", name: session.name || "Asistente legal", role: "legal" };
   }
+  if (session.role === "commercial") {
+    return { id: `commercial:${session.userId || ""}`, name: session.name || "Asesor comercial", role: "commercial" };
+  }
   if (session.role === "admin") {
     return { id: "admin", name: "Administrador", role: "admin" };
   }
@@ -3791,12 +3794,28 @@ function getCurrentChatUser() {
 }
 
 function getLegalChatUsers() {
-  const users = normalizeLegalUsers(state.legalUsers || []).map((user) => ({
+  const legalUsers = normalizeLegalUsers(state.legalUsers || []).map((user) => ({
     id: user.id,
     name: user.name,
-    role: "legal"
+    role: "legal",
+    label: "Mesa de control",
+    searchText: `${user.name} mesa control legal ${user.mailbox || ""}`
   }));
-  return [{ id: "admin", name: "Administrador", role: "admin" }, ...users];
+  const commercialUsers = normalizeCommercialAdvisors(state.commercialAdvisors || []).map((advisor) => ({
+    id: `commercial:${advisor.id}`,
+    name: advisor.name,
+    role: "commercial",
+    label: advisor.agency ? `Asesor comercial | ${advisor.agency}` : "Asesor comercial",
+    searchText: `${advisor.name} asesor comercial ${advisor.agency || ""}`
+  }));
+  return [
+    { id: "admin", name: "Administrador", role: "admin", label: "Administrador", searchText: "administrador admin" },
+    ...legalUsers,
+    ...commercialUsers
+  ].sort((a, b) => {
+    const order = { admin: 0, legal: 1, commercial: 2 };
+    return (order[a.role] ?? 9) - (order[b.role] ?? 9) || a.name.localeCompare(b.name);
+  });
 }
 
 function buildLegalChatConversationKey(userA = "", userB = "") {
@@ -3817,9 +3836,9 @@ function renderLegalChatRecipients() {
   const previous = legalChatRecipientSelect.value;
   const users = getLegalChatUsers()
     .filter((user) => user.id !== current.id)
-    .filter((user) => !search || `${user.name} ${user.role}`.toLowerCase().includes(search));
+    .filter((user) => !search || `${user.searchText || user.name} ${user.role}`.toLowerCase().includes(search));
   legalChatRecipientSelect.innerHTML = users.length
-    ? users.map((user) => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)}${user.role === "admin" ? " | Admin" : ""}</option>`).join("")
+    ? users.map((user) => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)} | ${escapeHtml(user.label || user.role)}</option>`).join("")
     : `<option value="">Sin usuarios</option>`;
   legalChatRecipientSelect.value = users.some((user) => user.id === previous) ? previous : users[0]?.id || "";
 }
