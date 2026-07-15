@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260715-custom-field-delete-fix";
+const APP_BUILD_VERSION = "20260715-commercial-form-profile-fix";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -166,6 +166,32 @@ const DEFAULT_FORM_CONFIG = {
     ["direccion", "Direccion", "text", true],
     ["correo", "Correo", "email", true]
   ].map(([name, label, type, required]) => ({ id: `base-venta-${name}`, name, label, type, required, visible: true, isBase: true, placeholder: "" }))
+};
+
+const BASE_FORM_FIELD_TYPE_RULES = {
+  compra: {
+    cliente: ["text"],
+    cedula: ["text"],
+    placa: ["text"],
+    valorToma: ["number"],
+    kilometraje: ["number"],
+    agencia: ["select"],
+    ciudad: ["text", "select"],
+    asesor: ["select"],
+    tipoCompra: ["select"],
+    tipoSaneamiento: ["select"],
+    observaciones: ["textarea"]
+  },
+  venta: {
+    placa: ["text"],
+    agencia: ["select"],
+    vendedor: ["text"],
+    precioContrato: ["number"],
+    cedulaVendedor: ["text"],
+    telefono: ["text"],
+    direccion: ["text"],
+    correo: ["email"]
+  }
 };
 
 const defaultState = {
@@ -1749,7 +1775,9 @@ function normalizeFormConfig(config) {
       if (field?.name && !savedMap.has(field.name)) savedMap.set(field.name, field);
     });
     const seenCustomNames = new Set(DEFAULT_FORM_CONFIG[process].map((baseField) => baseField.name));
-    const base = DEFAULT_FORM_CONFIG[process].map((field) => normalizeFormField(savedMap.get(field.name), field, true));
+    const base = DEFAULT_FORM_CONFIG[process].map((field) =>
+      normalizeBaseFormField(process, normalizeFormField(savedMap.get(field.name), field, true))
+    );
     const custom = saved
       .filter((field) => {
         if (!field || seenCustomNames.has(field.name)) return false;
@@ -1760,6 +1788,27 @@ function normalizeFormConfig(config) {
     result[process] = [...base, ...custom];
     return result;
   }, {});
+}
+
+function getDefaultBaseFormField(process, name) {
+  return (DEFAULT_FORM_CONFIG[process] || []).find((field) => field.name === name) || {};
+}
+
+function getSafeBaseFieldType(process, name, requestedType) {
+  const allowed = BASE_FORM_FIELD_TYPE_RULES[process]?.[name];
+  if (!allowed) return FORM_FIELD_TYPES.includes(requestedType) ? requestedType : "text";
+  if (allowed.includes(requestedType)) return requestedType;
+  return getDefaultBaseFormField(process, name).type || allowed[0] || "text";
+}
+
+function normalizeBaseFormField(process, field) {
+  if (!field?.isBase) return field;
+  const defaultField = getDefaultBaseFormField(process, field.name);
+  return {
+    ...field,
+    type: getSafeBaseFieldType(process, field.name, field.type),
+    options: field.name === "ciudad" && field.type === "select" ? field.options : field.options || defaultField.options || []
+  };
 }
 
 function parseFormOptions(value) {
@@ -2977,17 +3026,20 @@ function renderAgencySelect(id, includeAll = false) {
 }
 
 function renderAdvisorSelect() {
-  const current = asesorSelect.value;
-  const agency = agenciaSelect.value;
+  const agencyControl = document.querySelector("#agenciaSelect") || form?.elements?.agencia || agenciaSelect;
+  const advisorControl = document.querySelector("#asesorSelect") || form?.elements?.asesor || asesorSelect;
+  if (!agencyControl || !advisorControl) return;
+  const current = advisorControl.value;
+  const agency = agencyControl.value;
   const advisors = getCommercialAdvisorsByAgency(agency);
-  asesorSelect.innerHTML = `<option value="">${agency ? "Seleccione un asesor" : "Primero seleccione agencia"}</option>`;
+  advisorControl.innerHTML = `<option value="">${agency ? "Seleccione un asesor" : "Primero seleccione agencia"}</option>`;
   advisors.forEach((advisor) => {
     const item = document.createElement("option");
     item.value = advisor.name;
     item.textContent = advisor.name;
-    asesorSelect.appendChild(item);
+    advisorControl.appendChild(item);
   });
-  asesorSelect.value = current && advisors.some((advisor) => advisor.name === current) ? current : "";
+  advisorControl.value = current && advisors.some((advisor) => advisor.name === current) ? current : "";
 }
 
 function getCommercialAdvisorsByAgency(agency) {
@@ -2997,12 +3049,33 @@ function getCommercialAdvisorsByAgency(agency) {
 
 function applyCommercialSessionToForm() {
   if (session.role !== "commercial") return;
-  agenciaSelect.value = session.agency || "";
-  if (saleAgencySelect) saleAgencySelect.value = session.agency || "";
+  const agencyControl = document.querySelector("#agenciaSelect") || form?.elements?.agencia || agenciaSelect;
+  const advisorControl = document.querySelector("#asesorSelect") || form?.elements?.asesor || asesorSelect;
+  const saleAgencyControl = document.querySelector("#saleAgencySelect") || saleContractForm?.elements?.agencia || saleAgencySelect;
+  if (agencyControl) {
+    ensureSelectHasOption(agencyControl, session.agency || "");
+    agencyControl.value = session.agency || "";
+  }
+  if (saleAgencyControl) {
+    ensureSelectHasOption(saleAgencyControl, session.agency || "");
+    saleAgencyControl.value = session.agency || "";
+  }
   const welcomeTitle = document.querySelector("#commercialWelcomeTitle");
   if (welcomeTitle) { welcomeTitle.innerHTML = `Bienvenido,<br><span>${escapeHtml(session.name || "Asesor comercial")}</span>`; }
   renderAdvisorSelect();
-  asesorSelect.value = session.name || "";
+  if (advisorControl) {
+    ensureSelectHasOption(advisorControl, session.name || "");
+    advisorControl.value = session.name || "";
+  }
+}
+
+function ensureSelectHasOption(select, value) {
+  if (!select || select.tagName !== "SELECT" || !value) return;
+  if ([...select.options].some((option) => option.value === value)) return;
+  const option = document.createElement("option");
+  option.value = value;
+  option.textContent = value;
+  select.appendChild(option);
 }
 
 function renderLegalFilter() {
@@ -3117,13 +3190,24 @@ function getFormFields(process) {
 }
 
 function applyFormConfiguration() {
-  applyBaseFormFields(form, getFormFields("compra"));
-  applyBaseFormFields(saleContractForm, getFormFields("venta"));
+  applyBaseFormFields(form, getFormFields("compra"), "compra");
+  applyBaseFormFields(saleContractForm, getFormFields("venta"), "venta");
   renderCustomFormFields("compra", purchaseCustomFields);
   renderCustomFormFields("venta", saleCustomFields);
 }
 
-function applyBaseFormFields(formElement, fields) {
+function getBusinessOptionsForBaseField(process, field, formElement) {
+  if (field.name === "agencia") return state.agencies;
+  if (process === "compra" && field.name === "asesor") {
+    const agency = formElement?.elements?.agencia?.value || (session.role === "commercial" ? session.agency : "");
+    return getCommercialAdvisorsByAgency(agency).map((advisor) => advisor.name);
+  }
+  if (process === "compra" && field.name === "tipoCompra") return state.purchaseTypes;
+  if (process === "compra" && field.name === "tipoSaneamiento") return state.sanitationTypes;
+  return field.options || [];
+}
+
+function applyBaseFormFields(formElement, fields, process = "compra") {
   if (!formElement) return;
   fields.filter((field) => field.isBase).forEach((field) => {
     let control = formElement.elements[field.name];
@@ -3134,7 +3218,11 @@ function applyBaseFormFields(formElement, fields) {
     control.required = field.visible !== false && Boolean(field.required);
     if (control.tagName === "SELECT") {
       const current = control.value;
-      control.innerHTML = `<option value="">Seleccione una opcion</option>${(field.options || []).map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`).join("")}`;
+      const options = getBusinessOptionsForBaseField(process, field, formElement);
+      const placeholder = process === "compra" && field.name === "asesor" && !formElement.elements.agencia?.value
+        ? "Primero seleccione agencia"
+        : "Seleccione una opcion";
+      control.innerHTML = `<option value="">${placeholder}</option>${options.map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`).join("")}`;
       control.value = current && [...control.options].some((option) => option.value === current) ? current : "";
     }
     if ("placeholder" in control) control.placeholder = field.placeholder || "";
@@ -3165,6 +3253,13 @@ function ensureBaseFieldControl(label, control, field) {
   next.name = attrs.name;
   if ("placeholder" in next) next.placeholder = attrs.placeholder;
   next.value = currentValue;
+  if (control.id) next.id = control.id;
+  if (control.className) next.className = control.className;
+  if (control.getAttribute("autocomplete")) next.setAttribute("autocomplete", control.getAttribute("autocomplete"));
+  if (control.getAttribute("inputmode")) next.setAttribute("inputmode", control.getAttribute("inputmode"));
+  if (control.getAttribute("min")) next.setAttribute("min", control.getAttribute("min"));
+  if (control.getAttribute("max")) next.setAttribute("max", control.getAttribute("max"));
+  if (control.getAttribute("step")) next.setAttribute("step", control.getAttribute("step"));
   control.replaceWith(next);
   return next;
 }
@@ -3214,7 +3309,8 @@ function saveFormFieldConfiguration(row) {
   const field = getFormFields(process).find((item) => item.id === row.dataset.formField);
   if (!field) return;
   field.label = row.querySelector("[data-field-label]").value.trim() || field.label;
-  field.type = FORM_FIELD_TYPES.includes(row.querySelector("[data-field-type]").value) ? row.querySelector("[data-field-type]").value : "text";
+  const requestedType = FORM_FIELD_TYPES.includes(row.querySelector("[data-field-type]").value) ? row.querySelector("[data-field-type]").value : "text";
+  field.type = field.isBase ? getSafeBaseFieldType(process, field.name, requestedType) : requestedType;
   field.placeholder = row.querySelector("[data-field-placeholder]").value.trim();
   field.options = parseFormOptions(row.querySelector("[data-field-options]").value);
   field.required = row.querySelector("[data-field-required]").checked;
@@ -11608,6 +11704,12 @@ processingTabButtons.forEach((button) => {
 });
 
 agenciaSelect.addEventListener("change", () => {
+  renderAdvisorSelect();
+  updateDuplicatePreview();
+});
+
+form?.addEventListener("change", (event) => {
+  if (event.target?.name !== "agencia") return;
   renderAdvisorSelect();
   updateDuplicatePreview();
 });
