@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260714-admin-forms-availability";
+const APP_BUILD_VERSION = "20260715-commercial-legal-flow";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -14,6 +14,7 @@ const REMEMBER_ACCESS_KEY = "autocor-remembered-access";
 const SESSION_STORAGE_KEY = "autocor-active-session";
 const VIEW_STORAGE_KEY = "autocor-active-view";
 const AUTH_STORAGE_KEY = "autocor-access-users";
+const COMMERCIAL_NOTIFICATIONS_SEEN_KEY = "autocor-commercial-notifications-seen";
 const TASK_SYNC_CURSOR_KEY = "autocor-task-sync-cursor";
 const TASK_DELETE_CURSOR_KEY = "autocor-task-delete-cursor";
 const BACKUP_DB_NAME = "autocor-control-legal-backups";
@@ -357,6 +358,9 @@ const legalChatInput = document.querySelector("#legalChatInput");
 const legalChatList = document.querySelector("#legalChatList");
 const legalChatRecipientSearch = document.querySelector("#legalChatRecipientSearch");
 const legalChatRecipientSelect = document.querySelector("#legalChatRecipientSelect");
+const legalChatPanel = document.querySelector("#legalChatPanel");
+const legalChatOpenBtn = document.querySelector("#legalChatOpenBtn");
+const legalChatCloseBtn = document.querySelector("#legalChatCloseBtn");
 const legalSidebarFilterButtons = document.querySelectorAll("[data-legal-sidebar-filter]");
 const legalSidebarNavButtons = document.querySelectorAll("[data-legal-scroll]");
 const userForm = document.querySelector("#userForm");
@@ -432,6 +436,8 @@ const supportWhatsappLink = document.querySelector("#supportWhatsappLink");
 const commercialConstructionModal = document.querySelector("#commercialConstructionModal");
 const commercialLeadModal = document.querySelector("#commercialLeadModal");
 const commercialLeadFichaContent = document.querySelector("#commercialLeadFichaContent");
+const commercialNotificationsModal = document.querySelector("#commercialNotificationsModal");
+const commercialNotificationsContent = document.querySelector("#commercialNotificationsContent");
 const commercialPilotModal = document.querySelector("#commercialPilotModal");
 const pilotConfirmBtn = document.querySelector("#pilotConfirmBtn");
 const pilotCancelBtn = document.querySelector("#pilotCancelBtn");
@@ -1790,7 +1796,10 @@ function normalizeTask(task) {
     commercialUserId: task.commercialUserId || "",
     commercialUserName: task.commercialUserName || task.asesor || "",
     commercialAgency: task.commercialAgency || task.agencia || "",
-    duplicateWarnings: task.duplicateWarnings || []
+    duplicateWarnings: task.duplicateWarnings || [],
+    statusLockedAt: task.statusLockedAt || "",
+    statusLockedBy: task.statusLockedBy || "",
+    statusLockedByName: task.statusLockedByName || ""
   };
 }
 
@@ -2643,7 +2652,7 @@ function openCommercialModal(modal) {
 }
 
 function closeCommercialModals() {
-  [commercialConstructionModal, commercialLeadModal, commercialPilotModal, commercialDuplicateModal].forEach((modal) => {
+  [commercialConstructionModal, commercialLeadModal, commercialNotificationsModal, commercialPilotModal, commercialDuplicateModal].forEach((modal) => {
     if (modal) modal.hidden = true;
   });
   document.body.classList.remove("has-modal");
@@ -4093,7 +4102,8 @@ function renderTasks() {
     }
     const assignedToAnother = task.legalUserId && task.legalUserId !== session.userId && session.role !== "admin";
     const canTake = session.role === "legal" && !task.legalUserId && !isClosedStatus(task.status);
-    const canEdit = session.role === "admin" || task.legalUserId === session.userId;
+    const lockedForLegal = isTaskStatusLockedForLegal(task);
+    const canEdit = session.role === "admin" || (task.legalUserId === session.userId && !lockedForLegal);
     const status = getStatusOption(task.status);
     const warnings = task.duplicateWarnings?.length ? task.duplicateWarnings : getDuplicateWarnings(task, task.id);
     const card = document.createElement("article");
@@ -4122,6 +4132,7 @@ function renderTasks() {
         <button class="btn secondary tiny view-task-btn" type="button" data-legal-task="${escapeHtml(task.id)}">Ver ficha</button>
         ${canTake ? `<button class="btn primary tiny take-btn" type="button">Tomar</button>` : ""}
         ${assignedToAnother ? `<small class="locked-note">Tomado por otro asistente</small>` : ""}
+        ${lockedForLegal ? `<small class="locked-note">Estatus bloqueado</small>` : ""}
         <select aria-label="Estatus del saneamiento" ${canEdit ? "" : "disabled"}>
           ${state.statusOptions.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join("")}
         </select>
@@ -4303,6 +4314,9 @@ function takeTask(id) {
   task.legalAdvisor = session.name;
   task.takenAt = new Date().toISOString();
   task.status = "tomado";
+  task.statusLockedAt = "";
+  task.statusLockedBy = "";
+  task.statusLockedByName = "";
   task.updatedAt = new Date().toISOString();
   task.syncStatus = "pending";
   saveState();
@@ -4312,6 +4326,13 @@ function takeTask(id) {
     saveState();
     if (!ok) showToast("Lead tomado localmente. Pendiente de sincronizar.");
   });
+}
+
+function isTaskStatusLockedForLegal(task = {}) {
+  if (session.role !== "legal") return false;
+  if (task.statusLockedAt) return true;
+  if (isClosedStatus(task.status)) return true;
+  return Boolean(task.legalUserId && task.legalUserId === session.userId && task.status && !["tomado", "pendiente", "por asignar"].includes(task.status));
 }
 
 function updateTaskStatus(id, status) {
@@ -4333,6 +4354,12 @@ function updateTaskStatus(id, status) {
     return;
   }
 
+  if (isTaskStatusLockedForLegal(task)) {
+    showToast("El estatus ya fue enviado. Solicite ayuda al administrador para corregirlo.");
+    renderTasks();
+    return;
+  }
+
   task.status = status;
   if (status === "tomado" && !task.takenAt) {
     task.takenAt = new Date().toISOString();
@@ -4345,6 +4372,16 @@ function updateTaskStatus(id, status) {
   }
   if (!isClosedStatus(status)) {
     task.completedAt = "";
+  }
+  if (session.role === "legal" && !["tomado", "pendiente", "por asignar"].includes(status)) {
+    task.statusLockedAt = new Date().toISOString();
+    task.statusLockedBy = session.userId || "";
+    task.statusLockedByName = session.name || "";
+  }
+  if (session.role === "admin" && ["tomado", "pendiente", "por asignar"].includes(status)) {
+    task.statusLockedAt = "";
+    task.statusLockedBy = "";
+    task.statusLockedByName = "";
   }
   task.updatedAt = new Date().toISOString();
   task.syncStatus = "pending";
@@ -4766,15 +4803,14 @@ function renderCommercialDashboard() {
   const saleTasks = filterTasksByCommercialProcess(dashboardTasks, "venta");
   const cuvTasks = filterTasksByCommercialProcess(dashboardTasks, "cuv");
   const kpis = getKpis(dashboardTasks);
-  const notificationTasks = dashboardTasks.filter((task) => {
-    const status = normalizeLooseText(task.status);
-    return status.includes("APROB") || status.includes("RECHAZ") || status.includes("PENDIENTE DE SUBSAN") || status.includes("SUBSAN");
-  });
+  const notificationTasks = getCommercialNotificationTasks(dashboardTasks);
   const title = document.querySelector("#commercial-dashboard-title");
   const lookupTitle = document.querySelector("#lookup-title");
   if (title) title.textContent = "Dashboard comercial integral";
   if (lookupTitle) lookupTitle.textContent = activeCommercialProcess === "venta" ? "Revisa el estatus de tus contratos" : "Revisa el estatus de tus saneamientos";
-  if (commercialNotificationCount) commercialNotificationCount.textContent = String(notificationTasks.length);
+  if (commercialNotificationCount) {
+    commercialNotificationCount.textContent = String(notificationTasks.filter((item) => !item.seen).length);
+  }
 
   renderKpiCards("#commercialKpis", [
     ["Saneamientos", purchaseTasks.length, "Solicitudes de compra"],
@@ -4802,6 +4838,73 @@ function renderCommercialGeneralDashboard() {
     ["Cerrados", kpis.completed, "Finalizados"]
   ]);
   document.querySelector("#commercialGeneralChart").innerHTML = renderBarRows(groupByStatus(tasks), Math.max(tasks.length, 1));
+}
+
+function getCommercialNotificationSeenMap() {
+  try {
+    return JSON.parse(localStorage.getItem(COMMERCIAL_NOTIFICATIONS_SEEN_KEY) || "{}") || {};
+  } catch {
+    return {};
+  }
+}
+
+function setCommercialNotificationSeenMap(map) {
+  try {
+    localStorage.setItem(COMMERCIAL_NOTIFICATIONS_SEEN_KEY, JSON.stringify(map || {}));
+  } catch {
+    // Si el navegador bloquea localStorage, solo se pierde el visto local.
+  }
+}
+
+function getCommercialNotificationKey(task) {
+  return `${session.userId || "public"}::${task.id}::${task.status}::${task.updatedAt || task.completedAt || task.createdAt}`;
+}
+
+function isCommercialNotificationStatus(statusValue = "") {
+  const status = normalizeLooseText(statusValue);
+  return status.includes("APROB") ||
+    status.includes("RECHAZ") ||
+    status.includes("SUBSAN") ||
+    status.includes("SANEAMIENTO REALIZADO") ||
+    status.includes("SUBIDO A PILOT");
+}
+
+function getCommercialNotificationTasks(tasks = getCommercialOperationalTasks(getCommercialOwnedTasks())) {
+  const seen = getCommercialNotificationSeenMap();
+  return tasks
+    .filter((task) => isCommercialNotificationStatus(task.status))
+    .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
+    .map((task) => ({
+      task,
+      key: getCommercialNotificationKey(task),
+      seen: Boolean(seen[getCommercialNotificationKey(task)])
+    }));
+}
+
+function openCommercialNotificationsModal() {
+  if (!commercialNotificationsModal || !commercialNotificationsContent) return;
+  const notifications = getCommercialNotificationTasks();
+  if (!notifications.length) {
+    commercialNotificationsContent.innerHTML = `<div class="empty compact-empty">No tienes notificaciones de estatus por revisar.</div>`;
+  } else {
+    commercialNotificationsContent.innerHTML = notifications.map(({ task, seen }) => `
+      <article class="commercial-notification-item ${seen ? "is-seen" : ""}">
+        <div>
+          <strong>${escapeHtml(task.placa || "Sin placa")}</strong>
+          <span>${escapeHtml(task.cliente || task.vendedor || "Sin cliente")}</span>
+        </div>
+        <div>
+          ${renderStatusPill(task.status)}
+          <small>${escapeHtml(formatDateTime(task.updatedAt || task.completedAt || task.createdAt))}</small>
+        </div>
+      </article>
+    `).join("");
+  }
+  const seenMap = getCommercialNotificationSeenMap();
+  notifications.forEach(({ key }) => { seenMap[key] = true; });
+  setCommercialNotificationSeenMap(seenMap);
+  openCommercialModal(commercialNotificationsModal);
+  renderCommercialDashboard();
 }
 
 function getCommercialRequestFilteredTasks() {
@@ -4908,6 +5011,7 @@ function renderCommercialLeadList(container, tasks, options = {}) {
           ${renderStatusPill(task.status)}
           <small>${formatDateTime(task.createdAt)}</small>
           <button class="btn tiny secondary" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver ficha</button>
+          ${canCommercialResendTask(task) ? `<button class="btn tiny primary resend-btn" type="button" data-resend-commercial-task="${escapeHtml(task.id)}">Reenviar</button>` : ""}
         </div>
       </article>
     `).join("")}
@@ -4918,7 +5022,8 @@ function openLegalTaskModal(taskId) {
   const task = state.tasks.find((item) => item.id === taskId);
   if (!task || !legalTaskModal || !legalTaskModalContent) return;
   const canTake = session.role === "legal" && !task.legalUserId && !isClosedStatus(task.status) && canLegalUserSeeTask(task);
-  const canEdit = session.role === "admin" || task.legalUserId === session.userId;
+  const lockedForLegal = isTaskStatusLockedForLegal(task);
+  const canEdit = session.role === "admin" || (task.legalUserId === session.userId && !lockedForLegal);
   const sourceTask = isInfoRequestTask(task) ? state.tasks.find((item) => item.id === task.sourceTaskId) : null;
   if (legalTaskModalTitle) legalTaskModalTitle.textContent = `${task.placa || "Sin placa"} | ${isInfoRequestTask(task) ? "Solicitud de informacion" : getCommercialProcessLabel(getTaskProcess(task))}`;
   legalTaskModalContent.innerHTML = `
@@ -4949,6 +5054,7 @@ function openLegalTaskModal(taskId) {
     ` : ""}
     <div class="legal-modal-actions">
       ${canTake ? `<button class="btn primary" type="button" data-modal-take-task="${escapeHtml(task.id)}">Tomar tarea</button>` : ""}
+      ${lockedForLegal ? `<span class="locked-note">Estatus bloqueado. Solicite correccion al administrador.</span>` : ""}
       ${canEdit ? `
         <label>
           Actualizar estatus
@@ -4977,7 +5083,9 @@ function closeLegalTaskInfoModal() {
 function renderCommercialRows(tasks, options = {}) {
   const sorted = [...tasks].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   if (!sorted.length) return `<div class="empty compact-empty">Sin registros para mostrar.</div>`;
-  return sorted.map((task) => `
+  return sorted.map((task) => {
+    const canResend = canCommercialResendTask(task);
+    return `
     <article class="commercial-lead-row ${options.detailed ? "is-detailed" : ""}">
       <div>
         <strong>${escapeHtml(task.placa || "Sin placa")}</strong>
@@ -4992,9 +5100,59 @@ function renderCommercialRows(tasks, options = {}) {
         ${renderStatusPill(task.status)}
         <small>${formatDateTime(task.createdAt)}</small>
         <button class="btn tiny secondary" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver ficha</button>
+        ${canResend ? `<button class="btn tiny primary resend-btn" type="button" data-resend-commercial-task="${escapeHtml(task.id)}">Reenviar</button>` : ""}
       </div>
     </article>
-  `).join("");
+  `;
+  }).join("");
+}
+
+function canCommercialResendTask(task = {}) {
+  if (session.role !== "commercial" && session.role !== "admin") return false;
+  if (getTaskProcess(task) !== "compra") return false;
+  if (!ownsCommercialTask(task)) return false;
+  const status = normalizeLooseText(task.status);
+  return status.includes("RECHAZADO") || status.includes("RECHAZ");
+}
+
+async function resendRejectedCommercialTask(taskId) {
+  const source = state.tasks.find((task) => task.id === taskId);
+  if (!source || !canCommercialResendTask(source)) {
+    showToast("Solo se pueden reenviar saneamientos rechazados.");
+    return;
+  }
+  const confirmed = window.confirm(`Desea reenviar la solicitud de la placa ${source.placa || "sin placa"} sin llenar nuevamente el formulario?`);
+  if (!confirmed) return;
+  const createdAt = new Date().toISOString();
+  const task = {
+    ...structuredClone(source),
+    id: crypto.randomUUID(),
+    createdAt,
+    updatedAt: createdAt,
+    takenAt: "",
+    completedAt: "",
+    status: "pendiente",
+    legalUserId: "",
+    legalAdvisor: "",
+    statusLockedAt: "",
+    statusLockedBy: "",
+    statusLockedByName: "",
+    parentTaskId: source.parentTaskId || source.id,
+    resendOf: source.id,
+    resendCount: Number(source.resendCount || 0) + 1,
+    duplicateWarnings: getDuplicateWarnings(source, source.id),
+    observaciones: `${source.observaciones || ""}${source.observaciones ? " | " : ""}REENVIO COMERCIAL POR RECHAZO LEGAL ${formatDateTime(createdAt)}`,
+    syncStatus: "pending",
+    syncAction: "reenviar-rechazado"
+  };
+  autoAssignSaneamientoTask(task);
+  state.tasks.push(task);
+  saveState();
+  renderAll();
+  showToast("Solicitud reenviada a mesa de control.");
+  const onlineSaved = await guardarTareaSupabase(task, "reenviar-rechazado");
+  saveState();
+  if (!onlineSaved) showToast("Reenvio guardado localmente. Pendiente de sincronizar.");
 }
 
 function renderControlDashboard() {
@@ -11304,6 +11462,10 @@ document.addEventListener("keydown", (event) => {
     closeLegalTaskInfoModal();
     return;
   }
+  if (legalChatPanel && !legalChatPanel.hidden) {
+    legalChatPanel.hidden = true;
+    return;
+  }
   const blockingModalOpen = (commercialPilotModal && !commercialPilotModal.hidden) || (commercialDuplicateModal && !commercialDuplicateModal.hidden);
   if (!blockingModalOpen) closeCommercialModals();
 });
@@ -11312,6 +11474,10 @@ document.addEventListener("click", (event) => {
   const fichaButton = event.target.closest("[data-commercial-ficha]");
   if (fichaButton) {
     openCommercialLeadFicha(fichaButton.dataset.commercialFicha);
+  }
+  const resendButton = event.target.closest("[data-resend-commercial-task]");
+  if (resendButton) {
+    resendRejectedCommercialTask(resendButton.dataset.resendCommercialTask);
   }
   if (event.target.closest("[data-close-legal-task]")) {
     closeLegalTaskInfoModal();
@@ -11331,8 +11497,16 @@ legalTaskModalContent?.addEventListener("change", (event) => {
 });
 
 document.querySelector("#commercialNotificationBell")?.addEventListener("click", () => {
-  activeCommercialRequestFilter = "todos";
-  setCommercialArea("requests", { scroll: true });
+  openCommercialNotificationsModal();
+});
+
+legalChatOpenBtn?.addEventListener("click", () => {
+  if (legalChatPanel) legalChatPanel.hidden = false;
+  renderLegalChat();
+});
+
+legalChatCloseBtn?.addEventListener("click", () => {
+  if (legalChatPanel) legalChatPanel.hidden = true;
 });
 
 processingTabButtons.forEach((button) => {
