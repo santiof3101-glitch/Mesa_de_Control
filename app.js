@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260715-legal-desk-executive";
+const APP_BUILD_VERSION = "20260715-chat-scroll";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -3697,6 +3697,10 @@ function renderLegalChat() {
     return;
   }
   const conversationKey = buildLegalChatConversationKey(current.id, recipient.id);
+  const previousConversationKey = legalChatList.dataset.conversationKey || "";
+  const wasNearBottom = !previousConversationKey ||
+    previousConversationKey !== conversationKey ||
+    (legalChatList.scrollHeight - legalChatList.scrollTop - legalChatList.clientHeight < 96);
   const messages = state.legalChatMessages
     .filter((message) => !message.deleted)
     .filter((message) => message.conversationKey === conversationKey)
@@ -3705,6 +3709,7 @@ function renderLegalChat() {
     legalChatList.innerHTML = `<div class="empty compact-empty">Aun no hay mensajes con ${escapeHtml(recipient.name)}.</div>`;
     return;
   }
+  legalChatList.dataset.conversationKey = conversationKey;
   legalChatList.innerHTML = messages.map((message) => {
     const mine = message.userId === current.id;
     const canDelete = session.role === "admin" || mine;
@@ -3724,7 +3729,9 @@ function renderLegalChat() {
       </article>
     `;
   }).join("");
-  legalChatList.scrollTop = legalChatList.scrollHeight;
+  if (wasNearBottom) {
+    legalChatList.scrollTop = legalChatList.scrollHeight;
+  }
 }
 
 function sendLegalChatMessage(text) {
