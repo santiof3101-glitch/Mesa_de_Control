@@ -1611,10 +1611,58 @@ button.kpi-card {
   line-height: 16px;
 }
 
+.commercial-notifications-card {
+  width: min(560px, calc(100vw - 28px));
+}
+
+.commercial-notifications-list {
+  display: grid;
+  gap: 10px;
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.commercial-notification-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.commercial-notification-item.is-seen {
+  opacity: 0.72;
+}
+
+.commercial-notification-item strong,
+.commercial-notification-item span,
+.commercial-notification-item small {
+  display: block;
+}
+
+.commercial-notification-item strong {
+  color: #111827;
+  font-size: 0.92rem;
+}
+
+.commercial-notification-item span,
+.commercial-notification-item small {
+  color: #667085;
+  font-size: 0.78rem;
+}
+
 .commercial-lead-actions {
   display: grid;
   justify-items: end;
   gap: 6px;
+}
+
+.commercial-lead-actions .resend-btn {
+  background: #f2182d;
+  color: #fff;
 }
 
 .btn.tiny {
@@ -2926,6 +2974,33 @@ button.kpi-card {
   box-shadow: none;
 }
 
+#tareas,
+#tareas input,
+#tareas select,
+#tareas button {
+  font-size: 12px;
+}
+
+#tareas h1,
+#tareas h2,
+#tareas h3 {
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+#tareas .legal-sidebar button,
+#tareas [data-legal-sidebar-filter],
+#tareas [data-legal-scroll] {
+  font-size: 12px;
+  font-weight: 650;
+}
+
+#tareas .legal-sidebar .eyebrow,
+#tareas .task-row-assignee span,
+#tareas .task-toolbar label {
+  font-size: 11px;
+}
+
 #tareas .task-row-card.has-warning,
 #tareas .task-row-card.info-request-card {
   border-left-color: #f2182d;
@@ -3026,13 +3101,51 @@ button.kpi-card {
 }
 
 #tareas .legal-chat-panel {
-  position: sticky;
-  top: 96px;
   max-height: calc(100vh - 116px);
   border: 0;
   border-radius: 18px;
   background: #fff;
   box-shadow: 0 24px 60px rgba(31, 38, 52, 0.1);
+}
+
+#tareas .legal-chat-panel.is-floating {
+  position: fixed;
+  right: 24px;
+  bottom: 88px;
+  z-index: 9000;
+  width: min(420px, calc(100vw - 32px));
+  max-height: min(680px, calc(100vh - 120px));
+  display: grid;
+  grid-template-rows: auto minmax(180px, 1fr) auto;
+  overflow: hidden;
+}
+
+#tareas .legal-chat-panel[hidden] {
+  display: none;
+}
+
+#tareas .legal-chat-floating-btn {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 8990;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(135deg, #111827, #f2182d);
+  box-shadow: 0 18px 42px rgba(31, 38, 52, 0.22);
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+#tareas .legal-chat-floating-btn span {
+  font-size: 1rem;
 }
 
 .legal-task-modal[hidden] {
