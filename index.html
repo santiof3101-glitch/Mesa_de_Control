@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260714-emoji-fix">
+<html lang="es" data-app-version="20260714-commercial-spec">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -7,8 +7,8 @@
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Autocor | Control Legal</title>
-  <link rel="stylesheet" href="styles.css?v=20260714-emoji-fix">
-  <link rel="stylesheet" href="layout-fix.css?v=20260714-emoji-fix">
+  <link rel="stylesheet" href="styles.css?v=20260714-commercial-spec">
+  <link rel="stylesheet" href="layout-fix.css?v=20260714-commercial-spec">
 </head>
 <body>
   <header class="topbar">
@@ -809,8 +809,8 @@
           <p>Selecciona el flujo que necesitas registrar. Cada solicitud quedara sincronizada con mesa de control.</p>
           <div class="commercial-start-actions">
             <button class="btn primary" type="button" data-commercial-start="commercial-purchase-process">&#128722; Compra</button>
-            <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-sale-process">&#128663; Venta</button>
-            <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-cuv-process">&#128204; CUV</button>
+            <button class="btn secondary light-btn is-disabled" type="button" data-coming-soon="venta" aria-disabled="true">&#128663; Venta</button>
+            <button class="btn secondary light-btn is-disabled" type="button" data-coming-soon="cuv" aria-disabled="true">&#128204; CUV</button>
           </div>
         </div>
       </section>
@@ -821,6 +821,9 @@
           <h2 id="commercial-dashboard-title">Mis saneamientos</h2>
         </div>
         <div class="session-actions">
+          <button id="commercialNotificationBell" class="commercial-bell" type="button" aria-label="Notificaciones de saneamientos">
+            &#128276;<span id="commercialNotificationCount">0</span>
+          </button>
           <form id="commercialPasswordForm" class="password-form">
             <input name="password" type="password" placeholder="Nueva contrasena" required>
             <button class="btn secondary" type="submit">&#128273; Cambiar mi clave</button>
@@ -908,11 +911,11 @@
             <strong>Compra</strong>
             <span>Solicitud de toma y saneamiento.</span>
           </button>
-          <button class="commercial-process-card" type="button" data-commercial-process="commercial-sale-process">
+          <button class="commercial-process-card is-disabled" type="button" data-coming-soon="venta" aria-disabled="true">
             <strong>Venta</strong>
             <span>Tracking de contratos de compraventa.</span>
           </button>
-          <button class="commercial-process-card" type="button" data-commercial-process="commercial-cuv-process">
+          <button class="commercial-process-card is-disabled" type="button" data-coming-soon="cuv" aria-disabled="true">
             <strong>CUV</strong>
             <span>Control CUV separado.</span>
           </button>
@@ -1575,6 +1578,62 @@
     </form>
   </div>
 
+  <div id="commercialConstructionModal" class="commercial-modal" hidden>
+    <div class="commercial-modal-backdrop" data-close-commercial-modal></div>
+    <section class="commercial-modal-card commercial-construction-card" role="dialog" aria-modal="true" aria-labelledby="constructionTitle">
+      <button class="commercial-modal-close" type="button" data-close-commercial-modal aria-label="Cerrar">x</button>
+      <div class="construction-illustration" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </div>
+      <p class="eyebrow">Modulo en construccion</p>
+      <h2 id="constructionTitle">Estamos trabajando en este modulo</h2>
+      <p>Muy pronto estara disponible para que puedas gestionar este flujo desde la misma plataforma.</p>
+      <button class="btn primary" type="button" data-close-commercial-modal>Entendido</button>
+    </section>
+  </div>
+
+  <div id="commercialLeadModal" class="commercial-modal" hidden>
+    <div class="commercial-modal-backdrop" data-close-commercial-modal></div>
+    <section class="commercial-modal-card commercial-lead-card" role="dialog" aria-modal="true" aria-labelledby="leadFichaTitle">
+      <div class="modal-title-row">
+        <div>
+          <p class="eyebrow">Ficha de lectura</p>
+          <h2 id="leadFichaTitle">Detalle del lead</h2>
+        </div>
+        <button class="commercial-modal-close" type="button" data-close-commercial-modal aria-label="Cerrar">x</button>
+      </div>
+      <div id="commercialLeadFichaContent" class="lead-ficha-grid"></div>
+    </section>
+  </div>
+
+  <div id="commercialPilotModal" class="commercial-modal" hidden>
+    <div class="commercial-modal-backdrop"></div>
+    <section class="commercial-modal-card commercial-warning-card" role="dialog" aria-modal="true" aria-labelledby="pilotConfirmTitle">
+      <span class="warning-mark">&#9888;&#65039;</span>
+      <p class="eyebrow">Recordatorio importante</p>
+      <h2 id="pilotConfirmTitle">Antes de enviar a control legal</h2>
+      <p>Asegurate de tener en Pilot todos los documentos habilitantes. La ausencia de estos puede causar el rechazo de tu saneamiento.</p>
+      <div class="commercial-modal-actions">
+        <button id="pilotCancelBtn" class="btn secondary" type="button">Revisar antes</button>
+        <button id="pilotConfirmBtn" class="btn primary" type="button">Confirmar envio</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="commercialDuplicateModal" class="commercial-modal" hidden>
+    <div class="commercial-modal-backdrop"></div>
+    <section class="commercial-modal-card commercial-warning-card is-conflict" role="dialog" aria-modal="true" aria-labelledby="duplicateConflictTitle">
+      <span class="warning-mark">&#9888;&#65039;</span>
+      <p class="eyebrow">Smart Guard</p>
+      <h2 id="duplicateConflictTitle">Posible caso duplicado</h2>
+      <div id="duplicateConflictContent" class="duplicate-conflict-content"></div>
+      <div class="commercial-modal-actions">
+        <button id="duplicateCancelBtn" class="btn secondary" type="button">Contactar y revisar</button>
+        <button id="duplicateContinueBtn" class="btn primary" type="button">Continuar bajo mi responsabilidad</button>
+      </div>
+    </section>
+  </div>
+
   <div id="supportModal" class="support-modal" hidden>
     <div class="support-modal-backdrop" data-close-support></div>
     <section class="support-bubble" role="dialog" aria-modal="true" aria-labelledby="supportBubbleTitle">
@@ -1618,7 +1677,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260714-emoji-fix"></script>
+  <script src="app.js?v=20260714-commercial-spec"></script>
 </body>
 </html>
 
