@@ -1808,6 +1808,64 @@ button.kpi-card {
   margin-top: 8px;
 }
 
+#commercialLeadList[hidden] {
+  display: none !important;
+}
+
+.commercial-sidebar-modal-card {
+  width: min(1120px, calc(100vw - 32px));
+  max-height: min(88vh, 900px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 18px;
+  overflow: hidden;
+}
+
+.commercial-modal-subtitle {
+  display: block;
+  margin-top: 6px;
+  color: #647084;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.commercial-sidebar-modal-content {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  gap: 16px;
+  padding-right: 6px;
+}
+
+.commercial-modal-kpis {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.commercial-modal-section {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #e6ebf3;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff, #fbfcff);
+}
+
+.commercial-modal-list {
+  display: grid;
+  gap: 8px;
+}
+
+.commercial-modal-list .commercial-lead-row {
+  margin: 0;
+}
+
+.commercial-modal-chart {
+  padding: 14px;
+  border: 1px solid #eef2f7;
+  border-radius: 14px;
+  background: #fff;
+}
+
 .duplicate-conflict-content {
   display: grid;
   gap: 10px;
