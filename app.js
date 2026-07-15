@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260714-commercial-spec";
+const APP_BUILD_VERSION = "20260714-legal-task-redesign";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -403,6 +403,9 @@ const adminLeadModal = document.querySelector("#adminLeadModal");
 const adminLeadForm = document.querySelector("#adminLeadForm");
 const adminLeadModalTitle = document.querySelector("#adminLeadModalTitle");
 const adminLeadTimeInfo = document.querySelector("#adminLeadTimeInfo");
+const legalTaskModal = document.querySelector("#legalTaskModal");
+const legalTaskModalTitle = document.querySelector("#legalTaskModalTitle");
+const legalTaskModalContent = document.querySelector("#legalTaskModalContent");
 const exportDataBtn = document.querySelector("#exportDataBtn");
 const importDataInput = document.querySelector("#importDataInput");
 const restoreInternalBackupBtn = document.querySelector("#restoreInternalBackupBtn");
@@ -4031,44 +4034,30 @@ function renderTasks() {
     const status = getStatusOption(task.status);
     const warnings = task.duplicateWarnings?.length ? task.duplicateWarnings : getDuplicateWarnings(task, task.id);
     const card = document.createElement("article");
-    card.className = `task-card ${warnings.length ? "has-warning" : ""}`;
+    card.className = `task-card task-row-card ${warnings.length ? "has-warning" : ""}`;
     card.innerHTML = `
-      <div>
-        <h3>${index + 1}. ${escapeHtml(task.cliente)}</h3>
+      <div class="task-row-index">${index + 1}</div>
+      <div class="task-row-main">
+        <h3>${escapeHtml(task.cliente || task.vendedor || "Solicitud sin nombre")}</h3>
         <p class="task-meta">
-          <span>${task.processType === "venta" ? "Venta | Contrato compraventa" : "Compra | Saneamiento"}</span>
-          <span>Cedula: ${escapeHtml(task.cedula)}</span>
-          <span>Placa: ${escapeHtml(task.placa)}</span>
-          <span>${escapeHtml(task.ciudad || task.agencia || "")}</span>
-          <span>${escapeHtml(task.asesor || "")}</span>
+          <span>Placa: ${escapeHtml(task.placa || "Sin placa")}</span>
+          <span>Cliente: ${escapeHtml(task.cliente || task.vendedor || "Sin registro")}</span>
+          <span>Asesor: ${escapeHtml(task.asesor || task.commercialUserName || "Sin asesor")}</span>
         </p>
-        ${task.processType === "venta" ? `
-          <p class="task-meta sale-contract-meta">
-            <span>Precio: $${escapeHtml(task.precioContrato || "0")}</span>
-            <span>Telefono: ${escapeHtml(task.telefono || "")}</span>
-            <span>Correo: ${escapeHtml(task.correo || "")}</span>
-          </p>
-        ` : ""}
-        ${warnings.length ? `<p class="warning-line">${escapeHtml(warnings.join(" "))}</p>` : ""}
-        <p class="observations">${escapeHtml(task.observaciones || "Sin observaciones")}</p>
-        <details class="legal-task-full-details">
-          <summary>Ver ficha completa</summary>
-          ${renderLegalTaskFullDetails(task)}
-        </details>
+        ${warnings.length ? `<span class="task-row-alert">Duplicado / revisar</span>` : ""}
       </div>
-      <div class="task-detail">
-        <strong>Asistente legal</strong><br>
-        ${escapeHtml(task.legalAdvisor || "Disponible")}<br>
-        <strong>Tiempos</strong><br>
-        Creado: ${formatDateTime(task.createdAt)}<br>
-        Tomado: ${formatDateTime(task.takenAt)}<br>
-        Cerrado: ${formatDateTime(task.completedAt)}
+      <div class="task-row-assignee">
+        <span>Asignado</span>
+        <strong>${escapeHtml(task.legalAdvisor || "Disponible")}</strong>
+        <small>Creado: ${formatDateTime(task.createdAt)}</small>
       </div>
-      <div class="status-control">
+      <div class="task-row-status">
         ${renderStatusPill(task.status)}
         <span class="time-chip">${formatLeadDuration(task)}</span>
-        <span class="time-chip">Tomado a cerrado: ${formatTakenToClosed(task)}</span>
-        ${canTake ? `<button class="btn primary take-btn" type="button">Tomar lead</button>` : ""}
+      </div>
+      <div class="task-row-actions">
+        <button class="btn secondary tiny view-task-btn" type="button" data-legal-task="${escapeHtml(task.id)}">Ver ficha</button>
+        ${canTake ? `<button class="btn primary tiny take-btn" type="button">Tomar</button>` : ""}
         ${assignedToAnother ? `<small class="locked-note">Tomado por otro asistente</small>` : ""}
         <select aria-label="Estatus del saneamiento" ${canEdit ? "" : "disabled"}>
           ${state.statusOptions.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join("")}
@@ -4078,6 +4067,7 @@ function renderTasks() {
 
     const takeBtn = card.querySelector(".take-btn");
     if (takeBtn) takeBtn.addEventListener("click", () => takeTask(task.id));
+    card.querySelector(".view-task-btn")?.addEventListener("click", () => openLegalTaskModal(task.id));
 
     const statusSelect = card.querySelector("select");
     statusSelect.value = task.status;
@@ -4163,40 +4153,28 @@ function renderInfoRequestTaskCard(task, index) {
   const canAuthorize = session.role === "admin" || session.role === "legal" && (!task.legalUserId || task.legalUserId === session.userId);
   const sourceTask = state.tasks.find((item) => item.id === task.sourceTaskId);
   const card = document.createElement("article");
-  card.className = "task-card info-request-card";
+  card.className = "task-card task-row-card info-request-card";
   card.innerHTML = `
-    <div>
-      <h3>${index + 1}. Solicitud de informacion de placa</h3>
+    <div class="task-row-index">${index + 1}</div>
+    <div class="task-row-main">
+      <h3>Solicitud de informacion de placa</h3>
       <p class="task-meta">
         <span>Placa: ${escapeHtml(task.placa || "Sin placa")}</span>
         <span>Solicitante: ${escapeHtml(task.requestedByName || task.asesor || task.commercialUserName || "Sin solicitante")}</span>
-        <span>Agencia solicitante: ${escapeHtml(task.requestedByAgency || task.commercialAgency || task.agencia || "Sin agencia")}</span>
-        <span>Hora solicitud: ${formatDateTime(task.requestedAt || task.createdAt)}</span>
-      </p>
-      <p class="task-meta">
-        <span>Registro consultado: ${escapeHtml(task.sourceTaskId || "Sin id")}</span>
-        <span>Cliente/registro: ${escapeHtml(task.sourceCliente || sourceTask?.cliente || sourceTask?.vendedor || "Informacion restringida")}</span>
         <span>Asesor original: ${escapeHtml(task.sourceAsesor || sourceTask?.asesor || "Sin registro")}</span>
-        <span>Agencia original: ${escapeHtml(task.sourceAgencia || sourceTask?.agencia || "Sin registro")}</span>
       </p>
-      <p class="observations">${escapeHtml(task.observaciones || "Solicitud pendiente de revision.")}</p>
-      ${sourceTask ? `
-        <details class="legal-task-full-details">
-          <summary>Ver ficha del registro consultado</summary>
-          ${renderLegalTaskFullDetails(sourceTask)}
-        </details>
-      ` : ""}
     </div>
-    <div class="task-detail">
-      <strong>Revision mesa de control</strong><br>
-      Asignado: ${escapeHtml(task.legalAdvisor || "Disponible")}<br>
-      Creado: ${formatDateTime(task.createdAt)}<br>
-      Tomado: ${formatDateTime(task.takenAt)}<br>
-      Cerrado: ${formatDateTime(task.completedAt)}
+    <div class="task-row-assignee">
+      <span>Asignado</span>
+      <strong>${escapeHtml(task.legalAdvisor || "Disponible")}</strong>
+      <small>Creado: ${formatDateTime(task.createdAt)}</small>
     </div>
-    <div class="status-control">
+    <div class="task-row-status">
       ${renderStatusPill(task.infoAccessStatus === "approved" ? "saneamiento realizado y subido a pilot" : task.status)}
       <span class="time-chip">${task.infoAccessStatus === "approved" ? "Informacion autorizada" : "Pendiente de autorizacion"}</span>
+    </div>
+    <div class="task-row-actions">
+      <button class="btn secondary tiny view-task-btn" type="button" data-legal-task="${escapeHtml(task.id)}">Ver ficha</button>
       ${canTake ? `<button class="btn primary take-btn" type="button">Tomar solicitud</button>` : ""}
       ${canAuthorize && task.infoAccessStatus !== "approved" ? `<button class="btn primary approve-info-btn" type="button">Autorizar informacion</button>` : ""}
       ${assignedToAnother ? `<small class="locked-note">Tomado por otro asistente</small>` : ""}
@@ -4207,6 +4185,7 @@ function renderInfoRequestTaskCard(task, index) {
   if (takeBtn) takeBtn.addEventListener("click", () => takeTask(task.id));
   const approveBtn = card.querySelector(".approve-info-btn");
   if (approveBtn) approveBtn.addEventListener("click", () => approvePlateInfoRequest(task.id));
+  card.querySelector(".view-task-btn")?.addEventListener("click", () => openLegalTaskModal(task.id));
   return card;
 }
 
@@ -4870,6 +4849,66 @@ function renderCommercialLeadList(container, tasks, options = {}) {
       </article>
     `).join("")}
   `;
+}
+
+function openLegalTaskModal(taskId) {
+  const task = state.tasks.find((item) => item.id === taskId);
+  if (!task || !legalTaskModal || !legalTaskModalContent) return;
+  const canTake = session.role === "legal" && !task.legalUserId && !isClosedStatus(task.status) && canLegalUserSeeTask(task);
+  const canEdit = session.role === "admin" || task.legalUserId === session.userId;
+  const sourceTask = isInfoRequestTask(task) ? state.tasks.find((item) => item.id === task.sourceTaskId) : null;
+  if (legalTaskModalTitle) legalTaskModalTitle.textContent = `${task.placa || "Sin placa"} | ${isInfoRequestTask(task) ? "Solicitud de informacion" : getCommercialProcessLabel(getTaskProcess(task))}`;
+  legalTaskModalContent.innerHTML = `
+    <div class="legal-modal-summary">
+      <div>
+        <span>Cliente / registro</span>
+        <strong>${escapeHtml(task.cliente || task.vendedor || task.sourceCliente || "Sin registro")}</strong>
+      </div>
+      <div>
+        <span>Estatus</span>
+        ${renderStatusPill(task.status)}
+      </div>
+      <div>
+        <span>Asistente legal</span>
+        <strong>${escapeHtml(task.legalAdvisor || "Disponible")}</strong>
+      </div>
+      <div>
+        <span>Tiempo</span>
+        <strong>${escapeHtml(formatLeadDuration(task))}</strong>
+      </div>
+    </div>
+    ${renderLegalTaskFullDetails(task)}
+    ${sourceTask ? `
+      <div class="legal-modal-source">
+        <p class="eyebrow">Registro consultado</p>
+        ${renderLegalTaskFullDetails(sourceTask)}
+      </div>
+    ` : ""}
+    <div class="legal-modal-actions">
+      ${canTake ? `<button class="btn primary" type="button" data-modal-take-task="${escapeHtml(task.id)}">Tomar tarea</button>` : ""}
+      ${canEdit ? `
+        <label>
+          Actualizar estatus
+          <select data-modal-status-task="${escapeHtml(task.id)}">
+            ${state.statusOptions.map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === task.status ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
+          </select>
+        </label>
+      ` : ""}
+    </div>
+  `;
+  openLegalTaskInfoModal();
+}
+
+function openLegalTaskInfoModal() {
+  if (!legalTaskModal) return;
+  legalTaskModal.hidden = false;
+  document.body.classList.add("has-modal");
+}
+
+function closeLegalTaskInfoModal() {
+  if (!legalTaskModal) return;
+  legalTaskModal.hidden = true;
+  document.body.classList.remove("has-modal");
 }
 
 function renderCommercialRows(tasks, options = {}) {
@@ -11198,6 +11237,10 @@ document.querySelectorAll("[data-close-commercial-modal]").forEach((button) => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;
+  if (legalTaskModal && !legalTaskModal.hidden) {
+    closeLegalTaskInfoModal();
+    return;
+  }
   const blockingModalOpen = (commercialPilotModal && !commercialPilotModal.hidden) || (commercialDuplicateModal && !commercialDuplicateModal.hidden);
   if (!blockingModalOpen) closeCommercialModals();
 });
@@ -11207,6 +11250,21 @@ document.addEventListener("click", (event) => {
   if (fichaButton) {
     openCommercialLeadFicha(fichaButton.dataset.commercialFicha);
   }
+  if (event.target.closest("[data-close-legal-task]")) {
+    closeLegalTaskInfoModal();
+  }
+  const modalTakeButton = event.target.closest("[data-modal-take-task]");
+  if (modalTakeButton) {
+    takeTask(modalTakeButton.dataset.modalTakeTask);
+    openLegalTaskModal(modalTakeButton.dataset.modalTakeTask);
+  }
+});
+
+legalTaskModalContent?.addEventListener("change", (event) => {
+  const statusSelect = event.target.closest("[data-modal-status-task]");
+  if (!statusSelect) return;
+  updateTaskStatus(statusSelect.dataset.modalStatusTask, statusSelect.value);
+  openLegalTaskModal(statusSelect.dataset.modalStatusTask);
 });
 
 document.querySelector("#commercialNotificationBell")?.addEventListener("click", () => {
