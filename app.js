@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260715-chat-scroll-fix";
+const APP_BUILD_VERSION = "20260715-custom-field-delete-fix";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -3190,7 +3190,7 @@ function renderFormAdministration() {
   if (!adminFormFieldsList || !adminFormProcessSelect) return;
   const process = adminFormProcessSelect.value || "compra";
   adminFormFieldsList.innerHTML = getFormFields(process).map((field) => `
-    <article class="form-builder-row" data-form-field="${escapeHtml(field.id)}">
+    <article class="form-builder-row" data-form-field="${escapeHtml(field.id)}" data-form-field-name="${escapeHtml(field.name)}" data-form-field-label="${escapeHtml(field.label)}">
       <div>
         <strong>${escapeHtml(field.label)}</strong>
         <span>${field.isBase ? "Pregunta base" : "Pregunta personalizada"} | Nombre tecnico: ${escapeHtml(field.name)}</span>
@@ -3252,10 +3252,25 @@ function renderFieldTypeOptions(currentType = "text") {
 
 function deleteCustomFormField(id) {
   const process = adminFormProcessSelect?.value || "compra";
-  state.formConfig[process] = getFormFields(process).filter((field) => field.id !== id || field.isBase);
+  const fields = getFormFields(process);
+  const target = fields.find((field) => field.id === id) || {};
+  const row = [...(adminFormFieldsList?.querySelectorAll("[data-form-field]") || [])].find((item) => item.dataset.formField === id);
+  const targetName = target.name || row?.dataset.formFieldName || "";
+  const targetLabel = target.label || row?.dataset.formFieldLabel || "";
+  const normalizeFieldKey = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+  const before = fields.length;
+  state.formConfig[process] = fields.filter((field) => {
+    if (field.isBase) return true;
+    if (field.id === id) return false;
+    if (targetName && field.name === targetName) return false;
+    if (targetLabel && normalizeFieldKey(field.label) === normalizeFieldKey(targetLabel)) return false;
+    return true;
+  });
+  const removed = before - state.formConfig[process].length;
   saveState();
   renderAll();
-  showToast("Campo personalizado eliminado.");
+  guardarModulosSupabase();
+  showToast(removed > 1 ? `${removed} campos personalizados eliminados.` : "Campo personalizado eliminado.");
 }
 
 function addCustomFormField(data) {
