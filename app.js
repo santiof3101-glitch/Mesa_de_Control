@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260715-legal-one-active-task";
+const APP_BUILD_VERSION = "20260715-provider-profile-recovery";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -646,7 +646,7 @@ function loadState() {
     merged.dataProcessing.purchaseFilterPresets = merged.dataProcessing.purchaseFilterPresets || [];
     merged.dataProcessing.contratos = (merged.dataProcessing.contratos || []).map(normalizeContractRecord);
     merged.dataProcessing.contractLoads = (merged.dataProcessing.contractLoads || []).map(normalizeContractLoad);
-    merged.dataProcessing.providerProfiles = normalizeProviderProfiles(merged.dataProcessing.providerProfiles || []);
+    merged.dataProcessing.providerProfiles = buildProviderProfilesFromHistory(merged.dataProcessing.providerProfiles || [], merged.dataProcessing);
     merged.dataProcessing.proveedores = (merged.dataProcessing.proveedores || []).map(normalizeProviderRecord);
     merged.dataProcessing.providerLoads = (merged.dataProcessing.providerLoads || []).map(normalizeProviderLoad);
     merged.dataProcessing.providerDuplicateApprovals = merged.dataProcessing.providerDuplicateApprovals || {};
@@ -1207,7 +1207,11 @@ function scheduleSupabaseModuleSync() {
 
 function getProtectedSupabaseModuleCount(modulo, snapshot = {}) {
   if (!snapshot || typeof snapshot !== "object") return 0;
-  if (modulo === "proveedores") return Array.isArray(snapshot.proveedores) ? snapshot.proveedores.length : 0;
+  if (modulo === "proveedores") {
+    const records = Array.isArray(snapshot.proveedores) ? snapshot.proveedores.length : 0;
+    const profiles = Array.isArray(snapshot.providerProfiles) ? snapshot.providerProfiles.length : 0;
+    return records * 1000 + profiles;
+  }
   return 0;
 }
 
@@ -1462,9 +1466,17 @@ function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
           return false;
         }
       }
+      processing.providerProfiles = buildProviderProfilesFromHistory([
+        ...(processing.providerProfiles || []),
+        ...(snapshot.providerProfiles || [])
+      ], {
+        ...processing,
+        proveedores: snapshot.proveedores || [],
+        providerLoads: snapshot.providerLoads || []
+      });
       processing.proveedores = (snapshot.proveedores || []).map(normalizeProviderRecord);
       processing.providerLoads = (snapshot.providerLoads || []).map(normalizeProviderLoad);
-      processing.providerProfiles = normalizeProviderProfiles(snapshot.providerProfiles || []);
+      processing.providerProfiles = buildProviderProfilesFromHistory(processing.providerProfiles || [], processing);
       processing.providerDuplicateApprovals = snapshot.providerDuplicateApprovals || {};
       return true;
     case "archivos":
@@ -1563,7 +1575,10 @@ function mergePcStates(baseState, extraState) {
   baseProcessing.providerLoads = mergeByKey(baseProcessing.providerLoads || [], extraProcessing.providerLoads || [], "id");
   baseProcessing.files = mergeByKey(baseProcessing.files || [], extraProcessing.files || [], "id");
   baseProcessing.folders = normalizeFileFolders(mergeByKey(baseProcessing.folders || [], extraProcessing.folders || [], "id"));
-  baseProcessing.providerProfiles = normalizeProviderProfiles(mergeByKey(baseProcessing.providerProfiles || [], extraProcessing.providerProfiles || [], "id"));
+  baseProcessing.providerProfiles = buildProviderProfilesFromHistory(
+    mergeByKey(baseProcessing.providerProfiles || [], extraProcessing.providerProfiles || [], "id"),
+    baseProcessing
+  );
   baseProcessing.purchaseFilterPresets = mergeByKey(baseProcessing.purchaseFilterPresets || [], extraProcessing.purchaseFilterPresets || [], "id");
   baseProcessing.purchaseDuplicateApprovals = {
     ...(extraProcessing.purchaseDuplicateApprovals || {}),
@@ -2049,6 +2064,66 @@ function normalizeProviderProfiles(profiles = []) {
   return [...map.values()];
 }
 
+function getProviderProfileColumnsFromRecord(record = {}) {
+  const excluded = new Set([
+    "id",
+    "profileId",
+    "profileName",
+    "provider",
+    "importMonth",
+    "source",
+    "loadId",
+    "importedAt",
+    "remoteCreatedAt",
+    "syncStatus"
+  ]);
+  return Object.keys(record || {})
+    .filter((key) => key && !key.startsWith("_"))
+    .filter((key) => !excluded.has(key))
+    .filter((key) => !/^custom/i.test(key))
+    .map(normalizeLooseText)
+    .filter(Boolean);
+}
+
+function buildProviderProfilesFromHistory(existingProfiles = [], processing = state.dataProcessing || {}) {
+  const map = new Map();
+  normalizeProviderProfiles(existingProfiles || []).forEach((profile) => {
+    map.set(profile.id, { ...profile, columns: parseProviderColumns(profile.columns || []) });
+  });
+  const addProfile = (id, name, columns = []) => {
+    const cleanName = normalizeLooseText(name || "");
+    if (!cleanName) return;
+    const cleanId = id || `provider-profile-${normalizeHeaderKey(cleanName).toLowerCase()}`;
+    const cleanColumns = parseProviderColumns(columns);
+    const existing = map.get(cleanId) || [...map.values()].find((profile) => profile.name === cleanName);
+    if (existing) {
+      existing.columns = parseProviderColumns([...existing.columns, ...cleanColumns]);
+      return;
+    }
+    map.set(cleanId, {
+      id: cleanId,
+      name: cleanName,
+      columns: cleanColumns.length ? cleanColumns : PROVIDER_COLUMNS,
+      isDefault: Boolean(DEFAULT_PROVIDER_PROFILES.some((profile) => profile.id === cleanId))
+    });
+  };
+  (processing.providerLoads || []).forEach((load) => {
+    const relatedRecords = (processing.proveedores || []).filter((record) =>
+      record.loadId === load.id || record.profileId === load.profileId || record.profileName === load.profileName
+    );
+    const columns = relatedRecords.flatMap(getProviderProfileColumnsFromRecord);
+    addProfile(load.profileId, load.profileName || load.provider, columns);
+  });
+  (processing.proveedores || []).forEach((record) => {
+    addProfile(record.profileId, record.profileName || record.provider, getProviderProfileColumnsFromRecord(record));
+  });
+  const profiles = [...map.values()].map((profile) => ({
+    ...profile,
+    columns: parseProviderColumns(profile.columns || PROVIDER_COLUMNS)
+  })).filter((profile) => profile.name && profile.columns.length);
+  return profiles.length ? profiles : normalizeProviderProfiles(DEFAULT_PROVIDER_PROFILES);
+}
+
 function normalizeStoredFile(file) {
   const folderId = file.folderId || guessFolderIdFromCategory(file.category);
   return {
@@ -2421,7 +2496,7 @@ function normalizeImportedState(importedState) {
   merged.dataProcessing.purchaseFilterPresets = merged.dataProcessing.purchaseFilterPresets || [];
   merged.dataProcessing.contratos = (merged.dataProcessing.contratos || []).map(normalizeContractRecord);
   merged.dataProcessing.contractLoads = (merged.dataProcessing.contractLoads || []).map(normalizeContractLoad);
-  merged.dataProcessing.providerProfiles = normalizeProviderProfiles(merged.dataProcessing.providerProfiles || []);
+  merged.dataProcessing.providerProfiles = buildProviderProfilesFromHistory(merged.dataProcessing.providerProfiles || [], merged.dataProcessing);
   merged.dataProcessing.proveedores = (merged.dataProcessing.proveedores || []).map(normalizeProviderRecord);
   merged.dataProcessing.providerLoads = (merged.dataProcessing.providerLoads || []).map(normalizeProviderLoad);
   merged.dataProcessing.providerDuplicateApprovals = merged.dataProcessing.providerDuplicateApprovals || {};
@@ -8813,7 +8888,10 @@ function parseProviderColumns(value) {
 }
 
 function getProviderProfiles() {
-  state.dataProcessing.providerProfiles = normalizeProviderProfiles(state.dataProcessing?.providerProfiles || []);
+  state.dataProcessing.providerProfiles = buildProviderProfilesFromHistory(
+    state.dataProcessing?.providerProfiles || [],
+    state.dataProcessing || {}
+  );
   return state.dataProcessing.providerProfiles;
 }
 
