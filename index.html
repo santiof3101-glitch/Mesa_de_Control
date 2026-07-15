@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260714-commercial-spec">
+<html lang="es" data-app-version="20260714-legal-task-redesign">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -7,8 +7,8 @@
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Autocor | Control Legal</title>
-  <link rel="stylesheet" href="styles.css?v=20260714-commercial-spec">
-  <link rel="stylesheet" href="layout-fix.css?v=20260714-commercial-spec">
+  <link rel="stylesheet" href="styles.css?v=20260714-legal-task-redesign">
+  <link rel="stylesheet" href="layout-fix.css?v=20260714-legal-task-redesign">
 </head>
 <body>
   <header class="topbar">
@@ -1041,7 +1041,7 @@
     <section id="tareas" class="view legal-desk" aria-labelledby="tasks-title">
       <aside class="legal-sidebar">
         <div class="legal-sidebar-brand">
-          <span class="legal-sidebar-icon">📋</span>
+          <span class="legal-sidebar-icon">&#128203;</span>
           <strong>Repositorio de tareas</strong>
         </div>
         <nav class="legal-sidebar-nav" aria-label="Mesa de control">
@@ -1100,7 +1100,7 @@
 
         <div class="task-toolbar panel">
           <label>
-            Buscador general
+            Buscar tarea
             <input id="taskSearch" type="search" placeholder="Buscar por placa, cedula, cliente, asesor, ciudad">
           </label>
           <label>
@@ -1578,6 +1578,20 @@
     </form>
   </div>
 
+  <div id="legalTaskModal" class="legal-task-modal" hidden>
+    <div class="legal-task-modal-backdrop" data-close-legal-task></div>
+    <section class="legal-task-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="legalTaskModalTitle">
+      <div class="modal-title-row">
+        <div>
+          <p class="eyebrow">Ficha de tarea</p>
+          <h2 id="legalTaskModalTitle">Detalle operativo</h2>
+        </div>
+        <button class="image-modal-close" type="button" data-close-legal-task>Cerrar</button>
+      </div>
+      <div id="legalTaskModalContent"></div>
+    </section>
+  </div>
+
   <div id="commercialConstructionModal" class="commercial-modal" hidden>
     <div class="commercial-modal-backdrop" data-close-commercial-modal></div>
     <section class="commercial-modal-card commercial-construction-card" role="dialog" aria-modal="true" aria-labelledby="constructionTitle">
@@ -1677,7 +1691,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260714-commercial-spec"></script>
+  <script src="app.js?v=20260714-legal-task-redesign"></script>
 </body>
 </html>
 
