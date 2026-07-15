@@ -2787,6 +2787,386 @@ button.kpi-card {
   }
 }
 
+/* Mesa de control: repositorio compacto y fichas flotantes */
+#tareas.legal-desk.is-active {
+  grid-template-columns: 220px minmax(0, 1fr) 320px;
+  gap: 22px;
+  padding-inline: clamp(14px, 2vw, 28px);
+}
+
+#tareas .legal-sidebar {
+  top: 96px;
+  min-height: calc(100vh - 116px);
+  padding: 18px 14px;
+  border: 0;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 60px rgba(31, 38, 52, 0.08);
+}
+
+#tareas .legal-sidebar-brand {
+  color: #f2182d;
+  background: #fff;
+}
+
+#tareas .legal-sidebar-nav button,
+#tareas .legal-sidebar-filters button {
+  min-height: 42px;
+  border-radius: 12px;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+#tareas .legal-sidebar-nav button.is-active,
+#tareas .legal-sidebar-filters button.is-active {
+  color: #f2182d;
+  background: #fff1f2;
+  box-shadow: inset 4px 0 0 #f2182d;
+}
+
+#tareas .legal-task-head {
+  margin-bottom: 18px;
+}
+
+#tareas .legal-task-head h1 {
+  margin: 8px 0 0;
+  color: #111827;
+  font-size: clamp(1.7rem, 2.6vw, 2.35rem);
+  font-weight: 900;
+}
+
+#tareas .filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+#tareas .filters .chip,
+#tareas .filters button {
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 10px rgba(31, 38, 52, 0.04);
+}
+
+#tareas .control-dashboard {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr);
+  align-items: start;
+  gap: 14px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#tareas .control-dashboard > div:first-child,
+#tareas .availability-panel,
+#tareas .password-form {
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(31, 38, 52, 0.06);
+}
+
+#tareas #controlKpis {
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+#tareas #controlKpis .kpi-card {
+  min-height: 118px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 30px rgba(31, 38, 52, 0.06);
+}
+
+#tareas .task-toolbar {
+  grid-template-columns: minmax(280px, 1fr) 140px 140px minmax(240px, auto);
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(31, 38, 52, 0.06);
+}
+
+#tareas .task-toolbar label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+#tareas .task-toolbar input {
+  min-height: 42px;
+  border-radius: 12px;
+}
+
+#tareas .task-list {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 18px 44px rgba(31, 38, 52, 0.08);
+}
+
+#tareas .task-row-card {
+  grid-template-columns: 42px minmax(0, 1.25fr) minmax(180px, 0.7fr) minmax(150px, 0.55fr) minmax(190px, 0.65fr);
+  gap: 14px;
+  min-height: 78px;
+  padding: 12px 16px;
+  border: 0;
+  border-left: 4px solid #10b981;
+  border-bottom: 1px solid #edf0f5;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+#tareas .task-row-card.has-warning,
+#tareas .task-row-card.info-request-card {
+  border-left-color: #f2182d;
+}
+
+#tareas .task-row-index {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  color: #475569;
+  background: #f1f5f9;
+  font-weight: 800;
+}
+
+#tareas .task-row-main {
+  min-width: 0;
+}
+
+#tareas .task-row-main h3 {
+  margin: 0 0 6px;
+  color: #111827;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+#tareas .task-row-main .task-meta {
+  gap: 8px;
+}
+
+#tareas .task-row-main .task-meta span {
+  padding: 0;
+  background: transparent;
+  color: #667085;
+  font-size: 0.78rem;
+}
+
+#tareas .task-row-alert {
+  display: inline-flex;
+  margin-top: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #b42318;
+  background: #fff1f0;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+#tareas .task-row-assignee {
+  display: grid;
+  gap: 3px;
+  color: #667085;
+  font-size: 0.75rem;
+}
+
+#tareas .task-row-assignee span {
+  text-transform: uppercase;
+  font-size: 0.64rem;
+  font-weight: 800;
+}
+
+#tareas .task-row-assignee strong {
+  color: #475467;
+  font-weight: 700;
+}
+
+#tareas .task-row-status,
+#tareas .task-row-actions {
+  display: grid;
+  justify-items: start;
+  align-content: center;
+  gap: 6px;
+}
+
+#tareas .task-row-actions {
+  justify-items: stretch;
+}
+
+#tareas .task-row-actions select {
+  min-height: 32px;
+  border-radius: 10px;
+  font-size: 0.74rem;
+}
+
+#tareas .task-row-actions .btn.tiny,
+#tareas .status-control .btn {
+  min-height: 30px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+}
+
+#tareas .time-chip {
+  min-height: 26px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+}
+
+#tareas .legal-chat-panel {
+  position: sticky;
+  top: 96px;
+  max-height: calc(100vh - 116px);
+  border: 0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(31, 38, 52, 0.1);
+}
+
+.legal-task-modal[hidden] {
+  display: none;
+}
+
+.legal-task-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.legal-task-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 18, 25, 0.56);
+  backdrop-filter: blur(8px);
+}
+
+.legal-task-modal-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(980px, 100%);
+  max-height: min(86vh, 820px);
+  overflow: auto;
+  padding: 24px;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 32px 90px rgba(15, 18, 25, 0.26);
+}
+
+.legal-modal-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.legal-modal-summary > div,
+.legal-modal-source {
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #f9fafb;
+}
+
+.legal-modal-summary span {
+  display: block;
+  margin-bottom: 5px;
+  color: #667085;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.legal-modal-summary strong {
+  color: #111827;
+  font-weight: 800;
+}
+
+.legal-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.legal-modal-actions label {
+  display: grid;
+  min-width: 260px;
+  gap: 6px;
+  color: #667085;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+@media (max-width: 1180px) {
+  #tareas.legal-desk.is-active {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+
+  #tareas .legal-chat-panel {
+    grid-column: 2;
+    position: static;
+  }
+
+  #tareas .task-row-card {
+    grid-template-columns: 38px minmax(0, 1fr) minmax(160px, 0.6fr);
+  }
+
+  #tareas .task-row-status,
+  #tareas .task-row-actions {
+    grid-column: 2 / -1;
+    grid-template-columns: repeat(3, minmax(0, auto));
+    align-items: center;
+  }
+}
+
+@media (max-width: 820px) {
+  #tareas.legal-desk.is-active {
+    grid-template-columns: 1fr;
+  }
+
+  #tareas .legal-sidebar,
+  #tareas .legal-chat-panel {
+    position: static;
+    min-height: auto;
+  }
+
+  #tareas .control-dashboard,
+  #tareas #controlKpis,
+  #tareas .task-toolbar,
+  .legal-modal-summary {
+    grid-template-columns: 1fr;
+  }
+
+  #tareas .task-row-card {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  #tareas .task-row-assignee,
+  #tareas .task-row-status,
+  #tareas .task-row-actions {
+    grid-column: 2;
+  }
+}
+
 /* Commercial launch polish: final cascade guard */
 #formulario .commercial-lead-row {
   align-items: center;
@@ -11145,5 +11525,148 @@ body:has(#procesamiento.view.is-active) main {
 
   #formulario .form-actions .btn {
     width: 100%;
+  }
+}
+
+/* Final override: mesa de control compacta */
+#tareas.legal-desk.is-active {
+  grid-template-columns: 220px minmax(0, 1fr) 320px;
+  gap: 22px;
+  padding-inline: clamp(14px, 2vw, 28px);
+}
+
+#tareas .task-list {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 18px 44px rgba(31, 38, 52, 0.08);
+}
+
+#tareas .task-card.task-row-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1.25fr) minmax(180px, 0.7fr) minmax(150px, 0.55fr) minmax(190px, 0.65fr);
+  gap: 14px;
+  min-height: 78px;
+  padding: 12px 16px;
+  border: 0;
+  border-left: 4px solid #10b981;
+  border-bottom: 1px solid #edf0f5;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: none;
+}
+
+#tareas .task-card.task-row-card.has-warning,
+#tareas .task-card.task-row-card.info-request-card {
+  border-left-color: #f2182d;
+}
+
+#tareas .task-row-index {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  color: #475569;
+  background: #f1f5f9;
+  font-weight: 800;
+}
+
+#tareas .task-row-main h3 {
+  margin: 0 0 6px;
+  color: #111827;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+#tareas .task-row-main .task-meta span {
+  padding: 0;
+  background: transparent;
+  color: #667085;
+  font-size: 0.78rem;
+}
+
+#tareas .task-row-assignee,
+#tareas .task-row-status,
+#tareas .task-row-actions {
+  display: grid;
+  align-content: center;
+  gap: 6px;
+}
+
+#tareas .task-row-assignee span {
+  color: #667085;
+  font-size: 0.64rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+#tareas .task-row-assignee strong {
+  color: #475467;
+  font-weight: 700;
+}
+
+#tareas .task-row-actions .btn.tiny {
+  min-height: 30px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+}
+
+#tareas .task-row-actions select {
+  min-height: 32px;
+  border-radius: 10px;
+  font-size: 0.74rem;
+}
+
+#tareas .task-row-alert {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #b42318;
+  background: #fff1f0;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+@media (max-width: 1180px) {
+  #tareas.legal-desk.is-active {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+
+  #tareas .legal-chat-panel {
+    grid-column: 2;
+    position: static;
+  }
+
+  #tareas .task-card.task-row-card {
+    grid-template-columns: 38px minmax(0, 1fr) minmax(160px, 0.6fr);
+  }
+
+  #tareas .task-row-status,
+  #tareas .task-row-actions {
+    grid-column: 2 / -1;
+    grid-template-columns: repeat(3, minmax(0, auto));
+    align-items: center;
+  }
+}
+
+@media (max-width: 820px) {
+  #tareas.legal-desk.is-active {
+    grid-template-columns: 1fr;
+  }
+
+  #tareas .task-card.task-row-card {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  #tareas .task-row-assignee,
+  #tareas .task-row-status,
+  #tareas .task-row-actions {
+    grid-column: 2;
+    grid-template-columns: 1fr;
   }
 }
