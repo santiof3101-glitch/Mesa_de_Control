@@ -1,5 +1,5 @@
-const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260715-commercial-tracking-board";
+﻿const STORAGE_KEY = "autocor-control-legal";
+const APP_BUILD_VERSION = "20260715-roboto-condensed-font";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -200,7 +200,7 @@ const defaultState = {
   theme: {
     primary: "#ef3d35",
     dark: "#15171d",
-    font: "'Montserrat', 'Century Gothic', 'Avenir Next', Avenir, Arial, sans-serif"
+    font: "'Roboto Condensed', 'Arial Narrow', Arial, sans-serif"
   },
   copy: {
     heroEyebrow: "Bienvenido a Autocor",
@@ -2447,27 +2447,27 @@ function sanitizeStateVisuals(snapshot) {
 }
 
 function hasBrokenEncoding(value = "") {
-  return /Ã°|Ãƒ|Ã‚|Ã¢|Ã¯Â¸|ï¿½/.test(String(value));
+  return /ÃƒÂ°|ÃƒÆ’|Ãƒâ€š|ÃƒÂ¢|ÃƒÂ¯Ã‚Â¸|Ã¯Â¿Â½/.test(String(value));
 }
 
 function repairBrokenEncoding(value = "") {
   if (typeof value !== "string" || !hasBrokenEncoding(value)) return value;
   const replacements = [
-    ["Ã‚Â¿", "\u00BF"],
-    ["Ã‚Â¡", "\u00A1"],
-    ["ÃƒÂ±", "\u00F1"],
-    ["Ãƒâ€˜", "\u00D1"],
-    ["ÃƒÂ¡", "\u00E1"],
-    ["ÃƒÂ©", "\u00E9"],
-    ["ÃƒÂ­", "\u00ED"],
-    ["ÃƒÂ³", "\u00F3"],
-    ["ÃƒÂº", "\u00FA"],
-    ["ÃƒÃ", "\u00C1"],
-    ["Ãƒâ€°", "\u00C9"],
-    ["ÃƒÃ", "\u00CD"],
-    ["Ãƒâ€œ", "\u00D3"],
-    ["ÃƒÅ¡", "\u00DA"],
-    ["Ã‚", ""]
+    ["Ãƒâ€šÃ‚Â¿", "\u00BF"],
+    ["Ãƒâ€šÃ‚Â¡", "\u00A1"],
+    ["ÃƒÆ’Ã‚Â±", "\u00F1"],
+    ["ÃƒÆ’Ã¢â‚¬Ëœ", "\u00D1"],
+    ["ÃƒÆ’Ã‚Â¡", "\u00E1"],
+    ["ÃƒÆ’Ã‚Â©", "\u00E9"],
+    ["ÃƒÆ’Ã‚Â­", "\u00ED"],
+    ["ÃƒÆ’Ã‚Â³", "\u00F3"],
+    ["ÃƒÆ’Ã‚Âº", "\u00FA"],
+    ["ÃƒÆ’ÃƒÂ", "\u00C1"],
+    ["ÃƒÆ’Ã¢â‚¬Â°", "\u00C9"],
+    ["ÃƒÆ’ÃƒÂ", "\u00CD"],
+    ["ÃƒÆ’Ã¢â‚¬Å“", "\u00D3"],
+    ["ÃƒÆ’Ã…Â¡", "\u00DA"],
+    ["Ãƒâ€š", ""]
   ];
   return replacements.reduce(
     (text, [broken, fixed]) => text.split(broken).join(fixed),
@@ -2889,7 +2889,9 @@ function setView(viewId) {
 
 function applyTheme() {
   const oldMonoFont = "'Aptos Mono', 'Cascadia Mono', Consolas, monospace";
-  if (!state.theme.font || state.theme.font === "Arial, Helvetica, sans-serif" || state.theme.font === oldMonoFont) {
+  const oldCorporateFont = "'Montserrat', 'Century Gothic', 'Avenir Next', Avenir, Arial, sans-serif";
+  const oldCenturyFont = "'Century Gothic', 'Avenir Next', Avenir, Arial, sans-serif";
+  if (!state.theme.font || state.theme.font === "Arial, Helvetica, sans-serif" || state.theme.font === oldMonoFont || state.theme.font === oldCorporateFont || state.theme.font === oldCenturyFont) {
     state.theme.font = defaultState.theme.font;
   }
   document.documentElement.style.setProperty("--red", state.theme.primary);
@@ -6994,7 +6996,7 @@ function buildPurchaseReportHtml() {
   <style>
     @page { size: A4; margin: 10mm; }
     * { box-sizing: border-box; }
-    body { margin: 0; color: #171a21; font-family: Montserrat, Century Gothic, Arial, sans-serif; background: #eef1f5; }
+    body { margin: 0; color: #171a21; font-family: "Roboto Condensed", "Arial Narrow", Arial, sans-serif; background: #eef1f5; }
     .print-actions { position: sticky; top: 0; z-index: 10; display: flex; justify-content: flex-end; padding: 10px; background: rgba(238,241,245,.95); }
     .print-actions button { min-height: 38px; padding: 0 16px; border: 0; border-radius: 9px; color: #fff; background: #ef3d35; font-weight: 900; cursor: pointer; }
     .sheet { max-width: 1120px; margin: 0 auto; padding: 20px; background: #fff; }
@@ -7819,7 +7821,7 @@ function exportContractPdfReport() {
   }
   const statusRows = countByField(records, "ESTATUS").filter(([, count]) => count > 0);
   reportWindow.document.open();
-  reportWindow.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Reporte contratos Autocor</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Montserrat,Arial,sans-serif;color:#171a21;background:#eef1f5}.sheet{background:#fff;padding:18px}.header{display:flex;justify-content:space-between;gap:16px;background:#20232c;color:#fff;border-bottom:6px solid #ef3d35;border-radius:14px;padding:18px}.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:14px 0}.kpi,.box{border:1px solid #dde2ea;border-radius:12px;background:#fff;padding:12px}.kpi span{font-size:10px;color:#667085;text-transform:uppercase;font-weight:900}.kpi strong{display:block;font-size:24px;margin-top:6px}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border-bottom:1px solid #e6e9ef;padding:7px;text-align:left}th{background:#f1f3f6;text-transform:uppercase}.print{position:sticky;top:0;text-align:right}.print button{background:#ef3d35;color:#fff;border:0;border-radius:9px;padding:10px 14px;font-weight:900}@media print{.print{display:none}body{background:#fff}}</style></head><body><div class="print"><button onclick="window.print()">Guardar PDF</button></div><main class="sheet"><section class="header"><div><h1>Reporte de contratos</h1><p>Mesa de control Autocor | ${escapeHtml(formatDateTime(new Date().toISOString()))}</p></div><strong>${records.length} registros</strong></section><section class="kpis"><article class="kpi"><span>Contratos</span><strong>${stats.total}</strong></article><article class="kpi"><span>Cerrados</span><strong>${stats.closed}</strong></article><article class="kpi"><span>Pendientes</span><strong>${stats.pending}</strong></article><article class="kpi"><span>Placas</span><strong>${stats.uniquePlates}</strong></article><article class="kpi"><span>Duplicados</span><strong>${stats.duplicatePlates + stats.duplicateClients}</strong></article><article class="kpi"><span>Valor venta</span><strong>$ ${stats.value.toFixed(2)}</strong></article></section><section class="box"><h2>Estatus</h2>${statusRows.map(([label,count])=>`<p><b>${escapeHtml(label || "SIN ESTATUS")}</b>: ${count}</p>`).join("")}</section><section class="box"><h2>Detalle</h2>${renderContractDetailTable(records)}</section></main></body></html>`);
+  reportWindow.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Reporte contratos Autocor</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:"Roboto Condensed","Arial Narrow",Arial,sans-serif;color:#171a21;background:#eef1f5}.sheet{background:#fff;padding:18px}.header{display:flex;justify-content:space-between;gap:16px;background:#20232c;color:#fff;border-bottom:6px solid #ef3d35;border-radius:14px;padding:18px}.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:14px 0}.kpi,.box{border:1px solid #dde2ea;border-radius:12px;background:#fff;padding:12px}.kpi span{font-size:10px;color:#667085;text-transform:uppercase;font-weight:900}.kpi strong{display:block;font-size:24px;margin-top:6px}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border-bottom:1px solid #e6e9ef;padding:7px;text-align:left}th{background:#f1f3f6;text-transform:uppercase}.print{position:sticky;top:0;text-align:right}.print button{background:#ef3d35;color:#fff;border:0;border-radius:9px;padding:10px 14px;font-weight:900}@media print{.print{display:none}body{background:#fff}}</style></head><body><div class="print"><button onclick="window.print()">Guardar PDF</button></div><main class="sheet"><section class="header"><div><h1>Reporte de contratos</h1><p>Mesa de control Autocor | ${escapeHtml(formatDateTime(new Date().toISOString()))}</p></div><strong>${records.length} registros</strong></section><section class="kpis"><article class="kpi"><span>Contratos</span><strong>${stats.total}</strong></article><article class="kpi"><span>Cerrados</span><strong>${stats.closed}</strong></article><article class="kpi"><span>Pendientes</span><strong>${stats.pending}</strong></article><article class="kpi"><span>Placas</span><strong>${stats.uniquePlates}</strong></article><article class="kpi"><span>Duplicados</span><strong>${stats.duplicatePlates + stats.duplicateClients}</strong></article><article class="kpi"><span>Valor venta</span><strong>$ ${stats.value.toFixed(2)}</strong></article></section><section class="box"><h2>Estatus</h2>${statusRows.map(([label,count])=>`<p><b>${escapeHtml(label || "SIN ESTATUS")}</b>: ${count}</p>`).join("")}</section><section class="box"><h2>Detalle</h2>${renderContractDetailTable(records)}</section></main></body></html>`);
   reportWindow.document.close();
   setTimeout(() => reportWindow.print(), 500);
 }
@@ -9871,7 +9873,7 @@ function renderProviderExecutiveDashboard(records) {
       <footer class="provider-exec-footer">
         <span>FECHA Periodo <b>${escapeHtml(metrics.period)}</b></span>
         <span>BASE Fuente de datos <b>Base de datos Control Financiero</b></span>
-        <span>TIEMPOï¸ Fecha de corte <b>${escapeHtml(metrics.cutoff)}</b></span>
+        <span>TIEMPOÃ¯Â¸Â Fecha de corte <b>${escapeHtml(metrics.cutoff)}</b></span>
         <span>SYNC Ultima actualizacion <b>${escapeHtml(metrics.updatedAt)}</b></span>
       </footer>
     </section>
@@ -10338,7 +10340,7 @@ function buildProviderReportHtml() {
   <style>
     @page { size: A4; margin: 12mm; }
     * { box-sizing: border-box; }
-    body { margin: 0; color: #191b22; font-family: Montserrat, Century Gothic, Arial, sans-serif; background: #f4f6f8; }
+    body { margin: 0; color: #191b22; font-family: "Roboto Condensed", "Arial Narrow", Arial, sans-serif; background: #f4f6f8; }
     .sheet { max-width: 1120px; margin: 0 auto; padding: 22px; background: #fff; }
     .hero { display: grid; grid-template-columns: 1.2fr .8fr; gap: 18px; align-items: stretch; padding: 22px; border-radius: 18px; color: #fff; background: linear-gradient(135deg, #15171d, #3a3d46 58%, #ef3d35); overflow: hidden; }
     .hero h1 { margin: 6px 0 8px; font-size: 34px; line-height: 1; }
@@ -10456,7 +10458,7 @@ function buildProviderReportHtmlV2() {
   <style>
     @page { size: A4; margin: 10mm; }
     * { box-sizing: border-box; }
-    body { margin: 0; color: #171a21; font-family: Montserrat, Century Gothic, Arial, sans-serif; background: #eef1f5; }
+    body { margin: 0; color: #171a21; font-family: "Roboto Condensed", "Arial Narrow", Arial, sans-serif; background: #eef1f5; }
     .print-actions { position: sticky; top: 0; z-index: 10; display: flex; justify-content: flex-end; padding: 10px; background: rgba(238,241,245,.95); }
     .print-actions button { min-height: 38px; padding: 0 16px; border: 0; border-radius: 9px; color: #fff; background: #ef3d35; font-weight: 900; cursor: pointer; }
     .sheet { max-width: 1120px; margin: 0 auto; padding: 20px; background: #fff; }
@@ -10618,7 +10620,7 @@ function printPurchaseDetailReport() {
   <style>
     @page { size: A4 landscape; margin: 10mm; }
     * { box-sizing: border-box; }
-    body { margin: 0; color: #171a21; font-family: Montserrat, Century Gothic, Arial, sans-serif; background: #eef1f5; }
+    body { margin: 0; color: #171a21; font-family: "Roboto Condensed", "Arial Narrow", Arial, sans-serif; background: #eef1f5; }
     .print-actions { position: sticky; top: 0; z-index: 20; display: flex; justify-content: flex-end; padding: 10px; background: rgba(238,241,245,.95); }
     .print-actions button { min-height: 38px; padding: 0 16px; border: 0; border-radius: 9px; color: #fff; background: #ef3d35; font-weight: 900; cursor: pointer; }
     .sheet { max-width: 1280px; margin: 0 auto; padding: 18px; background: #fff; }
@@ -12727,5 +12729,6 @@ startSupabaseModulePolling();
 migrateIndexedDbFilesToSharedPc();
 checkForAppUpdate();
 window.setInterval(checkForAppUpdate, 5 * 60 * 1000);
+
 
 
