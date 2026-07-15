@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260714-legal-task-redesign";
+const APP_BUILD_VERSION = "20260714-admin-forms-availability";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -138,6 +138,8 @@ const DEFAULT_PROVIDER_PROFILES = [
     isDefault: true
   }
 ];
+
+const FORM_FIELD_TYPES = ["text", "number", "date", "email", "textarea", "select"];
 
 const DEFAULT_FORM_CONFIG = {
   compra: [
@@ -1737,23 +1739,39 @@ function normalizeFormConfig(config) {
   return ["compra", "venta"].reduce((result, process) => {
     const saved = Array.isArray(source[process]) ? source[process] : [];
     const savedMap = new Map(saved.map((field) => [field.name, field]));
-    const base = DEFAULT_FORM_CONFIG[process].map((field) => ({ ...field, ...(savedMap.get(field.name) || {}), isBase: true }));
+    const base = DEFAULT_FORM_CONFIG[process].map((field) => normalizeFormField(savedMap.get(field.name), field, true));
     const custom = saved
       .filter((field) => field && !DEFAULT_FORM_CONFIG[process].some((baseField) => baseField.name === field.name))
-      .map((field) => ({
-        id: field.id || crypto.randomUUID(),
-        name: field.name || `custom_${crypto.randomUUID().slice(0, 8)}`,
-        label: field.label || "Campo personalizado",
-        type: ["text", "number", "date", "email", "select", "textarea"].includes(field.type) ? field.type : "text",
-        required: Boolean(field.required),
-        visible: field.visible !== false,
-        isBase: false,
-        placeholder: field.placeholder || "",
-        options: Array.isArray(field.options) ? field.options : []
-      }));
+      .map((field) => normalizeFormField(field, {}, false));
     result[process] = [...base, ...custom];
     return result;
   }, {});
+}
+
+function parseFormOptions(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+  return String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeFormField(field = {}, fallback = {}, isBase = false) {
+  const source = field && typeof field === "object" ? field : {};
+  const type = FORM_FIELD_TYPES.includes(source.type) ? source.type : fallback.type || "text";
+  return {
+    id: source.id || fallback.id || crypto.randomUUID(),
+    name: source.name || fallback.name || `custom_${crypto.randomUUID().slice(0, 8)}`,
+    label: source.label || fallback.label || "Campo personalizado",
+    type,
+    required: typeof source.required === "boolean" ? source.required : Boolean(fallback.required),
+    visible: source.visible !== false,
+    isBase,
+    placeholder: source.placeholder || fallback.placeholder || "",
+    options: parseFormOptions(source.options || fallback.options)
+  };
 }
 
 function normalizeTask(task) {
@@ -3096,7 +3114,15 @@ function applyBaseFormFields(formElement, fields) {
     if (!control || !label) return;
     label.hidden = field.visible === false;
     control.required = field.visible !== false && Boolean(field.required);
-    if (field.placeholder) control.placeholder = field.placeholder;
+    if (control.tagName === "INPUT" && ["text", "number", "date", "email"].includes(field.type)) {
+      control.type = field.type;
+    }
+    if (control.tagName === "SELECT" && Array.isArray(field.options) && field.options.length) {
+      const current = control.value;
+      control.innerHTML = `<option value="">Seleccione una opcion</option>${field.options.map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`).join("")}`;
+      control.value = current && [...control.options].some((option) => option.value === current) ? current : "";
+    }
+    if ("placeholder" in control) control.placeholder = field.placeholder || "";
     const textNode = [...label.childNodes].find((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
     if (textNode) textNode.nodeValue = `\n            ${field.label}\n            `;
   });
@@ -3126,10 +3152,14 @@ function renderFormAdministration() {
     <article class="form-builder-row" data-form-field="${escapeHtml(field.id)}">
       <div>
         <strong>${escapeHtml(field.label)}</strong>
-        <span>${field.isBase ? "Campo base" : "Campo personalizado"} | ${escapeHtml(field.type)}</span>
+        <span>${field.isBase ? "Pregunta base" : "Pregunta personalizada"} | Nombre tecnico: ${escapeHtml(field.name)}</span>
       </div>
       <input data-field-label value="${escapeHtml(field.label)}" aria-label="Etiqueta">
+      <select data-field-type aria-label="Tipo de respuesta">
+        ${renderFieldTypeOptions(field.type)}
+      </select>
       <input data-field-placeholder value="${escapeHtml(field.placeholder || "")}" placeholder="Texto de ayuda" aria-label="Texto de ayuda">
+      <input data-field-options value="${escapeHtml((field.options || []).join(", "))}" placeholder="Opciones de lista separadas por coma" aria-label="Opciones de lista">
       <label class="check-row"><input data-field-required type="checkbox" ${field.required ? "checked" : ""}> Obligatorio</label>
       <label class="check-row"><input data-field-visible type="checkbox" ${field.visible !== false ? "checked" : ""}> Visible</label>
       <button class="btn secondary" type="button" data-save-form-field>Guardar</button>
@@ -3143,12 +3173,26 @@ function saveFormFieldConfiguration(row) {
   const field = getFormFields(process).find((item) => item.id === row.dataset.formField);
   if (!field) return;
   field.label = row.querySelector("[data-field-label]").value.trim() || field.label;
+  field.type = FORM_FIELD_TYPES.includes(row.querySelector("[data-field-type]").value) ? row.querySelector("[data-field-type]").value : "text";
   field.placeholder = row.querySelector("[data-field-placeholder]").value.trim();
+  field.options = parseFormOptions(row.querySelector("[data-field-options]").value);
   field.required = row.querySelector("[data-field-required]").checked;
   field.visible = row.querySelector("[data-field-visible]").checked;
   saveState();
   renderAll();
   showToast("Campo actualizado.");
+}
+
+function renderFieldTypeOptions(currentType = "text") {
+  const labels = {
+    text: "Texto corto",
+    number: "Numero",
+    date: "Fecha",
+    email: "Correo",
+    textarea: "Texto largo",
+    select: "Lista de opciones"
+  };
+  return FORM_FIELD_TYPES.map((type) => `<option value="${type}" ${type === currentType ? "selected" : ""}>${labels[type] || type}</option>`).join("");
 }
 
 function deleteCustomFormField(id) {
@@ -3167,12 +3211,12 @@ function addCustomFormField(data) {
     id: crypto.randomUUID(),
     name: `custom_${Date.now()}`,
     label,
-    type: data.type || "text",
+    type: FORM_FIELD_TYPES.includes(data.type) ? data.type : "text",
     required: data.required === "on",
     visible: true,
     isBase: false,
     placeholder: "",
-    options: String(data.options || "").split(",").map((item) => item.trim()).filter(Boolean)
+    options: parseFormOptions(data.options)
   });
   saveState();
   renderAll();
@@ -3438,7 +3482,7 @@ function renderUsers() {
         <strong>${escapeHtml(user.name)}</strong>
         <span>Usuario: ${escapeHtml(user.username)}</span>
         <small>Buzones: ${mailboxes.map((mailbox) => LEGAL_MAILBOXES.find((entry) => entry.id === mailbox)?.label || mailbox).join(", ")}</small>
-        <small>Estado: ${user.legalAvailable === false ? "No disponible para saneamientos" : "Disponible para saneamientos"}</small>
+        <small class="availability-badge ${user.legalAvailable === false ? "is-off" : "is-on"}">${user.legalAvailable === false ? "No disponible para nuevas tareas" : "Disponible para nuevas tareas"}</small>
       </div>
       <div class="row-actions">
         <div class="mailbox-picker is-inline">
@@ -3450,6 +3494,7 @@ function renderUsers() {
           `).join("")}
         </div>
         <button class="btn secondary save-mailboxes" type="button">Guardar buzones</button>
+        <button class="btn secondary toggle-legal-availability" type="button">${user.legalAvailable === false ? "Poner disponible" : "Marcar no disponible"}</button>
         <input type="password" placeholder="Nueva contrasena">
         <button class="btn secondary change-password" type="button">Cambiar</button>
         <button class="btn secondary delete-user" type="button">Eliminar</button>
@@ -3465,9 +3510,27 @@ function renderUsers() {
       const selected = [...item.querySelectorAll(".mailbox-picker input:checked")].map((input) => input.value);
       updateLegalUserMailboxes(user.id, selected);
     });
+    item.querySelector(".toggle-legal-availability").addEventListener("click", () => {
+      setLegalUserAvailability(user.id, user.legalAvailable === false);
+    });
     container.appendChild(item);
   });
   initPasswordToggles(container);
+}
+
+function setLegalUserAvailability(id, available) {
+  const user = state.legalUsers.find((item) => item.id === id);
+  if (!user) return;
+  user.legalAvailable = Boolean(available);
+  saveState();
+  if (user.legalAvailable !== false) autoAssignOpenSaneamientos();
+  sincronizarTareasPendientesSupabase();
+  guardarUsuariosSupabaseAhora();
+  renderAll();
+  showToast(user.legalAvailable === false
+    ? "Asesor marcado como no disponible. No recibira nuevas tareas."
+    : "Asesor marcado como disponible. Puede recibir nuevas tareas."
+  );
 }
 
 function updateLegalUserMailboxes(id, mailboxes) {
