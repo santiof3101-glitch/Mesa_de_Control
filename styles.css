@@ -6182,7 +6182,7 @@ button.kpi-card {
 
 .form-builder-row {
   display: grid;
-  grid-template-columns: minmax(180px, 1.2fr) minmax(160px, 1fr) minmax(160px, 1fr) auto auto auto auto;
+  grid-template-columns: minmax(210px, 1.2fr) minmax(170px, 1fr) minmax(150px, 0.8fr) minmax(170px, 1fr) auto auto;
   gap: 8px;
   align-items: center;
   padding: 10px;
@@ -6202,6 +6202,7 @@ button.kpi-card {
 }
 
 .form-builder-row input:not([type="checkbox"]),
+.form-builder-row select,
 .form-builder-add input,
 .form-builder-add select,
 #adminFormProcessSelect {
@@ -6211,6 +6212,32 @@ button.kpi-card {
   border-radius: 8px;
   background: #fff;
   font: inherit;
+}
+
+.form-builder-row [data-field-options] {
+  min-width: 190px;
+  grid-column: span 2;
+}
+
+.availability-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.availability-badge.is-on {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.availability-badge.is-off {
+  background: #fff1f2;
+  color: #be123c;
 }
 
 .form-builder-add {
