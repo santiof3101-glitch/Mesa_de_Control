@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260715-commercial-form-profile-fix";
+const APP_BUILD_VERSION = "20260715-commercial-resend-limit";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -1854,6 +1854,8 @@ function normalizeTask(task) {
     commercialUserName: task.commercialUserName || task.asesor || "",
     commercialAgency: task.commercialAgency || task.agencia || "",
     duplicateWarnings: task.duplicateWarnings || [],
+    lastResentRejectionKey: task.lastResentRejectionKey || "",
+    lastResentAt: task.lastResentAt || "",
     statusLockedAt: task.statusLockedAt || "",
     statusLockedBy: task.statusLockedBy || "",
     statusLockedByName: task.statusLockedByName || ""
@@ -5292,7 +5294,21 @@ function canCommercialResendTask(task = {}) {
   if (getTaskProcess(task) !== "compra") return false;
   if (!ownsCommercialTask(task)) return false;
   const status = normalizeLooseText(task.status);
-  return status.includes("RECHAZADO") || status.includes("RECHAZ");
+  const isRejected = status.includes("RECHAZADO") || status.includes("RECHAZ");
+  if (!isRejected) return false;
+  const rejectionKey = getCommercialRejectionKey(task);
+  const alreadyResentThisRejection = task.lastResentRejectionKey === rejectionKey;
+  const hasChildResend = state.tasks.some((item) => item.resendOf === task.id);
+  return !alreadyResentThisRejection && !hasChildResend;
+}
+
+function getCommercialRejectionKey(task = {}) {
+  return [
+    normalizeLooseText(task.status || ""),
+    task.statusLockedAt || task.updatedAt || task.completedAt || task.createdAt || "",
+    task.legalUserId || "",
+    task.legalAdvisor || ""
+  ].join("|");
 }
 
 async function resendRejectedCommercialTask(taskId) {
@@ -5304,6 +5320,7 @@ async function resendRejectedCommercialTask(taskId) {
   const confirmed = window.confirm(`Desea reenviar la solicitud de la placa ${source.placa || "sin placa"} sin llenar nuevamente el formulario?`);
   if (!confirmed) return;
   const createdAt = new Date().toISOString();
+  const rejectionKey = getCommercialRejectionKey(source);
   const task = {
     ...structuredClone(source),
     id: crypto.randomUUID(),
@@ -5321,18 +5338,28 @@ async function resendRejectedCommercialTask(taskId) {
     resendOf: source.id,
     resendCount: Number(source.resendCount || 0) + 1,
     duplicateWarnings: getDuplicateWarnings(source, source.id),
+    lastResentRejectionKey: "",
+    lastResentAt: "",
     observaciones: `${source.observaciones || ""}${source.observaciones ? " | " : ""}REENVIO COMERCIAL POR RECHAZO LEGAL ${formatDateTime(createdAt)}`,
     syncStatus: "pending",
     syncAction: "reenviar-rechazado"
   };
   autoAssignSaneamientoTask(task);
+  source.lastResentRejectionKey = rejectionKey;
+  source.lastResentAt = createdAt;
+  source.updatedAt = createdAt;
+  source.syncStatus = "pending";
+  source.syncAction = "marcar-reenvio-usado";
   state.tasks.push(task);
   saveState();
   renderAll();
   showToast("Solicitud reenviada a mesa de control.");
-  const onlineSaved = await guardarTareaSupabase(task, "reenviar-rechazado");
+  const [sourceSaved, onlineSaved] = await Promise.all([
+    guardarTareaSupabase(source, "marcar-reenvio-usado"),
+    guardarTareaSupabase(task, "reenviar-rechazado")
+  ]);
   saveState();
-  if (!onlineSaved) showToast("Reenvio guardado localmente. Pendiente de sincronizar.");
+  if (!sourceSaved || !onlineSaved) showToast("Reenvio guardado localmente. Pendiente de sincronizar.");
 }
 
 function renderControlDashboard() {
