@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260715-chat-scroll";
+const APP_BUILD_VERSION = "20260715-form-builder-fix";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -1744,10 +1744,18 @@ function normalizeFormConfig(config) {
   const source = config && typeof config === "object" ? config : {};
   return ["compra", "venta"].reduce((result, process) => {
     const saved = Array.isArray(source[process]) ? source[process] : [];
-    const savedMap = new Map(saved.map((field) => [field.name, field]));
+    const savedMap = new Map();
+    saved.forEach((field) => {
+      if (field?.name && !savedMap.has(field.name)) savedMap.set(field.name, field);
+    });
+    const seenCustomNames = new Set(DEFAULT_FORM_CONFIG[process].map((baseField) => baseField.name));
     const base = DEFAULT_FORM_CONFIG[process].map((field) => normalizeFormField(savedMap.get(field.name), field, true));
     const custom = saved
-      .filter((field) => field && !DEFAULT_FORM_CONFIG[process].some((baseField) => baseField.name === field.name))
+      .filter((field) => {
+        if (!field || seenCustomNames.has(field.name)) return false;
+        seenCustomNames.add(field.name);
+        return true;
+      })
       .map((field) => normalizeFormField(field, {}, false));
     result[process] = [...base, ...custom];
     return result;
@@ -3118,23 +3126,47 @@ function applyFormConfiguration() {
 function applyBaseFormFields(formElement, fields) {
   if (!formElement) return;
   fields.filter((field) => field.isBase).forEach((field) => {
-    const control = formElement.elements[field.name];
+    let control = formElement.elements[field.name];
     const label = control?.closest("label");
     if (!control || !label) return;
     label.hidden = field.visible === false;
+    control = ensureBaseFieldControl(label, control, field);
     control.required = field.visible !== false && Boolean(field.required);
-    if (control.tagName === "INPUT" && ["text", "number", "date", "email"].includes(field.type)) {
-      control.type = field.type;
-    }
-    if (control.tagName === "SELECT" && Array.isArray(field.options) && field.options.length) {
+    if (control.tagName === "SELECT") {
       const current = control.value;
-      control.innerHTML = `<option value="">Seleccione una opcion</option>${field.options.map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`).join("")}`;
+      control.innerHTML = `<option value="">Seleccione una opcion</option>${(field.options || []).map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`).join("")}`;
       control.value = current && [...control.options].some((option) => option.value === current) ? current : "";
     }
     if ("placeholder" in control) control.placeholder = field.placeholder || "";
     const textNode = [...label.childNodes].find((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
     if (textNode) textNode.nodeValue = `\n            ${field.label}\n            `;
   });
+}
+
+function ensureBaseFieldControl(label, control, field) {
+  const currentValue = control.value || "";
+  const attrs = {
+    name: field.name,
+    placeholder: field.placeholder || ""
+  };
+  const desiredTag = field.type === "select" ? "SELECT" : field.type === "textarea" ? "TEXTAREA" : "INPUT";
+  const sameKind = control.tagName === desiredTag && (desiredTag !== "INPUT" || control.type === field.type);
+  if (sameKind) return control;
+  let next;
+  if (field.type === "select") {
+    next = document.createElement("select");
+  } else if (field.type === "textarea") {
+    next = document.createElement("textarea");
+    next.rows = 3;
+  } else {
+    next = document.createElement("input");
+    next.type = ["text", "number", "date", "email"].includes(field.type) ? field.type : "text";
+  }
+  next.name = attrs.name;
+  if ("placeholder" in next) next.placeholder = attrs.placeholder;
+  next.value = currentValue;
+  control.replaceWith(next);
+  return next;
 }
 
 function renderCustomFormFields(process, container) {
@@ -3172,7 +3204,7 @@ function renderFormAdministration() {
       <label class="check-row"><input data-field-required type="checkbox" ${field.required ? "checked" : ""}> Obligatorio</label>
       <label class="check-row"><input data-field-visible type="checkbox" ${field.visible !== false ? "checked" : ""}> Visible</label>
       <button class="btn secondary" type="button" data-save-form-field>Guardar</button>
-      ${field.isBase ? "" : `<button class="btn danger" type="button" data-delete-form-field>Eliminar</button>`}
+      ${field.isBase ? `<button class="btn danger" type="button" data-hide-base-field>Ocultar</button>` : `<button class="btn danger" type="button" data-delete-form-field>Eliminar</button>`}
     </article>
   `).join("");
 }
@@ -3190,6 +3222,20 @@ function saveFormFieldConfiguration(row) {
   saveState();
   renderAll();
   showToast("Campo actualizado.");
+}
+
+function hideBaseFormField(id) {
+  const process = adminFormProcessSelect?.value || "compra";
+  const field = getFormFields(process).find((item) => item.id === id);
+  if (!field) return;
+  if (!field.isBase) {
+    deleteCustomFormField(id);
+    return;
+  }
+  field.visible = false;
+  saveState();
+  renderAll();
+  showToast("Pregunta base oculta en el formulario.");
 }
 
 function renderFieldTypeOptions(currentType = "text") {
@@ -3216,6 +3262,16 @@ function addCustomFormField(data) {
   const process = adminFormProcessSelect?.value || "compra";
   const label = String(data.label || "").trim();
   if (!label) return;
+  const normalizeFieldKey = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+  const normalizedLabel = normalizeFieldKey(label);
+  const duplicated = getFormFields(process).some((field) =>
+    normalizeFieldKey(field.label) === normalizedLabel ||
+    normalizeFieldKey(field.name) === normalizedLabel
+  );
+  if (duplicated) {
+    showToast("Ese campo ya existe. Edita la pregunta existente en lugar de duplicarla.");
+    return;
+  }
   getFormFields(process).push({
     id: crypto.randomUUID(),
     name: `custom_${Date.now()}`,
@@ -11402,6 +11458,7 @@ if (adminFormFieldsList) {
     const row = event.target.closest("[data-form-field]");
     if (!row) return;
     if (event.target.closest("[data-save-form-field]")) saveFormFieldConfiguration(row);
+    if (event.target.closest("[data-hide-base-field]")) hideBaseFormField(row.dataset.formField);
     if (event.target.closest("[data-delete-form-field]")) deleteCustomFormField(row.dataset.formField);
   });
 }
