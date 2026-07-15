@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260714-admin-forms-availability">
+<html lang="es" data-app-version="20260715-commercial-legal-flow">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -7,8 +7,8 @@
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Autocor | Control Legal</title>
-  <link rel="stylesheet" href="styles.css?v=20260714-admin-forms-availability">
-  <link rel="stylesheet" href="layout-fix.css?v=20260714-admin-forms-availability">
+  <link rel="stylesheet" href="styles.css?v=20260715-commercial-legal-flow">
+  <link rel="stylesheet" href="layout-fix.css?v=20260715-commercial-legal-flow">
 </head>
 <body>
   <header class="topbar">
@@ -1045,20 +1045,20 @@
           <strong>Repositorio de tareas</strong>
         </div>
         <nav class="legal-sidebar-nav" aria-label="Mesa de control">
-          <button class="is-active" type="button" data-legal-scroll="tasks-title">Repositorio de tareas</button>
-          <button type="button" data-legal-scroll="legalControlSummary">Mesa de control</button>
-          <button type="button" data-legal-scroll="legalPasswordForm">Contrasenas</button>
-          <button type="button" data-legal-scroll="taskList">Reportes</button>
-          <button type="button" data-legal-scroll="legalAvailabilityBlock">Configuracion</button>
+          <button class="is-active" type="button" data-legal-scroll="tasks-title">&#128203; Repositorio</button>
+          <button type="button" data-legal-scroll="legalControlSummary">&#128200; Resumen operativo</button>
+          <button type="button" data-legal-scroll="legalPasswordForm">&#128273; Cambiar clave</button>
+          <button type="button" data-legal-scroll="taskList">&#128269; Bandeja de tareas</button>
+          <button type="button" data-legal-scroll="legalAvailabilityBlock">&#128994; Disponibilidad</button>
         </nav>
         <div class="legal-sidebar-filters">
           <span>Filtros rapidos</span>
-          <button class="is-active" type="button" data-legal-sidebar-filter="todos">Todos</button>
-          <button type="button" data-legal-sidebar-filter="por asignar">Por asignar</button>
-          <button type="button" data-legal-sidebar-filter="pendiente">Pendiente</button>
-          <button type="button" data-legal-sidebar-filter="tomado">Tomado</button>
-          <button type="button" data-legal-sidebar-filter="rechazado por saneamiento">Rechazado por saneamiento</button>
-          <button type="button" data-legal-sidebar-filter="saneamiento realizado y subido a pilot">Saneamiento realizado</button>
+          <button class="is-active" type="button" data-legal-sidebar-filter="todos">&#128193; Todos</button>
+          <button type="button" data-legal-sidebar-filter="por asignar">&#128230; Por asignar</button>
+          <button type="button" data-legal-sidebar-filter="pendiente">&#9203; Pendiente</button>
+          <button type="button" data-legal-sidebar-filter="tomado">&#128736; Tomado</button>
+          <button type="button" data-legal-sidebar-filter="rechazado por saneamiento">&#10060; Rechazado</button>
+          <button type="button" data-legal-sidebar-filter="saneamiento realizado y subido a pilot">&#9989; Realizado</button>
         </div>
         <div class="legal-sidebar-user">
           <span>SO</span>
@@ -1120,7 +1120,12 @@
         <div id="taskList" class="task-list"></div>
       </div>
 
-      <section class="panel legal-chat-panel">
+      <button id="legalChatOpenBtn" class="legal-chat-floating-btn" type="button">
+        <span>&#128172;</span>
+        Chat interno
+      </button>
+
+      <section id="legalChatPanel" class="panel legal-chat-panel is-floating" hidden>
         <div class="legal-chat-head">
           <div class="legal-chat-avatar">MC</div>
           <div>
@@ -1128,6 +1133,7 @@
             <h2>Mensajes directos</h2>
             <span>Selecciona un usuario y escribele en privado</span>
           </div>
+          <button id="legalChatCloseBtn" class="image-modal-close" type="button">Cerrar</button>
           <div class="legal-chat-recipient">
             <input id="legalChatRecipientSearch" type="search" placeholder="Buscar usuario">
             <select id="legalChatRecipientSelect" aria-label="Seleccionar usuario del chat"></select>
@@ -1620,6 +1626,20 @@
     </section>
   </div>
 
+  <div id="commercialNotificationsModal" class="commercial-modal" hidden>
+    <div class="commercial-modal-backdrop" data-close-commercial-modal></div>
+    <section class="commercial-modal-card commercial-notifications-card" role="dialog" aria-modal="true" aria-labelledby="commercialNotificationsTitle">
+      <div class="modal-title-row">
+        <div>
+          <p class="eyebrow">Notificaciones</p>
+          <h2 id="commercialNotificationsTitle">Cambios de estatus</h2>
+        </div>
+        <button class="commercial-modal-close" type="button" data-close-commercial-modal aria-label="Cerrar">x</button>
+      </div>
+      <div id="commercialNotificationsContent" class="commercial-notifications-list"></div>
+    </section>
+  </div>
+
   <div id="commercialPilotModal" class="commercial-modal" hidden>
     <div class="commercial-modal-backdrop"></div>
     <section class="commercial-modal-card commercial-warning-card" role="dialog" aria-modal="true" aria-labelledby="pilotConfirmTitle">
@@ -1691,7 +1711,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260714-admin-forms-availability"></script>
+  <script src="app.js?v=20260715-commercial-legal-flow"></script>
 </body>
 </html>
 
