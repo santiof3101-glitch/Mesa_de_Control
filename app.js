@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260715-commercial-resend-limit";
+const APP_BUILD_VERSION = "20260715-commercial-tracking-board";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -349,6 +349,7 @@ let currentPurchaseDetailReport = { title: "", html: "" };
 let activeCommercialProcess = "compra";
 let activeCommercialArea = "dashboard";
 let activeCommercialRequestFilter = "todos";
+let commercialTrackingFilter = "todos";
 
 const views = document.querySelectorAll(".view");
 const tabs = document.querySelectorAll("[data-view]");
@@ -5003,7 +5004,108 @@ function renderCommercialDashboard() {
   ]);
   chartContainer.innerHTML = renderBarRows(groupByStatus(dashboardTasks), Math.max(dashboardTasks.length, 1));
   if (leadList) renderCommercialLeadList(leadList, dashboardTasks);
+  renderCommercialTrackingBoard(purchaseTasks);
   if (generalKpiContainer && generalChartContainer) renderCommercialGeneralDashboard();
+}
+
+function getCommercialTrackingStage(task = {}) {
+  const status = normalizeLooseText(task.status);
+  if (status.includes("RECHAZ")) return { key: "rechazado", label: "Rechazado", className: "danger", progress: 64, step: 3 };
+  if (isClosedStatus(task.status)) return { key: "finalizado", label: "Finalizado", className: "success", progress: 100, step: 5 };
+  if (task.legalUserId || task.takenAt || status.includes("TOMADO")) return { key: "saneamiento", label: "En saneamiento", className: "warning", progress: 72, step: 4 };
+  if (status.includes("PEND") || status.includes("ASIGNAR")) return { key: "revision", label: "Revision documental", className: "info", progress: 42, step: 3 };
+  return { key: "recibido", label: "Lead recibido", className: "neutral", progress: 25, step: 2 };
+}
+
+function getCommercialTrackingTasks(tasks = []) {
+  return tasks
+    .filter((task) => getTaskProcess(task) === "compra")
+    .filter((task) => commercialTrackingFilter === "todos" || getCommercialTrackingStage(task).key === commercialTrackingFilter)
+    .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+}
+
+function renderCommercialTrackingBoard(tasks = []) {
+  const container = document.querySelector("#commercialTrackingBoard");
+  if (!container) return;
+  const purchaseTasks = tasks.filter((task) => getTaskProcess(task) === "compra");
+  const visibleTasks = getCommercialTrackingTasks(purchaseTasks);
+  const counts = purchaseTasks.reduce((map, task) => {
+    const key = getCommercialTrackingStage(task).key;
+    map[key] = (map[key] || 0) + 1;
+    return map;
+  }, {});
+  const closed = purchaseTasks.filter((task) => isClosedStatus(task.status)).length;
+  const active = purchaseTasks.filter((task) => !isClosedStatus(task.status)).length;
+  const uniquePlates = new Set(purchaseTasks.map((task) => normalizePlate(task.placa)).filter(Boolean)).size;
+  const filters = [
+    ["todos", "Todos", purchaseTasks.length],
+    ["revision", "Revision", counts.revision || 0],
+    ["saneamiento", "En saneamiento", counts.saneamiento || 0],
+    ["rechazado", "Rechazados", counts.rechazado || 0],
+    ["finalizado", "Finalizados", counts.finalizado || 0]
+  ];
+  container.innerHTML = `
+    <div class="commercial-tracking-head">
+      <div>
+        <p class="eyebrow">Tracking de saneamientos</p>
+        <h3>Seguimiento operativo anclado a tus leads</h3>
+        <span>Desde el envio comercial hasta la carga final en Pilot.</span>
+      </div>
+      <div class="commercial-tracking-mini-kpis">
+        <article><strong>${purchaseTasks.length}</strong><span>Leads</span></article>
+        <article><strong>${active}</strong><span>Activos</span></article>
+        <article><strong>${closed}</strong><span>Cerrados</span></article>
+        <article><strong>${uniquePlates}</strong><span>Placas</span></article>
+      </div>
+    </div>
+    <div class="commercial-tracking-filters">
+      ${filters.map(([key, label, count]) => `
+        <button class="${commercialTrackingFilter === key ? "is-active" : ""}" type="button" data-commercial-tracking-filter="${escapeHtml(key)}">
+          ${escapeHtml(label)} <span>${count}</span>
+        </button>
+      `).join("")}
+    </div>
+    <div class="commercial-tracking-grid">
+      ${visibleTasks.slice(0, 8).map(renderCommercialTrackingCard).join("") || `<div class="empty compact-empty">No hay saneamientos para este filtro.</div>`}
+    </div>
+  `;
+}
+
+function renderCommercialTrackingCard(task) {
+  const stage = getCommercialTrackingStage(task);
+  const steps = [
+    "Lead enviado",
+    "Lead recibido",
+    "Revision",
+    "Saneamiento",
+    "Pilot"
+  ];
+  return `
+    <article class="commercial-tracking-card ${stage.className}">
+      <div class="tracking-card-top">
+        <div>
+          <strong>${escapeHtml(task.placa || "Sin placa")}</strong>
+          <span>${escapeHtml(task.cliente || "Cliente sin nombre")}</span>
+        </div>
+        <span class="tracking-state">${escapeHtml(stage.label)}</span>
+      </div>
+      <div class="tracking-meta-row">
+        <span><b>Agencia</b>${escapeHtml(task.agencia || "Sin agencia")}</span>
+        <span><b>Mesa</b>${escapeHtml(task.legalAdvisor || "Disponible")}</span>
+        <span><b>Ingreso</b>${escapeHtml(formatDateTime(task.createdAt))}</span>
+      </div>
+      <div class="tracking-progress-head"><span>Avance</span><strong>${stage.progress}%</strong></div>
+      <div class="tracking-progress"><i style="width:${stage.progress}%"></i></div>
+      <div class="tracking-timeline">
+        ${steps.map((step, index) => `<span class="${index + 1 < stage.step ? "done" : index + 1 === stage.step ? "current" : ""}">${escapeHtml(step)}</span>`).join("")}
+      </div>
+      <div class="tracking-card-actions">
+        <small>${escapeHtml(formatLeadDuration(task))}</small>
+        <button class="btn tiny secondary" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver ficha</button>
+        ${canCommercialResendTask(task) ? `<button class="btn tiny primary resend-btn" type="button" data-resend-commercial-task="${escapeHtml(task.id)}">Reenviar</button>` : ""}
+      </div>
+    </article>
+  `;
 }
 
 function renderCommercialGeneralDashboard() {
@@ -11679,6 +11781,11 @@ document.addEventListener("keydown", (event) => {
 });
 
 document.addEventListener("click", (event) => {
+  const trackingFilterButton = event.target.closest("[data-commercial-tracking-filter]");
+  if (trackingFilterButton) {
+    commercialTrackingFilter = trackingFilterButton.dataset.commercialTrackingFilter || "todos";
+    renderCommercialDashboard();
+  }
   const fichaButton = event.target.closest("[data-commercial-ficha]");
   if (fichaButton) {
     openCommercialLeadFicha(fichaButton.dataset.commercialFicha);
