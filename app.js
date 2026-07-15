@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260715-roboto-condensed-font";
+const APP_BUILD_VERSION = "20260715-commercial-sidebar-modal";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -465,6 +465,11 @@ const commercialLeadModal = document.querySelector("#commercialLeadModal");
 const commercialLeadFichaContent = document.querySelector("#commercialLeadFichaContent");
 const commercialNotificationsModal = document.querySelector("#commercialNotificationsModal");
 const commercialNotificationsContent = document.querySelector("#commercialNotificationsContent");
+const commercialSidebarModal = document.querySelector("#commercialSidebarModal");
+const commercialSidebarModalTitle = document.querySelector("#commercialSidebarModalTitle");
+const commercialSidebarModalEyebrow = document.querySelector("#commercialSidebarModalEyebrow");
+const commercialSidebarModalSubtitle = document.querySelector("#commercialSidebarModalSubtitle");
+const commercialSidebarModalContent = document.querySelector("#commercialSidebarModalContent");
 const commercialPilotModal = document.querySelector("#commercialPilotModal");
 const pilotConfirmBtn = document.querySelector("#pilotConfirmBtn");
 const pilotCancelBtn = document.querySelector("#pilotCancelBtn");
@@ -2712,7 +2717,7 @@ function openCommercialModal(modal) {
 }
 
 function closeCommercialModals() {
-  [commercialConstructionModal, commercialLeadModal, commercialNotificationsModal, commercialPilotModal, commercialDuplicateModal].forEach((modal) => {
+  [commercialConstructionModal, commercialLeadModal, commercialNotificationsModal, commercialSidebarModal, commercialPilotModal, commercialDuplicateModal].forEach((modal) => {
     if (modal) modal.hidden = true;
   });
   document.body.classList.remove("has-modal");
@@ -5005,7 +5010,10 @@ function renderCommercialDashboard() {
     ["Total cerradas", kpis.completed, "Compra, venta y CUV"]
   ]);
   chartContainer.innerHTML = renderBarRows(groupByStatus(dashboardTasks), Math.max(dashboardTasks.length, 1));
-  if (leadList) renderCommercialLeadList(leadList, dashboardTasks);
+  if (leadList) {
+    leadList.hidden = true;
+    leadList.innerHTML = "";
+  }
   renderCommercialTrackingBoard(purchaseTasks);
   if (generalKpiContainer && generalChartContainer) renderCommercialGeneralDashboard();
 }
@@ -5193,28 +5201,125 @@ function openCommercialNotificationsModal() {
   renderCommercialDashboard();
 }
 
-function getCommercialRequestFilteredTasks() {
+function getCommercialRequestFilteredTasks(statusView = activeCommercialRequestFilter) {
   const tasks = getCommercialOwnedTasks().filter((task) => ["compra", "venta"].includes(getTaskProcess(task)));
-  if (activeCommercialRequestFilter === "pendientes") {
+  if (statusView === "pendientes") {
     return tasks.filter((task) => ["pendiente", "por asignar"].includes(task.status));
   }
-  if (activeCommercialRequestFilter === "en-proceso") {
+  if (statusView === "en-proceso") {
     return tasks.filter((task) => !["pendiente", "por asignar"].includes(task.status) && !isClosedStatus(task.status));
   }
-  if (activeCommercialRequestFilter === "cerradas") {
+  if (statusView === "cerradas") {
     return tasks.filter((task) => isClosedStatus(task.status));
   }
   return tasks;
 }
 
-function getCommercialRequestFilterLabel() {
+function getCommercialRequestFilterLabel(statusView = activeCommercialRequestFilter) {
   const labels = {
     todos: "Todos mis registros",
     pendientes: "Solicitudes pendientes",
     "en-proceso": "Solicitudes en proceso",
     cerradas: "Solicitudes cerradas"
   };
-  return labels[activeCommercialRequestFilter] || labels.todos;
+  return labels[statusView] || labels.todos;
+}
+
+function renderCommercialKpiCardsMarkup(cards) {
+  return `
+    <div class="kpi-grid compact-kpis commercial-modal-kpis">
+      ${cards.map(([label, value, hint]) => `
+        <article class="kpi-card">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+          <small>${escapeHtml(hint)}</small>
+        </article>
+      `).join("")}
+    </div>
+  `;
+}
+
+function openCommercialSidebarModal(area = "requests", options = {}) {
+  if (!commercialSidebarModal || !commercialSidebarModalContent) return false;
+  const statusView = options.statusView || "todos";
+  let title = "Detalle comercial";
+  let eyebrow = "Vista comercial";
+  let subtitle = "";
+  let content = "";
+
+  if (area === "requests") {
+    const filteredTasks = getCommercialRequestFilteredTasks(statusView);
+    const purchaseTasks = filterTasksByCommercialProcess(filteredTasks, "compra");
+    const saleTasks = filterTasksByCommercialProcess(filteredTasks, "venta");
+    const kpis = getKpis(filteredTasks);
+    title = statusView === "todos" ? "Registro completo" : getCommercialRequestFilterLabel(statusView);
+    eyebrow = "Solicitudes comerciales";
+    subtitle = `${filteredTasks.length} registro${filteredTasks.length === 1 ? "" : "s"} encontrado${filteredTasks.length === 1 ? "" : "s"}`;
+    content = `
+      ${renderCommercialKpiCardsMarkup([
+        ["Registros", filteredTasks.length, "Segun seleccion lateral"],
+        ["Pendientes", kpis.pending + kpis.unassigned, "Aun sin cierre"],
+        ["En proceso", kpis.inProgress, "Tomadas por mesa"],
+        ["Cerradas", kpis.completed, "Finalizadas"]
+      ])}
+      <section class="commercial-modal-section">
+        <div class="mini-list-head">
+          <strong>Saneamientos</strong>
+          <span>${purchaseTasks.length} registro${purchaseTasks.length === 1 ? "" : "s"}</span>
+        </div>
+        <div class="commercial-modal-list">${renderCommercialRows(purchaseTasks, { detailed: true })}</div>
+      </section>
+      <section class="commercial-modal-section">
+        <div class="mini-list-head">
+          <strong>Contratos de compraventa</strong>
+          <span>${saleTasks.length} registro${saleTasks.length === 1 ? "" : "s"}</span>
+        </div>
+        <div class="commercial-modal-list">${renderCommercialRows(saleTasks, { detailed: true })}</div>
+      </section>
+    `;
+  } else if (area === "control") {
+    const ownedTasks = getCommercialOwnedTasks();
+    const tasks = getCommercialOperationalTasks(ownedTasks);
+    const infoRequests = getCommercialInfoRequests(ownedTasks);
+    const kpis = getKpis(tasks);
+    title = "Carga de mesa";
+    eyebrow = "Mesa de control";
+    subtitle = "Resumen de tareas vinculadas a tus solicitudes";
+    content = `
+      ${renderCommercialKpiCardsMarkup([
+        ["Mis tareas", tasks.length, "Compra, venta y CUV"],
+        ["Pendientes", kpis.pending + kpis.unassigned, "Por asignar o tomar"],
+        ["En proceso", kpis.inProgress, "Gestion activa"],
+        ["Info solicitada", infoRequests.length, "Autorizaciones de placa"],
+        ["Cerradas", kpis.completed, "Finalizadas"]
+      ])}
+      <section class="commercial-modal-section">
+        <div class="mini-list-head">
+          <strong>Distribucion por estatus</strong>
+          <span>${tasks.length + infoRequests.length} movimiento${tasks.length + infoRequests.length === 1 ? "" : "s"}</span>
+        </div>
+        <div class="personal-chart commercial-modal-chart">
+          ${renderBarRows(groupByStatus([...tasks, ...infoRequests]), Math.max(tasks.length + infoRequests.length, 1))}
+        </div>
+      </section>
+      <section class="commercial-modal-section">
+        <div class="mini-list-head">
+          <strong>Detalle operativo</strong>
+          <span>${tasks.length} registro${tasks.length === 1 ? "" : "s"}</span>
+        </div>
+        <div class="commercial-modal-list">${renderCommercialRows(tasks, { detailed: true })}</div>
+      </section>
+    `;
+  } else {
+    return false;
+  }
+
+  if (commercialSidebarModalTitle) commercialSidebarModalTitle.textContent = title;
+  if (commercialSidebarModalEyebrow) commercialSidebarModalEyebrow.textContent = eyebrow;
+  if (commercialSidebarModalSubtitle) commercialSidebarModalSubtitle.textContent = subtitle;
+  commercialSidebarModalContent.innerHTML = content;
+  openCommercialModal(commercialSidebarModal);
+  return true;
 }
 
 function renderCommercialRequests() {
@@ -11732,6 +11837,12 @@ commercialModuleButtons.forEach((button) => {
 commercialAreaButtons.forEach((button) => {
   button.addEventListener("click", () => {
     const statusView = button.dataset.commercialStatusView || (button.dataset.commercialArea === "requests" ? "todos" : activeCommercialRequestFilter);
+    if (["requests", "control"].includes(button.dataset.commercialArea)) {
+      activeCommercialRequestFilter = statusView;
+      commercialAreaButtons.forEach((item) => item.classList.toggle("is-active", item === button));
+      openCommercialSidebarModal(button.dataset.commercialArea, { statusView, button });
+      return;
+    }
     setCommercialArea(button.dataset.commercialArea, {
       button,
       moduleTarget: button.dataset.commercialModuleTarget || "",
