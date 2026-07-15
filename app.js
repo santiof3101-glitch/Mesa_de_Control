@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260715-commercial-chat-advisors";
+const APP_BUILD_VERSION = "20260715-legal-one-active-task";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -4310,7 +4310,7 @@ function renderTasks() {
       return;
     }
     const assignedToAnother = task.legalUserId && task.legalUserId !== session.userId && session.role !== "admin";
-    const canTake = session.role === "legal" && !task.legalUserId && !isClosedStatus(task.status);
+    const canTake = canLegalUserTakeTask(task);
     const lockedForLegal = isTaskStatusLockedForLegal(task);
     const canEdit = session.role === "admin" || (task.legalUserId === session.userId && !lockedForLegal);
     const status = getStatusOption(task.status);
@@ -4432,7 +4432,7 @@ function formatIntegerValue(value) {
 
 function renderInfoRequestTaskCard(task, index) {
   const assignedToAnother = task.legalUserId && task.legalUserId !== session.userId && session.role !== "admin";
-  const canTake = session.role === "legal" && !task.legalUserId && !isClosedStatus(task.status);
+  const canTake = canLegalUserTakeTask(task);
   const canAuthorize = session.role === "admin" || session.role === "legal" && (!task.legalUserId || task.legalUserId === session.userId);
   const sourceTask = state.tasks.find((item) => item.id === task.sourceTaskId);
   const card = document.createElement("article");
@@ -4497,6 +4497,7 @@ function approvePlateInfoRequest(id) {
   task.updatedAt = now;
   task.syncStatus = "pending";
   saveState();
+  autoAssignOpenSaneamientos();
   renderAll();
   showToast("Informacion autorizada. El asesor ya puede ver el detalle de la placa.");
   guardarTareaSupabase(task, "autorizar-info-placa").then((ok) => {
@@ -4515,6 +4516,11 @@ function takeTask(id) {
   }
   if (task.legalUserId) {
     showToast("Este lead ya fue tomado.");
+    renderTasks();
+    return;
+  }
+  if (!canLegalUserTakeTask(task)) {
+    showToast("Ya tienes un saneamiento activo. Finalizalo antes de tomar una nueva tarea.");
     renderTasks();
     return;
   }
@@ -4596,6 +4602,7 @@ function updateTaskStatus(id, status) {
   task.syncStatus = "pending";
 
   saveState();
+  if (isClosedStatus(status)) autoAssignOpenSaneamientos();
   renderAll();
   showToast("Estatus actualizado.");
   guardarTareaSupabase(task, "estatus").then((ok) => {
@@ -4760,7 +4767,7 @@ function getEligibleLegalUsersForTask(task = {}) {
   const mailbox = getTaskMailbox(task);
   return normalizeLegalUsers(state.legalUsers || []).filter((user) =>
     userHasMailbox(user, mailbox) &&
-    (mailbox !== "saneamientos" || user.legalAvailable !== false)
+    canLegalUserReceiveNewTask(user, task)
   );
 }
 
@@ -4770,6 +4777,22 @@ function getLegalUserActiveLoad(userId, mailbox = "") {
     !isClosedStatus(task.status) &&
     (!mailbox || getTaskMailbox(task) === mailbox)
   ).length;
+}
+
+function canLegalUserReceiveNewTask(user = {}, task = {}) {
+  const mailbox = getTaskMailbox(task);
+  if (!userHasMailbox(user, mailbox)) return false;
+  if (mailbox !== "saneamientos") return true;
+  if (user.legalAvailable === false) return false;
+  const activeLoad = getLegalUserActiveLoad(user.id, "saneamientos");
+  return activeLoad === 0 || task.legalUserId === user.id;
+}
+
+function canLegalUserTakeTask(task = {}, user = currentLegalUser()) {
+  if (session.role !== "legal" || !user) return false;
+  if (task.legalUserId || isClosedStatus(task.status)) return false;
+  if (!canLegalUserSeeTask(task, user)) return false;
+  return canLegalUserReceiveNewTask(user, task);
 }
 
 function assignTaskToLegalUser(task, user, status = "tomado") {
@@ -5431,7 +5454,7 @@ function renderCommercialLeadList(container, tasks, options = {}) {
 function openLegalTaskModal(taskId) {
   const task = state.tasks.find((item) => item.id === taskId);
   if (!task || !legalTaskModal || !legalTaskModalContent) return;
-  const canTake = session.role === "legal" && !task.legalUserId && !isClosedStatus(task.status) && canLegalUserSeeTask(task);
+  const canTake = canLegalUserTakeTask(task);
   const lockedForLegal = isTaskStatusLockedForLegal(task);
   const canEdit = session.role === "admin" || (task.legalUserId === session.userId && !lockedForLegal);
   const sourceTask = isInfoRequestTask(task) ? state.tasks.find((item) => item.id === task.sourceTaskId) : null;
