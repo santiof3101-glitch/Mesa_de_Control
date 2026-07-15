@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260715-form-builder-fix";
+const APP_BUILD_VERSION = "20260715-chat-scroll-fix";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -3788,6 +3788,12 @@ function renderLegalChat() {
   if (wasNearBottom) {
     legalChatList.scrollTop = legalChatList.scrollHeight;
   }
+}
+
+function setLegalChatOpen(open) {
+  if (!legalChatPanel) return;
+  legalChatPanel.hidden = !open;
+  document.body.classList.toggle("legal-chat-is-open", Boolean(open));
 }
 
 function sendLegalChatMessage(text) {
@@ -11527,7 +11533,7 @@ document.addEventListener("keydown", (event) => {
     return;
   }
   if (legalChatPanel && !legalChatPanel.hidden) {
-    legalChatPanel.hidden = true;
+    setLegalChatOpen(false);
     return;
   }
   const blockingModalOpen = (commercialPilotModal && !commercialPilotModal.hidden) || (commercialDuplicateModal && !commercialDuplicateModal.hidden);
@@ -11565,12 +11571,12 @@ document.querySelector("#commercialNotificationBell")?.addEventListener("click",
 });
 
 legalChatOpenBtn?.addEventListener("click", () => {
-  if (legalChatPanel) legalChatPanel.hidden = false;
+  setLegalChatOpen(true);
   renderLegalChat();
 });
 
 legalChatCloseBtn?.addEventListener("click", () => {
-  if (legalChatPanel) legalChatPanel.hidden = true;
+  setLegalChatOpen(false);
 });
 
 processingTabButtons.forEach((button) => {
