@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260701-provider-rejected-duplicates";
+const APP_BUILD_VERSION = "20260714-commercial-spec";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -424,6 +424,17 @@ const supportModal = document.querySelector("#supportModal");
 const supportBubbleMessage = document.querySelector("#supportBubbleMessage");
 const supportEmailLink = document.querySelector("#supportEmailLink");
 const supportWhatsappLink = document.querySelector("#supportWhatsappLink");
+const commercialConstructionModal = document.querySelector("#commercialConstructionModal");
+const commercialLeadModal = document.querySelector("#commercialLeadModal");
+const commercialLeadFichaContent = document.querySelector("#commercialLeadFichaContent");
+const commercialPilotModal = document.querySelector("#commercialPilotModal");
+const pilotConfirmBtn = document.querySelector("#pilotConfirmBtn");
+const pilotCancelBtn = document.querySelector("#pilotCancelBtn");
+const commercialDuplicateModal = document.querySelector("#commercialDuplicateModal");
+const duplicateConflictContent = document.querySelector("#duplicateConflictContent");
+const duplicateContinueBtn = document.querySelector("#duplicateContinueBtn");
+const duplicateCancelBtn = document.querySelector("#duplicateCancelBtn");
+const commercialNotificationCount = document.querySelector("#commercialNotificationCount");
 const statusOptionForm = document.querySelector("#statusOptionForm");
 const statusFilterButtons = document.querySelector("#statusFilterButtons");
 const imageModal = document.querySelector("#imageModal");
@@ -2604,6 +2615,136 @@ function closeSupportModal() {
   document.body.classList.remove("has-modal");
 }
 
+function openCommercialModal(modal) {
+  if (!modal) return;
+  modal.hidden = false;
+  document.body.classList.add("has-modal");
+}
+
+function closeCommercialModals() {
+  [commercialConstructionModal, commercialLeadModal, commercialPilotModal, commercialDuplicateModal].forEach((modal) => {
+    if (modal) modal.hidden = true;
+  });
+  document.body.classList.remove("has-modal");
+}
+
+function openConstructionModal(moduleName = "este modulo") {
+  const title = commercialConstructionModal?.querySelector("#constructionTitle");
+  if (title) title.textContent = `Estamos trabajando en ${moduleName}`;
+  openCommercialModal(commercialConstructionModal);
+}
+
+function confirmPilotDocuments() {
+  return new Promise((resolve) => {
+    if (!commercialPilotModal || !pilotConfirmBtn || !pilotCancelBtn) {
+      resolve(true);
+      return;
+    }
+    const cleanup = (answer) => {
+      pilotConfirmBtn.removeEventListener("click", onConfirm);
+      pilotCancelBtn.removeEventListener("click", onCancel);
+      closeCommercialModals();
+      resolve(answer);
+    };
+    const onConfirm = () => cleanup(true);
+    const onCancel = () => cleanup(false);
+    pilotConfirmBtn.addEventListener("click", onConfirm, { once: true });
+    pilotCancelBtn.addEventListener("click", onCancel, { once: true });
+    openCommercialModal(commercialPilotModal);
+  });
+}
+
+function getDuplicateConflicts(data, excludeId = "") {
+  const placa = normalizePlate(data.placa);
+  const cedula = normalizeId(data.cedula);
+  const cliente = normalizeLooseText(data.cliente || data.vendedor || "");
+  const conflicts = [];
+  state.tasks.forEach((task) => {
+    if (task.id === excludeId) return;
+    const taskPlate = normalizePlate(task.placa);
+    const taskId = normalizeId(task.cedula || task.cedulaVendedor);
+    const taskClient = normalizeLooseText(task.cliente || task.vendedor || "");
+    let reason = "";
+    if (placa && taskPlate === placa) reason = "Placa duplicada";
+    else if (cedula && taskId === cedula) reason = taskPlate && taskPlate !== placa ? "Cliente duplicado con placa distinta" : "Cedula duplicada";
+    else if (cliente && taskClient && taskClient === cliente) reason = taskPlate && taskPlate !== placa ? "Nombre duplicado con placa distinta" : "Nombre duplicado";
+    if (!reason) return;
+    conflicts.push({ reason, task });
+  });
+  return conflicts;
+}
+
+function renderDuplicateConflict(conflict) {
+  const task = conflict.task || {};
+  const advisor = task.commercialUserName || task.asesor || "asesor no registrado";
+  const date = task.createdAt ? formatDateTime(task.createdAt) : "fecha no registrada";
+  const value = task.valorToma || task.precioContrato || "sin valor";
+  return `
+    <article class="duplicate-conflict-card">
+      <strong>${escapeHtml(conflict.reason)}</strong>
+      <p>Este saneamiento ya fue solicitado por el asesor <b>${escapeHtml(advisor)}</b> el <b>${escapeHtml(date)}</b>.</p>
+      <dl>
+        <div><dt>Placa</dt><dd>${escapeHtml(task.placa || "Sin placa")}</dd></div>
+        <div><dt>Cliente</dt><dd>${escapeHtml(task.cliente || task.vendedor || "Sin cliente")}</dd></div>
+        <div><dt>Valor de toma</dt><dd>${escapeHtml(value)}</dd></div>
+        <div><dt>Estatus</dt><dd>${escapeHtml(task.status || "Sin estatus")}</dd></div>
+      </dl>
+      <span>Accion sugerida: contactar al asesor ${escapeHtml(advisor)} antes de continuar.</span>
+    </article>
+  `;
+}
+
+function confirmDuplicateConflict(data) {
+  const conflicts = getDuplicateConflicts(data);
+  if (!conflicts.length) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    if (!commercialDuplicateModal || !duplicateConflictContent || !duplicateContinueBtn || !duplicateCancelBtn) {
+      resolve(window.confirm("Posible caso duplicado. Desea continuar bajo su responsabilidad?"));
+      return;
+    }
+    duplicateConflictContent.innerHTML = conflicts.slice(0, 3).map(renderDuplicateConflict).join("");
+    const cleanup = (answer) => {
+      duplicateContinueBtn.removeEventListener("click", onContinue);
+      duplicateCancelBtn.removeEventListener("click", onCancel);
+      closeCommercialModals();
+      resolve(answer);
+    };
+    const onContinue = () => cleanup(true);
+    const onCancel = () => cleanup(false);
+    duplicateContinueBtn.addEventListener("click", onContinue, { once: true });
+    duplicateCancelBtn.addEventListener("click", onCancel, { once: true });
+    openCommercialModal(commercialDuplicateModal);
+  });
+}
+
+function openCommercialLeadFicha(taskId) {
+  const task = state.tasks.find((item) => item.id === taskId);
+  if (!task || !commercialLeadFichaContent) return;
+  const fields = [
+    ["Proceso", getCommercialProcessLabel(getTaskProcess(task))],
+    ["Placa", task.placa],
+    ["Cliente / vendedor", task.cliente || task.vendedor],
+    ["Cedula", task.cedula || task.cedulaVendedor],
+    ["Agencia", task.agencia],
+    ["Asesor comercial", task.asesor || task.commercialUserName],
+    ["Valor", task.valorToma || task.precioContrato],
+    ["Kilometraje", task.kilometraje],
+    ["Tipo de compra", task.tipoCompra],
+    ["Tipo de saneamiento", task.tipoSaneamiento],
+    ["Estatus", task.status],
+    ["Asesor legal", task.legalAdvisor],
+    ["Fecha de envio", task.createdAt ? formatDateTime(task.createdAt) : ""],
+    ["Observaciones", task.observaciones]
+  ];
+  commercialLeadFichaContent.innerHTML = fields.map(([label, value]) => `
+    <div class="lead-ficha-item ${label === "Observaciones" ? "span-2" : ""}">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value || "Sin registro")}</strong>
+    </div>
+  `).join("");
+  openCommercialModal(commercialLeadModal);
+}
+
 async function checkForAppUpdate() {
   if (!navigator.onLine) return;
   try {
@@ -3733,33 +3874,24 @@ async function createSaleContractTask(data) {
 }
 
 function getDuplicateWarnings(data, excludeId = "") {
-  const placa = normalizePlate(data.placa);
-  const cedula = normalizeId(data.cedula);
-  const warnings = [];
-
-  const samePlate = state.tasks.find((task) => task.id !== excludeId && normalizePlate(task.placa) === placa && placa);
-  if (samePlate) {
-    warnings.push("ATENCION PLACA DUPLICADA. Anteriormente ya existio una solicitud con esta placa.");
-  }
-
-  const sameClientDifferentPlate = state.tasks.find((task) =>
-    task.id !== excludeId &&
-    normalizeId(task.cedula) === cedula &&
-    cedula &&
-    normalizePlate(task.placa) !== placa
-  );
-  if (sameClientDifferentPlate) {
-    warnings.push("ATENCION CLIENTE DUPLICADO CON PLACA DISTINTA.");
-  }
-
-  return warnings;
+  return getDuplicateConflicts(data, excludeId).map((conflict) => {
+    const task = conflict.task || {};
+    const advisor = task.commercialUserName || task.asesor || "otro asesor";
+    const date = task.createdAt ? formatDateTime(task.createdAt) : "fecha no registrada";
+    return `${conflict.reason}. Ya existe una solicitud de ${advisor} registrada el ${date}.`;
+  });
 }
 
 function updateDuplicatePreview() {
   const data = Object.fromEntries(new FormData(form).entries());
-  const warnings = getDuplicateWarnings(data);
-  duplicateAlert.hidden = !warnings.length;
-  duplicateAlert.innerHTML = warnings.map((warning) => `<strong>${escapeHtml(warning)}</strong>`).join("<br>");
+  const conflicts = getDuplicateConflicts(data);
+  duplicateAlert.hidden = !conflicts.length;
+  duplicateAlert.innerHTML = conflicts.slice(0, 2).map((conflict) => {
+    const task = conflict.task || {};
+    const advisor = task.commercialUserName || task.asesor || "otro asesor";
+    const date = task.createdAt ? formatDateTime(task.createdAt) : "fecha no registrada";
+    return `<strong>${escapeHtml(conflict.reason)}</strong><span>Solicitado por ${escapeHtml(advisor)} el ${escapeHtml(date)}. Valor: ${escapeHtml(task.valorToma || task.precioContrato || "sin valor")}.</span>`;
+  }).join("");
 }
 
 function normalizePlate(value = "") {
@@ -4592,10 +4724,15 @@ function renderCommercialDashboard() {
   const saleTasks = filterTasksByCommercialProcess(dashboardTasks, "venta");
   const cuvTasks = filterTasksByCommercialProcess(dashboardTasks, "cuv");
   const kpis = getKpis(dashboardTasks);
+  const notificationTasks = dashboardTasks.filter((task) => {
+    const status = normalizeLooseText(task.status);
+    return status.includes("APROB") || status.includes("RECHAZ") || status.includes("PENDIENTE DE SUBSAN") || status.includes("SUBSAN");
+  });
   const title = document.querySelector("#commercial-dashboard-title");
   const lookupTitle = document.querySelector("#lookup-title");
   if (title) title.textContent = "Dashboard comercial integral";
   if (lookupTitle) lookupTitle.textContent = activeCommercialProcess === "venta" ? "Revisa el estatus de tus contratos" : "Revisa el estatus de tus saneamientos";
+  if (commercialNotificationCount) commercialNotificationCount.textContent = String(notificationTasks.length);
 
   renderKpiCards("#commercialKpis", [
     ["Saneamientos", purchaseTasks.length, "Solicitudes de compra"],
@@ -4725,9 +4862,10 @@ function renderCommercialLeadList(container, tasks, options = {}) {
           <strong>${escapeHtml(task.placa || "Sin placa")}</strong>
           <span>${escapeHtml(activeCommercialProcess === "venta" ? (task.vendedor || task.cliente || "Vendedor sin nombre") : (task.cliente || "Cliente sin nombre"))}</span>
         </div>
-        <div>
+        <div class="commercial-lead-actions">
           ${renderStatusPill(task.status)}
           <small>${formatDateTime(task.createdAt)}</small>
+          <button class="btn tiny secondary" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver ficha</button>
         </div>
       </article>
     `).join("")}
@@ -4748,9 +4886,10 @@ function renderCommercialRows(tasks, options = {}) {
           <small>Observacion: ${escapeHtml(task.observaciones || "Sin observaciones")}</small>
         ` : ""}
       </div>
-      <div>
+      <div class="commercial-lead-actions">
         ${renderStatusPill(task.status)}
         <small>${formatDateTime(task.createdAt)}</small>
+        <button class="btn tiny secondary" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver ficha</button>
       </div>
     </article>
   `).join("");
@@ -11046,6 +11185,35 @@ commercialStartButtons.forEach((button) => {
   });
 });
 
+document.querySelectorAll("[data-coming-soon]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const label = button.dataset.comingSoon === "cuv" ? "CUV" : "Venta";
+    openConstructionModal(label);
+  });
+});
+
+document.querySelectorAll("[data-close-commercial-modal]").forEach((button) => {
+  button.addEventListener("click", closeCommercialModals);
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  const blockingModalOpen = (commercialPilotModal && !commercialPilotModal.hidden) || (commercialDuplicateModal && !commercialDuplicateModal.hidden);
+  if (!blockingModalOpen) closeCommercialModals();
+});
+
+document.addEventListener("click", (event) => {
+  const fichaButton = event.target.closest("[data-commercial-ficha]");
+  if (fichaButton) {
+    openCommercialLeadFicha(fichaButton.dataset.commercialFicha);
+  }
+});
+
+document.querySelector("#commercialNotificationBell")?.addEventListener("click", () => {
+  activeCommercialRequestFilter = "todos";
+  setCommercialArea("requests", { scroll: true });
+});
+
 processingTabButtons.forEach((button) => {
   button.addEventListener("click", () => {
     const target = button.dataset.processingTab;
@@ -11167,17 +11335,31 @@ form.addEventListener("submit", async (event) => {
   const submitButton = form.querySelector("button[type='submit']");
   if (submitButton) {
     submitButton.disabled = true;
-    submitButton.textContent = "Guardando...";
+    submitButton.textContent = "Validando...";
   }
-  await createTask(data);
-  form.reset();
-  updateDuplicatePreview();
-  applyCommercialSessionToForm();
-  if (submitButton) {
-    submitButton.disabled = false;
-    submitButton.textContent = "Enviar a control legal";
+  try {
+    const canContinueDuplicate = await confirmDuplicateConflict(data);
+    if (!canContinueDuplicate) {
+      showToast("Envio cancelado. Revise el posible duplicado antes de continuar.");
+      return;
+    }
+    const confirmedPilot = await confirmPilotDocuments();
+    if (!confirmedPilot) {
+      showToast("Envio pausado para revisar documentos en Pilot.");
+      return;
+    }
+    if (submitButton) submitButton.textContent = "Guardando...";
+    await createTask(data);
+    form.reset();
+    updateDuplicatePreview();
+    applyCommercialSessionToForm();
+    setView("formulario");
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = "Enviar a control legal";
+    }
   }
-  setView("formulario");
 });
 
 saleContractForm.addEventListener("submit", async (event) => {
