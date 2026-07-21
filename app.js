@@ -1,5 +1,5 @@
-﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260715-provider-profile-recovery";
+const STORAGE_KEY = "autocor-control-legal";
+const APP_BUILD_VERSION = "20260721-provider-load-delete-fix";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -285,6 +285,7 @@ const supabaseModuleVersions = {};
 const supabaseRemoteVersions = {};
 const supabasePublishedHashes = {};
 const supabaseProtectedRemoteCounts = {};
+const supabaseIntentionalSmallerPublishes = {};
 let supabaseTaskCursor = localStorage.getItem(TASK_SYNC_CURSOR_KEY) || "";
 let supabaseTaskDeleteCursor = localStorage.getItem(TASK_DELETE_CURSOR_KEY) || "";
 let supabaseLastRefreshAt = 0;
@@ -1219,8 +1220,20 @@ function shouldProtectSupabaseModule(modulo) {
   return modulo === "proveedores";
 }
 
+function allowIntentionalSmallerModulePublish(modulo) {
+  supabaseIntentionalSmallerPublishes[modulo] = Date.now() + 60000;
+}
+
+function hasIntentionalSmallerModulePublish(modulo) {
+  const expiresAt = supabaseIntentionalSmallerPublishes[modulo] || 0;
+  if (expiresAt > Date.now()) return true;
+  delete supabaseIntentionalSmallerPublishes[modulo];
+  return false;
+}
+
 async function shouldSkipUnsafeModulePublish(modulo, datos) {
   if (!shouldProtectSupabaseModule(modulo)) return false;
+  if (hasIntentionalSmallerModulePublish(modulo)) return false;
   const localCount = getProtectedSupabaseModuleCount(modulo, datos);
   const knownRemoteCount = supabaseProtectedRemoteCounts[modulo] || 0;
   if (knownRemoteCount && localCount >= knownRemoteCount) return false;
@@ -10949,11 +10962,13 @@ function deleteSelectedProviderLoad() {
   createPcBackup("antes-de-eliminar-carga-proveedor");
   state.dataProcessing.proveedores = (state.dataProcessing.proveedores || []).filter((record) => record.loadId !== loadId);
   state.dataProcessing.providerLoads = (state.dataProcessing.providerLoads || []).filter((item) => item.id !== loadId);
+  allowIntentionalSmallerModulePublish("proveedores");
   providerFilters = { provider: "", month: "", plate: "", loadId: "" };
   pendingProviderRecords = [];
   renderProviderPastePreview([]);
   saveState();
   renderProviderProcessing();
+  guardarModulosSupabase();
   showToast("Carga eliminada.");
 }
 
