@@ -1,5 +1,5 @@
-const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260721-provider-load-delete-fix";
+﻿const STORAGE_KEY = "autocor-control-legal";
+const APP_BUILD_VERSION = "20260721-provider-duplicate-item-status";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -9760,22 +9760,12 @@ function isProviderDuplicateApprovalEntryRejected(entry) {
 
 function isProviderDuplicateItemApproved(group, item, index) {
   const approvals = getProviderDuplicateApprovals();
-  const simpleKey = getProviderDuplicateSimpleKey(group);
-  return Boolean(
-    isProviderDuplicateApprovalEntryApproved(approvals[group.approvalKey]) ||
-    isProviderDuplicateApprovalEntryApproved(approvals[simpleKey]) ||
-    isProviderDuplicateApprovalEntryApproved(approvals[getProviderDuplicateItemKey(group, item, index)])
-  );
+  return isProviderDuplicateApprovalEntryApproved(approvals[getProviderDuplicateItemKey(group, item, index)]);
 }
 
 function isProviderDuplicateItemRejected(group, item, index) {
   const approvals = getProviderDuplicateApprovals();
-  const simpleKey = getProviderDuplicateSimpleKey(group);
-  return Boolean(
-    isProviderDuplicateApprovalEntryRejected(approvals[group.approvalKey]) ||
-    isProviderDuplicateApprovalEntryRejected(approvals[simpleKey]) ||
-    isProviderDuplicateApprovalEntryRejected(approvals[getProviderDuplicateItemKey(group, item, index)])
-  );
+  return isProviderDuplicateApprovalEntryRejected(approvals[getProviderDuplicateItemKey(group, item, index)]);
 }
 
 function getProviderUnauthorizedDuplicateItems(group) {
@@ -9811,7 +9801,7 @@ function isProviderDuplicateRejected(group) {
 }
 
 function isProviderDuplicatePending(group) {
-  return !isProviderDuplicateApproved(group) && !isProviderDuplicateRejected(group);
+  return getProviderUnauthorizedDuplicateItems(group).length > 0;
 }
 
 function getPendingProviderDuplicateGroups(records) {
@@ -9822,20 +9812,18 @@ function toggleProviderDuplicateApproval(key, approved, fallbackKey = "") {
   const approvals = getProviderDuplicateApprovals();
   const group = getProviderDuplicateGroups(getFilteredProviderRecords())
     .find((item) => item.approvalKey === key || getProviderDuplicateSimpleKey(item) === fallbackKey);
+  delete approvals[key];
+  if (fallbackKey) delete approvals[fallbackKey];
   if (approved) {
     const approval = { approvedAt: new Date().toISOString(), approvedBy: session.name || "Usuario" };
-    approvals[key] = approval;
-    if (fallbackKey) approvals[fallbackKey] = approval;
     if (group) {
-      getProviderDuplicateChargeItems(group).forEach((chargeItem, chargeIndex) => {
-        approvals[getProviderDuplicateItemKey(group, chargeItem, chargeIndex + 1)] = approval;
+      getProviderUnauthorizedDuplicateItems(group).forEach(({ item: chargeItem, index: chargeIndex }) => {
+        approvals[getProviderDuplicateItemKey(group, chargeItem, chargeIndex)] = approval;
       });
     }
     providerDuplicateView = "pending";
     providerDuplicatePage = 1;
   } else {
-    delete approvals[key];
-    if (fallbackKey) delete approvals[fallbackKey];
     if (group) {
       getProviderDuplicateChargeItems(group).forEach((chargeItem, chargeIndex) => {
         const itemKey = getProviderDuplicateItemKey(group, chargeItem, chargeIndex + 1);
@@ -9854,24 +9842,19 @@ function setProviderDuplicateRejected(key, rejected = true, fallbackKey = "") {
   const group = getProviderDuplicateGroups(getFilteredProviderRecords())
     .find((item) => item.approvalKey === key || getProviderDuplicateSimpleKey(item) === fallbackKey);
   const rejection = { status: "no_aprobado", rejectedAt: new Date().toISOString(), rejectedBy: session.name || "Usuario" };
-  const clearKeys = () => {
-    delete approvals[key];
-    if (fallbackKey) delete approvals[fallbackKey];
-    if (group) {
-      getProviderDuplicateChargeItems(group).forEach((chargeItem, chargeIndex) => {
-        delete approvals[getProviderDuplicateItemKey(group, chargeItem, chargeIndex + 1)];
-      });
-    }
-  };
-  clearKeys();
+  delete approvals[key];
+  if (fallbackKey) delete approvals[fallbackKey];
   if (rejected) {
-    approvals[key] = rejection;
-    if (fallbackKey) approvals[fallbackKey] = rejection;
     if (group) {
-      getProviderDuplicateChargeItems(group).forEach((chargeItem, chargeIndex) => {
-        approvals[getProviderDuplicateItemKey(group, chargeItem, chargeIndex + 1)] = rejection;
+      getProviderUnauthorizedDuplicateItems(group).forEach(({ item: chargeItem, index: chargeIndex }) => {
+        approvals[getProviderDuplicateItemKey(group, chargeItem, chargeIndex)] = rejection;
       });
     }
+  } else if (group) {
+    getProviderDuplicateChargeItems(group).forEach((chargeItem, chargeIndex) => {
+      const itemKey = getProviderDuplicateItemKey(group, chargeItem, chargeIndex + 1);
+      if (isProviderDuplicateApprovalEntryRejected(approvals[itemKey])) delete approvals[itemKey];
+    });
   }
   providerDuplicateView = "pending";
   providerDuplicatePage = 1;
@@ -9918,11 +9901,11 @@ function approveProviderDuplicateGroupByKeys(key, fallbackKey = "") {
   const group = getProviderDuplicateGroups(getFilteredProviderRecords())
     .find((item) => item.approvalKey === key || getProviderDuplicateSimpleKey(item) === fallbackKey);
   const approval = { approvedAt: new Date().toISOString(), approvedBy: session.name || "Usuario" };
-  approvals[key] = approval;
-  if (fallbackKey) approvals[fallbackKey] = approval;
+  delete approvals[key];
+  if (fallbackKey) delete approvals[fallbackKey];
   if (group) {
-    getProviderDuplicateChargeItems(group).forEach((chargeItem, chargeIndex) => {
-      approvals[getProviderDuplicateItemKey(group, chargeItem, chargeIndex + 1)] = approval;
+    getProviderUnauthorizedDuplicateItems(group).forEach(({ item: chargeItem, index: chargeIndex }) => {
+      approvals[getProviderDuplicateItemKey(group, chargeItem, chargeIndex)] = approval;
     });
   }
 }
@@ -9948,11 +9931,11 @@ function rejectProviderDuplicateGroupByKeys(key, fallbackKey = "") {
   const group = getProviderDuplicateGroups(getFilteredProviderRecords())
     .find((item) => item.approvalKey === key || getProviderDuplicateSimpleKey(item) === fallbackKey);
   const rejection = { status: "no_aprobado", rejectedAt: new Date().toISOString(), rejectedBy: session.name || "Usuario" };
-  approvals[key] = rejection;
-  if (fallbackKey) approvals[fallbackKey] = rejection;
+  delete approvals[key];
+  if (fallbackKey) delete approvals[fallbackKey];
   if (group) {
-    getProviderDuplicateChargeItems(group).forEach((chargeItem, chargeIndex) => {
-      approvals[getProviderDuplicateItemKey(group, chargeItem, chargeIndex + 1)] = rejection;
+    getProviderUnauthorizedDuplicateItems(group).forEach(({ item: chargeItem, index: chargeIndex }) => {
+      approvals[getProviderDuplicateItemKey(group, chargeItem, chargeIndex)] = rejection;
     });
   }
 }
