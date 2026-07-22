@@ -12913,8 +12913,8 @@ body:has(#procesamiento.view.is-active) main {
 
 #formulario .tracking-timeline {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 4px;
+  grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+  gap: 8px 4px;
 }
 
 #formulario .tracking-timeline span {
@@ -12922,7 +12922,7 @@ body:has(#procesamiento.view.is-active) main {
   min-width: 0;
   padding-top: 16px;
   color: #8490a4;
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   line-height: 1.15;
   text-align: center;
 }
