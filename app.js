@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260721-announcement-delete-fix";
+const APP_BUILD_VERSION = "20260721-cuv-module";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -36,7 +36,15 @@ const MAX_PROVIDER_REASONABLE_AMOUNT = 100000;
 const LEGAL_MAILBOXES = [
   { id: "saneamientos", label: "Saneamientos", description: "Compra, saneamiento y consultas de placa" },
   { id: "contratos", label: "Contratos", description: "Tracking de contratos de compraventa" },
-  { id: "firmas", label: "Firmas", description: "Envio a firma y contratos firmados en Pilot" }
+  { id: "firmas", label: "Firmas", description: "Envio a firma y contratos firmados en Pilot" },
+  { id: "cuv", label: "CUV", description: "Solicitudes y carga de certificado unico vehicular" }
+];
+
+const CUV_STATUS_OPTIONS = [
+  "SOLICITADO",
+  "EN PROCESO",
+  "ENVIADO ASESOR",
+  "OBSERVADO"
 ];
 
 const SIGNATURE_STATUS = {
@@ -440,6 +448,8 @@ const processingPanels = document.querySelectorAll("[data-processing-panel]");
 const logoutBtn = document.querySelector("#logoutBtn");
 const form = document.querySelector("#requestForm");
 const saleContractForm = document.querySelector("#saleContractForm");
+const cuvRequestForm = document.querySelector("#cuvRequestForm");
+const commercialCuvList = document.querySelector("#commercialCuvList");
 const taskList = document.querySelector("#taskList");
 const toast = document.querySelector("#toast");
 const queueCount = document.querySelector("#queueCount");
@@ -2087,6 +2097,16 @@ function normalizeTask(task) {
     signatureRequestTaskId: task.signatureRequestTaskId || "",
     signaturePilotTaskId: task.signaturePilotTaskId || "",
     signaturePayload: task.signaturePayload || null,
+    fechaSolicitud: task.fechaSolicitud || "",
+    cuvOrderNumber: task.cuvOrderNumber || "",
+    cuvStatus: task.cuvStatus || (processType === "cuv" ? "SOLICITADO" : ""),
+    cuvHour: task.cuvHour || "",
+    cuvValue: task.cuvValue || "",
+    cuvObservations: task.cuvObservations || "",
+    cuvDeposits: task.cuvDeposits || "",
+    cuvPdfName: task.cuvPdfName || "",
+    cuvPdfDataUrl: task.cuvPdfDataUrl || "",
+    cuvPdfUploadedAt: task.cuvPdfUploadedAt || "",
     sourceTaskId: task.sourceTaskId || ""
   };
 }
@@ -3116,8 +3136,19 @@ function openCommercialLeadFicha(taskId) {
   const task = state.tasks.find((item) => item.id === taskId);
   if (!task || !commercialLeadFichaContent) return;
   const latestLegalObservation = getLatestLegalObservation(task);
+  const isCuv = isCuvTask(task);
   const fields = [
     ["Proceso", getCommercialProcessLabel(getTaskProcess(task))],
+    ...(isCuv ? [
+      ["Fecha de solicitud", task.fechaSolicitud],
+      ["No. de orden", task.cuvOrderNumber],
+      ["Estatus CUV", task.cuvStatus],
+      ["Hora", task.cuvHour],
+      ["Valor CUV", task.cuvValue ? formatCurrencyValue(task.cuvValue) : ""],
+      ["Depositos", task.cuvDeposits],
+      ["Observaciones CUV", task.cuvObservations],
+      ["Archivo PDF", task.cuvPdfName]
+    ] : []),
     ["Placa", task.placa],
     ["Cliente / vendedor", task.cliente || task.vendedor],
     ["Cedula", task.cedula || task.cedulaVendedor],
@@ -3135,12 +3166,13 @@ function openCommercialLeadFicha(taskId) {
     ["Observacion de mesa de control", latestLegalObservation ? `${latestLegalObservation.note} (${latestLegalObservation.statusLabel})` : ""]
   ];
   commercialLeadFichaContent.innerHTML = fields.map(([label, value]) => `
-    <div class="lead-ficha-item ${label === "Observaciones" || label === "Observacion de mesa de control" ? "span-2" : ""}">
+    <div class="lead-ficha-item ${label === "Observaciones" || label === "Observaciones CUV" || label === "Observacion de mesa de control" ? "span-2" : ""}">
       <span>${escapeHtml(label)}</span>
       <strong>${escapeHtml(value || "Sin registro")}</strong>
     </div>
   `).join("") + `
     <div class="lead-ficha-actions span-2">
+      ${isCuv && task.cuvPdfDataUrl ? `<a class="btn primary" href="${escapeHtml(task.cuvPdfDataUrl)}" download="${escapeHtml(task.cuvPdfName || `${task.placa || "CUV"}.pdf`)}">Descargar PDF CUV</a>` : ""}
       ${buildSignatureActionButtons(task)}
     </div>
   `;
@@ -4234,7 +4266,7 @@ function removeUser(id) {
       legalUserId: "",
       legalAdvisor: "",
       takenAt: "",
-      status: getTaskMailbox(task) === "contratos" ? "por asignar" : "pendiente",
+      status: ["contratos", "cuv", "firmas"].includes(getTaskMailbox(task)) ? "por asignar" : "pendiente",
       updatedAt: new Date().toISOString(),
       syncStatus: "pending",
       syncAction: "reasignar-usuario-eliminado"
@@ -4910,8 +4942,9 @@ function getVisibleTasks() {
     .filter((task) => canLegalUserSeeTask(task))
     .filter((task) => {
       if (activeFilter === "firmas") return isSignatureTask(task);
-      if (activeFilter === "todos") return !isSignatureTask(task);
-      return !isSignatureTask(task) && task.status === activeFilter;
+      if (activeFilter === "cuv") return isCuvTask(task);
+      if (activeFilter === "todos") return !isSignatureTask(task) && !isCuvTask(task);
+      return !isSignatureTask(task) && !isCuvTask(task) && task.status === activeFilter;
     })
     .filter((task) => isInsideDateRange(task.createdAt, taskDateFrom, taskDateTo))
     .filter((task) => {
@@ -4938,6 +4971,10 @@ function getVisibleTasks() {
         task.signaturePayload?.titular?.whatsapp,
         task.signaturePayload?.conyuge?.email,
         task.signaturePayload?.conyuge?.whatsapp,
+        task.cuvOrderNumber,
+        task.cuvStatus,
+        task.cuvObservations,
+        task.cuvDeposits,
         ...(Array.isArray(task.signaturePayload?.herederos) ? task.signaturePayload.herederos.flatMap((heir) => [heir.email, heir.whatsapp]) : [])
       ].join(" ").toLowerCase();
       return haystack.includes(normalizedSearch);
@@ -4965,7 +5002,11 @@ function renderTasks() {
     saveState();
     sincronizarTareasPendientesSupabase();
   }
-  const visiblePool = state.tasks.filter((task) => canLegalUserSeeTask(task)).filter((task) => activeFilter === "firmas" ? isSignatureTask(task) : !isSignatureTask(task));
+  const visiblePool = state.tasks.filter((task) => canLegalUserSeeTask(task)).filter((task) => {
+    if (activeFilter === "firmas") return isSignatureTask(task);
+    if (activeFilter === "cuv") return isCuvTask(task);
+    return !isSignatureTask(task) && !isCuvTask(task);
+  });
   const pendingTasks = visiblePool.filter((task) => !isClosedStatus(task.status));
   if (queueCount) queueCount.textContent = pendingTasks.length;
   const user = currentLegalUser();
@@ -4999,7 +5040,7 @@ function renderTasks() {
     const canTake = canLegalUserTakeTask(task);
     const lockedForLegal = isTaskStatusLockedForLegal(task);
     const canEdit = session.role === "admin" || (task.legalUserId === session.userId && !lockedForLegal);
-    const canEditStatus = canEdit && !isSignatureTask(task);
+    const canEditStatus = canEdit && !isSignatureTask(task) && !isCuvTask(task);
     const status = getStatusOption(task.status);
     const warnings = task.duplicateWarnings?.length ? task.duplicateWarnings : getDuplicateWarnings(task, task.id);
     const card = document.createElement("article");
@@ -5007,7 +5048,7 @@ function renderTasks() {
     card.innerHTML = `
       <div class="task-row-index">${index + 1}</div>
       <div class="task-row-main">
-        <h3>${escapeHtml(isSignatureTask(task) ? getSignatureTaskTitle(task) : (task.cliente || task.vendedor || "Solicitud sin nombre"))}</h3>
+        <h3>${escapeHtml(isSignatureTask(task) ? getSignatureTaskTitle(task) : isCuvTask(task) ? "Solicitud CUV" : (task.cliente || task.vendedor || "Solicitud sin nombre"))}</h3>
         <p class="task-meta">
           <span>Placa: ${escapeHtml(task.placa || "Sin placa")}</span>
           <span>Cliente: ${escapeHtml(task.cliente || task.vendedor || "Sin registro")}</span>
@@ -5028,6 +5069,7 @@ function renderTasks() {
         <button class="btn secondary tiny view-task-btn" type="button" data-legal-task="${escapeHtml(task.id)}">Ver ficha</button>
         ${canTake ? `<button class="btn primary tiny take-btn" type="button">Tomar</button>` : ""}
         ${isSignatureTask(task) && canEdit ? `<button class="btn primary tiny" type="button" data-complete-signature-task="${escapeHtml(task.id)}">${task.signatureStage === "subir-pilot" ? "Subido a Pilot" : "Enviado a firmar"}</button>` : ""}
+        ${isCuvTask(task) && canEdit ? `<button class="btn primary tiny" type="button" data-open-cuv-task="${escapeHtml(task.id)}">Gestionar CUV</button>` : ""}
         ${assignedToAnother ? `<small class="locked-note">Tomado por otro asistente</small>` : ""}
         ${lockedForLegal ? `<small class="locked-note">Estatus bloqueado</small>` : ""}
         ${canEditStatus ? `<select aria-label="Estatus del saneamiento">
@@ -5053,12 +5095,47 @@ function renderTasks() {
 }
 
 function syncLegalSidebarFilters() {
+  const user = currentLegalUser();
   legalSidebarFilterButtons.forEach((button) => {
+    const mailbox = button.dataset.mailboxFilter;
+    if (mailbox) {
+      button.hidden = session.role !== "admin" && !userHasMailbox(user || {}, mailbox);
+      if (button.hidden && activeFilter === button.dataset.legalSidebarFilter) activeFilter = "todos";
+    }
     button.classList.toggle("is-active", button.dataset.legalSidebarFilter === activeFilter);
   });
 }
 
 function renderLegalTaskFullDetails(task) {
+  if (isCuvTask(task)) {
+    const fields = [
+      ["Proceso", "Solicitud CUV"],
+      ["Fecha de solicitud", task.fechaSolicitud || (task.createdAt ? task.createdAt.slice(0, 10) : "")],
+      ["Placa", task.placa],
+      ["Cedula del titular", task.cedula],
+      ["Nombre del titular", task.cliente],
+      ["Usuario solicitante", task.commercialUserName || task.asesor],
+      ["Agencia solicitante", task.commercialAgency || task.agencia],
+      ["No. de orden", task.cuvOrderNumber],
+      ["Estatus CUV", task.cuvStatus],
+      ["Hora", task.cuvHour],
+      ["Valor", task.cuvValue ? formatCurrencyValue(task.cuvValue) : ""],
+      ["Depositos", task.cuvDeposits],
+      ["Observaciones", task.cuvObservations],
+      ["PDF CUV", task.cuvPdfName]
+    ];
+    return `
+      <div class="legal-task-detail-grid">
+        ${fields.map(([label, value]) => `
+          <div class="${["Observaciones", "PDF CUV"].includes(label) ? "is-wide" : ""}">
+            <span>${escapeHtml(label)}</span>
+            <strong>${escapeHtml(value || "Sin informacion")}</strong>
+          </div>
+        `).join("")}
+      </div>
+      ${task.cuvPdfDataUrl ? `<div class="legal-modal-download"><a class="btn primary" href="${escapeHtml(task.cuvPdfDataUrl)}" download="${escapeHtml(task.cuvPdfName || `${task.placa || "CUV"}.pdf`)}">Descargar PDF CUV</a></div>` : ""}
+    `;
+  }
   if (isSignatureTask(task)) {
     const payload = task.signaturePayload || {};
     const heirs = Array.isArray(payload.herederos) ? payload.herederos : [];
@@ -5196,6 +5273,129 @@ function renderInfoRequestTaskCard(task, index) {
   if (approveBtn) approveBtn.addEventListener("click", () => approvePlateInfoRequest(task.id));
   card.querySelector(".view-task-btn")?.addEventListener("click", () => openLegalTaskModal(task.id));
   return card;
+}
+
+function renderCuvLegalForm(task = {}) {
+  return `
+    <form class="legal-cuv-form" data-cuv-legal-form="${escapeHtml(task.id)}">
+      <div class="panel-title-row">
+        <div>
+          <p class="eyebrow">Gestion CUV</p>
+          <h3>Completar respuesta para el asesor comercial</h3>
+        </div>
+      </div>
+      <div class="form-grid">
+        <label>
+          No. de orden
+          <input name="cuvOrderNumber" value="${escapeHtml(task.cuvOrderNumber || "")}" required>
+        </label>
+        <label>
+          Estatus
+          <select name="cuvStatus" required>
+            ${CUV_STATUS_OPTIONS.map((status) => `<option value="${escapeHtml(status)}" ${status === (task.cuvStatus || "SOLICITADO") ? "selected" : ""}>${escapeHtml(status)}</option>`).join("")}
+          </select>
+        </label>
+        <label>
+          Hora
+          <input name="cuvHour" type="time" value="${escapeHtml(task.cuvHour || "")}">
+        </label>
+        <label>
+          Valor
+          <input name="cuvValue" type="number" min="0" step="0.01" value="${escapeHtml(task.cuvValue || "")}">
+        </label>
+        <label>
+          Depositos
+          <input name="cuvDeposits" value="${escapeHtml(task.cuvDeposits || "")}">
+        </label>
+        <label>
+          PDF CUV
+          <input name="cuvPdf" type="file" accept="application/pdf">
+        </label>
+        <label class="span-2">
+          Observaciones
+          <textarea name="cuvObservations" rows="3">${escapeHtml(task.cuvObservations || "")}</textarea>
+        </label>
+      </div>
+      <div class="form-actions">
+        <button class="btn primary" type="submit">Guardar gestion CUV</button>
+      </div>
+    </form>
+  `;
+}
+
+function readSmallPdfAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      resolve("");
+      return;
+    }
+    if (file.type && file.type !== "application/pdf") {
+      reject(new Error("Solo se permite subir PDF."));
+      return;
+    }
+    const maxSize = 4 * 1024 * 1024;
+    if (file.size > maxSize) {
+      reject(new Error(`El PDF pesa ${formatFileSize(file.size)}. Maximo permitido: ${formatFileSize(maxSize)}.`));
+      return;
+    }
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(reader.result));
+    reader.addEventListener("error", () => reject(reader.error || new Error("No se pudo leer el PDF.")));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function saveCuvLegalTask(formElement) {
+  const taskId = formElement?.dataset?.cuvLegalForm;
+  const task = state.tasks.find((item) => item.id === taskId);
+  if (!task || !isCuvTask(task)) return;
+  if (session.role === "legal" && task.legalUserId && task.legalUserId !== session.userId) {
+    showToast("Solo puede gestionar el CUV asignado a su usuario.");
+    return;
+  }
+  const data = Object.fromEntries(new FormData(formElement).entries());
+  const file = formElement.elements.cuvPdf?.files?.[0] || null;
+  try {
+    const pdfDataUrl = await readSmallPdfAsDataUrl(file);
+    const now = new Date().toISOString();
+    if (session.role === "legal" && !task.legalUserId) {
+      task.legalUserId = session.userId;
+      task.legalAdvisor = session.name;
+      task.takenAt = now;
+    }
+    task.cuvOrderNumber = normalizeLooseText(data.cuvOrderNumber);
+    task.cuvStatus = normalizeLooseText(data.cuvStatus || "SOLICITADO");
+    task.cuvHour = String(data.cuvHour || "").trim();
+    task.cuvValue = String(data.cuvValue || "").trim();
+    task.cuvObservations = normalizeLooseText(data.cuvObservations);
+    task.cuvDeposits = normalizeLooseText(data.cuvDeposits);
+    if (pdfDataUrl) {
+      task.cuvPdfDataUrl = pdfDataUrl;
+      task.cuvPdfName = file.name || `${task.placa || "CUV"}.pdf`;
+      task.cuvPdfUploadedAt = now;
+      task.cuvStatus = "ENVIADO ASESOR";
+      task.status = "saneamiento realizado y subido a pilot";
+      task.completedAt = now;
+      task.statusLockedAt = now;
+      task.statusLockedBy = session.userId || "";
+      task.statusLockedByName = session.name || "";
+    } else if (!task.takenAt) {
+      task.takenAt = now;
+    }
+    if (!pdfDataUrl && task.status === "por asignar") task.status = "tomado";
+    task.updatedAt = now;
+    task.syncStatus = "pending";
+    task.syncAction = pdfDataUrl ? "cuv-pdf-enviado" : "cuv-actualizado";
+    saveState();
+    renderAll();
+    openLegalTaskModal(task.id);
+    showToast(pdfDataUrl ? "CUV enviado al asesor comercial con PDF." : "Gestion CUV actualizada.");
+    const saved = await guardarTareaSupabase(task, task.syncAction);
+    saveState();
+    if (!saved) showToast("CUV guardado localmente. Pendiente de sincronizar.");
+  } catch (error) {
+    showToast(error.message || "No se pudo guardar el CUV.");
+  }
 }
 
 function approvePlateInfoRequest(id) {
@@ -5495,6 +5695,7 @@ function getTaskProcess(task = {}) {
 }
 
 function getTaskMailbox(task = {}) {
+  if (getTaskProcess(task) === "cuv") return "cuv";
   if (getTaskProcess(task) === "firma") return "firmas";
   return getTaskProcess(task) === "venta" ? "contratos" : "saneamientos";
 }
@@ -5518,6 +5719,10 @@ function canLegalUserSeeTask(task = {}, user = currentLegalUser()) {
   return !task.legalUserId || task.legalUserId === user.id;
 }
 
+function isCuvTask(task = {}) {
+  return getTaskProcess(task) === "cuv";
+}
+
 function getEligibleLegalUsersForTask(task = {}) {
   const mailbox = getTaskMailbox(task);
   if (mailbox === "firmas") {
@@ -5526,6 +5731,63 @@ function getEligibleLegalUsersForTask(task = {}) {
   return normalizeLegalUsers(state.legalUsers || []).filter((user) =>
     userHasMailbox(user, mailbox) &&
     canLegalUserReceiveNewTask(user, task)
+  );
+}
+
+function setDefaultCuvRequestDate() {
+  if (!cuvRequestForm?.elements?.fechaSolicitud) return;
+  cuvRequestForm.elements.fechaSolicitud.value = new Date().toISOString().slice(0, 10);
+}
+
+async function createCuvTask(data) {
+  const createdAt = new Date().toISOString();
+  const commercialOwner = session.role === "commercial"
+    ? { id: session.userId, name: session.name, agency: session.agency }
+    : { id: "", name: session.name || "", agency: session.agency || "" };
+  const task = {
+    id: crypto.randomUUID(),
+    createdAt,
+    updatedAt: createdAt,
+    takenAt: "",
+    completedAt: "",
+    status: "por asignar",
+    legalUserId: "",
+    legalAdvisor: "",
+    processType: "cuv",
+    tipoSaneamiento: "Solicitud CUV",
+    tipoCompra: "CUV",
+    fechaSolicitud: data.fechaSolicitud || createdAt.slice(0, 10),
+    cliente: normalizeLooseText(data.cliente),
+    placa: normalizePlate(data.placa),
+    cedula: normalizeId(data.cedula),
+    agencia: commercialOwner.agency || "",
+    asesor: commercialOwner.name || "",
+    commercialUserId: commercialOwner.id,
+    commercialUserName: commercialOwner.name,
+    commercialAgency: commercialOwner.agency,
+    cuvOrderNumber: "",
+    cuvStatus: "SOLICITADO",
+    cuvHour: "",
+    cuvValue: "",
+    cuvObservations: "",
+    cuvDeposits: "",
+    cuvPdfName: "",
+    cuvPdfDataUrl: "",
+    observaciones: `SOLICITUD CUV | Placa: ${normalizePlate(data.placa)} | Titular: ${normalizeLooseText(data.cliente)}`,
+    duplicateWarnings: [],
+    syncStatus: "pending"
+  };
+
+  state.tasks.push(task);
+  saveState();
+  renderAll();
+  showToast("Solicitud CUV creada. Guardando en linea...");
+  const onlineSaved = await guardarTareaSupabase(task, "crear-cuv");
+  saveState();
+  renderAll();
+  showToast(onlineSaved
+    ? "Solicitud CUV enviada a Mesa de Control."
+    : "Solicitud CUV guardada en este equipo. Quedo pendiente de sincronizar."
   );
 }
 
@@ -6208,8 +6470,33 @@ function renderCommercialDashboard() {
     leadList.hidden = true;
     leadList.innerHTML = "";
   }
+  renderCommercialCuvList();
   renderCommercialTrackingBoard(purchaseTasks);
   if (generalKpiContainer && generalChartContainer) renderCommercialGeneralDashboard();
+}
+
+function renderCommercialCuvList() {
+  if (!commercialCuvList) return;
+  const cuvTasks = filterTasksByCommercialProcess(getCommercialOwnedTasks(), "cuv")
+    .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+  if (!cuvTasks.length) {
+    commercialCuvList.innerHTML = `<div class="empty compact-empty">Aun no tienes solicitudes CUV registradas.</div>`;
+    return;
+  }
+  commercialCuvList.innerHTML = cuvTasks.slice(0, 8).map((task) => `
+    <article class="commercial-lead-row">
+      <div>
+        <strong>${escapeHtml(task.placa || "Sin placa")}</strong>
+        <span>${escapeHtml(task.cliente || "Titular sin nombre")}</span>
+        <small>Orden: ${escapeHtml(task.cuvOrderNumber || "Pendiente")} | Solicitado: ${escapeHtml(formatDateTime(task.createdAt))}</small>
+      </div>
+      <div class="commercial-lead-actions">
+        <span class="info-request-pending ${task.cuvPdfDataUrl ? "is-approved" : ""}">${escapeHtml(task.cuvStatus || "SOLICITADO")}</span>
+        <button class="btn tiny secondary" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver ficha</button>
+        ${task.cuvPdfDataUrl ? `<a class="btn tiny primary" href="${escapeHtml(task.cuvPdfDataUrl)}" download="${escapeHtml(task.cuvPdfName || `${task.placa || "CUV"}.pdf`)}">Descargar PDF</a>` : ""}
+      </div>
+    </article>
+  `).join("");
 }
 
 function getCommercialTrackingStage(task = {}) {
@@ -6704,6 +6991,7 @@ function openLegalTaskModal(taskId) {
       </div>
     </div>
     ${renderLegalTaskFullDetails(task)}
+    ${isCuvTask(task) && canEdit ? renderCuvLegalForm(task) : ""}
     ${sourceTask ? `
       <div class="legal-modal-source">
         <p class="eyebrow">Registro consultado</p>
@@ -13052,6 +13340,7 @@ function renderAll() {
   renderInternalBackupStatus();
   updateDuplicatePreview();
   applyCommercialSessionToForm();
+  setDefaultCuvRequestDate();
   initPasswordToggles();
 }
 
@@ -13327,6 +13616,10 @@ document.addEventListener("click", (event) => {
   if (completeSignatureButton) {
     completeSignatureTask(completeSignatureButton.dataset.completeSignatureTask);
   }
+  const openCuvButton = event.target.closest("[data-open-cuv-task]");
+  if (openCuvButton) {
+    openLegalTaskModal(openCuvButton.dataset.openCuvTask);
+  }
 });
 
 document.addEventListener("input", (event) => {
@@ -13370,6 +13663,13 @@ legalTaskModalContent?.addEventListener("change", (event) => {
   const note = askLegalStatusObservation(task, statusSelect.value);
   updateTaskStatus(statusSelect.dataset.modalStatusTask, statusSelect.value, note);
   openLegalTaskModal(statusSelect.dataset.modalStatusTask);
+});
+
+legalTaskModalContent?.addEventListener("submit", (event) => {
+  const cuvForm = event.target.closest("[data-cuv-legal-form]");
+  if (!cuvForm) return;
+  event.preventDefault();
+  saveCuvLegalTask(cuvForm);
 });
 
 document.querySelector("#commercialNotificationBell")?.addEventListener("click", () => {
@@ -13554,6 +13854,30 @@ saleContractForm.addEventListener("submit", async (event) => {
     submitButton.textContent = "Enviar contrato a mesa";
   }
   setView("formulario");
+});
+
+cuvRequestForm?.addEventListener("reset", () => {
+  window.setTimeout(setDefaultCuvRequestDate, 0);
+});
+
+cuvRequestForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const data = Object.fromEntries(new FormData(cuvRequestForm).entries());
+  const submitButton = cuvRequestForm.querySelector("button[type='submit']");
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = "Guardando...";
+  }
+  try {
+    await createCuvTask(data);
+    cuvRequestForm.reset();
+    setDefaultCuvRequestDate();
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = "Enviar solicitud CUV";
+    }
+  }
 });
 
 legalLoginForm.addEventListener("submit", (event) => {

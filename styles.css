@@ -14053,3 +14053,26 @@ body:has(#procesamiento.view.is-active) main {
     font-size: 2.2rem !important;
   }
 }
+.cuv-commercial-list {
+  border-top: 1px solid var(--line);
+  margin-top: 8px;
+  padding-top: 16px;
+}
+
+.legal-cuv-form {
+  background: #f8fbff;
+  border: 1px solid #d9e8ff;
+  border-radius: 16px;
+  margin-top: 16px;
+  padding: 16px;
+}
+
+.legal-cuv-form .panel-title-row {
+  margin-bottom: 12px;
+}
+
+.legal-modal-download {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}

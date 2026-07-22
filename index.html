@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260721-announcement-delete-fix">
+<html lang="es" data-app-version="20260721-cuv-module">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260721-announcement-delete-fix">
-  <link rel="stylesheet" href="layout-fix.css?v=20260721-announcement-delete-fix">
+  <link rel="stylesheet" href="styles.css?v=20260721-cuv-module">
+  <link rel="stylesheet" href="layout-fix.css?v=20260721-cuv-module">
 </head>
 <body>
   <header class="topbar">
@@ -830,7 +830,7 @@
           <div class="commercial-start-actions">
             <button class="btn primary" type="button" data-commercial-start="commercial-purchase-process">&#128722; Compra</button>
             <button class="btn secondary light-btn is-disabled" type="button" data-coming-soon="venta" aria-disabled="true">&#128663; Venta</button>
-            <button class="btn secondary light-btn is-disabled" type="button" data-coming-soon="cuv" aria-disabled="true">&#128204; CUV</button>
+            <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-cuv-process">CUV</button>
           </div>
         </div>
       </section>
@@ -936,9 +936,9 @@
             <strong>Venta</strong>
             <span>Tracking de contratos de compraventa.</span>
           </button>
-          <button class="commercial-process-card is-disabled" type="button" data-coming-soon="cuv" aria-disabled="true">
+          <button class="commercial-process-card" type="button" data-commercial-process="commercial-cuv-process">
             <strong>CUV</strong>
-            <span>Control CUV separado.</span>
+            <span>Solicitud de certificado unico vehicular.</span>
           </button>
         </div>
       </section>
@@ -1046,14 +1046,42 @@
       </section>
 
       <section id="commercial-cuv-process" class="commercial-process-panel" data-commercial-area-section="process" data-commercial-process-section="commercial-cuv-process">
-        <div class="panel form-grid">
+        <form id="cuvRequestForm" class="panel form-grid">
           <div class="span-2 form-intro">
             <p class="eyebrow">CUV</p>
-            <h2>Control comercial CUV</h2>
-            <span>Este flujo queda separado de compra y venta para configurar sus campos especificos.</span>
+            <h2>Solicitar CUV</h2>
+            <span>La solicitud llega al buzon CUV de Mesa de Control y retorna con PDF descargable.</span>
           </div>
-          <div class="empty compact-empty span-2">Pendiente de definir formulario CUV.</div>
-        </div>
+          <label>
+            Fecha de solicitud
+            <input name="fechaSolicitud" type="date" readonly required>
+          </label>
+          <label>
+            Placa del auto
+            <input name="placa" required>
+          </label>
+          <label>
+            Cedula del titular
+            <input name="cedula" inputmode="numeric" required>
+          </label>
+          <label>
+            Nombre del titular
+            <input name="cliente" autocomplete="name" required>
+          </label>
+          <div class="form-actions span-2">
+            <button type="reset" class="btn secondary">Limpiar</button>
+            <button type="submit" class="btn primary">Enviar solicitud CUV</button>
+          </div>
+          <div class="span-2 cuv-commercial-list">
+            <div class="panel-title-row">
+              <div>
+                <p class="eyebrow">Mis CUV</p>
+                <h3>Solicitudes y descargas</h3>
+              </div>
+            </div>
+            <div id="commercialCuvList" class="commercial-leads-list"></div>
+          </div>
+        </form>
       </section>
         </div>
       </div>
@@ -1076,6 +1104,7 @@
           <span>Filtros rapidos</span>
           <button class="is-active" type="button" data-legal-sidebar-filter="todos">&#128193; Todos</button>
           <button type="button" data-legal-sidebar-filter="firmas">&#9997; Firmas</button>
+          <button type="button" data-legal-sidebar-filter="cuv" data-mailbox-filter="cuv">CUV</button>
           <button type="button" data-legal-sidebar-filter="por asignar">&#128230; Por asignar</button>
           <button type="button" data-legal-sidebar-filter="pendiente">&#9203; Pendiente</button>
           <button type="button" data-legal-sidebar-filter="tomado">&#128736; Tomado</button>
@@ -1514,6 +1543,7 @@
             <div class="mailbox-picker" aria-label="Buzones de tareas">
               <label><input type="checkbox" name="mailboxes" value="saneamientos" checked> Saneamientos</label>
               <label><input type="checkbox" name="mailboxes" value="contratos"> Contratos</label>
+              <label><input type="checkbox" name="mailboxes" value="cuv"> CUV</label>
             </div>
             <button class="btn primary" type="submit">Crear usuario</button>
           </form>
@@ -1886,7 +1916,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260721-announcement-delete-fix"></script>
+  <script src="app.js?v=20260721-cuv-module"></script>
 </body>
 </html>
 
