@@ -3433,7 +3433,10 @@ function canOpenProcessingTools() {
 function setSession(nextSession) {
   session = nextSession.role === "public" ? nextSession : { ...nextSession, loginAt: nextSession.loginAt || new Date().toISOString() };
   lastActivityAt = Date.now();
-  if (session.role === "public") sessionAnnouncementShownKey = "";
+  if (session.role === "public") {
+    sessionAnnouncementShownKey = "";
+    resetCommercialTopbarChrome();
+  }
   logoutBtn.hidden = session.role === "public";
   document.body.dataset.session = session.role;
   persistSession();
@@ -4839,11 +4842,7 @@ async function createTask(data) {
   autoAssignSaneamientoTask(task);
   state.tasks.push(task);
 
-  commercialTrackingFilter = "todos";
-  commercialTrackingSearch = "";
-  commercialTrackingDateFrom = "";
-  commercialTrackingDateTo = "";
-  commercialTrackingPage = 1;
+  resetCommercialTrackingFilters();
   saveState();
   renderAll();
   if (duplicateWarnings.length) {
@@ -6386,6 +6385,7 @@ function resetCommercialProcesses() {
 
 function setCommercialArea(area = "process", options = {}) {
   activeCommercialArea = area;
+  if (area === "tracking" && !options.keepTrackingFilters) resetCommercialTrackingFilters();
   if (options.statusView) activeCommercialRequestFilter = options.statusView;
   commercialAreaSections.forEach((section) => {
     const isCurrentArea = section.dataset.commercialAreaSection === area;
@@ -6786,6 +6786,8 @@ function getCommercialTrackingTasks(tasks = []) {
         task.cedula,
         task.agencia,
         task.asesor,
+        task.commercialUserName,
+        task.commercialAgency,
         task.legalAdvisor,
         task.tipoSaneamiento,
         task.tipoCompra,
@@ -6848,12 +6850,37 @@ function updateCommercialStartGreeting() {
   if (title) title.textContent = "Selecciona el tramite que necesitas crear";
 }
 
+function resetCommercialTopbarChrome() {
+  const profileBox = document.querySelector("#topbarCommercialProfile");
+  const notificationCount = document.querySelector("#commercialNotificationCount");
+  const notificationBell = document.querySelector("#commercialNotificationBell");
+  if (profileBox) profileBox.hidden = true;
+  if (notificationCount) {
+    notificationCount.textContent = "0";
+    notificationCount.hidden = true;
+  }
+  if (notificationBell) notificationBell.setAttribute("aria-expanded", "false");
+  closeCommercialProfileMenu();
+  closeCommercialModals();
+}
+
+function resetCommercialTrackingFilters() {
+  commercialTrackingFilter = "todos";
+  commercialTrackingSearch = "";
+  commercialTrackingDateFrom = "";
+  commercialTrackingDateTo = "";
+  commercialTrackingPage = 1;
+}
+
 function updateTopbarCommercialProfile() {
   const profileBox = document.querySelector("#topbarCommercialProfile");
   if (!profileBox) return;
-  const shouldShow = session.role === "commercial";
+  const shouldShow = session.role === "commercial" && currentViewId === "formulario";
   profileBox.hidden = !shouldShow;
-  if (!shouldShow) return;
+  if (!shouldShow) {
+    resetCommercialTopbarChrome();
+    return;
+  }
   const profile = getCommercialTrackingUserProfile();
   const avatar = document.querySelector("#topbarCommercialAvatar");
   const greeting = document.querySelector("#topbarCommercialGreeting");
@@ -7077,6 +7104,7 @@ function renderCommercialTrackingCard(task) {
         <div>
           <strong class="tracking-mini-card-plate">${escapeHtml(task.placa || "Sin placa")}</strong>
           <span class="tracking-mini-card-client">${escapeHtml(task.cliente || task.vendedor || "Cliente sin nombre")}</span>
+          <span class="tracking-mini-card-user">${escapeHtml(formatDisplayName(task.commercialUserName || task.asesor || "Asesor comercial"))}</span>
         </div>
       </header>
       <span class="tracking-mini-status-badge">${escapeHtml(stage.statusLabel)}</span>
@@ -14433,6 +14461,7 @@ form?.addEventListener("change", (event) => {
 });
 
 logoutBtn.addEventListener("click", () => {
+  resetCommercialTopbarChrome();
   setSession(getPublicSession());
   persistView("acceso");
   setView("acceso");
