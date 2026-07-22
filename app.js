@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260721-tracking-full-signature";
+const APP_BUILD_VERSION = "20260721-tracking-search-pagination";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -412,6 +412,12 @@ let activeCommercialProcess = "compra";
 let activeCommercialArea = "dashboard";
 let activeCommercialRequestFilter = "todos";
 let commercialTrackingFilter = "todos";
+let commercialTrackingSearch = "";
+let commercialTrackingDateFrom = "";
+let commercialTrackingDateTo = "";
+let commercialTrackingPage = 1;
+let commercialTrackingSearchTimer = null;
+const COMMERCIAL_TRACKING_PAGE_SIZE = 6;
 
 const views = document.querySelectorAll(".view");
 const tabs = document.querySelectorAll("[data-view]");
@@ -5893,9 +5899,27 @@ function getCommercialTrackingStage(task = {}) {
 }
 
 function getCommercialTrackingTasks(tasks = []) {
+  const query = commercialTrackingSearch.trim().toLowerCase();
   return tasks
     .filter((task) => getTaskProcess(task) === "compra")
     .filter((task) => commercialTrackingFilter === "todos" || getCommercialTrackingStage(task).key === commercialTrackingFilter)
+    .filter((task) => isInsideDateRange(task.createdAt, commercialTrackingDateFrom, commercialTrackingDateTo))
+    .filter((task) => {
+      if (!query) return true;
+      const haystack = [
+        task.placa,
+        task.cliente,
+        task.cedula,
+        task.agencia,
+        task.asesor,
+        task.legalAdvisor,
+        task.tipoSaneamiento,
+        task.tipoCompra,
+        getSignatureDisplayStatus(task),
+        task.status
+      ].join(" ").toLowerCase();
+      return haystack.includes(query);
+    })
     .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
 }
 
@@ -5904,6 +5928,11 @@ function renderCommercialTrackingBoard(tasks = []) {
   if (!container) return;
   const purchaseTasks = tasks.filter((task) => getTaskProcess(task) === "compra");
   const visibleTasks = getCommercialTrackingTasks(purchaseTasks);
+  const totalPages = Math.max(1, Math.ceil(visibleTasks.length / COMMERCIAL_TRACKING_PAGE_SIZE));
+  if (commercialTrackingPage > totalPages) commercialTrackingPage = totalPages;
+  if (commercialTrackingPage < 1) commercialTrackingPage = 1;
+  const pageStart = (commercialTrackingPage - 1) * COMMERCIAL_TRACKING_PAGE_SIZE;
+  const pagedTasks = visibleTasks.slice(pageStart, pageStart + COMMERCIAL_TRACKING_PAGE_SIZE);
   const counts = purchaseTasks.reduce((map, task) => {
     const key = getCommercialTrackingStage(task).key;
     map[key] = (map[key] || 0) + 1;
@@ -5945,8 +5974,31 @@ function renderCommercialTrackingBoard(tasks = []) {
         </button>
       `).join("")}
     </div>
+    <div class="commercial-tracking-searchbar">
+      <label>
+        Buscar saneamiento
+        <input type="search" data-commercial-tracking-search value="${escapeHtml(commercialTrackingSearch)}" placeholder="Buscar por placa, cliente, cedula o asesor">
+      </label>
+      <label>
+        Desde
+        <input type="date" data-commercial-tracking-from value="${escapeHtml(commercialTrackingDateFrom)}">
+      </label>
+      <label>
+        Hasta
+        <input type="date" data-commercial-tracking-to value="${escapeHtml(commercialTrackingDateTo)}">
+      </label>
+      <button class="btn secondary tiny" type="button" data-commercial-tracking-clear>Limpiar</button>
+    </div>
     <div class="commercial-tracking-grid">
-      ${visibleTasks.slice(0, 8).map(renderCommercialTrackingCard).join("") || `<div class="empty compact-empty">No hay saneamientos para este filtro.</div>`}
+      ${pagedTasks.map(renderCommercialTrackingCard).join("") || `<div class="empty compact-empty">No hay saneamientos para este filtro.</div>`}
+    </div>
+    <div class="commercial-tracking-pagination">
+      <span>${visibleTasks.length ? `${pageStart + 1}-${Math.min(pageStart + COMMERCIAL_TRACKING_PAGE_SIZE, visibleTasks.length)} de ${visibleTasks.length}` : "0 resultados"}</span>
+      <div>
+        <button class="btn secondary tiny" type="button" data-commercial-tracking-page="prev" ${commercialTrackingPage <= 1 ? "disabled" : ""}>Anterior</button>
+        <strong>Pagina ${commercialTrackingPage} de ${totalPages}</strong>
+        <button class="btn secondary tiny" type="button" data-commercial-tracking-page="next" ${commercialTrackingPage >= totalPages ? "disabled" : ""}>Siguiente</button>
+      </div>
     </div>
   `;
 }
@@ -12786,7 +12838,24 @@ document.addEventListener("click", (event) => {
   const trackingFilterButton = event.target.closest("[data-commercial-tracking-filter]");
   if (trackingFilterButton) {
     commercialTrackingFilter = trackingFilterButton.dataset.commercialTrackingFilter || "todos";
+    commercialTrackingPage = 1;
     renderCommercialDashboard();
+    return;
+  }
+  const trackingPageButton = event.target.closest("[data-commercial-tracking-page]");
+  if (trackingPageButton) {
+    commercialTrackingPage += trackingPageButton.dataset.commercialTrackingPage === "next" ? 1 : -1;
+    renderCommercialDashboard();
+    return;
+  }
+  const trackingClearButton = event.target.closest("[data-commercial-tracking-clear]");
+  if (trackingClearButton) {
+    commercialTrackingSearch = "";
+    commercialTrackingDateFrom = "";
+    commercialTrackingDateTo = "";
+    commercialTrackingPage = 1;
+    renderCommercialDashboard();
+    return;
   }
   const fichaButton = event.target.closest("[data-commercial-ficha]");
   if (fichaButton) {
@@ -12815,6 +12884,30 @@ document.addEventListener("click", (event) => {
   const completeSignatureButton = event.target.closest("[data-complete-signature-task]");
   if (completeSignatureButton) {
     completeSignatureTask(completeSignatureButton.dataset.completeSignatureTask);
+  }
+});
+
+document.addEventListener("input", (event) => {
+  if (event.target.matches("[data-commercial-tracking-search]")) {
+    commercialTrackingSearch = event.target.value || "";
+    commercialTrackingPage = 1;
+    window.clearTimeout(commercialTrackingSearchTimer);
+    commercialTrackingSearchTimer = window.setTimeout(() => {
+      renderCommercialDashboard();
+    }, 260);
+  }
+});
+
+document.addEventListener("change", (event) => {
+  if (event.target.matches("[data-commercial-tracking-from]")) {
+    commercialTrackingDateFrom = event.target.value || "";
+    commercialTrackingPage = 1;
+    renderCommercialDashboard();
+  }
+  if (event.target.matches("[data-commercial-tracking-to]")) {
+    commercialTrackingDateTo = event.target.value || "";
+    commercialTrackingPage = 1;
+    renderCommercialDashboard();
   }
 });
 
