@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260721-signature-observations">
+<html lang="es" data-app-version="20260721-session-announcements">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260721-signature-observations">
-  <link rel="stylesheet" href="layout-fix.css?v=20260721-signature-observations">
+  <link rel="stylesheet" href="styles.css?v=20260721-session-announcements">
+  <link rel="stylesheet" href="layout-fix.css?v=20260721-session-announcements">
 </head>
 <body>
   <header class="topbar">
@@ -1272,12 +1272,23 @@
         </section>
 
         <section id="admin-comms-module" class="panel span-admin admin-module-section" data-admin-section="admin-comms-module">
-          <h2>Comunicados de portada</h2>
+          <h2>Comunicados y recordatorios emergentes</h2>
           <form id="announcementForm" class="announcement-form">
             <input name="title" placeholder="Titulo del comunicado" required>
             <input name="body" placeholder="Detalle breve" required>
+            <select id="announcementAudience" name="audience" aria-label="Destinatarios">
+              <option value="all">Todos comercial y legal</option>
+              <option value="commercial">Todo el equipo comercial</option>
+              <option value="legal">Todo mesa de control</option>
+              <option value="specific">Usuarios especificos</option>
+            </select>
             <input name="image" type="file" accept="image/*" aria-label="Imagen del comunicado">
+            <label class="check-row announcement-popup-toggle">
+              <input name="popupEnabled" type="checkbox" checked>
+              Mostrar al iniciar sesion
+            </label>
             <button class="btn primary" type="submit">Publicar</button>
+            <div id="announcementRecipients" class="announcement-recipients" hidden></div>
           </form>
           <div id="adminAnnouncementsList" class="users-list"></div>
         </section>
@@ -1528,6 +1539,24 @@
       <button class="image-modal-close" type="button" data-close-image>Cerrar</button>
       <img id="imageModalImg" alt="Imagen del comunicado">
     </div>
+  </div>
+
+  <div id="sessionAnnouncementModal" class="commercial-modal session-announcement-modal" hidden>
+    <div class="commercial-modal-backdrop" data-close-session-announcement></div>
+    <section class="commercial-modal-card session-announcement-dialog" role="dialog" aria-modal="true" aria-labelledby="sessionAnnouncementTitle">
+      <div class="modal-title-row">
+        <div>
+          <p class="eyebrow">Comunicado interno</p>
+          <h2 id="sessionAnnouncementTitle">Recordatorios importantes</h2>
+          <span class="commercial-modal-subtitle">Revisa el mensaje y continua trabajando normalmente.</span>
+        </div>
+        <button class="commercial-modal-close" type="button" data-close-session-announcement aria-label="Cerrar">x</button>
+      </div>
+      <div id="sessionAnnouncementList" class="session-announcement-list"></div>
+      <div class="commercial-modal-actions">
+        <button class="btn primary" type="button" data-close-session-announcement>Entendido, continuar</button>
+      </div>
+    </section>
   </div>
 
   <div id="filePreviewModal" class="report-modal" hidden>
@@ -1839,7 +1868,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260721-signature-observations"></script>
+  <script src="app.js?v=20260721-session-announcements"></script>
 </body>
 </html>
 
