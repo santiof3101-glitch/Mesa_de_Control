@@ -14585,3 +14585,262 @@ body:has(#procesamiento.view.is-active) main {
     border-bottom: 1px solid #e8edf5;
   }
 }
+
+/* Responsive proportion fix 20260722
+   Corrige formularios angostos en escritorio y evita overflow horizontal en movil. */
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+main {
+  width: min(100%, 1760px);
+  padding-inline: clamp(12px, 1.8vw, 28px);
+}
+
+.view.is-active {
+  min-width: 0;
+}
+
+.panel,
+.form-grid,
+.kpi-grid,
+.processing-command-center,
+.commercial-workspace,
+.commercial-content {
+  min-width: 0;
+}
+
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+}
+
+#formulario.view.is-active {
+  width: min(100%, 1720px) !important;
+  padding: clamp(14px, 1.6vw, 26px) 0 !important;
+}
+
+#formulario .commercial-workspace {
+  grid-template-columns: minmax(190px, clamp(210px, 14vw, 252px)) minmax(0, 1fr) !important;
+  align-items: start !important;
+}
+
+#formulario .commercial-content {
+  width: 100%;
+}
+
+#formulario .commercial-dashboard,
+#formulario .commercial-tracking-shell,
+#formulario .commercial-requests-panel,
+#formulario .commercial-control-panel,
+#formulario .status-lookup,
+#formulario .commercial-process-shell,
+#formulario .commercial-process-panel > .panel {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+#formulario .commercial-process-panel .form-grid {
+  width: 100% !important;
+  max-width: none !important;
+  margin-inline: 0 !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)) !important;
+  gap: clamp(12px, 1.2vw, 18px) !important;
+}
+
+#formulario .commercial-process-panel label {
+  min-width: 0;
+}
+
+#formulario .commercial-process-panel input,
+#formulario .commercial-process-panel select,
+#formulario .commercial-process-panel textarea,
+#formulario .status-lookup input,
+#formulario .status-lookup select,
+#formulario .lookup-form input,
+#formulario .lookup-form select {
+  width: 100% !important;
+  min-height: clamp(42px, 2.9vw, 50px) !important;
+  padding-inline: clamp(12px, 1vw, 16px) !important;
+  font-size: clamp(0.9rem, 0.45vw + 0.78rem, 1rem) !important;
+}
+
+#formulario .commercial-process-panel textarea {
+  min-height: clamp(96px, 9vw, 142px) !important;
+}
+
+#formulario .form-actions {
+  width: 100%;
+}
+
+#formulario .form-actions .btn {
+  min-height: 44px;
+}
+
+#formulario .status-lookup .lookup-form {
+  grid-template-columns: minmax(280px, 1.4fr) repeat(3, minmax(150px, 0.75fr)) repeat(2, minmax(145px, 0.65fr)) minmax(120px, auto) !important;
+}
+
+#formulario .commercial-start-hero,
+#formulario .commercial-dashboard,
+#formulario .commercial-process-shell {
+  padding: clamp(18px, 2vw, 32px) !important;
+}
+
+@media (min-width: 1500px) {
+  #formulario .commercial-process-panel .form-grid {
+    grid-template-columns: repeat(2, minmax(420px, 1fr)) !important;
+  }
+
+  #formulario .commercial-process-shell {
+    padding-inline: clamp(26px, 2.2vw, 42px) !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  main {
+    width: 100%;
+  }
+
+  #formulario .commercial-workspace {
+    grid-template-columns: 1fr !important;
+  }
+
+  #formulario .commercial-sidebar {
+    position: static !important;
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+
+  #formulario .commercial-sidebar-group {
+    display: contents !important;
+  }
+
+  #formulario .commercial-sidebar-group > span,
+  #formulario .commercial-support-card {
+    display: none !important;
+  }
+
+  #formulario .status-lookup .lookup-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  body {
+    font-size: 13px;
+  }
+
+  main {
+    padding-inline: 10px;
+    padding-top: 14px;
+  }
+
+  .topbar {
+    min-height: 74px;
+    padding: 8px 12px;
+  }
+
+  .brand,
+  .logo-slot {
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
+    height: 52px;
+  }
+
+  .logo-slot img {
+    width: 150px !important;
+    height: 52px !important;
+  }
+
+  #formulario.view.is-active {
+    padding: 10px 0 !important;
+  }
+
+  #formulario .section-head {
+    display: grid !important;
+    gap: 10px !important;
+  }
+
+  #formulario .section-head .btn {
+    width: 100%;
+  }
+
+  #formulario .commercial-sidebar {
+    grid-template-columns: 1fr 1fr;
+    border-radius: 16px !important;
+  }
+
+  #formulario .commercial-side-link {
+    min-height: 44px !important;
+    justify-content: flex-start;
+    font-size: 0.82rem !important;
+  }
+
+  #formulario .commercial-start-hero {
+    min-height: auto !important;
+    padding: 24px !important;
+    background:
+      linear-gradient(180deg, rgba(8, 20, 40, 0.94), rgba(8, 20, 40, 0.58)),
+      url("autocor-local-3.webp") center / cover no-repeat !important;
+  }
+
+  #formulario .commercial-start-hero::after {
+    display: none;
+  }
+
+  #formulario .commercial-start-copy h2 {
+    font-size: clamp(2rem, 11vw, 3rem) !important;
+  }
+
+  #formulario .commercial-start-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  #formulario .commercial-start-actions .btn,
+  #formulario .commercial-start-actions .light-btn,
+  #formulario .form-actions .btn {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  #formulario .commercial-dashboard,
+  #formulario .commercial-process-panel .form-grid,
+  #formulario .commercial-process-grid,
+  #formulario .status-lookup .lookup-form,
+  #formulario .commercial-tracking-searchbar {
+    grid-template-columns: 1fr !important;
+  }
+
+  #formulario .commercial-dashboard .session-actions {
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  #formulario .commercial-dashboard .password-form {
+    grid-template-columns: 1fr !important;
+  }
+
+  #formulario .commercial-process-panel input,
+  #formulario .commercial-process-panel select,
+  #formulario .commercial-process-panel textarea,
+  #formulario .status-lookup input,
+  #formulario .status-lookup select {
+    min-height: 48px !important;
+    font-size: 1rem !important;
+  }
+}
+
+@media (max-width: 430px) {
+  #formulario .commercial-sidebar {
+    grid-template-columns: 1fr;
+  }
+}
