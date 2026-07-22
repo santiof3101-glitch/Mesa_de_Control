@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260722-integral-responsive-ui">
+<html lang="es" data-app-version="20260722-commercial-start-process">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260722-integral-responsive-ui">
-  <link rel="stylesheet" href="layout-fix.css?v=20260722-integral-responsive-ui">
+  <link rel="stylesheet" href="styles.css?v=20260722-commercial-start-process">
+  <link rel="stylesheet" href="layout-fix.css?v=20260722-commercial-start-process">
 </head>
 <body>
   <header class="topbar">
@@ -804,12 +804,12 @@
         <aside class="commercial-sidebar">
           <div class="commercial-sidebar-group">
             <span>Principal</span>
-            <button class="commercial-side-link is-active" type="button" data-commercial-area="dashboard"><span>&#128202;</span> Dashboard</button>
+            <button class="commercial-side-link" type="button" data-commercial-area="dashboard"><span>&#128202;</span> Dashboard</button>
             <button class="commercial-side-link" type="button" data-commercial-area="tracking"><span>&#128506;</span> Tracking</button>
             <button class="commercial-side-link" type="button" data-commercial-area="requests"><span>&#128193;</span> Mis solicitudes</button>
             <button class="commercial-side-link" type="button" data-commercial-area="control"><span>&#128737;</span> Carga de mesa</button>
             <button class="commercial-side-link" type="button" data-commercial-area="lookup"><span>&#128269;</span> Consulta de placas</button>
-            <button class="commercial-side-link" type="button" data-commercial-area="process"><span>&#10133;</span> Nueva gestion</button>
+            <button class="commercial-side-link is-active" type="button" data-commercial-area="process"><span>&#10133;</span> Nueva gestion</button>
           </div>
           <div class="commercial-sidebar-group">
             <span>Solicitudes</span>
@@ -826,7 +826,7 @@
         </aside>
 
         <div class="commercial-content">
-      <section class="commercial-start-hero" data-commercial-area-section="process">
+      <section class="commercial-start-hero is-active-area" data-commercial-area-section="process">
         <div class="commercial-start-copy">
           <p class="eyebrow">Nueva gestion comercial</p>
           <h2 id="commercialWelcomeTitle">Selecciona el tramite que necesitas crear</h2>
@@ -839,7 +839,7 @@
         </div>
       </section>
 
-      <section class="commercial-dashboard panel is-active-area" data-commercial-area-section="dashboard" aria-labelledby="commercial-dashboard-title">
+      <section class="commercial-dashboard panel" data-commercial-area-section="dashboard" aria-labelledby="commercial-dashboard-title">
         <div>
           <p class="eyebrow">Dashboard comercial</p>
           <h2 id="commercial-dashboard-title">Mis saneamientos</h2>
@@ -934,7 +934,7 @@
         <div id="statusResults" class="status-results"></div>
       </section>
 
-      <section class="panel commercial-process-shell" data-commercial-area-section="process">
+      <section class="panel commercial-process-shell is-active-area" data-commercial-area-section="process">
         <div class="panel-title-row">
           <div>
             <p class="eyebrow">Operacion comercial</p>
@@ -957,7 +957,7 @@
         </div>
       </section>
 
-      <section id="commercial-purchase-process" class="commercial-process-panel is-active" data-commercial-area-section="process" data-commercial-process-section="commercial-purchase-process">
+      <section id="commercial-purchase-process" class="commercial-process-panel is-active is-active-area" data-commercial-area-section="process" data-commercial-process-section="commercial-purchase-process">
         <form id="requestForm" class="panel form-grid">
           <div id="duplicateAlert" class="alert-box span-2" hidden></div>
           <label>
@@ -1930,7 +1930,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260722-integral-responsive-ui"></script>
+  <script src="app.js?v=20260722-commercial-start-process"></script>
 </body>
 </html>
 

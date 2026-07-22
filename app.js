@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260722-integral-responsive-ui";
+const APP_BUILD_VERSION = "20260722-commercial-start-process";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -421,7 +421,7 @@ let providerDuplicatePage = 1;
 let backupRestoreChecked = false;
 let currentPurchaseDetailReport = { title: "", html: "" };
 let activeCommercialProcess = "compra";
-let activeCommercialArea = "dashboard";
+let activeCommercialArea = "process";
 let activeCommercialRequestFilter = "todos";
 let commercialTrackingFilter = "todos";
 let commercialTrackingSearch = "";
@@ -5607,6 +5607,7 @@ async function loginCommercial(data) {
   setSession({ role: "commercial", userId: user.id, name: user.name, agency: user.agency });
   commercialLoginForm.reset();
   setView("formulario");
+  setCommercialProcessFromTarget("commercial-purchase-process", false);
   applyCommercialSessionToForm();
   showToast(`Bienvenido, ${user.name}.`);
 }

@@ -352,3 +352,146 @@ body:has(#procesamiento.view.is-active) main {
     font-size: 1rem;
   }
 }
+
+/* Fase 1 y 2: modulo comercial con ancho util real y navegacion separada */
+#formulario.view.is-active {
+  width: min(100%, 1760px);
+  margin-inline: auto;
+}
+
+#formulario .section-head,
+#formulario .commercial-workspace {
+  width: 100%;
+}
+
+.commercial-workspace {
+  display: grid;
+  grid-template-columns: clamp(220px, 15vw, 280px) minmax(0, 1fr);
+  gap: clamp(18px, 1.6vw, 30px);
+  align-items: start;
+}
+
+.commercial-content,
+.commercial-content > [data-commercial-area-section] {
+  min-width: 0;
+}
+
+.commercial-content > [data-commercial-area-section] {
+  display: none;
+}
+
+.commercial-content > [data-commercial-area-section].is-active-area {
+  display: block;
+}
+
+.commercial-content > .commercial-start-hero.is-active-area,
+.commercial-content > .commercial-process-shell.is-active-area,
+.commercial-content > .commercial-process-panel.is-active-area {
+  display: block;
+}
+
+.commercial-process-panel:not(.is-active),
+.commercial-process-panel:not(.is-active-area) {
+  display: none;
+}
+
+.commercial-process-panel.is-active.is-active-area {
+  display: block;
+}
+
+#formulario .panel,
+#formulario .commercial-process-panel,
+#formulario .commercial-start-hero {
+  width: 100%;
+  max-width: none;
+}
+
+#formulario .form-grid,
+#purchaseForm .form-grid,
+#saleContractForm .form-grid,
+#commercialCuvForm .form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: clamp(14px, 1.1vw, 20px);
+}
+
+#formulario input,
+#formulario select,
+#formulario textarea,
+#formulario .btn {
+  font-size: clamp(0.9rem, 0.18vw + 0.84rem, 1rem);
+}
+
+#formulario textarea {
+  min-height: clamp(86px, 8vw, 140px);
+}
+
+@media (min-width: 1440px) {
+  #formulario.view.is-active {
+    width: min(100%, 1820px);
+  }
+
+  #formulario .commercial-content {
+    max-width: none;
+  }
+
+  #formulario .form-grid,
+  #purchaseForm .form-grid {
+    grid-template-columns: repeat(2, minmax(360px, 1fr));
+  }
+}
+
+@media (max-width: 1180px) {
+  .commercial-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .commercial-mobile-menu-toggle {
+    display: inline-flex;
+    width: fit-content;
+  }
+
+  .commercial-sidebar {
+    display: none;
+    position: static;
+  }
+
+  .commercial-sidebar.is-open,
+  .commercial-workspace.menu-open .commercial-sidebar,
+  .commercial-workspace.is-menu-open .commercial-sidebar {
+    display: grid;
+  }
+}
+
+@media (max-width: 760px) {
+  #formulario.view.is-active {
+    width: 100%;
+    padding-inline: 10px;
+  }
+
+  #formulario .section-head {
+    gap: 12px;
+  }
+
+  #formulario .section-head h1 {
+    font-size: clamp(1.55rem, 8vw, 2.25rem);
+  }
+
+  #formulario .form-grid,
+  #purchaseForm .form-grid,
+  #saleContractForm .form-grid,
+  #commercialCuvForm .form-grid,
+  #formulario .lookup-form,
+  #formulario .commercial-process-grid,
+  #formulario .commercial-module-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  #formulario input,
+  #formulario select,
+  #formulario textarea,
+  #formulario .btn {
+    min-height: 46px;
+    width: 100%;
+  }
+}
