@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260721-session-announcements";
+const APP_BUILD_VERSION = "20260721-admin-force-logout";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -12,6 +12,7 @@ const OLD_STORAGE_KEY = "autocor-saneamiento";
 const STATE_SCHEMA_VERSION = 20260520;
 const REMEMBER_ACCESS_KEY = "autocor-remembered-access";
 const SESSION_STORAGE_KEY = "autocor-active-session";
+const FORCE_LOGOUT_ACK_KEY = "autocor-force-logout-ack";
 const VIEW_STORAGE_KEY = "autocor-active-view";
 const AUTH_STORAGE_KEY = "autocor-access-users";
 const COMMERCIAL_NOTIFICATIONS_SEEN_KEY = "autocor-commercial-notifications-seen";
@@ -284,6 +285,7 @@ const defaultState = {
   announcements: [
     { id: "com-1", title: "Bandeja legal activa", body: "Los asistentes legales pueden tomar leads disponibles por orden de prioridad.", createdAt: new Date().toISOString() }
   ],
+  forceLogoutRequests: [],
   purchaseTypes: ["Compra directa", "Consignacion", "Retoma"],
   sanitationTypes: ["Levantamiento de gravamen", "Cambio de propietario", "Revision documental"],
   statusOptions: [
@@ -494,7 +496,13 @@ const purchaseCustomFields = document.querySelector("#purchaseCustomFields");
 const saleCustomFields = document.querySelector("#saleCustomFields");
 const announcementForm = document.querySelector("#announcementForm");
 const announcementAudience = document.querySelector("#announcementAudience");
+const announcementRecipientSearch = document.querySelector("#announcementRecipientSearch");
 const announcementRecipients = document.querySelector("#announcementRecipients");
+const forceLogoutAudience = document.querySelector("#forceLogoutAudience");
+const forceLogoutRecipientSearch = document.querySelector("#forceLogoutRecipientSearch");
+const forceLogoutRecipients = document.querySelector("#forceLogoutRecipients");
+const forceLogoutMessage = document.querySelector("#forceLogoutMessage");
+const forceLogoutBtn = document.querySelector("#forceLogoutBtn");
 const sessionAnnouncementModal = document.querySelector("#sessionAnnouncementModal");
 const sessionAnnouncementList = document.querySelector("#sessionAnnouncementList");
 const adminLegalFilter = document.querySelector("#adminLegalFilter");
@@ -719,6 +727,7 @@ function loadState() {
     merged.managerUsers = Array.isArray(merged.managerUsers) ? merged.managerUsers : [];
     merged.processingUsers = Array.isArray(merged.processingUsers) ? merged.processingUsers : structuredClone(defaultState.processingUsers);
     merged.announcements = (merged.announcements || []).map(normalizeAnnouncement);
+    merged.forceLogoutRequests = (merged.forceLogoutRequests || []).map(normalizeForceLogoutRequest);
     merged.legalChatMessages = normalizeLegalChatMessages(merged.legalChatMessages || []);
     merged.theme = { ...structuredClone(defaultState.theme), ...(merged.theme || {}) };
     merged.copy = { ...structuredClone(defaultState.copy), ...(merged.copy || {}) };
@@ -1262,6 +1271,7 @@ function getSupabaseModuleSnapshots() {
     },
     saneamientos: {
       announcements: structuredClone(state.announcements || []),
+      forceLogoutRequests: structuredClone(state.forceLogoutRequests || []),
       legalChatMessages: structuredClone(normalizeLegalChatMessages(state.legalChatMessages || []))
     },
     compras: {
@@ -1547,7 +1557,13 @@ function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
         state.taskDeletions = mergedChanges.deletions;
       }
       state.announcements = (Array.isArray(snapshot.announcements) ? snapshot.announcements : (state.announcements || [])).map(normalizeAnnouncement);
+      state.forceLogoutRequests = mergeByKey(
+        (state.forceLogoutRequests || []).map(normalizeForceLogoutRequest),
+        (Array.isArray(snapshot.forceLogoutRequests) ? snapshot.forceLogoutRequests : []).map(normalizeForceLogoutRequest),
+        "id"
+      ).slice(0, 80);
       state.legalChatMessages = mergeLegalChatMessages(state.legalChatMessages || [], snapshot.legalChatMessages || []);
+      checkForcedLogoutRequests();
       return true;
     case "compras":
       processing.compras = (snapshot.compras || []).map(normalizePurchaseRecord);
@@ -1662,6 +1678,7 @@ function mergePcStates(baseState, extraState) {
   const extraProcessing = extraState.dataProcessing || {};
   merged.tasks = mergeByKey(merged.tasks || [], extraState.tasks || [], "id");
   merged.announcements = mergeByKey(merged.announcements || [], extraState.announcements || [], "id").map(normalizeAnnouncement);
+  merged.forceLogoutRequests = mergeByKey(merged.forceLogoutRequests || [], extraState.forceLogoutRequests || [], "id").map(normalizeForceLogoutRequest);
   merged.legalChatMessages = mergeLegalChatMessages(merged.legalChatMessages || [], extraState.legalChatMessages || []);
   merged.commercialAdvisors = mergeByKey(merged.commercialAdvisors || [], extraState.commercialAdvisors || [], "id");
   merged.legalUsers = normalizeLegalUsers(mergeByKey(merged.legalUsers || [], extraState.legalUsers || [], "id"));
@@ -1984,6 +2001,17 @@ function normalizeAnnouncement(announcement = {}) {
   };
 }
 
+function normalizeForceLogoutRequest(request = {}) {
+  return {
+    id: request.id || crypto.randomUUID(),
+    audience: ["all", "commercial", "legal", "specific"].includes(request.audience) ? request.audience : "all",
+    targetUsers: Array.isArray(request.targetUsers) ? request.targetUsers : [],
+    message: request.message || "El administrador cerro tu sesion para aplicar un comunicado urgente.",
+    createdAt: request.createdAt || new Date().toISOString(),
+    createdBy: request.createdBy || "Administrador"
+  };
+}
+
 function normalizeTask(task) {
   const migratedStatus = task.status === "en proceso" ? "tomado" : task.status === "completado" ? "saneamiento realizado y subido a pilot" : task.status || "pendiente";
   const processType = task.processType || (task.tipoSaneamiento === "Tracking contrato compraventa" ? "venta" : "");
@@ -2117,6 +2145,14 @@ function normalizeContractDateTimeValue(value) {
     return new Intl.DateTimeFormat("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
   }
   return normalizeLooseText(value);
+}
+
+function normalizeSearchText(value = "") {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 }
 
 function normalizeContractStatus(value = "") {
@@ -2621,6 +2657,7 @@ function normalizeImportedState(importedState) {
   merged.managerUsers = Array.isArray(merged.managerUsers) ? merged.managerUsers : [];
   merged.processingUsers = Array.isArray(merged.processingUsers) ? merged.processingUsers : structuredClone(defaultState.processingUsers);
   merged.announcements = (merged.announcements || []).map(normalizeAnnouncement);
+  merged.forceLogoutRequests = (merged.forceLogoutRequests || []).map(normalizeForceLogoutRequest);
   merged.legalChatMessages = normalizeLegalChatMessages(merged.legalChatMessages || []);
   merged.theme = { ...structuredClone(defaultState.theme), ...(merged.theme || {}) };
   merged.copy = { ...structuredClone(defaultState.copy), ...(merged.copy || {}) };
@@ -2747,7 +2784,7 @@ function clearRememberedAccess(area) {
 }
 
 function getPublicSession() {
-  return { role: "public", userId: null, name: "", agency: "" };
+  return { role: "public", userId: null, name: "", agency: "", loginAt: "" };
 }
 
 function loadPersistedSession() {
@@ -2773,7 +2810,8 @@ function sanitizePersistedSession(savedSession) {
     role: savedSession.role,
     userId: savedSession.userId || null,
     name: savedSession.name || "",
-    agency: savedSession.agency || ""
+    agency: savedSession.agency || "",
+    loginAt: savedSession.loginAt || savedSession.savedAt || new Date().toISOString()
   };
 }
 
@@ -3264,7 +3302,7 @@ function canOpenProcessingTools() {
 }
 
 function setSession(nextSession) {
-  session = nextSession;
+  session = nextSession.role === "public" ? nextSession : { ...nextSession, loginAt: nextSession.loginAt || new Date().toISOString() };
   lastActivityAt = Date.now();
   if (session.role === "public") sessionAnnouncementShownKey = "";
   logoutBtn.hidden = session.role === "public";
@@ -3968,24 +4006,35 @@ function isAnnouncementForSession(announcement = {}, currentSession = session) {
   return false;
 }
 
-function renderAnnouncementRecipients() {
-  if (!announcementRecipients || !announcementAudience) return;
-  const showSpecific = announcementAudience.value === "specific";
-  announcementRecipients.hidden = !showSpecific;
+function renderUserTargetSelector(container, searchInput, audienceSelect, inputName) {
+  if (!container || !audienceSelect) return;
+  const showSpecific = audienceSelect.value === "specific";
+  container.hidden = !showSpecific;
+  if (searchInput) searchInput.hidden = !showSpecific;
   if (!showSpecific) {
-    announcementRecipients.innerHTML = "";
+    container.innerHTML = "";
     return;
   }
-  const options = getAnnouncementUserOptions();
-  announcementRecipients.innerHTML = options.length ? options.map((item) => `
-    <label class="announcement-recipient-option">
-      <input type="checkbox" name="targetUsers" value="${escapeHtml(item.key)}">
-      <span>
-        <strong>${escapeHtml(item.label)}</strong>
-        <small>${escapeHtml(item.agency || "Sin grupo")}</small>
-      </span>
+  const selected = new Set([...container.querySelectorAll(`input[name='${inputName}']:checked`)].map((input) => input.value));
+  const term = normalizeSearchText(searchInput?.value || "");
+  const options = getAnnouncementUserOptions().filter((item) =>
+    !term || normalizeSearchText(`${item.label} ${item.agency} ${item.key}`).includes(term)
+  );
+  container.innerHTML = options.length ? options.map((item) => `
+    <label class="announcement-recipient-chip">
+      <input type="checkbox" name="${escapeHtml(inputName)}" value="${escapeHtml(item.key)}" ${selected.has(item.key) ? "checked" : ""}>
+      <span>${escapeHtml(item.label.replace(" | ", " · "))}</span>
+      <small>${escapeHtml(item.agency || item.role)}</small>
     </label>
-  `).join("") : `<div class="empty compact-empty">No hay usuarios comerciales o legales configurados.</div>`;
+  `).join("") : `<div class="empty compact-empty">Sin coincidencias.</div>`;
+}
+
+function renderAnnouncementRecipients() {
+  renderUserTargetSelector(announcementRecipients, announcementRecipientSearch, announcementAudience, "targetUsers");
+}
+
+function renderForceLogoutRecipients() {
+  renderUserTargetSelector(forceLogoutRecipients, forceLogoutRecipientSearch, forceLogoutAudience, "forceTargetUsers");
 }
 
 function getAnnouncementFormTargets(formElement) {
@@ -3994,6 +4043,75 @@ function getAnnouncementFormTargets(formElement) {
     ? [...formElement.querySelectorAll("input[name='targetUsers']:checked")].map((input) => input.value)
     : [];
   return { audience, targetUsers };
+}
+
+function getForceLogoutTargets() {
+  const audience = forceLogoutAudience?.value || "all";
+  const targetUsers = audience === "specific"
+    ? [...document.querySelectorAll("input[name='forceTargetUsers']:checked")].map((input) => input.value)
+    : [];
+  return { audience, targetUsers };
+}
+
+function createForceLogoutRequest() {
+  if (session.role !== "admin") return;
+  const targets = getForceLogoutTargets();
+  if (targets.audience === "specific" && !targets.targetUsers.length) {
+    showToast("Selecciona al menos un usuario para cerrar sesion.");
+    return;
+  }
+  const request = normalizeForceLogoutRequest({
+    id: crypto.randomUUID(),
+    audience: targets.audience,
+    targetUsers: targets.targetUsers,
+    message: forceLogoutMessage?.value?.trim() || "El administrador cerro tu sesion para aplicar un comunicado urgente.",
+    createdAt: new Date().toISOString(),
+    createdBy: session.name || "Administrador"
+  });
+  state.forceLogoutRequests = [request, ...(state.forceLogoutRequests || [])].slice(0, 80);
+  saveState();
+  guardarModulosSupabase();
+  renderAll();
+  showToast("Orden de cierre de sesion enviada.");
+}
+
+function isForceLogoutForSession(request = {}, currentSession = session) {
+  const item = normalizeForceLogoutRequest(request);
+  if (!currentSession || currentSession.role === "public" || currentSession.role === "admin") return false;
+  if (!["commercial", "legal", "manager", "processing"].includes(currentSession.role)) return false;
+  const loginAt = new Date(currentSession.loginAt || currentSession.savedAt || 0).getTime();
+  const requestAt = new Date(item.createdAt).getTime();
+  if (!requestAt || loginAt >= requestAt) return false;
+  if (item.audience === "all") return true;
+  if (item.audience === currentSession.role) return true;
+  if (item.audience === "specific") return item.targetUsers.includes(getAnnouncementTargetKey(currentSession));
+  return false;
+}
+
+function getForceLogoutAckSet() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(FORCE_LOGOUT_ACK_KEY) || "[]"));
+  } catch {
+    return new Set();
+  }
+}
+
+function saveForceLogoutAckSet(set) {
+  localStorage.setItem(FORCE_LOGOUT_ACK_KEY, JSON.stringify([...set].slice(-120)));
+}
+
+function checkForcedLogoutRequests() {
+  if (!session || session.role === "public" || session.role === "admin") return;
+  const ack = getForceLogoutAckSet();
+  const request = (state.forceLogoutRequests || [])
+    .map(normalizeForceLogoutRequest)
+    .find((item) => !ack.has(item.id) && isForceLogoutForSession(item, session));
+  if (!request) return;
+  ack.add(request.id);
+  saveForceLogoutAckSet(ack);
+  showToast(request.message || "Sesion cerrada por administracion.");
+  setSession(getPublicSession());
+  setView("acceso");
 }
 
 function addAnnouncement(data, imageDataUrl = "") {
@@ -12523,6 +12641,7 @@ function renderAnnouncements() {
   const adminContainer = document.querySelector("#adminAnnouncementsList");
   const billboardContainer = document.querySelector("#billboardList");
   renderAnnouncementRecipients();
+  renderForceLogoutRecipients();
   const publicItems = state.announcements.slice(0, 3);
   if (publicContainer) {
     publicContainer.innerHTML = publicItems.length ? publicItems.map((announcement) => `
@@ -13488,6 +13607,10 @@ announcementForm.addEventListener("submit", (event) => {
 });
 
 announcementAudience?.addEventListener("change", renderAnnouncementRecipients);
+announcementRecipientSearch?.addEventListener("input", renderAnnouncementRecipients);
+forceLogoutAudience?.addEventListener("change", renderForceLogoutRecipients);
+forceLogoutRecipientSearch?.addEventListener("input", renderForceLogoutRecipients);
+forceLogoutBtn?.addEventListener("click", createForceLogoutRequest);
 
 document.querySelectorAll("[data-close-session-announcement]").forEach((button) => {
   button.addEventListener("click", closeSessionAnnouncementModal);
