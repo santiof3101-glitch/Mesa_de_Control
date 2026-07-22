@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260721-signature-repair-sync";
+const APP_BUILD_VERSION = "20260721-tracking-status-admin";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -44,6 +44,14 @@ const SIGNATURE_STATUS = {
   pilotRequested: "subida de contratos firmados solicitada",
   completed: "contratos firmados subidos a pilot"
 };
+
+const COMMERCIAL_TRACKING_STEPS = [
+  { id: "enviado", label: "Solicitud enviada" },
+  { id: "recibido", label: "Recibida por mesa" },
+  { id: "tomado", label: "Tomada por legal" },
+  { id: "gestion", label: "Gestion legal" },
+  { id: "cierre", label: "Cierre / Pilot" }
+];
 
 const SIGNATURE_COUNTRY_CODES = [
   { iso: "EC", name: "Ecuador", code: "+593", min: 9, max: 9 },
@@ -3645,14 +3653,22 @@ function renderStatusOptions() {
   const container = document.querySelector("#statusOptionsList");
   container.innerHTML = "";
   state.statusOptions.forEach((status) => {
-    const item = document.createElement("span");
+    const item = document.createElement("article");
     item.className = "option-item status-admin-item";
+    item.dataset.statusOptionId = status.id;
     item.innerHTML = `
       <i style="background:${escapeHtml(status.color)}"></i>
-      <span>${escapeHtml(status.label)}${status.closes ? " | cierra tarea" : ""}</span>
+      <input data-status-label value="${escapeHtml(status.label)}" aria-label="Nombre del estatus">
+      <input data-status-color type="color" value="${escapeHtml(status.color || "#8d8d92")}" aria-label="Color del estatus ${escapeHtml(status.label)}">
+      <label class="check-row"><input data-status-closes type="checkbox" ${status.closes ? "checked" : ""}> Cierra tarea</label>
+      <button class="btn secondary tiny" type="button" data-save-status-option>Guardar</button>
       ${status.isDefault ? "" : `<button class="remove-option" type="button" aria-label="Eliminar ${escapeHtml(status.label)}">x</button>`}
     `;
-    const button = item.querySelector("button");
+    item.querySelector("[data-status-color]")?.addEventListener("input", (event) => {
+      item.querySelector("i").style.background = event.target.value;
+    });
+    item.querySelector("[data-save-status-option]")?.addEventListener("click", () => updateStatusOption(status.id, item));
+    const button = item.querySelector(".remove-option");
     if (button) button.addEventListener("click", () => removeStatusOption(status.id));
     container.appendChild(item);
   });
@@ -3724,6 +3740,40 @@ function addStatusOption(data) {
   saveState();
   renderAll();
   showToast("Estatus agregado.");
+}
+
+function updateStatusOption(id, row) {
+  const status = state.statusOptions.find((item) => item.id === id);
+  if (!status || !row) return;
+  const oldValue = status.value;
+  const label = row.querySelector("[data-status-label]")?.value.trim() || status.label;
+  const value = normalizeStatusValue(label);
+  const duplicated = state.statusOptions.some((item) => item.id !== id && item.value === value);
+  if (duplicated) {
+    showToast("Ya existe otro estatus con ese nombre.");
+    return;
+  }
+  status.label = label;
+  status.value = value;
+  status.color = row.querySelector("[data-status-color]")?.value || status.color || "#8d8d92";
+  status.closes = Boolean(row.querySelector("[data-status-closes]")?.checked);
+  if (oldValue !== value) {
+    state.tasks.forEach((task) => {
+      if (normalizeStatusValue(task.status) === oldValue) {
+        task.status = value;
+        task.updatedAt = new Date().toISOString();
+        task.syncStatus = "pending";
+        task.syncAction = "actualizar-estatus-admin";
+      }
+    });
+    if (activeFilter === oldValue) activeFilter = value;
+  }
+  saveState();
+  renderAll();
+  guardarModulosSupabase();
+  const changedTasks = state.tasks.filter((task) => task.syncAction === "actualizar-estatus-admin");
+  changedTasks.slice(0, 30).forEach((task) => guardarTareaSupabase(task, "actualizar-estatus-admin"));
+  showToast("Estatus actualizado.");
 }
 
 function removeStatusOption(id) {
@@ -4493,7 +4543,8 @@ function normalizeStatusValue(value = "") {
 }
 
 function getStatusOption(value) {
-  return state.statusOptions.find((status) => status.value === value) || state.statusOptions[0];
+  const normalized = normalizeStatusValue(value);
+  return state.statusOptions.find((status) => status.value === normalized) || state.statusOptions[0];
 }
 
 function isClosedStatus(value) {
@@ -5805,11 +5856,24 @@ function renderCommercialDashboard() {
 
 function getCommercialTrackingStage(task = {}) {
   const status = normalizeLooseText(task.status);
-  if (status.includes("RECHAZ")) return { key: "rechazado", label: "Rechazado", className: "danger", progress: 64, step: 3 };
-  if (isClosedStatus(task.status)) return { key: "finalizado", label: "Finalizado", className: "success", progress: 100, step: 5 };
-  if (task.legalUserId || task.takenAt || status.includes("TOMADO")) return { key: "saneamiento", label: "En saneamiento", className: "warning", progress: 72, step: 4 };
-  if (status.includes("PEND") || status.includes("ASIGNAR")) return { key: "revision", label: "Revision documental", className: "info", progress: 42, step: 3 };
-  return { key: "recibido", label: "Lead recibido", className: "neutral", progress: 25, step: 2 };
+  const statusOption = getStatusOption(task.status);
+  const base = {
+    statusColor: statusOption?.color || "#64748b",
+    statusLabel: statusOption?.label || task.status || "Sin estatus"
+  };
+  if (status.includes("RECHAZ")) {
+    return { ...base, key: "rechazado", label: "Rechazado por legal", className: "danger", progress: 78, step: 4 };
+  }
+  if (isClosedStatus(task.status)) {
+    return { ...base, key: "finalizado", label: "Cierre / Pilot", className: "success", progress: 100, step: 5 };
+  }
+  if (task.legalUserId || task.takenAt || status.includes("TOMADO")) {
+    return { ...base, key: "gestion", label: "Gestion legal", className: "warning", progress: 72, step: 4 };
+  }
+  if (status.includes("PEND") || status.includes("ASIGNAR")) {
+    return { ...base, key: "recibido", label: "Recibida por mesa", className: "info", progress: 38, step: 2 };
+  }
+  return { ...base, key: "enviado", label: "Solicitud enviada", className: "neutral", progress: 18, step: 1 };
 }
 
 function getCommercialTrackingTasks(tasks = []) {
@@ -5834,8 +5898,9 @@ function renderCommercialTrackingBoard(tasks = []) {
   const uniquePlates = new Set(purchaseTasks.map((task) => normalizePlate(task.placa)).filter(Boolean)).size;
   const filters = [
     ["todos", "Todos", purchaseTasks.length],
-    ["revision", "Revision", counts.revision || 0],
-    ["saneamiento", "En saneamiento", counts.saneamiento || 0],
+    ["enviado", "Enviadas", counts.enviado || 0],
+    ["recibido", "Recibidas", counts.recibido || 0],
+    ["gestion", "Gestion legal", counts.gestion || 0],
     ["rechazado", "Rechazados", counts.rechazado || 0],
     ["finalizado", "Finalizados", counts.finalizado || 0]
   ];
@@ -5868,21 +5933,14 @@ function renderCommercialTrackingBoard(tasks = []) {
 
 function renderCommercialTrackingCard(task) {
   const stage = getCommercialTrackingStage(task);
-  const steps = [
-    "Lead enviado",
-    "Lead recibido",
-    "Revision",
-    "Saneamiento",
-    "Pilot"
-  ];
   return `
-    <article class="commercial-tracking-card ${stage.className}">
+    <article class="commercial-tracking-card ${stage.className}" style="--tracking-color:${escapeHtml(stage.statusColor)}; --tracking-text:${getReadableTextColor(stage.statusColor)}">
       <div class="tracking-card-top">
         <div>
           <strong>${escapeHtml(task.placa || "Sin placa")}</strong>
           <span>${escapeHtml(task.cliente || "Cliente sin nombre")}</span>
         </div>
-        <span class="tracking-state">${escapeHtml(stage.label)}</span>
+        <span class="tracking-state">${escapeHtml(stage.statusLabel)}</span>
       </div>
       <div class="tracking-meta-row">
         <span><b>Agencia</b>${escapeHtml(task.agencia || "Sin agencia")}</span>
@@ -5892,7 +5950,7 @@ function renderCommercialTrackingCard(task) {
       <div class="tracking-progress-head"><span>Avance</span><strong>${stage.progress}%</strong></div>
       <div class="tracking-progress"><i style="width:${stage.progress}%"></i></div>
       <div class="tracking-timeline">
-        ${steps.map((step, index) => `<span class="${index + 1 < stage.step ? "done" : index + 1 === stage.step ? "current" : ""}">${escapeHtml(step)}</span>`).join("")}
+        ${COMMERCIAL_TRACKING_STEPS.map((step, index) => `<span class="${index + 1 < stage.step ? "done" : index + 1 === stage.step ? "current" : ""}">${escapeHtml(step.label)}</span>`).join("")}
       </div>
       <div class="tracking-card-actions">
         <small>${escapeHtml(formatLeadDuration(task))}</small>
