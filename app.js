@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260721-cuv-module";
+const APP_BUILD_VERSION = "20260722-cuv-access-fix";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -4358,7 +4358,7 @@ function updateLegalUserMailboxes(id, mailboxes) {
       legalUserId: "",
       legalAdvisor: "",
       takenAt: "",
-      status: getTaskMailbox(task) === "contratos" ? "por asignar" : "pendiente",
+      status: ["contratos", "cuv", "firmas"].includes(getTaskMailbox(task)) ? "por asignar" : "pendiente",
       updatedAt: new Date().toISOString(),
       syncStatus: "pending",
       syncAction: "reasignar-buzon"
@@ -5560,6 +5560,7 @@ async function refreshAccessUsersAfterFailedLogin() {
 }
 
 async function loginLegal(data) {
+  await refreshAccessUsersAfterFailedLogin();
   const username = cleanUsernameValue(data.username);
   const password = cleanPasswordValue(data.password);
   let user = state.legalUsers.find((item) =>
