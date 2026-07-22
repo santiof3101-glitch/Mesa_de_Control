@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260722-commercial-home-lookup-fix">
+<html lang="es" data-app-version="20260722-commercial-process-default">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260722-commercial-home-lookup-fix">
-  <link rel="stylesheet" href="layout-fix.css?v=20260722-commercial-home-lookup-fix">
+  <link rel="stylesheet" href="styles.css?v=20260722-commercial-process-default">
+  <link rel="stylesheet" href="layout-fix.css?v=20260722-commercial-process-default">
 </head>
 <body>
   <header class="topbar">
@@ -804,13 +804,12 @@
         <aside class="commercial-sidebar">
           <div class="commercial-sidebar-group">
             <span>Principal</span>
-            <button class="commercial-side-link is-active" type="button" data-commercial-area="home" aria-current="page"><span>&#8962;</span> Inicio</button>
             <button class="commercial-side-link" type="button" data-commercial-area="dashboard"><span>&#128202;</span> Dashboard</button>
             <button class="commercial-side-link" type="button" data-commercial-area="tracking"><span>&#128506;</span> Tracking</button>
             <button class="commercial-side-link" type="button" data-commercial-area="requests"><span>&#128193;</span> Mis solicitudes</button>
             <button class="commercial-side-link" type="button" data-commercial-area="control"><span>&#128737;</span> Carga de mesa</button>
             <button class="commercial-side-link" type="button" data-commercial-area="lookup"><span>&#128269;</span> Consulta de placas</button>
-            <button class="commercial-side-link" type="button" data-commercial-area="process"><span>&#10133;</span> Nueva gestion</button>
+            <button class="commercial-side-link is-active" type="button" data-commercial-area="process" aria-current="page"><span>&#10133;</span> Nueva gestion</button>
           </div>
           <div class="commercial-sidebar-group">
             <span>Solicitudes</span>
@@ -827,39 +826,6 @@
         </aside>
 
         <div class="commercial-content">
-      <section class="commercial-area commercial-home is-active-area" data-commercial-area-section="home" aria-labelledby="commercialWelcomeTitle">
-        <div class="commercial-home-hero">
-          <div>
-            <p class="eyebrow">Asesor comercial</p>
-            <h2 id="commercialWelcomeTitle">Hola, Asesor</h2>
-            <p>Bienvenido a tu centro comercial. Desde aqui puedes revisar tus solicitudes, consultar placas e iniciar nuevas gestiones.</p>
-          </div>
-          <div class="commercial-home-notice" id="commercialHomeNotice">
-            <strong>Operacion sincronizada</strong>
-            <span>Tu informacion se actualiza con mesa de control y conserva el historial de cada proceso.</span>
-          </div>
-        </div>
-        <div id="commercialHomeKpis" class="kpi-grid compact-kpis"></div>
-        <div class="commercial-home-actions">
-          <button type="button" class="commercial-home-action" data-commercial-area="process">
-            <strong>Nueva gestion</strong>
-            <span>Crear una solicitud de compra, CUV u otro tramite.</span>
-          </button>
-          <button type="button" class="commercial-home-action" data-commercial-area="tracking">
-            <strong>Ver Tracking</strong>
-            <span>Consultar el avance de tus saneamientos.</span>
-          </button>
-          <button type="button" class="commercial-home-action" data-commercial-area="requests">
-            <strong>Mis solicitudes</strong>
-            <span>Revisar los procesos creados por tu usuario.</span>
-          </button>
-          <button type="button" class="commercial-home-action" data-commercial-area="lookup">
-            <strong>Consulta de placas</strong>
-            <span>Validar si ya existe una solicitud registrada.</span>
-          </button>
-        </div>
-      </section>
-
       <section class="commercial-dashboard panel" data-commercial-area-section="dashboard" aria-labelledby="commercial-dashboard-title" hidden>
         <div>
           <p class="eyebrow">Dashboard comercial</p>
@@ -955,7 +921,7 @@
         <div id="statusResults" class="status-results"></div>
       </section>
 
-      <section class="commercial-area commercial-process-area" data-commercial-area-section="process" hidden>
+      <section class="commercial-area commercial-process-area is-active-area" data-commercial-area-section="process">
         <div class="commercial-start-hero">
           <div class="commercial-start-copy">
             <p class="eyebrow">Nueva gestion comercial</p>
@@ -1966,7 +1932,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260722-commercial-home-lookup-fix"></script>
+  <script src="app.js?v=20260722-commercial-process-default"></script>
 </body>
 </html>
 
