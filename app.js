@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260721-commercial-signature-flow";
+const APP_BUILD_VERSION = "20260721-signature-country-mailbox";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -44,6 +44,44 @@ const SIGNATURE_STATUS = {
   pilotRequested: "subida de contratos firmados solicitada",
   completed: "contratos firmados subidos a pilot"
 };
+
+const SIGNATURE_COUNTRY_CODES = [
+  { iso: "EC", name: "Ecuador", code: "+593", min: 9, max: 9 },
+  { iso: "US", name: "Estados Unidos", code: "+1", min: 10, max: 10 },
+  { iso: "CA", name: "Canada", code: "+1", min: 10, max: 10 },
+  { iso: "CO", name: "Colombia", code: "+57", min: 10, max: 10 },
+  { iso: "PE", name: "Peru", code: "+51", min: 9, max: 9 },
+  { iso: "CL", name: "Chile", code: "+56", min: 9, max: 9 },
+  { iso: "AR", name: "Argentina", code: "+54", min: 10, max: 11 },
+  { iso: "BR", name: "Brasil", code: "+55", min: 10, max: 11 },
+  { iso: "MX", name: "Mexico", code: "+52", min: 10, max: 10 },
+  { iso: "ES", name: "Espana", code: "+34", min: 9, max: 9 },
+  { iso: "VE", name: "Venezuela", code: "+58", min: 10, max: 10 },
+  { iso: "BO", name: "Bolivia", code: "+591", min: 8, max: 8 },
+  { iso: "PY", name: "Paraguay", code: "+595", min: 9, max: 9 },
+  { iso: "UY", name: "Uruguay", code: "+598", min: 8, max: 9 },
+  { iso: "PA", name: "Panama", code: "+507", min: 7, max: 8 },
+  { iso: "CR", name: "Costa Rica", code: "+506", min: 8, max: 8 },
+  { iso: "GT", name: "Guatemala", code: "+502", min: 8, max: 8 },
+  { iso: "HN", name: "Honduras", code: "+504", min: 8, max: 8 },
+  { iso: "SV", name: "El Salvador", code: "+503", min: 8, max: 8 },
+  { iso: "NI", name: "Nicaragua", code: "+505", min: 8, max: 8 },
+  { iso: "DO", name: "Republica Dominicana", code: "+1", min: 10, max: 10 },
+  { iso: "PR", name: "Puerto Rico", code: "+1", min: 10, max: 10 },
+  { iso: "GB", name: "Reino Unido", code: "+44", min: 10, max: 10 },
+  { iso: "FR", name: "Francia", code: "+33", min: 9, max: 9 },
+  { iso: "DE", name: "Alemania", code: "+49", min: 10, max: 11 },
+  { iso: "IT", name: "Italia", code: "+39", min: 9, max: 10 },
+  { iso: "PT", name: "Portugal", code: "+351", min: 9, max: 9 },
+  { iso: "NL", name: "Paises Bajos", code: "+31", min: 9, max: 9 },
+  { iso: "BE", name: "Belgica", code: "+32", min: 8, max: 9 },
+  { iso: "CH", name: "Suiza", code: "+41", min: 9, max: 9 },
+  { iso: "CN", name: "China", code: "+86", min: 11, max: 11 },
+  { iso: "JP", name: "Japon", code: "+81", min: 10, max: 10 },
+  { iso: "IN", name: "India", code: "+91", min: 10, max: 10 },
+  { iso: "AU", name: "Australia", code: "+61", min: 9, max: 9 },
+  { iso: "DEFAULT", name: "Otro pais", code: "+", min: 6, max: 15 }
+];
 
 const PURCHASE_COLUMNS = [
   "NO.",
@@ -494,6 +532,7 @@ const signatureSpouseToggle = document.querySelector("#signatureSpouseToggle");
 const signatureSpouseFields = document.querySelector("#signatureSpouseFields");
 const signatureHeirsToggle = document.querySelector("#signatureHeirsToggle");
 const signatureHeirsFields = document.querySelector("#signatureHeirsFields");
+const signatureValidationMessage = document.querySelector("#signatureValidationMessage");
 const commercialDuplicateModal = document.querySelector("#commercialDuplicateModal");
 const duplicateConflictContent = document.querySelector("#duplicateConflictContent");
 const duplicateContinueBtn = document.querySelector("#duplicateContinueBtn");
@@ -4448,7 +4487,11 @@ function getVisibleTasks() {
   const normalizedSearch = searchTerm.trim().toLowerCase();
   return state.tasks
     .filter((task) => canLegalUserSeeTask(task))
-    .filter((task) => activeFilter === "todos" || task.status === activeFilter)
+    .filter((task) => {
+      if (activeFilter === "firmas") return isSignatureTask(task);
+      if (activeFilter === "todos") return !isSignatureTask(task);
+      return !isSignatureTask(task) && task.status === activeFilter;
+    })
     .filter((task) => isInsideDateRange(task.createdAt, taskDateFrom, taskDateTo))
     .filter((task) => {
       if (!normalizedSearch) return true;
@@ -4497,7 +4540,7 @@ function isInsideDateRange(value, from, to) {
 
 function renderTasks() {
   syncLegalSidebarFilters();
-  const visiblePool = state.tasks.filter((task) => canLegalUserSeeTask(task));
+  const visiblePool = state.tasks.filter((task) => canLegalUserSeeTask(task)).filter((task) => activeFilter === "firmas" ? isSignatureTask(task) : !isSignatureTask(task));
   const pendingTasks = visiblePool.filter((task) => !isClosedStatus(task.status));
   if (queueCount) queueCount.textContent = pendingTasks.length;
   const user = currentLegalUser();
@@ -5154,13 +5197,45 @@ function validateSignatureEmail(value = "") {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(String(value || "").trim());
 }
 
-function normalizeSignatureWhatsapp(value = "") {
-  return String(value || "").replace(/[^\d+]/g, "").replace(/(?!^)\+/g, "");
+function renderSignatureCountrySelects() {
+  document.querySelectorAll("[data-country-select]").forEach((select) => {
+    const current = select.value || "EC";
+    select.innerHTML = SIGNATURE_COUNTRY_CODES.map((country) => `
+      <option value="${escapeHtml(country.iso)}" ${country.iso === current ? "selected" : ""}>${escapeHtml(country.name)} ${escapeHtml(country.code)}</option>
+    `).join("");
+    select.value = SIGNATURE_COUNTRY_CODES.some((country) => country.iso === current) ? current : "EC";
+  });
 }
 
-function validateSignatureWhatsapp(value = "") {
+function getSignatureCountry(iso = "EC") {
+  return SIGNATURE_COUNTRY_CODES.find((country) => country.iso === iso) || SIGNATURE_COUNTRY_CODES[0];
+}
+
+function normalizeSignatureWhatsapp(value = "") {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function buildSignatureWhatsapp(countryIso = "EC", value = "") {
+  const country = getSignatureCountry(countryIso);
   const clean = normalizeSignatureWhatsapp(value);
-  return /^\+\d{10,15}$/.test(clean);
+  return `${country.code}${clean}`;
+}
+
+function validateSignatureWhatsapp(countryIso = "EC", value = "") {
+  const country = getSignatureCountry(countryIso);
+  const clean = normalizeSignatureWhatsapp(value);
+  return clean.length >= country.min && clean.length <= country.max;
+}
+
+function showSignatureValidation(errors = []) {
+  if (!signatureValidationMessage) return;
+  if (!errors.length) {
+    signatureValidationMessage.hidden = true;
+    signatureValidationMessage.innerHTML = "";
+    return;
+  }
+  signatureValidationMessage.hidden = false;
+  signatureValidationMessage.innerHTML = errors.map((error) => `<span>${escapeHtml(error)}</span>`).join("");
 }
 
 function getSignatureTaskTitle(task = {}) {
@@ -5195,7 +5270,9 @@ function openSignatureRequestModal(taskId) {
     return;
   }
   commercialSignatureForm.reset();
+  renderSignatureCountrySelects();
   signatureTaskIdInput.value = task.id;
+  showSignatureValidation([]);
   if (signatureSpouseFields) signatureSpouseFields.hidden = true;
   if (signatureHeirsFields) signatureHeirsFields.hidden = true;
   openCommercialModal(commercialSignatureModal);
@@ -5204,19 +5281,25 @@ function openSignatureRequestModal(taskId) {
 function collectSignatureFormData() {
   const data = Object.fromEntries(new FormData(commercialSignatureForm).entries());
   const titularEmail = String(data.titularEmail || "").trim();
+  const titularCountry = data.titularCountry || "EC";
   const titularWhatsapp = normalizeSignatureWhatsapp(data.titularWhatsapp);
   const errors = [];
   if (!validateSignatureEmail(titularEmail)) errors.push("Correo del titular no valido.");
-  if (!validateSignatureWhatsapp(titularWhatsapp)) errors.push("WhatsApp del titular debe iniciar con codigo de pais. Ejemplo: +593999999999.");
+  if (!validateSignatureWhatsapp(titularCountry, titularWhatsapp)) {
+    const country = getSignatureCountry(titularCountry);
+    errors.push(`WhatsApp del titular debe tener ${country.min === country.max ? country.min : `${country.min} a ${country.max}`} digitos para ${country.name}.`);
+  }
 
   const spouseEnabled = signatureSpouseToggle?.checked;
+  const spouseCountry = data.spouseCountry || "EC";
   const spouse = spouseEnabled ? {
     email: String(data.spouseEmail || "").trim(),
-    whatsapp: normalizeSignatureWhatsapp(data.spouseWhatsapp)
+    whatsapp: normalizeSignatureWhatsapp(data.spouseWhatsapp),
+    country: spouseCountry
   } : null;
   if (spouseEnabled) {
     if (!validateSignatureEmail(spouse.email)) errors.push("Correo del conyuge no valido.");
-    if (!validateSignatureWhatsapp(spouse.whatsapp)) errors.push("WhatsApp del conyuge no valido.");
+    if (!validateSignatureWhatsapp(spouseCountry, spouse.whatsapp)) errors.push(`WhatsApp del conyuge no cumple la longitud de ${getSignatureCountry(spouseCountry).name}.`);
   }
 
   const heirsEnabled = signatureHeirsToggle?.checked;
@@ -5225,10 +5308,11 @@ function collectSignatureFormData() {
     for (let index = 1; index <= 5; index += 1) {
       const email = String(data[`heirEmail${index}`] || "").trim();
       const whatsapp = normalizeSignatureWhatsapp(data[`heirWhatsapp${index}`] || "");
+      const country = data[`heirCountry${index}`] || "EC";
       if (!email && !whatsapp) continue;
       if (!validateSignatureEmail(email)) errors.push(`Correo del heredero ${index} no valido.`);
-      if (!validateSignatureWhatsapp(whatsapp)) errors.push(`WhatsApp del heredero ${index} no valido.`);
-      heirs.push({ index, email, whatsapp });
+      if (!validateSignatureWhatsapp(country, whatsapp)) errors.push(`WhatsApp del heredero ${index} no cumple la longitud de ${getSignatureCountry(country).name}.`);
+      heirs.push({ index, email, whatsapp: buildSignatureWhatsapp(country, whatsapp), country });
     }
     if (!heirs.length) errors.push("Agregue al menos un heredero o desactive la opcion.");
   }
@@ -5236,8 +5320,8 @@ function collectSignatureFormData() {
   return {
     taskId: data.taskId || "",
     payload: {
-      titular: { email: titularEmail, whatsapp: titularWhatsapp },
-      conyuge: spouse,
+      titular: { email: titularEmail, whatsapp: buildSignatureWhatsapp(titularCountry, titularWhatsapp), country: titularCountry },
+      conyuge: spouse ? { ...spouse, whatsapp: buildSignatureWhatsapp(spouseCountry, spouse.whatsapp) } : null,
       herederos: heirs,
       requestedAt: new Date().toISOString(),
       requestedBy: session.name || "",
@@ -5256,9 +5340,10 @@ async function submitSignatureRequest(event) {
     return;
   }
   if (errors.length) {
-    showToast(errors[0]);
+    showSignatureValidation(errors);
     return;
   }
+  showSignatureValidation([]);
   const createdAt = new Date().toISOString();
   const signatureTask = {
     id: crypto.randomUUID(),
