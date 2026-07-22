@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260722-responsive-layout-fix">
+<html lang="es" data-app-version="20260722-integral-responsive-ui">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260722-responsive-layout-fix">
-  <link rel="stylesheet" href="layout-fix.css?v=20260722-responsive-layout-fix">
+  <link rel="stylesheet" href="styles.css?v=20260722-integral-responsive-ui">
+  <link rel="stylesheet" href="layout-fix.css?v=20260722-integral-responsive-ui">
 </head>
 <body>
   <header class="topbar">
@@ -798,6 +798,9 @@
       </div>
 
       <div class="commercial-workspace">
+        <button class="commercial-mobile-menu-toggle" type="button" data-commercial-menu-toggle aria-expanded="false">
+          Menu comercial
+        </button>
         <aside class="commercial-sidebar">
           <div class="commercial-sidebar-group">
             <span>Principal</span>
@@ -823,11 +826,11 @@
         </aside>
 
         <div class="commercial-content">
-      <section class="commercial-start-hero is-active-area" data-commercial-area-section="dashboard">
+      <section class="commercial-start-hero" data-commercial-area-section="process">
         <div class="commercial-start-copy">
-          <p class="eyebrow">Bienvenido al modulo comercial</p>
-          <h2 id="commercialWelcomeTitle">Bienvenido al centro comercial Autocor</h2>
-          <p>Selecciona el flujo que necesitas registrar. Cada solicitud quedara sincronizada con mesa de control.</p>
+          <p class="eyebrow">Nueva gestion comercial</p>
+          <h2 id="commercialWelcomeTitle">Selecciona el tramite que necesitas crear</h2>
+          <p>Cada solicitud quedara separada por proceso y sincronizada con mesa de control.</p>
           <div class="commercial-start-actions">
             <button class="btn primary" type="button" data-commercial-start="commercial-purchase-process">&#128722; Compra</button>
             <button class="btn secondary light-btn is-disabled" type="button" data-coming-soon="venta" aria-disabled="true">&#128663; Venta</button>
@@ -1927,7 +1930,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260722-responsive-layout-fix"></script>
+  <script src="app.js?v=20260722-integral-responsive-ui"></script>
 </body>
 </html>
 

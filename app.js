@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260722-responsive-layout-fix";
+const APP_BUILD_VERSION = "20260722-integral-responsive-ui";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -13573,6 +13573,8 @@ commercialModuleButtons.forEach((button) => {
 
 commercialAreaButtons.forEach((button) => {
   button.addEventListener("click", () => {
+    document.querySelector(".commercial-workspace")?.classList.remove("is-menu-open");
+    document.querySelector("[data-commercial-menu-toggle]")?.setAttribute("aria-expanded", "false");
     const statusView = button.dataset.commercialStatusView || (button.dataset.commercialArea === "requests" ? "todos" : activeCommercialRequestFilter);
     if (["requests", "control"].includes(button.dataset.commercialArea)) {
       activeCommercialRequestFilter = statusView;
@@ -13603,6 +13605,13 @@ commercialStartButtons.forEach((button) => {
     }
     setCommercialProcessFromTarget(target);
   });
+});
+
+document.querySelector("[data-commercial-menu-toggle]")?.addEventListener("click", (event) => {
+  const workspace = document.querySelector(".commercial-workspace");
+  const isOpen = !workspace?.classList.contains("is-menu-open");
+  workspace?.classList.toggle("is-menu-open", isOpen);
+  event.currentTarget.setAttribute("aria-expanded", String(isOpen));
 });
 
 document.querySelectorAll("[data-coming-soon]").forEach((button) => {
