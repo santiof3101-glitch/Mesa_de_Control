@@ -12813,10 +12813,79 @@ body:has(#procesamiento.view.is-active) main {
   color: var(--commercial-red);
 }
 
+#formulario .commercial-tracking-searchbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 150px 150px auto;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid #e5eaf2;
+  border-radius: 14px;
+  background: #fff;
+}
+
+#formulario .commercial-tracking-searchbar label {
+  display: grid;
+  gap: 5px;
+  color: #667085;
+  font-size: 0.68rem;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+#formulario .commercial-tracking-searchbar input {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #fbfcff;
+  color: var(--commercial-ink);
+  font-size: 0.84rem;
+}
+
 #formulario .commercial-tracking-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 12px;
+}
+
+#formulario .commercial-tracking-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 2px;
+  color: var(--commercial-muted);
+  font-size: 0.78rem;
+}
+
+#formulario .commercial-tracking-pagination > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+#formulario .commercial-tracking-pagination strong {
+  color: var(--commercial-ink);
+  font-size: 0.78rem;
+}
+
+@media (max-width: 860px) {
+  #formulario .commercial-tracking-searchbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  #formulario .commercial-tracking-searchbar label:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  #formulario .commercial-tracking-searchbar {
+    grid-template-columns: 1fr;
+  }
 }
 
 #formulario .commercial-tracking-card {
