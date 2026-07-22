@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260722-mobile-pdf-download">
+<html lang="es" data-app-version="20260722-commercial-clean-workspace">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260722-mobile-pdf-download">
-  <link rel="stylesheet" href="layout-fix.css?v=20260722-mobile-pdf-download">
+  <link rel="stylesheet" href="styles.css?v=20260722-commercial-clean-workspace">
+  <link rel="stylesheet" href="layout-fix.css?v=20260722-commercial-clean-workspace">
 </head>
 <body>
   <header class="topbar">
@@ -802,10 +802,11 @@
           <div class="commercial-sidebar-group">
             <span>Principal</span>
             <button class="commercial-side-link is-active" type="button" data-commercial-area="dashboard"><span>&#128202;</span> Dashboard</button>
+            <button class="commercial-side-link" type="button" data-commercial-area="tracking"><span>&#128506;</span> Tracking</button>
             <button class="commercial-side-link" type="button" data-commercial-area="requests"><span>&#128193;</span> Mis solicitudes</button>
             <button class="commercial-side-link" type="button" data-commercial-area="control"><span>&#128737;</span> Carga de mesa</button>
             <button class="commercial-side-link" type="button" data-commercial-area="lookup"><span>&#128269;</span> Consulta de placas</button>
-            <button class="commercial-side-link" type="button" data-commercial-area="process"><span>&#128196;</span> Nueva gestion</button>
+            <button class="commercial-side-link" type="button" data-commercial-area="process"><span>&#10133;</span> Nueva gestion</button>
           </div>
           <div class="commercial-sidebar-group">
             <span>Solicitudes</span>
@@ -830,7 +831,7 @@
           <div class="commercial-start-actions">
             <button class="btn primary" type="button" data-commercial-start="commercial-purchase-process">&#128722; Compra</button>
             <button class="btn secondary light-btn is-disabled" type="button" data-coming-soon="venta" aria-disabled="true">&#128663; Venta</button>
-            <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-cuv-process">CUV</button>
+            <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-cuv-process">&#128196; CUV</button>
           </div>
         </div>
       </section>
@@ -867,7 +868,6 @@
           <div id="commercialKpis" class="kpi-grid compact-kpis"></div>
           <div id="commercialChart" class="personal-chart"></div>
           <div id="commercialLeadList" class="commercial-lead-list"></div>
-          <section id="commercialTrackingBoard" class="commercial-tracking-board" aria-label="Tracking de saneamientos"></section>
         </div>
         <div id="commercial-general-module" class="commercial-module-panel" data-commercial-section="commercial-general-module">
           <div class="commercial-panel-heading">
@@ -877,6 +877,17 @@
           <div id="commercialGeneralKpis" class="kpi-grid compact-kpis"></div>
           <div id="commercialGeneralChart" class="personal-chart"></div>
         </div>
+      </section>
+
+      <section class="commercial-tracking-shell panel" data-commercial-area-section="tracking">
+        <div class="panel-title-row">
+          <div>
+            <p class="eyebrow">Tracking operativo</p>
+            <h2>Tracking de saneamientos</h2>
+            <span class="commercial-section-note">Busca, filtra y revisa tus saneamientos sin mezclarlo con los formularios.</span>
+          </div>
+        </div>
+        <section id="commercialTrackingBoard" class="commercial-tracking-board" aria-label="Tracking de saneamientos"></section>
       </section>
 
       <section class="commercial-requests-panel panel" data-commercial-area-section="requests">
@@ -1916,7 +1927,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260722-mobile-pdf-download"></script>
+  <script src="app.js?v=20260722-commercial-clean-workspace"></script>
 </body>
 </html>
 

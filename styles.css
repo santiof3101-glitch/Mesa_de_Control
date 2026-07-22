@@ -14076,3 +14076,230 @@ body:has(#procesamiento.view.is-active) main {
   justify-content: flex-end;
   margin-top: 12px;
 }
+
+/* Commercial workspace redesign 20260722 */
+#formulario.view.is-active {
+  width: min(100%, 1540px) !important;
+  padding: clamp(16px, 2vw, 28px) !important;
+}
+
+#formulario .section-head {
+  align-items: center !important;
+  margin-bottom: 18px !important;
+}
+
+#formulario .commercial-workspace {
+  grid-template-columns: minmax(210px, 242px) minmax(0, 1fr) !important;
+  gap: clamp(16px, 1.7vw, 24px) !important;
+}
+
+#formulario .commercial-content {
+  gap: 18px !important;
+}
+
+#formulario .commercial-content > [data-commercial-area-section] {
+  display: none !important;
+}
+
+#formulario .commercial-content > [data-commercial-area-section].is-active-area,
+#formulario .commercial-content > .commercial-process-panel.is-active-area.is-active {
+  display: grid !important;
+}
+
+#formulario .commercial-sidebar {
+  top: 112px !important;
+  border-radius: 22px !important;
+}
+
+#formulario .commercial-side-link {
+  min-height: 38px !important;
+  font-size: 0.82rem !important;
+}
+
+#formulario .commercial-start-hero {
+  min-height: 310px !important;
+  align-items: center !important;
+}
+
+#formulario .commercial-start-copy h2 {
+  max-width: 560px !important;
+  font-size: clamp(2.2rem, 3.4vw, 3.45rem) !important;
+}
+
+#formulario .commercial-dashboard,
+#formulario .commercial-tracking-shell,
+#formulario .commercial-requests-panel,
+#formulario .commercial-control-panel,
+#formulario .status-lookup,
+#formulario .commercial-process-shell,
+#formulario .commercial-process-panel > .panel {
+  border-radius: 22px !important;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.075) !important;
+}
+
+#formulario .commercial-dashboard {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, auto) !important;
+  align-items: start !important;
+  min-height: auto !important;
+}
+
+#formulario .commercial-dashboard .commercial-module-panel {
+  gap: 14px !important;
+}
+
+#formulario .commercial-dashboard .personal-chart {
+  min-height: 112px !important;
+  max-height: 180px !important;
+  overflow: auto !important;
+}
+
+#formulario .commercial-dashboard #commercialLeadList {
+  display: none !important;
+}
+
+#formulario .commercial-dashboard .kpi-grid,
+#formulario .commercial-control-panel .kpi-grid,
+#formulario .commercial-requests-panel .kpi-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+}
+
+#formulario .kpi-card {
+  min-height: 108px !important;
+  padding: 15px !important;
+}
+
+#formulario .kpi-card strong {
+  font-size: clamp(1.45rem, 2vw, 2rem) !important;
+}
+
+#formulario .commercial-tracking-shell {
+  gap: 16px !important;
+  padding: clamp(18px, 2vw, 26px) !important;
+  background: linear-gradient(135deg, rgba(239, 61, 53, 0.035), transparent 34%), #ffffff !important;
+}
+
+#formulario .commercial-section-note {
+  display: block;
+  margin-top: 5px;
+  color: var(--commercial-muted);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+#formulario .commercial-tracking-board {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+#formulario .commercial-tracking-head,
+#formulario .commercial-tracking-filters,
+#formulario .commercial-tracking-searchbar,
+#formulario .commercial-tracking-pagination {
+  padding: 14px !important;
+  border: 1px solid #e8edf5 !important;
+  border-radius: 16px !important;
+  background: #fbfcff !important;
+}
+
+#formulario .commercial-tracking-grid {
+  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)) !important;
+}
+
+#formulario .commercial-tracking-card {
+  min-height: 230px !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.045) !important;
+}
+
+#formulario .commercial-process-shell {
+  padding: clamp(18px, 2vw, 26px) !important;
+}
+
+#formulario .commercial-process-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+#formulario .commercial-process-card {
+  min-height: 116px !important;
+  display: grid !important;
+  align-content: center !important;
+  gap: 8px !important;
+}
+
+#formulario .commercial-process-panel.is-active {
+  display: block !important;
+}
+
+#formulario .commercial-process-panel:not(.is-active) {
+  display: none !important;
+}
+
+#formulario .commercial-process-panel .form-grid {
+  max-width: 980px !important;
+  margin-inline: auto !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+#formulario .commercial-process-panel .form-intro {
+  padding: 14px 16px !important;
+  border: 1px solid #e8edf5 !important;
+  border-radius: 16px !important;
+  background: #fbfcff !important;
+}
+
+#formulario .commercial-process-panel label {
+  font-size: 0.75rem !important;
+}
+
+#formulario .commercial-process-panel input,
+#formulario .commercial-process-panel select,
+#formulario .commercial-process-panel textarea,
+#formulario .status-lookup input,
+#formulario .status-lookup select {
+  font-size: 0.84rem !important;
+}
+
+#formulario .commercial-requests-panel,
+#formulario .commercial-control-panel,
+#formulario .status-lookup {
+  max-width: 1120px !important;
+}
+
+@media (max-width: 1180px) {
+  #formulario .commercial-workspace {
+    grid-template-columns: 1fr !important;
+  }
+
+  #formulario .commercial-sidebar {
+    position: static !important;
+  }
+}
+
+@media (max-width: 760px) {
+  #formulario.view.is-active {
+    padding: 12px !important;
+  }
+
+  #formulario .commercial-start-hero {
+    min-height: 430px !important;
+  }
+
+  #formulario .commercial-dashboard,
+  #formulario .commercial-process-panel .form-grid,
+  #formulario .commercial-process-grid,
+  #formulario .commercial-tracking-searchbar {
+    grid-template-columns: 1fr !important;
+  }
+
+  #formulario .commercial-tracking-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  #formulario .commercial-tracking-head {
+    grid-template-columns: 1fr !important;
+  }
+
+  #formulario .commercial-tracking-mini-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
