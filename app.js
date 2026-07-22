@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260721-tracking-status-admin";
+const APP_BUILD_VERSION = "20260721-tracking-full-signature";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -50,7 +50,11 @@ const COMMERCIAL_TRACKING_STEPS = [
   { id: "recibido", label: "Recibida por mesa" },
   { id: "tomado", label: "Tomada por legal" },
   { id: "gestion", label: "Gestion legal" },
-  { id: "cierre", label: "Cierre / Pilot" }
+  { id: "pilot", label: "Saneamiento en Pilot" },
+  { id: "firma-solicitada", label: "Firma solicitada" },
+  { id: "firma-enviada", label: "Enviado a firmar" },
+  { id: "pilot-firmados", label: "Subir firmados a Pilot" },
+  { id: "final", label: "Proceso finalizado" }
 ];
 
 const SIGNATURE_COUNTRY_CODES = [
@@ -5861,19 +5865,31 @@ function getCommercialTrackingStage(task = {}) {
     statusColor: statusOption?.color || "#64748b",
     statusLabel: statusOption?.label || task.status || "Sin estatus"
   };
+  if (task.signatureStatus === SIGNATURE_STATUS.completed) {
+    return { ...base, key: "firma-finalizada", label: "Proceso finalizado", statusLabel: "Contratos firmados subidos a Pilot", className: "success", progress: 100, step: 9 };
+  }
+  if (task.signatureStatus === SIGNATURE_STATUS.pilotRequested) {
+    return { ...base, key: "subir-firmados", label: "Subir firmados a Pilot", statusLabel: "Subida de firmados solicitada", className: "warning", progress: 88, step: 8 };
+  }
+  if (task.signatureStatus === SIGNATURE_STATUS.sent) {
+    return { ...base, key: "firma-enviada", label: "Enviado a firmar", statusLabel: "Enviado a firmar exitoso", className: "success", progress: 76, step: 7 };
+  }
+  if (task.signatureStatus === SIGNATURE_STATUS.requested) {
+    return { ...base, key: "firma-solicitada", label: "Firma solicitada", statusLabel: "Firma solicitada", className: "info", progress: 66, step: 6 };
+  }
   if (status.includes("RECHAZ")) {
-    return { ...base, key: "rechazado", label: "Rechazado por legal", className: "danger", progress: 78, step: 4 };
+    return { ...base, key: "rechazado", label: "Rechazado por legal", className: "danger", progress: 44, step: 4 };
   }
   if (isClosedStatus(task.status)) {
-    return { ...base, key: "finalizado", label: "Cierre / Pilot", className: "success", progress: 100, step: 5 };
+    return { ...base, key: "saneamiento-pilot", label: "Saneamiento en Pilot", className: "success", progress: 55, step: 5 };
   }
   if (task.legalUserId || task.takenAt || status.includes("TOMADO")) {
-    return { ...base, key: "gestion", label: "Gestion legal", className: "warning", progress: 72, step: 4 };
+    return { ...base, key: "gestion", label: "Gestion legal", className: "warning", progress: 44, step: 4 };
   }
   if (status.includes("PEND") || status.includes("ASIGNAR")) {
-    return { ...base, key: "recibido", label: "Recibida por mesa", className: "info", progress: 38, step: 2 };
+    return { ...base, key: "recibido", label: "Recibida por mesa", className: "info", progress: 22, step: 2 };
   }
-  return { ...base, key: "enviado", label: "Solicitud enviada", className: "neutral", progress: 18, step: 1 };
+  return { ...base, key: "enviado", label: "Solicitud enviada", className: "neutral", progress: 11, step: 1 };
 }
 
 function getCommercialTrackingTasks(tasks = []) {
@@ -5901,8 +5917,12 @@ function renderCommercialTrackingBoard(tasks = []) {
     ["enviado", "Enviadas", counts.enviado || 0],
     ["recibido", "Recibidas", counts.recibido || 0],
     ["gestion", "Gestion legal", counts.gestion || 0],
+    ["saneamiento-pilot", "Pilot", counts["saneamiento-pilot"] || 0],
+    ["firma-solicitada", "Firma solicitada", counts["firma-solicitada"] || 0],
+    ["firma-enviada", "Enviado a firmar", counts["firma-enviada"] || 0],
+    ["subir-firmados", "Subir firmados", counts["subir-firmados"] || 0],
     ["rechazado", "Rechazados", counts.rechazado || 0],
-    ["finalizado", "Finalizados", counts.finalizado || 0]
+    ["firma-finalizada", "Finalizados", counts["firma-finalizada"] || 0]
   ];
   container.innerHTML = `
     <div class="commercial-tracking-head">
