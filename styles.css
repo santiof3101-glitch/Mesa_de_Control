@@ -1866,6 +1866,74 @@ button.kpi-card {
   background: #fff;
 }
 
+.commercial-signature-card {
+  width: min(760px, calc(100vw - 32px));
+}
+
+.signature-request-form {
+  display: grid;
+  gap: 16px;
+}
+
+.signature-grid,
+.signature-heirs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.signature-request-form label {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.signature-request-form input {
+  margin-top: 6px;
+  width: 100%;
+  border: 1px solid #d7dce5;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #101828;
+  font: inherit;
+  background: #fff;
+}
+
+.signature-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.inline-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 9px 13px;
+  background: #fff7f7;
+}
+
+.inline-check input {
+  margin: 0;
+  width: auto;
+}
+
+.signature-extra {
+  border: 1px dashed #f5b5b5;
+  border-radius: 14px;
+  padding: 14px;
+  background: #fffafa;
+}
+
+.lead-ficha-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .duplicate-conflict-content {
   display: grid;
   gap: 10px;
