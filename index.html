@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260721-provider-finance-access-fix">
+<html lang="es" data-app-version="20260721-processing-login">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260721-provider-finance-access-fix">
-  <link rel="stylesheet" href="layout-fix.css?v=20260721-provider-finance-access-fix">
+  <link rel="stylesheet" href="styles.css?v=20260721-processing-login">
+  <link rel="stylesheet" href="layout-fix.css?v=20260721-processing-login">
 </head>
 <body>
   <header class="topbar">
@@ -89,7 +89,7 @@
           <span class="access-icon">🗄️</span>
           <h2>Procesamiento de datos</h2>
           <p>Depura bases mensuales, detecta duplicados y genera reportes operativos estandarizados.</p>
-          <button class="btn primary" type="button" data-view="procesamiento">Abrir modulo <span>→</span></button>
+          <button class="btn primary" type="button" data-view="login-procesamiento">Abrir modulo <span>→</span></button>
         </article>
       </div>
 
@@ -681,6 +681,23 @@
         </div>
         <form id="managerLoginForm" class="panel login-form">
           <input name="username" autocomplete="username" placeholder="Usuario gerente" required>
+          <input name="password" type="password" autocomplete="current-password" placeholder="Contrasena" required>
+          <label class="remember-row"><input name="rememberAccess" type="checkbox"> Recordar acceso en este equipo</label>
+          <button class="btn primary" type="submit">Ingresar</button>
+          <button class="btn secondary" type="button" data-view="acceso">Volver</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="login-procesamiento" class="view" aria-labelledby="login-processing-title">
+      <div class="login-shell">
+        <div>
+          <p class="eyebrow">Procesamiento de datos</p>
+          <h1 id="login-processing-title">Acceso a datos</h1>
+          <p>Ingresa para cargar bases, revisar proveedores, compras, contratos y archivos.</p>
+        </div>
+        <form id="processingLoginForm" class="panel login-form">
+          <input name="username" autocomplete="username" placeholder="Usuario de datos" required>
           <input name="password" type="password" autocomplete="current-password" placeholder="Contrasena" required>
           <label class="remember-row"><input name="rememberAccess" type="checkbox"> Recordar acceso en este equipo</label>
           <button class="btn primary" type="submit">Ingresar</button>
@@ -1703,6 +1720,7 @@
   <script>
     window.autocorFallbackView = function autocorFallbackView(viewId) {
       if (!viewId) return;
+      if (viewId === "procesamiento") viewId = "login-procesamiento";
       document.querySelectorAll(".view").forEach(function (view) {
         view.classList.toggle("is-active", view.id === viewId);
       });
@@ -1730,7 +1748,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260721-provider-finance-access-fix"></script>
+  <script src="app.js?v=20260721-processing-login"></script>
 </body>
 </html>
 
