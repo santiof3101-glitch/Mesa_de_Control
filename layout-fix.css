@@ -1306,7 +1306,9 @@ body {
 
 .topbar-commercial-profile-wrap {
   position: relative;
-  display: inline-grid;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .topbar-commercial-profile {
@@ -1381,6 +1383,50 @@ body {
   color: #64748b;
   font-size: 0.7rem;
   line-height: 1.1;
+}
+
+.topbar-commercial-bell,
+.topbar-commercial-profile-wrap .commercial-bell {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid #e4eaf2;
+  border-radius: 999px;
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 8px 22px rgb(15 23 42 / 6%);
+}
+
+.topbar-commercial-bell span,
+.topbar-commercial-profile-wrap .commercial-bell span {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #f2182d;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 18px;
+}
+
+#formulario .commercial-start-copy .eyebrow,
+#formulario .commercial-start-copy h2,
+#formulario .commercial-start-copy h3,
+#formulario .commercial-start-copy p:not(.eyebrow) {
+  color: #fff !important;
+  text-shadow: 0 2px 8px rgb(0 0 0 / 28%);
+}
+
+#formulario .commercial-start-copy .eyebrow {
+  color: #ffcccf !important;
 }
 
 #formulario .commercial-tracking-shell {

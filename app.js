@@ -4839,6 +4839,11 @@ async function createTask(data) {
   autoAssignSaneamientoTask(task);
   state.tasks.push(task);
 
+  commercialTrackingFilter = "todos";
+  commercialTrackingSearch = "";
+  commercialTrackingDateFrom = "";
+  commercialTrackingDateTo = "";
+  commercialTrackingPage = 1;
   saveState();
   renderAll();
   if (duplicateWarnings.length) {
@@ -6539,19 +6544,38 @@ function renderCommercialLeadList(container, tasks) {
 }
 
 function getCommercialTasks() {
-  const ownedTasks = session.role === "admin" ? state.tasks : state.tasks.filter((task) =>
-    task.commercialUserId === session.userId ||
-    (!task.commercialUserId && task.asesor === session.name && task.agencia === session.agency)
-  );
+  const ownedTasks = getCommercialOwnedTasks();
   return filterTasksByCommercialProcess(ownedTasks);
+}
+
+function normalizeOwnerToken(value = "") {
+  return normalizeLooseText(value).replace(/\s+/g, " ").trim();
+}
+
+function isCommercialTaskOwnedBySession(task = {}) {
+  if (session.role === "admin") return true;
+  const userId = String(session.userId || "").trim();
+  const sessionName = normalizeOwnerToken(session.name);
+  const sessionAgency = normalizeOwnerToken(session.agency);
+  const taskCommercialId = String(task.commercialUserId || "").trim();
+  const taskCommercialName = normalizeOwnerToken(task.commercialUserName);
+  const taskAdvisor = normalizeOwnerToken(task.asesor);
+  const taskCommercialAgency = normalizeOwnerToken(task.commercialAgency);
+  const taskAgency = normalizeOwnerToken(task.agencia);
+  const legacyKey = `${sessionAgency}::${sessionName}`;
+  const taskKey = normalizeOwnerToken(task.agencyAdvisorKey);
+  const sessionKey = normalizeOwnerToken(legacyKey);
+  const sameUserId = userId && taskCommercialId && taskCommercialId === userId;
+  const sameCommercialName = sessionName && taskCommercialName && taskCommercialName === sessionName;
+  const sameAdvisorName = sessionName && taskAdvisor && taskAdvisor === sessionName;
+  const sameAgency = !sessionAgency || taskCommercialAgency === sessionAgency || taskAgency === sessionAgency;
+  const sameLegacyKey = sessionKey && taskKey && taskKey === sessionKey;
+  return sameUserId || sameLegacyKey || ((sameCommercialName || sameAdvisorName) && sameAgency);
 }
 
 function getCommercialOwnedTasks() {
   if (session.role === "admin") return state.tasks;
-  return state.tasks.filter((task) =>
-    task.commercialUserId === session.userId ||
-    (!task.commercialUserId && task.asesor === session.name && task.agencia === session.agency)
-  );
+  return state.tasks.filter(isCommercialTaskOwnedBySession);
 }
 
 function getCommercialOperationalTasks(tasks = state.tasks) {
@@ -6793,13 +6817,24 @@ function getCommercialTrackingColumns() {
   ];
 }
 
+function formatDisplayName(value = "") {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase()
+    .split(" ")
+    .map((part) => part ? `${part.charAt(0).toUpperCase()}${part.slice(1)}` : "")
+    .join(" ") || "Asesor";
+}
+
 function getCommercialTrackingUserProfile() {
   const currentUser = session || {};
-  const name = currentUser.fullName ||
+  const rawName = currentUser.fullName ||
     currentUser.nombreCompleto ||
     [currentUser.nombre, currentUser.apellido].filter(Boolean).join(" ") ||
     currentUser.name ||
     "Asesor";
+  const name = formatDisplayName(rawName);
   const initials = getUserInitials(name);
   const role = session?.role === "admin" ? "Administrador" : "Asesor comercial";
   return { name, initials, role };
@@ -12086,7 +12121,7 @@ function renderProviderExecutiveDashboard(records) {
       <footer class="provider-exec-footer">
         <span>FECHA Periodo <b>${escapeHtml(metrics.period)}</b></span>
         <span>BASE Fuente de datos <b>Base de datos Control Financiero</b></span>
-        <span>TIEMPOÃ¯Â¸Â Fecha de corte <b>${escapeHtml(metrics.cutoff)}</b></span>
+        <span>CORTE Fecha de corte <b>${escapeHtml(metrics.cutoff)}</b></span>
         <span>SYNC Ultima actualizacion <b>${escapeHtml(metrics.updatedAt)}</b></span>
       </footer>
     </section>

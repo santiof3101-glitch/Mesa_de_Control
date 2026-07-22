@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260722-commercial-fixes-1">
+<html lang="es" data-app-version="20260722-commercial-final-1">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260722-commercial-fixes-1">
-  <link rel="stylesheet" href="layout-fix.css?v=20260722-commercial-fixes-1">
+  <link rel="stylesheet" href="styles.css?v=20260722-commercial-final-1">
+  <link rel="stylesheet" href="layout-fix.css?v=20260722-commercial-final-1">
 </head>
 <body>
   <header class="topbar">
@@ -20,13 +20,16 @@
     </button>
     <nav class="nav-tabs" aria-label="Navegacion principal">
       <div id="topbarCommercialProfile" class="topbar-commercial-profile-wrap" hidden>
+        <button id="commercialNotificationBell" class="commercial-bell topbar-commercial-bell" type="button" aria-label="Abrir notificaciones" aria-controls="commercialNotificationsModal" aria-expanded="false">
+          &#128276;<span id="commercialNotificationCount">0</span>
+        </button>
         <button id="topbarCommercialProfileButton" class="topbar-commercial-profile" type="button" data-commercial-profile-toggle aria-haspopup="true" aria-expanded="false">
           <span id="topbarCommercialAvatar" class="commercial-user-avatar" aria-hidden="true">A</span>
           <span class="topbar-commercial-copy">
             <strong id="topbarCommercialGreeting">Hola, Asesor</strong>
             <span id="topbarCommercialRole">Asesor comercial</span>
           </span>
-          <span aria-hidden="true">⌄</span>
+          <span aria-hidden="true">v</span>
         </button>
         <div id="topbarCommercialProfileMenu" class="topbar-commercial-profile-menu" hidden>
           <button type="button" data-commercial-profile-action="password">Cambiar contrasena</button>
@@ -844,11 +847,6 @@
         <div>
           <p class="eyebrow">Dashboard comercial</p>
           <h2 id="commercial-dashboard-title">Mis saneamientos</h2>
-        </div>
-        <div class="session-actions">
-          <button id="commercialNotificationBell" class="commercial-bell" type="button" aria-label="Abrir notificaciones" aria-controls="commercialNotificationsModal" aria-expanded="false">
-            &#128276;<span id="commercialNotificationCount">0</span>
-          </button>
         </div>
         <div class="commercial-module-grid">
           <button class="commercial-module-card is-active" type="button" data-commercial-module="commercial-personal-module">
