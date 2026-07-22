@@ -1299,13 +1299,19 @@ body {
   display: none !important;
 }
 
+.topbar-commercial-profile-wrap[hidden],
 .topbar-commercial-profile[hidden] {
   display: none !important;
 }
 
+.topbar-commercial-profile-wrap {
+  position: relative;
+  display: inline-grid;
+}
+
 .topbar-commercial-profile {
   display: inline-grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 9px;
   max-width: min(280px, 34vw);
@@ -1313,7 +1319,43 @@ body {
   border: 1px solid #e4eaf2;
   border-radius: 999px;
   background: #fff;
+  color: #0f172a;
   box-shadow: 0 8px 22px rgb(15 23 42 / 6%);
+  cursor: pointer;
+}
+
+.topbar-commercial-profile-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  display: grid;
+  min-width: 190px;
+  padding: 8px;
+  border: 1px solid #e4eaf2;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 18px 46px rgb(15 23 42 / 16%);
+}
+
+.topbar-commercial-profile-menu[hidden] {
+  display: none !important;
+}
+
+.topbar-commercial-profile-menu button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #0f172a;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.topbar-commercial-profile-menu button:hover {
+  background: #fff1f0;
+  color: #f2182d;
 }
 
 .topbar-commercial-copy {
@@ -1521,6 +1563,10 @@ body {
   border-radius: 18px;
   background: #fff;
   box-shadow: 0 12px 28px rgb(15 23 42 / 5%);
+}
+
+#formulario .tracking-mobile-column-picker {
+  display: none;
 }
 
 #formulario .tracking-filter-field {
@@ -1968,10 +2014,26 @@ body {
   }
 
   #formulario .commercial-tracking-searchbar,
-  #formulario .commercial-tracking-grid,
   #formulario .commercial-kanban-board,
   #formulario .commercial-tracking-summary {
     grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #formulario .tracking-mobile-column-picker {
+    display: grid;
+  }
+
+  #formulario .commercial-tracking-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    overflow-x: hidden;
+  }
+
+  #formulario .commercial-kanban-column {
+    display: none !important;
+  }
+
+  #formulario .commercial-kanban-column.is-mobile-selected {
+    display: grid !important;
   }
 
   #formulario .tracking-expanded-row {

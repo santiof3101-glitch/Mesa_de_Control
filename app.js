@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260722-commercial-polish-1";
+const APP_BUILD_VERSION = "20260722-commercial-fixes-1";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -294,6 +294,7 @@ const defaultState = {
   announcements: [
     { id: "com-1", title: "Bandeja legal activa", body: "Los asistentes legales pueden tomar leads disponibles por orden de prioridad.", createdAt: new Date().toISOString() }
   ],
+  announcementReads: [],
   announcementDeletions: [],
   forceLogoutRequests: [],
   purchaseTypes: ["Compra directa", "Consignacion", "Retoma"],
@@ -429,7 +430,9 @@ let commercialTrackingSearch = "";
 let commercialTrackingDateFrom = "";
 let commercialTrackingDateTo = "";
 let commercialTrackingPage = 1;
+let commercialTrackingMobileStatus = "pendiente";
 let commercialTrackingSearchTimer = null;
+let currentSessionAnnouncementIds = [];
 const COMMERCIAL_TRACKING_PAGE_SIZE = 6;
 
 const views = document.querySelectorAll(".view");
@@ -461,6 +464,7 @@ const adminLoginForm = document.querySelector("#adminLoginForm");
 const managerLoginForm = document.querySelector("#managerLoginForm");
 const processingLoginForm = document.querySelector("#processingLoginForm");
 const commercialPasswordForm = document.querySelector("#commercialPasswordForm");
+const commercialPasswordModal = document.querySelector("#commercialPasswordModal");
 const legalPasswordForm = document.querySelector("#legalPasswordForm");
 const legalAvailabilityToggle = document.querySelector("#legalAvailabilityToggle");
 const legalAvailabilityStatus = document.querySelector("#legalAvailabilityStatus");
@@ -517,6 +521,9 @@ const forceLogoutMessage = document.querySelector("#forceLogoutMessage");
 const forceLogoutBtn = document.querySelector("#forceLogoutBtn");
 const sessionAnnouncementModal = document.querySelector("#sessionAnnouncementModal");
 const sessionAnnouncementList = document.querySelector("#sessionAnnouncementList");
+const sessionAnnouncementCategory = document.querySelector("#sessionAnnouncementCategory");
+const sessionAnnouncementMeta = document.querySelector("#sessionAnnouncementMeta");
+const sessionAnnouncementTargets = document.querySelector("#sessionAnnouncementTargets");
 const adminLegalFilter = document.querySelector("#adminLegalFilter");
 const adminCommercialFilter = document.querySelector("#adminCommercialFilter");
 const adminAgencyFilter = document.querySelector("#adminAgencyFilter");
@@ -739,6 +746,7 @@ function loadState() {
     merged.managerUsers = Array.isArray(merged.managerUsers) ? merged.managerUsers : [];
     merged.processingUsers = Array.isArray(merged.processingUsers) ? merged.processingUsers : structuredClone(defaultState.processingUsers);
     merged.announcements = (merged.announcements || []).map(normalizeAnnouncement);
+    merged.announcementReads = (merged.announcementReads || []).map(normalizeAnnouncementRead).filter((item) => item.announcementId && item.userKey);
     merged.announcementDeletions = (merged.announcementDeletions || []).map(normalizeAnnouncementDeletion);
     applyAnnouncementDeletions(merged);
     merged.forceLogoutRequests = (merged.forceLogoutRequests || []).map(normalizeForceLogoutRequest);
@@ -1285,6 +1293,7 @@ function getSupabaseModuleSnapshots() {
     },
     saneamientos: {
       announcements: structuredClone(getActiveAnnouncements()),
+      announcementReads: structuredClone(state.announcementReads || []),
       announcementDeletions: structuredClone(state.announcementDeletions || []),
       forceLogoutRequests: structuredClone(state.forceLogoutRequests || []),
       legalChatMessages: structuredClone(normalizeLegalChatMessages(state.legalChatMessages || []))
@@ -1577,6 +1586,11 @@ function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
         "announcementId"
       ).slice(0, 200);
       state.announcements = (Array.isArray(snapshot.announcements) ? snapshot.announcements : (state.announcements || [])).map(normalizeAnnouncement);
+      state.announcementReads = mergeByKey(
+        (state.announcementReads || []).map(normalizeAnnouncementRead),
+        (Array.isArray(snapshot.announcementReads) ? snapshot.announcementReads : []).map(normalizeAnnouncementRead),
+        "id"
+      ).slice(0, 1000);
       applyAnnouncementDeletions(state);
       state.forceLogoutRequests = mergeByKey(
         (state.forceLogoutRequests || []).map(normalizeForceLogoutRequest),
@@ -2021,6 +2035,15 @@ function normalizeAnnouncement(announcement = {}) {
     popupEnabled: announcement.popupEnabled !== false,
     audience: ["all", "commercial", "legal", "specific"].includes(announcement.audience) ? announcement.audience : "all",
     targetUsers: Array.isArray(announcement.targetUsers) ? announcement.targetUsers : []
+  };
+}
+
+function normalizeAnnouncementRead(read = {}) {
+  return {
+    id: read.id || `${read.userKey || ""}:${read.announcementId || ""}`,
+    announcementId: read.announcementId || "",
+    userKey: read.userKey || "",
+    readAt: read.readAt || new Date().toISOString()
   };
 }
 
@@ -3038,7 +3061,7 @@ function openCommercialModal(modal) {
 }
 
 function closeCommercialModals() {
-  [commercialConstructionModal, commercialLeadModal, commercialNotificationsModal, commercialSidebarModal, commercialPilotModal, commercialDuplicateModal, commercialSignatureModal].forEach((modal) => {
+  [commercialConstructionModal, commercialLeadModal, commercialNotificationsModal, commercialSidebarModal, commercialPilotModal, commercialDuplicateModal, commercialSignatureModal, commercialPasswordModal].forEach((modal) => {
     if (modal) modal.hidden = true;
   });
   document.querySelector("#commercialNotificationBell")?.setAttribute("aria-expanded", "false");
@@ -5476,10 +5499,12 @@ function takeTask(id) {
     return;
   }
 
-  task.legalUserId = session.userId;
-  task.legalAdvisor = session.name;
-  task.takenAt = new Date().toISOString();
-  task.status = "tomado";
+  assignTaskToLegalUser(task, { id: session.userId, name: session.name }, "tomado");
+  if (task.legalUserId !== session.userId) {
+    showToast("Ya tienes un saneamiento activo. Finalizalo antes de tomar una nueva tarea.");
+    renderTasks();
+    return;
+  }
   task.statusLockedAt = "";
   task.statusLockedBy = "";
   task.statusLockedByName = "";
@@ -5818,10 +5843,50 @@ async function createCuvTask(data) {
   );
 }
 
+function getLegalTerminalStatusValues() {
+  const catalogValues = (state.statusOptions || [])
+    .filter((option) => option?.closes)
+    .map((option) => normalizeStatusValue(option.value || option.label));
+  return new Set([
+    ...catalogValues,
+    "saneamiento realizado y subido a pilot",
+    "cerrado",
+    "finalizado",
+    "cancelado",
+    "anulado",
+    "anulado definitivo"
+  ].filter(Boolean));
+}
+
+function getLegalActiveStatusValues() {
+  const catalogValues = (state.statusOptions || [])
+    .filter((option) => option && option.closes === false)
+    .map((option) => normalizeStatusValue(option.value || option.label));
+  return new Set([
+    ...catalogValues,
+    "pendiente",
+    "por asignar",
+    "tomado"
+  ].filter(Boolean));
+}
+
+function isLegalTaskTerminal(task = {}) {
+  return getLegalTerminalStatusValues().has(normalizeStatusValue(task.status)) || Boolean(task.completedAt && isClosedStatus(task.status));
+}
+
+function isActiveSaneamientoTask(task = {}) {
+  return getTaskMailbox(task) === "saneamientos" && Boolean(task.legalUserId) && !isLegalTaskTerminal(task);
+}
+
+function isLegalAdvisorAvailable(advisorId, tasks = state.tasks) {
+  if (!advisorId) return false;
+  return !(tasks || []).some((task) => task.legalUserId === advisorId && isActiveSaneamientoTask(task));
+}
+
 function getLegalUserActiveLoad(userId, mailbox = "") {
   return (state.tasks || []).filter((task) =>
     task.legalUserId === userId &&
-    !isClosedStatus(task.status) &&
+    !isLegalTaskTerminal(task) &&
     (!mailbox || getTaskMailbox(task) === mailbox)
   ).length;
 }
@@ -5832,8 +5897,7 @@ function canLegalUserReceiveNewTask(user = {}, task = {}) {
   if (!userHasMailbox(user, mailbox)) return false;
   if (mailbox !== "saneamientos") return true;
   if (user.legalAvailable === false) return false;
-  const activeLoad = getLegalUserActiveLoad(user.id, "saneamientos");
-  return activeLoad === 0 || task.legalUserId === user.id;
+  return task.legalUserId === user.id || isLegalAdvisorAvailable(user.id, state.tasks);
 }
 
 function canLegalUserTakeTask(task = {}, user = currentLegalUser()) {
@@ -5845,6 +5909,13 @@ function canLegalUserTakeTask(task = {}, user = currentLegalUser()) {
 
 function assignTaskToLegalUser(task, user, status = "tomado") {
   if (!task || !user) return task;
+  if (
+    getTaskMailbox(task) === "saneamientos" &&
+    task.legalUserId !== user.id &&
+    !isLegalAdvisorAvailable(user.id, state.tasks)
+  ) {
+    return task;
+  }
   const now = new Date().toISOString();
   task.legalUserId = user.id;
   task.legalAdvisor = user.name;
@@ -5854,23 +5925,33 @@ function assignTaskToLegalUser(task, user, status = "tomado") {
   return task;
 }
 
-function autoAssignSaneamientoTask(task) {
-  if (!task || getTaskMailbox(task) !== "saneamientos" || task.legalUserId || isClosedStatus(task.status)) return task;
-  const eligibleUsers = getEligibleLegalUsersForTask(task);
+function autoAssignSaneamientoTask(task, reservedAdvisorIds = new Set()) {
+  if (!task || getTaskMailbox(task) !== "saneamientos" || task.legalUserId || isLegalTaskTerminal(task)) return task;
+  const eligibleUsers = getEligibleLegalUsersForTask(task)
+    .filter((user) => !reservedAdvisorIds.has(user.id))
+    .filter((user) => isLegalAdvisorAvailable(user.id, state.tasks));
   if (!eligibleUsers.length) return task;
   const selected = eligibleUsers
     .map((user) => ({ user, load: getLegalUserActiveLoad(user.id, "saneamientos") }))
     .sort((a, b) => a.load - b.load || a.user.name.localeCompare(b.user.name))[0]?.user;
-  if (selected) assignTaskToLegalUser(task, selected, "tomado");
+  if (selected) {
+    assignTaskToLegalUser(task, selected, "tomado");
+    if (task.legalUserId) reservedAdvisorIds.add(task.legalUserId);
+  }
   return task;
 }
 
 function autoAssignOpenSaneamientos() {
   let changed = false;
+  const reservedAdvisorIds = new Set(
+    (state.tasks || [])
+      .filter(isActiveSaneamientoTask)
+      .map((task) => task.legalUserId)
+  );
   (state.tasks || []).forEach((task) => {
-    if (getTaskMailbox(task) === "saneamientos" && !task.legalUserId && !isClosedStatus(task.status)) {
+    if (getTaskMailbox(task) === "saneamientos" && !task.legalUserId && !isLegalTaskTerminal(task)) {
       const before = task.legalUserId;
-      autoAssignSaneamientoTask(task);
+      autoAssignSaneamientoTask(task, reservedAdvisorIds);
       if (task.legalUserId && task.legalUserId !== before) {
         task.syncStatus = "pending";
         task.syncAction = "auto-asignar";
@@ -6547,6 +6628,23 @@ function renderCommercialCuvList() {
   `).join("");
 }
 
+function isCommercialTrackingFinished(task = {}) {
+  const normalizedStatus = normalizeStatusValue(task.status);
+  if (normalizedStatus.includes("rechaz")) return false;
+  const explicitTerminalStatuses = new Set([
+    ...[...getLegalTerminalStatusValues()].filter((status) => !status.includes("rechaz")),
+    "contratos firmados subidos a pilot",
+    "proceso finalizado",
+    "cerrada",
+    "cerradas",
+    "final"
+  ]);
+  if (task.signatureStatus === SIGNATURE_STATUS.completed) return true;
+  if (explicitTerminalStatuses.has(normalizedStatus)) return true;
+  if (normalizedStatus.includes("anulado") || normalizedStatus.includes("cancelado")) return true;
+  return false;
+}
+
 function getCommercialTrackingStage(task = {}) {
   const status = normalizeLooseText(task.status);
   const statusOption = getStatusOption(task.status);
@@ -6569,8 +6667,8 @@ function getCommercialTrackingStage(task = {}) {
   if (status.includes("RECHAZ")) {
     return { ...base, key: "rechazado", label: "Rechazado por legal", className: "danger", progress: 44, step: 4 };
   }
-  if (isClosedStatus(task.status)) {
-    return { ...base, key: "saneamiento-pilot", label: "Saneamiento en Pilot", className: "success", progress: 55, step: 5 };
+  if (isCommercialTrackingFinished(task)) {
+    return { ...base, key: "saneamiento-pilot", label: "Saneamiento en Pilot", className: "success", progress: 100, step: 5 };
   }
   if (task.legalUserId || task.takenAt || status.includes("TOMADO")) {
     return { ...base, key: "gestion", label: "Gestion legal", className: "warning", progress: 44, step: 4 };
@@ -6679,7 +6777,7 @@ function getCommercialTrackingColumnKey(task = {}) {
   const stage = getCommercialTrackingStage(task);
   const status = normalizeLooseText(task.status);
   if (stage.key === "rechazado" || status.includes("RECHAZ")) return "rechazado";
-  if (stage.key === "firma-finalizada" || stage.key === "saneamiento-pilot" || isClosedStatus(task.status)) return "completado";
+  if (isCommercialTrackingFinished(task) || stage.key === "firma-finalizada" || stage.key === "saneamiento-pilot") return "completado";
   if (["firma-solicitada", "firma-enviada", "subir-firmados"].includes(stage.key)) return "revision";
   if (stage.key === "gestion" || task.legalUserId || task.takenAt || status.includes("TOMADO")) return "proceso";
   return "pendiente";
@@ -6741,29 +6839,41 @@ function getUserInitials(name) {
 }
 
 function closeCommercialProfileMenu() {
-  const menu = document.querySelector("#commercialUserProfileMenu");
-  const button = document.querySelector("#commercialUserProfileButton");
+  const menu = document.querySelector("#topbarCommercialProfileMenu");
+  const button = document.querySelector("#topbarCommercialProfileButton");
   if (menu) menu.hidden = true;
   if (button) button.setAttribute("aria-expanded", "false");
 }
 
 function toggleCommercialProfileMenu() {
-  const menu = document.querySelector("#commercialUserProfileMenu");
-  const button = document.querySelector("#commercialUserProfileButton");
+  const menu = document.querySelector("#topbarCommercialProfileMenu");
+  const button = document.querySelector("#topbarCommercialProfileButton");
   if (!menu || !button) return;
   const nextOpen = menu.hidden;
   menu.hidden = !nextOpen;
   button.setAttribute("aria-expanded", String(nextOpen));
 }
 
+function openCommercialPasswordModal() {
+  if (!commercialPasswordModal) return;
+  commercialPasswordModal.hidden = false;
+  document.body.classList.add("has-modal");
+  window.setTimeout(() => {
+    const passwordInput = commercialPasswordForm?.querySelector("input[name='password'], input[type='password']");
+    passwordInput?.focus();
+  }, 80);
+}
+
+function closeCommercialPasswordModal() {
+  if (!commercialPasswordModal) return;
+  commercialPasswordModal.hidden = true;
+  document.body.classList.remove("has-modal");
+}
+
 function handleCommercialProfileAction(action) {
   closeCommercialProfileMenu();
   if (action === "password") {
-    setCommercialArea("dashboard");
-    window.setTimeout(() => {
-      const passwordInput = commercialPasswordForm?.querySelector("input[name='password'], input[type='password']");
-      passwordInput?.focus();
-    }, 80);
+    openCommercialPasswordModal();
     return;
   }
   if (action === "logout") {
@@ -6778,8 +6888,11 @@ function renderCommercialTrackingBoard(tasks = []) {
   if (!container) return;
   const purchaseTasks = tasks.filter((task) => getTaskProcess(task) === "compra");
   const visibleTasks = getCommercialTrackingTasks(purchaseTasks);
-  const visibleKanbanRequests = visibleTasks.filter((request) => Number(getCommercialTrackingStage(request).progress || 0) < 100);
+  const visibleKanbanRequests = visibleTasks.filter((task) => !isCommercialTrackingFinished(task));
   const columns = getCommercialTrackingColumns();
+  if (!columns.some((column) => column.key === commercialTrackingMobileStatus)) {
+    commercialTrackingMobileStatus = columns[0]?.key || "pendiente";
+  }
   const columnsByKey = Object.fromEntries(columns.map((column) => [column.key, column]));
   const counts = purchaseTasks.reduce((map, task) => {
     const key = getCommercialTrackingColumnKey(task);
@@ -6836,13 +6949,19 @@ function renderCommercialTrackingBoard(tasks = []) {
         <input type="date" data-commercial-tracking-to value="${escapeHtml(commercialTrackingDateTo)}">
       </label>
       <button class="tracking-clear-button" type="button" data-commercial-tracking-clear>Limpiar</button>
+      <label class="tracking-filter-field tracking-mobile-column-picker">
+        <span>Columna visible</span>
+        <select data-commercial-tracking-mobile-status>
+          ${columns.map((column) => `<option value="${escapeHtml(column.key)}" ${commercialTrackingMobileStatus === column.key ? "selected" : ""}>${escapeHtml(column.label)} (${kanbanCounts[column.key] || 0})</option>`).join("")}
+        </select>
+      </label>
     </div>
     <div class="commercial-kanban-board commercial-tracking-grid">
       ${columns.map((column) => {
         const columnTasks = visibleByColumn[column.key] || [];
         const allColumnTasks = allByColumn[column.key] || [];
         return `
-          <section class="commercial-kanban-column tracking-column" data-status="${escapeHtml(column.key)}" style="--column-color:${column.color}; --column-soft:${column.soft}">
+          <section class="commercial-kanban-column tracking-column ${commercialTrackingMobileStatus === column.key ? "is-mobile-selected" : ""}" data-status="${escapeHtml(column.key)}" style="--column-color:${column.color}; --column-soft:${column.soft}">
             <header class="commercial-kanban-column-head">
               <span class="kanban-icon" aria-hidden="true">${column.icon}</span>
               <div>
@@ -13883,9 +14002,36 @@ function getAnnouncementAudienceLabel(announcement = {}) {
   return `Destinatarios: ${names.length ? names.join(", ") : "usuarios especificos"}`;
 }
 
+function getAnnouncementSessionUserKey(targetSession = session) {
+  return `${targetSession?.role || "public"}:${targetSession?.userId || targetSession?.username || targetSession?.name || "anonimo"}`;
+}
+
+function isAnnouncementReadForSession(announcement = {}, targetSession = session) {
+  const userKey = getAnnouncementSessionUserKey(targetSession);
+  return (state.announcementReads || []).some((read) =>
+    read.announcementId === announcement.id && read.userKey === userKey
+  );
+}
+
+function markSessionAnnouncementsRead(ids = []) {
+  const userKey = getAnnouncementSessionUserKey(session);
+  const now = new Date().toISOString();
+  state.announcementReads = Array.isArray(state.announcementReads) ? state.announcementReads : [];
+  ids.filter(Boolean).forEach((announcementId) => {
+    const exists = state.announcementReads.some((read) => read.announcementId === announcementId && read.userKey === userKey);
+    if (!exists) {
+      state.announcementReads.push(normalizeAnnouncementRead({ announcementId, userKey, readAt: now }));
+    }
+  });
+  saveState();
+  scheduleSupabaseModuleSync();
+}
+
 function getPendingSessionAnnouncements() {
   return getActiveAnnouncements()
     .filter((announcement) => isAnnouncementForSession(announcement, session))
+    .filter((announcement) => announcement.popupEnabled !== false)
+    .filter((announcement) => !isAnnouncementReadForSession(announcement, session))
     .slice(0, 5);
 }
 
@@ -13896,15 +14042,24 @@ function maybeShowSessionAnnouncements() {
   if (sessionAnnouncementShownKey === key) return;
   const items = getPendingSessionAnnouncements();
   if (!items.length) return;
+  const first = items[0];
   sessionAnnouncementShownKey = key;
+  currentSessionAnnouncementIds = items.map((announcement) => announcement.id);
+  if (sessionAnnouncementCategory) sessionAnnouncementCategory.textContent = items.length > 1 ? "Comunicados internos" : "Comunicado interno";
+  if (sessionAnnouncementMeta) sessionAnnouncementMeta.textContent = formatDateTime(first.createdAt);
+  if (sessionAnnouncementTargets) sessionAnnouncementTargets.textContent = getAnnouncementAudienceLabel(first);
+  const title = document.querySelector("#sessionAnnouncementTitle");
+  if (title) title.textContent = first.title || "Recordatorios importantes";
   sessionAnnouncementList.innerHTML = items.map((announcement) => `
     <article class="session-announcement-card">
-      ${announcement.imageDataUrl ? `<img src="${announcement.imageDataUrl}" alt="">` : ""}
-      <div>
-        <span>${escapeHtml(getAnnouncementAudienceLabel(announcement))}</span>
+      <div class="session-announcement-media">
+        ${announcement.imageDataUrl ? `<img src="${announcement.imageDataUrl}" alt="">` : `<div class="session-announcement-empty-media">Comunicado</div>`}
+      </div>
+      <div class="session-announcement-message">
+        <span>${escapeHtml(formatDateTime(announcement.createdAt))}</span>
         <strong>${escapeHtml(announcement.title)}</strong>
         <p>${escapeHtml(announcement.body)}</p>
-        <small>${escapeHtml(formatDateTime(announcement.createdAt))}</small>
+        <small>${escapeHtml(getAnnouncementAudienceLabel(announcement))}</small>
       </div>
     </article>
   `).join("");
@@ -13915,7 +14070,13 @@ function maybeShowSessionAnnouncements() {
 function closeSessionAnnouncementModal() {
   if (!sessionAnnouncementModal) return;
   sessionAnnouncementModal.hidden = true;
+  currentSessionAnnouncementIds = [];
   document.body.classList.remove("has-modal");
+}
+
+function readAndCloseSessionAnnouncementModal() {
+  markSessionAnnouncementsRead(currentSessionAnnouncementIds);
+  closeSessionAnnouncementModal();
 }
 
 function compressAnnouncementImage(file) {
@@ -14042,8 +14203,12 @@ document.addEventListener("click", (event) => {
     handleCommercialProfileAction(profileAction.dataset.commercialProfileAction);
     return;
   }
-  if (!event.target.closest(".commercial-user-profile-wrap")) {
+  if (!event.target.closest(".topbar-commercial-profile-wrap")) {
     closeCommercialProfileMenu();
+  }
+  if (event.target.closest("[data-close-commercial-password]")) {
+    closeCommercialPasswordModal();
+    return;
   }
   const pdfButton = event.target.closest("[data-pdf-download]");
   if (pdfButton) {
@@ -14132,6 +14297,10 @@ document.addEventListener("change", (event) => {
   if (event.target.matches("[data-commercial-tracking-status]")) {
     commercialTrackingFilter = event.target.value || "todos";
     commercialTrackingPage = 1;
+    renderCommercialDashboard();
+  }
+  if (event.target.matches("[data-commercial-tracking-mobile-status]")) {
+    commercialTrackingMobileStatus = event.target.value || "pendiente";
     renderCommercialDashboard();
   }
 });
@@ -14428,6 +14597,7 @@ commercialPasswordForm.addEventListener("submit", (event) => {
   event.preventDefault();
   changeOwnPassword("commercialAdvisors", new FormData(commercialPasswordForm).get("password"));
   commercialPasswordForm.reset();
+  closeCommercialPasswordModal();
 });
 
 legalPasswordForm.addEventListener("submit", (event) => {
@@ -14514,6 +14684,10 @@ forceLogoutBtn?.addEventListener("click", createForceLogoutRequest);
 
 document.querySelectorAll("[data-close-session-announcement]").forEach((button) => {
   button.addEventListener("click", closeSessionAnnouncementModal);
+});
+
+document.querySelectorAll("[data-read-session-announcement]").forEach((button) => {
+  button.addEventListener("click", readAndCloseSessionAnnouncementModal);
 });
 
 themeForm.addEventListener("submit", (event) => {
