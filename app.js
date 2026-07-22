@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260721-provider-finance-access-fix";
+const APP_BUILD_VERSION = "20260721-processing-login";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -249,6 +249,9 @@ const defaultState = {
   managerUsers: [
     { id: "gerente-1", name: "Gerente general", username: "gerente1", password: "Gerente123" }
   ],
+  processingUsers: [
+    { id: "datos-1", name: "Mesa de Datos", username: "datos1", password: "Datos123" }
+  ],
   dataProcessing: {
     compras: [],
     loads: [],
@@ -377,6 +380,7 @@ const legalLoginForm = document.querySelector("#legalLoginForm");
 const commercialLoginForm = document.querySelector("#commercialLoginForm");
 const adminLoginForm = document.querySelector("#adminLoginForm");
 const managerLoginForm = document.querySelector("#managerLoginForm");
+const processingLoginForm = document.querySelector("#processingLoginForm");
 const commercialPasswordForm = document.querySelector("#commercialPasswordForm");
 const legalPasswordForm = document.querySelector("#legalPasswordForm");
 const legalAvailabilityToggle = document.querySelector("#legalAvailabilityToggle");
@@ -634,6 +638,8 @@ function loadState() {
     }
     merged.commercialAdvisors = normalizeCommercialAdvisors(merged.commercialAdvisors || []);
     merged.legalUsers = normalizeLegalUsers(merged.legalUsers || []);
+    merged.managerUsers = Array.isArray(merged.managerUsers) ? merged.managerUsers : [];
+    merged.processingUsers = Array.isArray(merged.processingUsers) ? merged.processingUsers : structuredClone(defaultState.processingUsers);
     merged.announcements = merged.announcements || [];
     merged.legalChatMessages = normalizeLegalChatMessages(merged.legalChatMessages || []);
     merged.theme = { ...structuredClone(defaultState.theme), ...(merged.theme || {}) };
@@ -693,6 +699,9 @@ function applyCachedAccessUsers(snapshot) {
   if (Array.isArray(cached.managerUsers) && cached.managerUsers.length) {
     snapshot.managerUsers = cached.managerUsers;
   }
+  if (Array.isArray(cached.processingUsers) && cached.processingUsers.length) {
+    snapshot.processingUsers = cached.processingUsers;
+  }
   return snapshot;
 }
 
@@ -702,6 +711,7 @@ function persistAccessUsers(snapshot = state) {
       commercialAdvisors: snapshot.commercialAdvisors || [],
       legalUsers: snapshot.legalUsers || [],
       managerUsers: snapshot.managerUsers || [],
+      processingUsers: snapshot.processingUsers || [],
       updatedAt: new Date().toISOString()
     }));
   } catch (error) {
@@ -1162,7 +1172,8 @@ function getSupabaseModuleSnapshots() {
     usuarios: {
       commercialAdvisors: structuredClone(state.commercialAdvisors || []),
       legalUsers: structuredClone(normalizeLegalUsers(state.legalUsers || [])),
-      managerUsers: structuredClone(state.managerUsers || [])
+      managerUsers: structuredClone(state.managerUsers || []),
+      processingUsers: structuredClone(state.processingUsers || [])
     },
     catalogos: {
       agencies: structuredClone(state.agencies || []),
@@ -1420,6 +1431,7 @@ function getSupabasePollInterval() {
   if (session.role === "admin") return 5 * 60 * 1000;
   if (session.role === "commercial") return 5 * 60 * 1000;
   if (session.role === "manager") return 8 * 60 * 1000;
+  if (session.role === "processing") return 10 * 60 * 1000;
   return 0;
 }
 
@@ -1439,6 +1451,7 @@ function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
       state.commercialAdvisors = normalizeCommercialAdvisors(snapshot.commercialAdvisors || state.commercialAdvisors || []);
       state.legalUsers = normalizeLegalUsers(Array.isArray(snapshot.legalUsers) ? snapshot.legalUsers : (state.legalUsers || []));
       state.managerUsers = Array.isArray(snapshot.managerUsers) ? snapshot.managerUsers : (state.managerUsers || []);
+      state.processingUsers = Array.isArray(snapshot.processingUsers) ? snapshot.processingUsers : (state.processingUsers || structuredClone(defaultState.processingUsers));
       persistAccessUsers(state);
       return true;
     case "catalogos":
@@ -1575,6 +1588,7 @@ function mergePcStates(baseState, extraState) {
   merged.commercialAdvisors = mergeByKey(merged.commercialAdvisors || [], extraState.commercialAdvisors || [], "id");
   merged.legalUsers = normalizeLegalUsers(mergeByKey(merged.legalUsers || [], extraState.legalUsers || [], "id"));
   merged.managerUsers = mergeByKey(merged.managerUsers || [], extraState.managerUsers || [], "id");
+  merged.processingUsers = mergeByKey(merged.processingUsers || [], extraState.processingUsers || [], "id");
   merged.taskDeletions = mergeByKey(merged.taskDeletions || [], extraState.taskDeletions || [], "id");
   merged.tasks = (merged.tasks || []).filter((task) =>
     !merged.taskDeletions.some((deletion) => deletion.id === task.id)
@@ -2495,6 +2509,8 @@ function normalizeImportedState(importedState) {
   const merged = { ...structuredClone(defaultState), ...importedState };
   merged.commercialAdvisors = normalizeCommercialAdvisors(merged.commercialAdvisors || []);
   merged.legalUsers = normalizeLegalUsers(merged.legalUsers || []);
+  merged.managerUsers = Array.isArray(merged.managerUsers) ? merged.managerUsers : [];
+  merged.processingUsers = Array.isArray(merged.processingUsers) ? merged.processingUsers : structuredClone(defaultState.processingUsers);
   merged.announcements = merged.announcements || [];
   merged.legalChatMessages = normalizeLegalChatMessages(merged.legalChatMessages || []);
   merged.theme = { ...structuredClone(defaultState.theme), ...(merged.theme || {}) };
@@ -2642,7 +2658,7 @@ function loadPersistedSession() {
 
 function sanitizePersistedSession(savedSession) {
   if (!savedSession || savedSession.role === "public") return getPublicSession();
-  const allowedRoles = new Set(["admin", "legal", "commercial", "manager"]);
+  const allowedRoles = new Set(["admin", "legal", "commercial", "manager", "processing"]);
   if (!allowedRoles.has(savedSession.role)) return getPublicSession();
   return {
     role: savedSession.role,
@@ -2658,6 +2674,7 @@ function isPersistedSessionValid(savedSession) {
   if (savedSession.role === "legal") return state.legalUsers.some((user) => user.id === savedSession.userId);
   if (savedSession.role === "commercial") return state.commercialAdvisors.some((user) => user.id === savedSession.userId);
   if (savedSession.role === "manager") return state.managerUsers.some((user) => user.id === savedSession.userId);
+  if (savedSession.role === "processing") return state.processingUsers.some((user) => user.id === savedSession.userId);
   return false;
 }
 
@@ -2703,7 +2720,7 @@ function forceRestoreView(viewId) {
     tareas: ["legal", "admin"],
     admin: ["admin"],
     gerencial: ["manager", "admin"],
-    procesamiento: ["admin"]
+    procesamiento: ["processing", "admin"]
   };
   const allowedRoles = protectedViews[viewId];
   if (allowedRoles && !allowedRoles.includes(session.role)) {
@@ -2734,6 +2751,7 @@ function applyRememberedLogins() {
   fillRememberedLogin(commercialLoginForm, remembered.commercial);
   fillRememberedLogin(legalLoginForm, remembered.legal);
   fillRememberedLogin(managerLoginForm, remembered.manager);
+  fillRememberedLogin(processingLoginForm, remembered.processing);
   fillRememberedLogin(adminLoginForm, remembered.admin);
 }
 
@@ -2965,9 +2983,9 @@ function setView(viewId) {
     viewId = "acceso";
   }
 
-  if (viewId === "procesamiento" && session.role !== "admin") {
-    showToast("Ingrese como administrador para abrir procesamiento de datos.");
-    viewId = "login-admin";
+  if (viewId === "procesamiento" && !canOpenProcessingTools()) {
+    showToast("Ingrese con usuario de procesamiento de datos.");
+    viewId = "login-procesamiento";
   }
 
   if (viewId === "gerencial" && !canOpenManagerDashboard()) {
@@ -3043,6 +3061,10 @@ function canOpenCommercialTools() {
 
 function canOpenManagerDashboard() {
   return session.role === "manager" || session.role === "admin";
+}
+
+function canOpenProcessingTools() {
+  return session.role === "processing" || session.role === "admin";
 }
 
 function setSession(nextSession) {
@@ -4811,6 +4833,31 @@ async function loginManager(data) {
   setSession({ role: "manager", userId: user.id, name: user.name, agency: "" });
   managerLoginForm.reset();
   setView("gerencial");
+  showToast(`Bienvenido, ${user.name}.`);
+}
+
+async function loginProcessing(data) {
+  const username = cleanUsernameValue(data.username);
+  const password = cleanPasswordValue(data.password);
+  let user = (state.processingUsers || []).find((item) =>
+    cleanUsernameValue(item.username) === username && cleanPasswordValue(item.password) === password
+  );
+
+  if (!user) {
+    await refreshAccessUsersAfterFailedLogin();
+    user = (state.processingUsers || []).find((item) =>
+      cleanUsernameValue(item.username) === username && cleanPasswordValue(item.password) === password
+    );
+    if (!user) {
+      showToast("Usuario de procesamiento o contrasena incorrectos.");
+      return;
+    }
+  }
+
+  rememberAccessFromLogin("processing", processingLoginForm, data);
+  setSession({ role: "processing", userId: user.id, name: user.name, agency: "" });
+  processingLoginForm.reset();
+  setView("procesamiento");
   showToast(`Bienvenido, ${user.name}.`);
 }
 
@@ -12281,6 +12328,11 @@ adminLoginForm.addEventListener("submit", (event) => {
 managerLoginForm.addEventListener("submit", (event) => {
   event.preventDefault();
   loginManager(Object.fromEntries(new FormData(managerLoginForm).entries()));
+});
+
+processingLoginForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  loginProcessing(Object.fromEntries(new FormData(processingLoginForm).entries()));
 });
 
 commercialPasswordForm.addEventListener("submit", (event) => {
