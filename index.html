@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260721-session-announcements">
+<html lang="es" data-app-version="20260721-admin-force-logout">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260721-session-announcements">
-  <link rel="stylesheet" href="layout-fix.css?v=20260721-session-announcements">
+  <link rel="stylesheet" href="styles.css?v=20260721-admin-force-logout">
+  <link rel="stylesheet" href="layout-fix.css?v=20260721-admin-force-logout">
 </head>
 <body>
   <header class="topbar">
@@ -1288,8 +1288,26 @@
               Mostrar al iniciar sesion
             </label>
             <button class="btn primary" type="submit">Publicar</button>
+            <input id="announcementRecipientSearch" class="announcement-target-search" type="search" placeholder="Buscar usuario por nombre, rol o agencia" hidden>
             <div id="announcementRecipients" class="announcement-recipients" hidden></div>
           </form>
+          <div class="admin-force-logout-panel">
+            <div>
+              <p class="eyebrow">Seguridad y comunicados urgentes</p>
+              <h3>Cerrar sesiones activas</h3>
+              <p class="helper-text">Usalo cuando necesites que el equipo vuelva a iniciar sesion y vea un comunicado urgente.</p>
+            </div>
+            <select id="forceLogoutAudience" aria-label="Alcance de cierre de sesion">
+              <option value="all">Cerrar a todos</option>
+              <option value="commercial">Cerrar solo comercial</option>
+              <option value="legal">Cerrar solo mesa de control</option>
+              <option value="specific">Cerrar usuarios especificos</option>
+            </select>
+            <input id="forceLogoutMessage" placeholder="Mensaje opcional para mostrar al cerrar sesion">
+            <button id="forceLogoutBtn" class="btn secondary danger" type="button">Cerrar sesion</button>
+            <input id="forceLogoutRecipientSearch" class="announcement-target-search" type="search" placeholder="Buscar usuario especifico" hidden>
+            <div id="forceLogoutRecipients" class="announcement-recipients" hidden></div>
+          </div>
           <div id="adminAnnouncementsList" class="users-list"></div>
         </section>
 
@@ -1868,7 +1886,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260721-session-announcements"></script>
+  <script src="app.js?v=20260721-admin-force-logout"></script>
 </body>
 </html>
 
