@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260721-provider-duplicate-item-status";
+const APP_BUILD_VERSION = "20260721-provider-finance-access-fix";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -1420,12 +1420,11 @@ function getSupabasePollInterval() {
   if (session.role === "admin") return 5 * 60 * 1000;
   if (session.role === "commercial") return 5 * 60 * 1000;
   if (session.role === "manager") return 8 * 60 * 1000;
-  if (currentViewId === "procesamiento") return SUPABASE_HEAVY_MODULE_REFRESH_MIN_MS;
   return 0;
 }
 
 function canSyncCurrentView() {
-  return session.role !== "public" || currentViewId === "procesamiento";
+  return session.role !== "public";
 }
 
 function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
@@ -2703,7 +2702,8 @@ function forceRestoreView(viewId) {
     commercial: ["commercial", "admin"],
     tareas: ["legal", "admin"],
     admin: ["admin"],
-    gerencial: ["manager", "admin"]
+    gerencial: ["manager", "admin"],
+    procesamiento: ["admin"]
   };
   const allowedRoles = protectedViews[viewId];
   if (allowedRoles && !allowedRoles.includes(session.role)) {
@@ -2963,6 +2963,11 @@ function setView(viewId) {
   if (viewId === "admin" && session.role !== "admin") {
     showToast("Ingrese la clave de administrador.");
     viewId = "acceso";
+  }
+
+  if (viewId === "procesamiento" && session.role !== "admin") {
+    showToast("Ingrese como administrador para abrir procesamiento de datos.");
+    viewId = "login-admin";
   }
 
   if (viewId === "gerencial" && !canOpenManagerDashboard()) {
@@ -9774,10 +9779,25 @@ function getProviderUnauthorizedDuplicateItems(group) {
     .filter(({ item, index }) => !isProviderDuplicateItemApproved(group, item, index) && !isProviderDuplicateItemRejected(group, item, index));
 }
 
+function getProviderRejectedDuplicateItems(group) {
+  return getProviderDuplicateChargeItems(group)
+    .map((item, index) => ({ item, index: index + 1 }))
+    .filter(({ item, index }) => isProviderDuplicateItemRejected(group, item, index));
+}
+
 function getProviderDuplicateUnauthorizedAmount(group, records = getFilteredProviderRecords()) {
   const fallbackAmount = getProviderPlateResolvedAmount(group.items, getProviderCommonAmount(records));
   return getProviderUnauthorizedDuplicateItems(group)
     .reduce((sum, { item }) => sum + (getProviderRecordAmount(item) || fallbackAmount), 0);
+}
+
+function getProviderRejectedOverchargeAmount(records = getFilteredProviderRecords()) {
+  const fallbackAmount = getProviderCommonAmount(records);
+  return getProviderDuplicateGroups(records).reduce((sum, group) => {
+    const groupFallback = getProviderPlateResolvedAmount(group.items, fallbackAmount);
+    return sum + getProviderRejectedDuplicateItems(group)
+      .reduce((itemSum, { item }) => itemSum + (getProviderRecordAmount(item) || groupFallback), 0);
+  }, 0);
 }
 
 function getProviderAuthorizedOverchargeAmount(records = getFilteredProviderRecords()) {
@@ -9797,7 +9817,7 @@ function isProviderDuplicateApproved(group) {
 
 function isProviderDuplicateRejected(group) {
   const chargeItems = getProviderDuplicateChargeItems(group);
-  return Boolean(chargeItems.length && chargeItems.every((item, index) => isProviderDuplicateItemRejected(group, item, index + 1)));
+  return Boolean(chargeItems.length && !isProviderDuplicatePending(group) && chargeItems.some((item, index) => isProviderDuplicateItemRejected(group, item, index + 1)));
 }
 
 function isProviderDuplicatePending(group) {
@@ -9970,16 +9990,18 @@ function renderProviderKpis(records) {
   providerKpis.hidden = true;
   providerKpis.innerHTML = "";
   return;
-  const paidTotal = getProviderPaidAmount(records);
+  const paidTotal = getProviderBillableAmount(records);
   const authorizedOvercharge = getProviderAuthorizedOverchargeAmount(records);
+  const rejectedOvercharge = getProviderRejectedOverchargeAmount(records);
   const uniquePlates = new Set(records.map(getProviderRecordPlate).filter(Boolean)).size;
   const duplicates = getProviderDuplicateGroups(records);
   const pendingDuplicates = duplicates.filter(isProviderDuplicatePending);
   const possibleOvercharge = pendingDuplicates.reduce((sum, group) => sum + getProviderDuplicateUnauthorizedAmount(group, records), 0);
   const providers = new Set(records.map((record) => record.provider).filter(Boolean)).size;
   providerKpis.innerHTML = [
-    ["paid", "Gasto pagado", `$ ${paidTotal.toFixed(2)}`, "Suma de valores positivos cargados", "is-success"],
+    ["paid", "Gasto pagado", `$ ${paidTotal.toFixed(2)}`, "Base conciliada mas autorizados", "is-success"],
     ["authorizedOvercharge", "Sobrecobro autorizado", `$ ${authorizedOvercharge.toFixed(2)}`, "Duplicados aprobados", authorizedOvercharge ? "is-success" : "is-neutral"],
+    ["rejectedOvercharge", "Valores no aprobados", `$ ${rejectedOvercharge.toFixed(2)}`, "Duplicados no aprobados", rejectedOvercharge ? "is-critical" : "is-success"],
     ["providers", "Proveedores", providers, "Proveedores filtrados", "is-plain"],
     ["unique", "Placas unicas", uniquePlates, "Vehiculos distintos", "is-neutral"],
     ["duplicates", "Duplicados sin autorizar", pendingDuplicates.length, `${duplicates.length - pendingDuplicates.length} aceptado(s)`, pendingDuplicates.length ? "is-critical" : "is-success"],
@@ -10021,12 +10043,13 @@ function renderProviderExecutiveDashboard(records) {
       </div>
 
       <div class="provider-exec-kpi-grid">
-        ${renderProviderExecKpi("&#128176;", "Gasto pagado", `$ ${metrics.paidTotal.toFixed(2)}`, "Suma de valores positivos cargados", "paid", "success")}
+        ${renderProviderExecKpi("&#128176;", "Gasto pagado", `$ ${metrics.paidTotal.toFixed(2)}`, "Base conciliada mas autorizados", "paid", "success")}
         ${renderProviderExecKpi("&#128737;&#65039;", "Sobrecobro autorizado", `$ ${metrics.authorizedOvercharge.toFixed(2)}`, "Duplicados aprobados", "authorizedOvercharge", "success")}
         ${renderProviderExecKpi("&#128101;", "Proveedores", metrics.providersCount, "Proveedores filtrados", "providers", "blue")}
         ${renderProviderExecKpi("&#128663;", "Placas unicas", metrics.uniquePlates, "Vehiculos distintos", "unique", "purple")}
         ${renderProviderExecKpi("&#128196;", "Duplicados sin autorizar", metrics.pendingDuplicates, `${metrics.approvedDuplicates} aceptado(s)`, "duplicates", metrics.pendingDuplicates ? "danger" : "success")}
         ${renderProviderExecKpi("&#9888;&#65039;", "Posible sobrecobro", `$ ${metrics.overcharge.toFixed(2)}`, "Solo duplicados sin autorizacion", "overcharge", metrics.overcharge ? "warning" : "success")}
+        ${renderProviderExecKpi("&#9940;", "Valores no aprobados", `$ ${metrics.rejectedOvercharge.toFixed(2)}`, `${metrics.rejectedDuplicates} caso(s) no aprobados`, "rejectedOvercharge", metrics.rejectedOvercharge ? "danger" : "success")}
       </div>
 
       <section class="provider-exec-grid">
@@ -10086,6 +10109,7 @@ function renderProviderExecutiveDashboard(records) {
             <span><b>$ ${metrics.averagePerPlate.toFixed(2)}</b> gasto promedio por placa</span>
             <span><b>${metrics.pendingDuplicates}</b> duplicados sin autorizar</span>
             <span><b>$ ${metrics.overcharge.toFixed(2)}</b> posible sobrecobro</span>
+            <span><b>$ ${metrics.rejectedOvercharge.toFixed(2)}</b> no aprobado</span>
             <span><b>${metrics.records}</b> cargas procesadas</span>
           </div>
         </article>
@@ -10160,9 +10184,11 @@ function getProviderDashboardMetrics(records) {
   const duplicates = getProviderDuplicateGroups(records);
   const pendingDuplicates = duplicates.filter(isProviderDuplicatePending);
   const approvedDuplicates = duplicates.filter(isProviderDuplicateApproved);
+  const rejectedDuplicates = duplicates.filter(isProviderDuplicateRejected);
   const overcharge = pendingDuplicates.reduce((sum, group) => sum + getProviderDuplicateUnauthorizedAmount(group, records), 0);
-  const paidTotal = getProviderPaidAmount(records);
+  const paidTotal = getProviderBillableAmount(records);
   const authorizedOvercharge = getProviderAuthorizedOverchargeAmount(records);
+  const rejectedOvercharge = getProviderRejectedOverchargeAmount(records);
   const cleanRecords = Math.max(0, records.length - pendingDuplicates.reduce((sum, group) => sum + Math.max(0, group.items.length - 1), 0));
   const flaggedRecords = records.length - cleanRecords;
   const cleanRate = records.length ? Math.round((cleanRecords / records.length) * 1000) / 10 : 0;
@@ -10176,7 +10202,7 @@ function getProviderDashboardMetrics(records) {
   const providers = [...new Set(records.map((record) => record.provider || "SIN PROVEEDOR"))]
     .map((provider) => {
       const providerRecords = records.filter((record) => (record.provider || "SIN PROVEEDOR") === provider);
-      const amount = getProviderPaidAmount(providerRecords);
+      const amount = getProviderBillableAmount(providerRecords);
       return { provider, total: providerRecords.length, amount, share: paidTotal ? Math.round((amount / paidTotal) * 1000) / 10 : 0 };
     })
     .sort((a, b) => b.amount - a.amount)
@@ -10219,9 +10245,11 @@ function getProviderDashboardMetrics(records) {
     records: records.length,
     paidTotal,
     authorizedOvercharge,
+    rejectedOvercharge,
     providersCount: new Set(records.map((record) => record.provider).filter(Boolean)).size,
     uniquePlates,
     approvedDuplicates: approvedDuplicates.length,
+    rejectedDuplicates: rejectedDuplicates.length,
     pendingDuplicates: pendingDuplicates.length,
     overcharge,
     averagePerPlate: uniquePlates ? paidTotal / uniquePlates : 0,
@@ -10477,6 +10505,12 @@ function getProviderDetailRows(kind) {
         .filter((item, index) => isProviderDuplicateItemApproved(group, item, index + 1))
     );
   }
+  if (kind === "rejectedOvercharge") {
+    return getProviderDuplicateGroups(records).flatMap((group) =>
+      getProviderRejectedDuplicateItems(group).map(({ item }) => item)
+    );
+  }
+  if (kind === "paid") return getProviderBillableRecords(records);
   if (kind === "unique") {
     const seen = new Set();
     return records.filter((record) => {
@@ -10524,17 +10558,19 @@ function getProviderReportContext() {
   const duplicates = getProviderDuplicateGroups(records);
   const pendingDuplicates = duplicates.filter(isProviderDuplicatePending);
   const approvedDuplicates = duplicates.filter(isProviderDuplicateApproved);
+  const rejectedDuplicates = duplicates.filter(isProviderDuplicateRejected);
   const total = getProviderBillableAmount(records);
   const authorizedOvercharge = getProviderAuthorizedOverchargeAmount(records);
-  const paidTotal = getProviderPaidAmount(records);
+  const paidTotal = getProviderBillableAmount(records);
+  const rejectedOvercharge = getProviderRejectedOverchargeAmount(records);
   const uniquePlates = new Set(records.map(getProviderRecordPlate).filter(Boolean)).size;
   const providers = new Set(records.map((record) => record.provider).filter(Boolean)).size;
   const overcharge = pendingDuplicates.reduce((sum, group) => sum + getProviderDuplicateUnauthorizedAmount(group, records), 0);
-  return { records, duplicates, pendingDuplicates, approvedDuplicates, total, authorizedOvercharge, paidTotal, uniquePlates, providers, overcharge };
+  return { records, duplicates, pendingDuplicates, approvedDuplicates, rejectedDuplicates, total, authorizedOvercharge, rejectedOvercharge, paidTotal, uniquePlates, providers, overcharge };
 }
 
 function buildProviderReportHtml() {
-  const { records, duplicates, pendingDuplicates, approvedDuplicates, total, authorizedOvercharge, paidTotal, uniquePlates, providers, overcharge } = getProviderReportContext();
+  const { records, duplicates, pendingDuplicates, approvedDuplicates, rejectedDuplicates, total, authorizedOvercharge, rejectedOvercharge, paidTotal, uniquePlates, providers, overcharge } = getProviderReportContext();
   const topProviders = [...new Map(records.map((record) => [record.provider, 0]))].map(([provider]) => {
     const providerRecords = records.filter((record) => record.provider === provider);
     return {
@@ -10606,11 +10642,11 @@ function buildProviderReportHtml() {
       <div class="hero-art"></div>
     </section>
     <section class="kpis">
-      <article class="kpi good"><span>Gasto pagado</span><strong>$ ${paidTotal.toFixed(2)}</strong><small>Valores positivos cargados</small></article>
+      <article class="kpi good"><span>Gasto pagado</span><strong>$ ${paidTotal.toFixed(2)}</strong><small>Base conciliada mas autorizados</small></article>
       <article class="kpi"><span>Sobrecobro autorizado</span><strong>$ ${authorizedOvercharge.toFixed(2)}</strong><small>Duplicados aprobados</small></article>
       <article class="kpi"><span>Registros</span><strong>${records.length}</strong><small>Filas analizadas</small></article>
       <article class="kpi"><span>Placas unicas</span><strong>${uniquePlates}</strong><small>Solo celda PLACA</small></article>
-      <article class="kpi danger"><span>Sin autorizar</span><strong>${pendingDuplicates.length}</strong><small>Duplicados pendientes</small></article>
+      <article class="kpi danger"><span>No aprobado</span><strong>$ ${rejectedOvercharge.toFixed(2)}</strong><small>${rejectedDuplicates.length} caso(s)</small></article>
     </section>
     <section class="grid">
       <article class="panel analysis">
@@ -10650,7 +10686,7 @@ function buildProviderReportHtml() {
 }
 
 function buildProviderReportHtmlV2() {
-  const { records, duplicates, pendingDuplicates, approvedDuplicates, total, authorizedOvercharge, paidTotal, uniquePlates, providers, overcharge } = getProviderReportContext();
+  const { records, duplicates, pendingDuplicates, approvedDuplicates, rejectedDuplicates, total, authorizedOvercharge, rejectedOvercharge, paidTotal, uniquePlates, providers, overcharge } = getProviderReportContext();
   const topProviders = [...new Set(records.map((record) => record.provider).filter(Boolean))].map((provider) => {
     const providerRecords = records.filter((record) => record.provider === provider);
     return {
@@ -10750,11 +10786,11 @@ function buildProviderReportHtmlV2() {
       </article>
     </section>
     <section class="kpis">
-      <article class="kpi green"><span>Gasto pagado</span><strong>$ ${paidTotal.toFixed(2)}</strong><small>Valores positivos cargados</small></article>
+      <article class="kpi green"><span>Gasto pagado</span><strong>$ ${paidTotal.toFixed(2)}</strong><small>Base conciliada mas autorizados</small></article>
       <article class="kpi"><span>Sobrecobro autorizado</span><strong>$ ${authorizedOvercharge.toFixed(2)}</strong><small>Duplicados aprobados</small></article>
       <article class="kpi"><span>Registros</span><strong>${records.length}</strong><small>Filas analizadas</small></article>
       <article class="kpi"><span>Placas unicas</span><strong>${uniquePlates}</strong><small>Solo celda PLACA</small></article>
-      <article class="kpi red"><span>Sin autorizar</span><strong>${pendingDuplicates.length}</strong><small>Duplicados pendientes</small></article>
+      <article class="kpi red"><span>No aprobado</span><strong>$ ${rejectedOvercharge.toFixed(2)}</strong><small>${rejectedDuplicates.length} caso(s)</small></article>
     </section>
     <section class="grid">
       <article class="box">
@@ -10766,7 +10802,7 @@ function buildProviderReportHtmlV2() {
       <article class="box">
         <h2 class="section-title">Impacto financiero <small>referencial</small></h2>
         <div class="bar"><label><span>Posible sobrecobro</span><b>$ ${overcharge.toFixed(2)}</b></label><div class="track"><span class="fill" style="width:${Math.min(100, Math.round((overcharge / Math.max(total, 1)) * 100))}%"></span></div></div>
-        <div class="bar"><label><span>Gasto validado</span><b>$ ${Math.max(paidTotal - overcharge, 0).toFixed(2)}</b></label><div class="track"><span class="fill" style="width:${Math.max(4, Math.round(((paidTotal - overcharge) / Math.max(paidTotal, 1)) * 100))}%"></span></div></div>
+        <div class="bar"><label><span>Valores no aprobados</span><b>$ ${rejectedOvercharge.toFixed(2)}</b></label><div class="track"><span class="fill" style="width:${Math.min(100, Math.round((rejectedOvercharge / Math.max(total + rejectedOvercharge, 1)) * 100))}%"></span></div></div>
       </article>
     </section>
     <section class="box">
@@ -10899,6 +10935,7 @@ function openProviderDetail(kind = "total") {
     paid: "Detalle del gasto pagado",
     total: "Detalle del gasto conciliado",
     authorizedOvercharge: "Detalle del sobrecobro autorizado",
+    rejectedOvercharge: "Detalle de valores no aprobados",
     providers: "Detalle por proveedor",
     unique: "Placas unicas de la carga",
     duplicates: "Placas repetidas",
@@ -10908,7 +10945,7 @@ function openProviderDetail(kind = "total") {
   const total = kind === "total"
     ? getProviderBillableAmount(getFilteredProviderRecords())
     : kind === "paid"
-      ? getProviderPaidAmount(rows)
+      ? getProviderBillableAmount(rows)
       : rows.reduce((sum, record) => sum + getProviderRecordDisplayAmount(record, rows), 0);
   const plates = new Set(rows.map(getProviderRecordPlate).filter(Boolean)).size;
   providerDetailTitle.textContent = labels[kind] || "Detalle de proveedores";
