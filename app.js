@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260721-signature-observations";
+const APP_BUILD_VERSION = "20260721-session-announcements";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -29,7 +29,7 @@ const SHARED_PC_BACKUPS_URL = location.protocol === "file:"
   ? "http://127.0.0.1:8787/api/backups"
   : `${location.origin}/api/backups`;
 const ADMIN_PASSWORD = "Autocor2026!";
-const SESSION_TIMEOUT_MS = 5 * 60 * 60 * 1000;
+const SESSION_TIMEOUT_MS = 2 * 60 * 60 * 1000;
 const MAX_FILE_LIBRARY_SIZE = 50 * 1024 * 1024;
 const MAX_PROVIDER_REASONABLE_AMOUNT = 100000;
 const LEGAL_MAILBOXES = [
@@ -355,6 +355,7 @@ hydrateCommercialOwners();
 persistAccessUsers(state);
 let lastActivityAt = Date.now();
 let lastSessionPersistAt = 0;
+let sessionAnnouncementShownKey = "";
 let session = loadPersistedSession();
 let currentViewId = loadPersistedView();
 document.body.dataset.session = session.role;
@@ -492,6 +493,10 @@ const customFormFieldForm = document.querySelector("#customFormFieldForm");
 const purchaseCustomFields = document.querySelector("#purchaseCustomFields");
 const saleCustomFields = document.querySelector("#saleCustomFields");
 const announcementForm = document.querySelector("#announcementForm");
+const announcementAudience = document.querySelector("#announcementAudience");
+const announcementRecipients = document.querySelector("#announcementRecipients");
+const sessionAnnouncementModal = document.querySelector("#sessionAnnouncementModal");
+const sessionAnnouncementList = document.querySelector("#sessionAnnouncementList");
 const adminLegalFilter = document.querySelector("#adminLegalFilter");
 const adminCommercialFilter = document.querySelector("#adminCommercialFilter");
 const adminAgencyFilter = document.querySelector("#adminAgencyFilter");
@@ -713,7 +718,7 @@ function loadState() {
     merged.legalUsers = normalizeLegalUsers(merged.legalUsers || []);
     merged.managerUsers = Array.isArray(merged.managerUsers) ? merged.managerUsers : [];
     merged.processingUsers = Array.isArray(merged.processingUsers) ? merged.processingUsers : structuredClone(defaultState.processingUsers);
-    merged.announcements = merged.announcements || [];
+    merged.announcements = (merged.announcements || []).map(normalizeAnnouncement);
     merged.legalChatMessages = normalizeLegalChatMessages(merged.legalChatMessages || []);
     merged.theme = { ...structuredClone(defaultState.theme), ...(merged.theme || {}) };
     merged.copy = { ...structuredClone(defaultState.copy), ...(merged.copy || {}) };
@@ -1541,7 +1546,7 @@ function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
         state.tasks = mergedChanges.tasks;
         state.taskDeletions = mergedChanges.deletions;
       }
-      state.announcements = Array.isArray(snapshot.announcements) ? snapshot.announcements : (state.announcements || []);
+      state.announcements = (Array.isArray(snapshot.announcements) ? snapshot.announcements : (state.announcements || [])).map(normalizeAnnouncement);
       state.legalChatMessages = mergeLegalChatMessages(state.legalChatMessages || [], snapshot.legalChatMessages || []);
       return true;
     case "compras":
@@ -1656,7 +1661,7 @@ function mergePcStates(baseState, extraState) {
   const baseProcessing = merged.dataProcessing || {};
   const extraProcessing = extraState.dataProcessing || {};
   merged.tasks = mergeByKey(merged.tasks || [], extraState.tasks || [], "id");
-  merged.announcements = mergeByKey(merged.announcements || [], extraState.announcements || [], "id");
+  merged.announcements = mergeByKey(merged.announcements || [], extraState.announcements || [], "id").map(normalizeAnnouncement);
   merged.legalChatMessages = mergeLegalChatMessages(merged.legalChatMessages || [], extraState.legalChatMessages || []);
   merged.commercialAdvisors = mergeByKey(merged.commercialAdvisors || [], extraState.commercialAdvisors || [], "id");
   merged.legalUsers = normalizeLegalUsers(mergeByKey(merged.legalUsers || [], extraState.legalUsers || [], "id"));
@@ -1963,6 +1968,19 @@ function normalizeFormField(field = {}, fallback = {}, isBase = false) {
     isBase,
     placeholder: source.placeholder || fallback.placeholder || "",
     options: parseFormOptions(source.options || fallback.options)
+  };
+}
+
+function normalizeAnnouncement(announcement = {}) {
+  return {
+    id: announcement.id || crypto.randomUUID(),
+    title: announcement.title || "Comunicado",
+    body: announcement.body || "",
+    imageDataUrl: announcement.imageDataUrl || "",
+    createdAt: announcement.createdAt || new Date().toISOString(),
+    popupEnabled: announcement.popupEnabled !== false,
+    audience: ["all", "commercial", "legal", "specific"].includes(announcement.audience) ? announcement.audience : "all",
+    targetUsers: Array.isArray(announcement.targetUsers) ? announcement.targetUsers : []
   };
 }
 
@@ -2602,7 +2620,7 @@ function normalizeImportedState(importedState) {
   merged.legalUsers = normalizeLegalUsers(merged.legalUsers || []);
   merged.managerUsers = Array.isArray(merged.managerUsers) ? merged.managerUsers : [];
   merged.processingUsers = Array.isArray(merged.processingUsers) ? merged.processingUsers : structuredClone(defaultState.processingUsers);
-  merged.announcements = merged.announcements || [];
+  merged.announcements = (merged.announcements || []).map(normalizeAnnouncement);
   merged.legalChatMessages = normalizeLegalChatMessages(merged.legalChatMessages || []);
   merged.theme = { ...structuredClone(defaultState.theme), ...(merged.theme || {}) };
   merged.copy = { ...structuredClone(defaultState.copy), ...(merged.copy || {}) };
@@ -3248,10 +3266,14 @@ function canOpenProcessingTools() {
 function setSession(nextSession) {
   session = nextSession;
   lastActivityAt = Date.now();
+  if (session.role === "public") sessionAnnouncementShownKey = "";
   logoutBtn.hidden = session.role === "public";
   document.body.dataset.session = session.role;
   persistSession();
   safeRenderAll();
+  if (session.role !== "public") {
+    window.setTimeout(maybeShowSessionAnnouncements, 450);
+  }
   startSupabaseModulePolling();
   if (session.role !== "public" && navigator.onLine) {
     restoreModulesFromSupabaseIfNeeded();
@@ -3915,14 +3937,77 @@ function removeCommercialAdvisor(id) {
   showToast("Asesor comercial eliminado.");
 }
 
+function getAnnouncementUserOptions() {
+  const commercial = normalizeCommercialAdvisors(state.commercialAdvisors || []).map((user) => ({
+    key: `commercial:${user.id}`,
+    role: "commercial",
+    label: `${user.name} | Comercial`,
+    agency: user.agency || ""
+  }));
+  const legal = normalizeLegalUsers(state.legalUsers || []).map((user) => ({
+    key: `legal:${user.id}`,
+    role: "legal",
+    label: `${user.name} | Mesa de control`,
+    agency: (user.mailboxes || []).join(", ")
+  }));
+  return [...commercial, ...legal].sort((a, b) => a.label.localeCompare(b.label, "es"));
+}
+
+function getAnnouncementTargetKey(currentSession = session) {
+  if (!currentSession || !["commercial", "legal"].includes(currentSession.role)) return "";
+  return `${currentSession.role}:${currentSession.userId}`;
+}
+
+function isAnnouncementForSession(announcement = {}, currentSession = session) {
+  const item = normalizeAnnouncement(announcement);
+  if (!item.popupEnabled || !currentSession || currentSession.role === "public") return false;
+  if (currentSession.role === "admin") return item.audience === "all";
+  if (item.audience === "all") return ["commercial", "legal"].includes(currentSession.role);
+  if (item.audience === currentSession.role) return true;
+  if (item.audience === "specific") return item.targetUsers.includes(getAnnouncementTargetKey(currentSession));
+  return false;
+}
+
+function renderAnnouncementRecipients() {
+  if (!announcementRecipients || !announcementAudience) return;
+  const showSpecific = announcementAudience.value === "specific";
+  announcementRecipients.hidden = !showSpecific;
+  if (!showSpecific) {
+    announcementRecipients.innerHTML = "";
+    return;
+  }
+  const options = getAnnouncementUserOptions();
+  announcementRecipients.innerHTML = options.length ? options.map((item) => `
+    <label class="announcement-recipient-option">
+      <input type="checkbox" name="targetUsers" value="${escapeHtml(item.key)}">
+      <span>
+        <strong>${escapeHtml(item.label)}</strong>
+        <small>${escapeHtml(item.agency || "Sin grupo")}</small>
+      </span>
+    </label>
+  `).join("") : `<div class="empty compact-empty">No hay usuarios comerciales o legales configurados.</div>`;
+}
+
+function getAnnouncementFormTargets(formElement) {
+  const audience = formElement.elements.audience?.value || "all";
+  const targetUsers = audience === "specific"
+    ? [...formElement.querySelectorAll("input[name='targetUsers']:checked")].map((input) => input.value)
+    : [];
+  return { audience, targetUsers };
+}
+
 function addAnnouncement(data, imageDataUrl = "") {
-  state.announcements.unshift({
+  const targets = getAnnouncementFormTargets(announcementForm);
+  state.announcements.unshift(normalizeAnnouncement({
     id: crypto.randomUUID(),
     title: data.title.trim(),
     body: data.body.trim(),
     imageDataUrl,
+    popupEnabled: data.popupEnabled === "on",
+    audience: targets.audience,
+    targetUsers: targets.targetUsers,
     createdAt: new Date().toISOString()
-  });
+  }));
   saveState();
   renderAll();
   showToast("Comunicado publicado.");
@@ -12437,6 +12522,7 @@ function renderAnnouncements() {
   const publicContainer = document.querySelector("#announcementsList");
   const adminContainer = document.querySelector("#adminAnnouncementsList");
   const billboardContainer = document.querySelector("#billboardList");
+  renderAnnouncementRecipients();
   const publicItems = state.announcements.slice(0, 3);
   if (publicContainer) {
     publicContainer.innerHTML = publicItems.length ? publicItems.map((announcement) => `
@@ -12455,6 +12541,7 @@ function renderAnnouncements() {
         <div>
           <strong>${escapeHtml(announcement.title)}</strong>
           <span>${escapeHtml(announcement.body)}</span>
+          <small>${escapeHtml(getAnnouncementAudienceLabel(announcement))}${announcement.popupEnabled === false ? " | Solo cartelera" : " | Emergente al iniciar sesion"}</small>
         </div>
         <button class="btn secondary" type="button" data-remove-announcement="${escapeHtml(announcement.id)}">Eliminar</button>
       </article>
@@ -12859,6 +12946,80 @@ if (adminFormFieldsList) {
     if (event.target.closest("[data-save-form-field]")) saveFormFieldConfiguration(row);
     if (event.target.closest("[data-hide-base-field]")) hideBaseFormField(row.dataset.formField);
     if (event.target.closest("[data-delete-form-field]")) deleteCustomFormField(row.dataset.formField);
+  });
+}
+
+function getAnnouncementAudienceLabel(announcement = {}) {
+  const item = normalizeAnnouncement(announcement);
+  if (item.audience === "all") return "Destinatarios: todos los equipos";
+  if (item.audience === "commercial") return "Destinatarios: todo comercial";
+  if (item.audience === "legal") return "Destinatarios: toda mesa de control";
+  const names = getAnnouncementUserOptions()
+    .filter((user) => item.targetUsers.includes(user.key))
+    .map((user) => user.label.split("|")[0].trim());
+  return `Destinatarios: ${names.length ? names.join(", ") : "usuarios especificos"}`;
+}
+
+function getPendingSessionAnnouncements() {
+  return (state.announcements || [])
+    .map(normalizeAnnouncement)
+    .filter((announcement) => isAnnouncementForSession(announcement, session))
+    .slice(0, 5);
+}
+
+function maybeShowSessionAnnouncements() {
+  if (!sessionAnnouncementModal || !sessionAnnouncementList) return;
+  if (!session || session.role === "public") return;
+  const key = `${session.role}:${session.userId}:${lastActivityAt}`;
+  if (sessionAnnouncementShownKey === key) return;
+  const items = getPendingSessionAnnouncements();
+  if (!items.length) return;
+  sessionAnnouncementShownKey = key;
+  sessionAnnouncementList.innerHTML = items.map((announcement) => `
+    <article class="session-announcement-card">
+      ${announcement.imageDataUrl ? `<img src="${announcement.imageDataUrl}" alt="">` : ""}
+      <div>
+        <span>${escapeHtml(getAnnouncementAudienceLabel(announcement))}</span>
+        <strong>${escapeHtml(announcement.title)}</strong>
+        <p>${escapeHtml(announcement.body)}</p>
+        <small>${escapeHtml(formatDateTime(announcement.createdAt))}</small>
+      </div>
+    </article>
+  `).join("");
+  sessionAnnouncementModal.hidden = false;
+  document.body.classList.add("has-modal");
+}
+
+function closeSessionAnnouncementModal() {
+  if (!sessionAnnouncementModal) return;
+  sessionAnnouncementModal.hidden = true;
+  document.body.classList.remove("has-modal");
+}
+
+function compressAnnouncementImage(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      resolve("");
+      return;
+    }
+    const reader = new FileReader();
+    reader.addEventListener("error", () => reject(new Error("No se pudo leer la imagen.")));
+    reader.addEventListener("load", () => {
+      const image = new Image();
+      image.addEventListener("error", () => reject(new Error("No se pudo procesar la imagen.")));
+      image.addEventListener("load", () => {
+        const maxWidth = 1200;
+        const scale = Math.min(1, maxWidth / image.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.78));
+      });
+      image.src = reader.result;
+    });
+    reader.readAsDataURL(file);
   });
 }
 
@@ -13316,14 +13477,20 @@ announcementForm.addEventListener("submit", (event) => {
   if (!file) {
     addAnnouncement(data);
     announcementForm.reset();
+    renderAnnouncementRecipients();
     return;
   }
-  const reader = new FileReader();
-  reader.addEventListener("load", () => {
-    addAnnouncement(data, reader.result);
+  compressAnnouncementImage(file).then((imageDataUrl) => {
+    addAnnouncement(data, imageDataUrl);
     announcementForm.reset();
-  });
-  reader.readAsDataURL(file);
+    renderAnnouncementRecipients();
+  }).catch(() => showToast("No se pudo procesar la imagen del comunicado."));
+});
+
+announcementAudience?.addEventListener("change", renderAnnouncementRecipients);
+
+document.querySelectorAll("[data-close-session-announcement]").forEach((button) => {
+  button.addEventListener("click", closeSessionAnnouncementModal);
 });
 
 themeForm.addEventListener("submit", (event) => {
