@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260721-signature-country-mailbox";
+const APP_BUILD_VERSION = "20260721-signature-repair-sync";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -1687,13 +1687,22 @@ function getTaskFreshness(task = {}) {
   return new Date(task.updatedAt || task.completedAt || task.takenAt || task.createdAt || 0).getTime() || 0;
 }
 
+function shouldTaskVersionReplace(candidate, current) {
+  if (!candidate) return false;
+  if (!current) return true;
+  const candidateRank = getTaskLifecycleRank(candidate);
+  const currentRank = getTaskLifecycleRank(current);
+  if (candidateRank !== currentRank) return candidateRank > currentRank;
+  return getTaskFreshness(candidate) >= getTaskFreshness(current);
+}
+
 function mergeTasksByFreshness(baseItems = [], extraItems = []) {
   const map = new Map();
   [...baseItems, ...extraItems].forEach((item) => {
     if (!item) return;
     const normalized = normalizeTask(item);
     const current = map.get(normalized.id);
-    if (!current || getTaskFreshness(normalized) >= getTaskFreshness(current)) {
+    if (shouldTaskVersionReplace(normalized, current)) {
       map.set(normalized.id, { ...(current || {}), ...normalized });
     }
   });
@@ -1941,6 +1950,8 @@ function normalizeFormField(field = {}, fallback = {}, isBase = false) {
 
 function normalizeTask(task) {
   const migratedStatus = task.status === "en proceso" ? "tomado" : task.status === "completado" ? "saneamiento realizado y subido a pilot" : task.status || "pendiente";
+  const processType = task.processType || (task.tipoSaneamiento === "Tracking contrato compraventa" ? "venta" : "");
+  const isSignature = processType === "firma";
   return {
     ...task,
     id: task.id || crypto.randomUUID(),
@@ -1949,9 +1960,9 @@ function normalizeTask(task) {
     takenAt: task.takenAt || "",
     completedAt: task.completedAt || "",
     status: migratedStatus,
-    processType: task.processType || (task.tipoSaneamiento === "Tracking contrato compraventa" ? "venta" : ""),
-    legalUserId: task.takenAt ? task.legalUserId || "" : migratedStatus === "pendiente" ? "" : task.legalUserId || "",
-    legalAdvisor: task.takenAt ? task.legalAdvisor || "Sin asignar" : migratedStatus === "pendiente" ? "" : task.legalAdvisor || "",
+    processType,
+    legalUserId: isSignature ? task.legalUserId || "" : task.takenAt ? task.legalUserId || "" : migratedStatus === "pendiente" ? "" : task.legalUserId || "",
+    legalAdvisor: isSignature ? task.legalAdvisor || "" : task.takenAt ? task.legalAdvisor || "Sin asignar" : migratedStatus === "pendiente" ? "" : task.legalAdvisor || "",
     commercialUserId: task.commercialUserId || "",
     commercialUserName: task.commercialUserName || task.asesor || "",
     commercialAgency: task.commercialAgency || task.agencia || "",
@@ -1960,7 +1971,13 @@ function normalizeTask(task) {
     lastResentAt: task.lastResentAt || "",
     statusLockedAt: task.statusLockedAt || "",
     statusLockedBy: task.statusLockedBy || "",
-    statusLockedByName: task.statusLockedByName || ""
+    statusLockedByName: task.statusLockedByName || "",
+    signatureStage: task.signatureStage || "",
+    signatureStatus: task.signatureStatus || "",
+    signatureRequestTaskId: task.signatureRequestTaskId || "",
+    signaturePilotTaskId: task.signaturePilotTaskId || "",
+    signaturePayload: task.signaturePayload || null,
+    sourceTaskId: task.sourceTaskId || ""
   };
 }
 
@@ -4540,6 +4557,10 @@ function isInsideDateRange(value, from, to) {
 
 function renderTasks() {
   syncLegalSidebarFilters();
+  if (repairMissingSignatureTasks()) {
+    saveState();
+    sincronizarTareasPendientesSupabase();
+  }
   const visiblePool = state.tasks.filter((task) => canLegalUserSeeTask(task)).filter((task) => activeFilter === "firmas" ? isSignatureTask(task) : !isSignatureTask(task));
   const pendingTasks = visiblePool.filter((task) => !isClosedStatus(task.status));
   if (queueCount) queueCount.textContent = pendingTasks.length;
@@ -5446,6 +5467,86 @@ async function requestPilotUploadFromCommercial(taskId) {
   ]);
   saveState();
   if (!sourceSaved || !requestSaved) showToast("Solicitud guardada localmente. Pendiente de sincronizar.");
+}
+
+function repairMissingSignatureTasks() {
+  let changed = false;
+  const existingIds = new Set((state.tasks || []).map((task) => task.id));
+  (state.tasks || []).filter((task) => getTaskProcess(task) === "compra").forEach((source) => {
+    if (source.signatureStatus === SIGNATURE_STATUS.requested && !source.signatureRequestTaskId && source.signaturePayload) {
+      source.signatureRequestTaskId = crypto.randomUUID();
+      source.updatedAt = new Date().toISOString();
+      source.syncStatus = "pending";
+      source.syncAction = "reparar-firma-origen";
+    }
+    if (source.signatureStatus === SIGNATURE_STATUS.pilotRequested && !source.signaturePilotTaskId && source.signaturePayload) {
+      source.signaturePilotTaskId = crypto.randomUUID();
+      source.updatedAt = new Date().toISOString();
+      source.syncStatus = "pending";
+      source.syncAction = "reparar-firma-pilot-origen";
+    }
+    if (source.signatureStatus === SIGNATURE_STATUS.requested && source.signatureRequestTaskId && !existingIds.has(source.signatureRequestTaskId)) {
+      const createdAt = source.signatureRequestedAt || source.updatedAt || new Date().toISOString();
+      state.tasks.push(normalizeTask({
+        id: source.signatureRequestTaskId,
+        createdAt,
+        updatedAt: source.updatedAt || createdAt,
+        status: "por asignar",
+        legalUserId: "",
+        legalAdvisor: "",
+        processType: "firma",
+        signatureStage: "envio-firma",
+        sourceTaskId: source.id,
+        signaturePayload: source.signaturePayload || {},
+        cliente: source.cliente || "",
+        vendedor: source.vendedor || "",
+        placa: normalizePlate(source.placa),
+        cedula: source.cedula || source.cedulaVendedor || "",
+        agencia: source.agencia || "",
+        asesor: source.asesor || source.commercialUserName || "",
+        commercialUserId: source.commercialUserId || "",
+        commercialUserName: source.commercialUserName || source.asesor || "",
+        commercialAgency: source.commercialAgency || source.agencia || "",
+        tipoSaneamiento: "Envio a firma",
+        observaciones: `SOLICITUD DE ENVIO A FIRMA | Placa: ${normalizePlate(source.placa)} | Reconstruida automaticamente`,
+        syncStatus: "pending",
+        syncAction: "reparar-firma"
+      }));
+      existingIds.add(source.signatureRequestTaskId);
+      changed = true;
+    }
+    if (source.signatureStatus === SIGNATURE_STATUS.pilotRequested && source.signaturePilotTaskId && !existingIds.has(source.signaturePilotTaskId)) {
+      const createdAt = source.signaturePilotRequestedAt || source.updatedAt || new Date().toISOString();
+      state.tasks.push(normalizeTask({
+        id: source.signaturePilotTaskId,
+        createdAt,
+        updatedAt: source.updatedAt || createdAt,
+        status: "por asignar",
+        legalUserId: "",
+        legalAdvisor: "",
+        processType: "firma",
+        signatureStage: "subir-pilot",
+        sourceTaskId: source.id,
+        signaturePayload: source.signaturePayload || {},
+        cliente: source.cliente || "",
+        vendedor: source.vendedor || "",
+        placa: normalizePlate(source.placa),
+        cedula: source.cedula || source.cedulaVendedor || "",
+        agencia: source.agencia || "",
+        asesor: source.asesor || source.commercialUserName || "",
+        commercialUserId: source.commercialUserId || "",
+        commercialUserName: source.commercialUserName || source.asesor || "",
+        commercialAgency: source.commercialAgency || source.agencia || "",
+        tipoSaneamiento: "Subir contratos firmados a Pilot",
+        observaciones: `SOLICITUD DE SUBIDA A PILOT | Placa: ${normalizePlate(source.placa)} | Reconstruida automaticamente`,
+        syncStatus: "pending",
+        syncAction: "reparar-firma-pilot"
+      }));
+      existingIds.add(source.signaturePilotTaskId);
+      changed = true;
+    }
+  });
+  return changed;
 }
 
 async function completeSignatureTask(taskId) {
