@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260721-processing-login">
+<html lang="es" data-app-version="20260721-processing-users-admin">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260721-processing-login">
-  <link rel="stylesheet" href="layout-fix.css?v=20260721-processing-login">
+  <link rel="stylesheet" href="styles.css?v=20260721-processing-users-admin">
+  <link rel="stylesheet" href="layout-fix.css?v=20260721-processing-users-admin">
 </head>
 <body>
   <header class="topbar">
@@ -1500,6 +1500,23 @@
           </form>
           <div id="managerUsersList" class="users-list"></div>
         </section>
+
+        <section class="panel span-admin admin-module-section" data-admin-section="admin-users-module">
+          <div class="panel-title-row">
+            <div>
+              <p class="eyebrow">Procesamiento de datos</p>
+              <h2>Usuarios de datos, proveedores y reportes</h2>
+            </div>
+          </div>
+          <p class="helper-text">Estos usuarios pueden ingresar solo al modulo de Procesamiento de datos para cargar bases, revisar proveedores, compras, contratos y archivos. No tienen acceso al panel de administrador.</p>
+          <form id="processingUserForm" class="user-form">
+            <input name="name" placeholder="Nombre del usuario de datos" required>
+            <input name="username" placeholder="Usuario" required>
+            <input name="password" type="password" placeholder="Contrasena" required>
+            <button class="btn primary" type="submit">Crear usuario de datos</button>
+          </form>
+          <div id="processingUsersList" class="users-list"></div>
+        </section>
       </div>
     </section>
   </main>
@@ -1748,7 +1765,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260721-processing-login"></script>
+  <script src="app.js?v=20260721-processing-users-admin"></script>
 </body>
 </html>
 
