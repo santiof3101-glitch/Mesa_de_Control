@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260721-legal-dashboard-pending-kpis";
+const APP_BUILD_VERSION = "20260721-signature-observations";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -1990,6 +1990,7 @@ function normalizeTask(task) {
     statusLockedAt: task.statusLockedAt || "",
     statusLockedBy: task.statusLockedBy || "",
     statusLockedByName: task.statusLockedByName || "",
+    legalObservations: Array.isArray(task.legalObservations) ? task.legalObservations : [],
     signatureStage: task.signatureStage || "",
     signatureStatus: task.signatureStatus || "",
     signatureRequestTaskId: task.signatureRequestTaskId || "",
@@ -3011,6 +3012,7 @@ function confirmDuplicateConflict(data) {
 function openCommercialLeadFicha(taskId) {
   const task = state.tasks.find((item) => item.id === taskId);
   if (!task || !commercialLeadFichaContent) return;
+  const latestLegalObservation = getLatestLegalObservation(task);
   const fields = [
     ["Proceso", getCommercialProcessLabel(getTaskProcess(task))],
     ["Placa", task.placa],
@@ -3026,10 +3028,11 @@ function openCommercialLeadFicha(taskId) {
     ["Firma / Pilot", getSignatureDisplayStatus(task)],
     ["Asesor legal", task.legalAdvisor],
     ["Fecha de envio", task.createdAt ? formatDateTime(task.createdAt) : ""],
-    ["Observaciones", task.observaciones]
+    ["Observaciones", task.observaciones],
+    ["Observacion de mesa de control", latestLegalObservation ? `${latestLegalObservation.note} (${latestLegalObservation.statusLabel})` : ""]
   ];
   commercialLeadFichaContent.innerHTML = fields.map(([label, value]) => `
-    <div class="lead-ficha-item ${label === "Observaciones" ? "span-2" : ""}">
+    <div class="lead-ficha-item ${label === "Observaciones" || label === "Observacion de mesa de control" ? "span-2" : ""}">
       <span>${escapeHtml(label)}</span>
       <strong>${escapeHtml(value || "Sin registro")}</strong>
     </div>
@@ -3039,6 +3042,86 @@ function openCommercialLeadFicha(taskId) {
     </div>
   `;
   openCommercialModal(commercialLeadModal);
+}
+
+function getLatestLegalObservation(task = {}) {
+  const observations = Array.isArray(task.legalObservations) ? task.legalObservations : [];
+  return observations[0] || null;
+}
+
+function renderLegalObservationList(task = {}) {
+  const observations = Array.isArray(task.legalObservations) ? task.legalObservations : [];
+  if (!observations.length) return "";
+  return `
+    <section class="legal-observation-panel">
+      <p class="eyebrow">Observaciones de mesa de control</p>
+      <div class="legal-observation-list">
+        ${observations.map((item) => `
+          <article>
+            <div>
+              <strong>${escapeHtml(item.statusLabel || item.status || "Estatus actualizado")}</strong>
+              <span>${escapeHtml(formatDateTime(item.createdAt) || "Sin fecha")} | ${escapeHtml(item.userName || "Mesa de control")}</span>
+            </div>
+            <p>${escapeHtml(item.note || "Sin observacion")}</p>
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function askLegalStatusObservation(task = {}, status = "") {
+  if (!task || isSignatureTask(task)) return "";
+  if (!["legal", "admin"].includes(session.role)) return "";
+  const label = getStatusOption(status)?.label || status || "nuevo estatus";
+  const note = window.prompt(`Observacion opcional para "${label}". Puede dejarla en blanco si no aplica.`, "");
+  return note === null ? "" : note.trim();
+}
+
+function appendLegalStatusObservation(task, status, note) {
+  const cleanNote = String(note || "").trim();
+  if (!cleanNote) return;
+  task.legalObservations = Array.isArray(task.legalObservations) ? task.legalObservations : [];
+  task.legalObservations.unshift({
+    id: crypto.randomUUID(),
+    status,
+    statusLabel: getStatusOption(status)?.label || status,
+    note: cleanNote,
+    createdAt: new Date().toISOString(),
+    userId: session.userId || "",
+    userName: session.name || "Mesa de control"
+  });
+}
+
+function renderSignatureRecipientCard(title, recipient = {}, type = "titular") {
+  const email = recipient.email || "";
+  const whatsapp = recipient.whatsapp || "";
+  if (!email && !whatsapp) return "";
+  return `
+    <article class="signature-recipient-card is-${escapeHtml(type)}">
+      <span>${escapeHtml(title)}</span>
+      <strong>${escapeHtml(email || "Sin correo")}</strong>
+      <small>${escapeHtml(whatsapp || "Sin WhatsApp")}</small>
+    </article>
+  `;
+}
+
+function renderSignatureRecipientCards(task = {}) {
+  if (!isSignatureTask(task)) return "";
+  const payload = task.signaturePayload || {};
+  const heirs = Array.isArray(payload.herederos) ? payload.herederos.filter((item) => item?.email || item?.whatsapp) : [];
+  const cards = [
+    renderSignatureRecipientCard("Titular", payload.titular, "titular"),
+    renderSignatureRecipientCard("Conyuge", payload.conyuge, "conyuge"),
+    ...heirs.map((heir, index) => renderSignatureRecipientCard(`Heredero ${heir.index || index + 1}`, heir, "heredero"))
+  ].filter(Boolean);
+  if (!cards.length) return "";
+  return `
+    <section class="signature-recipient-panel">
+      <p class="eyebrow">Datos para firma</p>
+      <div class="signature-recipient-grid">${cards.join("")}</div>
+    </section>
+  `;
 }
 
 async function checkForAppUpdate() {
@@ -4700,7 +4783,10 @@ function renderTasks() {
     const statusSelect = card.querySelector("select");
     if (statusSelect) {
       statusSelect.value = task.status;
-      statusSelect.addEventListener("change", () => updateTaskStatus(task.id, statusSelect.value));
+      statusSelect.addEventListener("change", () => {
+        const note = askLegalStatusObservation(task, statusSelect.value);
+        updateTaskStatus(task.id, statusSelect.value, note);
+      });
     }
     taskList.appendChild(card);
   });
@@ -4735,6 +4821,7 @@ function renderLegalTaskFullDetails(task) {
       ["ID de tarea", task.id]
     ];
     return `
+      ${renderSignatureRecipientCards(task)}
       <div class="legal-task-detail-grid">
         ${fields.map(([label, value]) => `
           <div class="${label === "Herederos" ? "is-wide" : ""}">
@@ -4929,7 +5016,7 @@ function isTaskStatusLockedForLegal(task = {}) {
   return Boolean(task.legalUserId && task.legalUserId === session.userId && task.status && !["tomado", "pendiente", "por asignar"].includes(task.status));
 }
 
-function updateTaskStatus(id, status) {
+function updateTaskStatus(id, status, legalObservation = "") {
   const task = state.tasks.find((item) => item.id === id);
   if (!task) return;
   if (session.role === "legal" && !canLegalUserSeeTask(task)) {
@@ -4955,6 +5042,7 @@ function updateTaskStatus(id, status) {
   }
 
   task.status = status;
+  appendLegalStatusObservation(task, status, legalObservation);
   if (status === "tomado" && !task.takenAt) {
     task.takenAt = new Date().toISOString();
     task.legalUserId = session.userId;
@@ -6152,6 +6240,7 @@ function renderCommercialKpiCardsMarkup(cards) {
         </article>
       `).join("")}
     </div>
+    ${renderLegalObservationList(task)}
   `;
 }
 
@@ -6404,6 +6493,7 @@ function renderCommercialRows(tasks, options = {}) {
           <small>Agencia: ${escapeHtml(task.agencia || "Sin agencia")} | Asesor: ${escapeHtml(task.asesor || task.commercialUserName || "Sin asesor")}</small>
           <small>Cedula: ${escapeHtml(task.cedula || task.cedulaVendedor || "Sin registro")} | Tipo: ${escapeHtml(task.tipoSaneamiento || task.tipoCompra || getCommercialProcessLabel(getTaskProcess(task)))}</small>
           <small>Observacion: ${escapeHtml(task.observaciones || "Sin observaciones")}</small>
+          ${getLatestLegalObservation(task) ? `<small>Observacion mesa: ${escapeHtml(getLatestLegalObservation(task).note)}</small>` : ""}
         ` : ""}
       </div>
       <div class="commercial-lead-actions">
@@ -12939,7 +13029,9 @@ signatureHeirsToggle?.addEventListener("change", () => {
 legalTaskModalContent?.addEventListener("change", (event) => {
   const statusSelect = event.target.closest("[data-modal-status-task]");
   if (!statusSelect) return;
-  updateTaskStatus(statusSelect.dataset.modalStatusTask, statusSelect.value);
+  const task = state.tasks.find((item) => item.id === statusSelect.dataset.modalStatusTask);
+  const note = askLegalStatusObservation(task, statusSelect.value);
+  updateTaskStatus(statusSelect.dataset.modalStatusTask, statusSelect.value, note);
   openLegalTaskModal(statusSelect.dataset.modalStatusTask);
 });
 
