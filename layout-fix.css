@@ -851,6 +851,205 @@ body {
   }
 }
 
+/* Inicio comercial: pantalla principal personal, separada de Nueva gestion. */
+#formulario .commercial-home {
+  display: grid;
+  gap: clamp(16px, 1.8vw, 24px);
+  width: 100%;
+  min-width: 0;
+}
+
+#formulario .commercial-home-hero {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: clamp(14px, 1.6vw, 22px);
+  width: 100%;
+  min-width: 0;
+  padding: clamp(20px, 2.2vw, 32px);
+  border: 1px solid #e3e9f0;
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.92)),
+    radial-gradient(circle at 92% 18%, rgba(242, 24, 45, 0.12), transparent 34%);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+}
+
+#formulario .commercial-home-hero h2 {
+  margin: 4px 0 8px;
+  max-width: 780px;
+  font-size: clamp(1.8rem, 1.35rem + 1.2vw, 2.8rem);
+  line-height: 1.02;
+}
+
+#formulario .commercial-home-hero p {
+  max-width: 680px;
+  margin: 0;
+  color: #526174;
+}
+
+#formulario .commercial-home-notice {
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  width: min(320px, 100%);
+  min-width: 240px;
+  padding: 18px;
+  border: 1px solid rgba(242, 24, 45, 0.18);
+  border-radius: 18px;
+  background: #fff5f6;
+  color: #1e293b;
+}
+
+#formulario .commercial-home-notice strong {
+  color: #f2182d;
+}
+
+#formulario .commercial-home-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+}
+
+#formulario .commercial-home-action {
+  display: grid;
+  gap: 7px;
+  width: 100%;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #dfe6ee;
+  border-radius: 18px;
+  background: #ffffff;
+  color: #1e293b;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+}
+
+#formulario .commercial-home-action:hover,
+#formulario .commercial-home-action:focus-visible {
+  border-color: #f2182d;
+  box-shadow: 0 14px 34px rgba(242, 24, 45, 0.12);
+  outline: none;
+}
+
+#formulario .commercial-home-action strong,
+#formulario .commercial-home-action span {
+  overflow-wrap: anywhere;
+}
+
+#formulario .commercial-home-action span {
+  color: #607086;
+}
+
+/* Consulta de placas: grid por areas para evitar desbordes a 100% y 125%. */
+#formulario .status-lookup,
+#formulario .status-lookup > *,
+#formulario #statusLookupForm.lookup-form {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+#formulario #statusLookupForm.lookup-form {
+  display: grid !important;
+  grid-template-columns: minmax(220px, 2fr) repeat(5, minmax(130px, 1fr)) minmax(110px, auto) !important;
+  grid-template-areas: "search advisor agency status from to submit";
+  gap: 12px;
+  align-items: end;
+}
+
+#formulario #statusLookupForm.lookup-form > * {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+#formulario #statusLookupForm input,
+#formulario #statusLookupForm select,
+#formulario #statusLookupForm button {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+#formulario .lookup-search-field { grid-area: search; }
+#formulario .lookup-advisor-field { grid-area: advisor; }
+#formulario .lookup-agency-field { grid-area: agency; }
+#formulario .lookup-status-field { grid-area: status; }
+#formulario .lookup-date-from-field { grid-area: from; }
+#formulario .lookup-date-to-field { grid-area: to; }
+#formulario .lookup-submit-field { grid-area: submit; }
+
+#formulario #statusLookupForm .lookup-submit-field,
+#formulario #statusLookupForm button[type="submit"] {
+  position: static;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  white-space: nowrap;
+  transform: none;
+}
+
+@media (max-width: 1450px) {
+  #formulario #statusLookupForm.lookup-form {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-areas:
+      "search search advisor agency"
+      "status from to submit";
+  }
+}
+
+@media (max-width: 1200px) {
+  #formulario .commercial-home-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1050px) {
+  #formulario #statusLookupForm.lookup-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-areas:
+      "search search"
+      "advisor agency"
+      "status status"
+      "from to"
+      "submit submit";
+  }
+}
+
+@media (max-width: 680px) {
+  #formulario .commercial-home-hero {
+    flex-direction: column;
+  }
+
+  #formulario .commercial-home-notice {
+    width: 100%;
+    min-width: 0;
+  }
+
+  #formulario .commercial-home-actions,
+  #formulario #statusLookupForm.lookup-form {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #formulario #statusLookupForm.lookup-form {
+    grid-template-areas:
+      "search"
+      "advisor"
+      "agency"
+      "status"
+      "from"
+      "to"
+      "submit";
+  }
+}
+
 /* Correccion final: Tracking comercial, tarjetas compactas, detalle y notificaciones. */
 #formulario .commercial-tracking-board,
 #formulario .commercial-tracking-grid,

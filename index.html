@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260722-commercial-tracking-final">
+<html lang="es" data-app-version="20260722-commercial-home-lookup-fix">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260722-commercial-tracking-final">
-  <link rel="stylesheet" href="layout-fix.css?v=20260722-commercial-tracking-final">
+  <link rel="stylesheet" href="styles.css?v=20260722-commercial-home-lookup-fix">
+  <link rel="stylesheet" href="layout-fix.css?v=20260722-commercial-home-lookup-fix">
 </head>
 <body>
   <header class="topbar">
@@ -804,7 +804,8 @@
         <aside class="commercial-sidebar">
           <div class="commercial-sidebar-group">
             <span>Principal</span>
-            <button class="commercial-side-link is-active" type="button" data-commercial-area="dashboard"><span>&#128202;</span> Dashboard</button>
+            <button class="commercial-side-link is-active" type="button" data-commercial-area="home" aria-current="page"><span>&#8962;</span> Inicio</button>
+            <button class="commercial-side-link" type="button" data-commercial-area="dashboard"><span>&#128202;</span> Dashboard</button>
             <button class="commercial-side-link" type="button" data-commercial-area="tracking"><span>&#128506;</span> Tracking</button>
             <button class="commercial-side-link" type="button" data-commercial-area="requests"><span>&#128193;</span> Mis solicitudes</button>
             <button class="commercial-side-link" type="button" data-commercial-area="control"><span>&#128737;</span> Carga de mesa</button>
@@ -826,7 +827,40 @@
         </aside>
 
         <div class="commercial-content">
-      <section class="commercial-dashboard panel is-active-area" data-commercial-area-section="dashboard" aria-labelledby="commercial-dashboard-title">
+      <section class="commercial-area commercial-home is-active-area" data-commercial-area-section="home" aria-labelledby="commercialWelcomeTitle">
+        <div class="commercial-home-hero">
+          <div>
+            <p class="eyebrow">Asesor comercial</p>
+            <h2 id="commercialWelcomeTitle">Hola, Asesor</h2>
+            <p>Bienvenido a tu centro comercial. Desde aqui puedes revisar tus solicitudes, consultar placas e iniciar nuevas gestiones.</p>
+          </div>
+          <div class="commercial-home-notice" id="commercialHomeNotice">
+            <strong>Operacion sincronizada</strong>
+            <span>Tu informacion se actualiza con mesa de control y conserva el historial de cada proceso.</span>
+          </div>
+        </div>
+        <div id="commercialHomeKpis" class="kpi-grid compact-kpis"></div>
+        <div class="commercial-home-actions">
+          <button type="button" class="commercial-home-action" data-commercial-area="process">
+            <strong>Nueva gestion</strong>
+            <span>Crear una solicitud de compra, CUV u otro tramite.</span>
+          </button>
+          <button type="button" class="commercial-home-action" data-commercial-area="tracking">
+            <strong>Ver Tracking</strong>
+            <span>Consultar el avance de tus saneamientos.</span>
+          </button>
+          <button type="button" class="commercial-home-action" data-commercial-area="requests">
+            <strong>Mis solicitudes</strong>
+            <span>Revisar los procesos creados por tu usuario.</span>
+          </button>
+          <button type="button" class="commercial-home-action" data-commercial-area="lookup">
+            <strong>Consulta de placas</strong>
+            <span>Validar si ya existe una solicitud registrada.</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="commercial-dashboard panel" data-commercial-area-section="dashboard" aria-labelledby="commercial-dashboard-title" hidden>
         <div>
           <p class="eyebrow">Dashboard comercial</p>
           <h2 id="commercial-dashboard-title">Mis saneamientos</h2>
@@ -909,13 +943,13 @@
           <h2 id="lookup-title">Revisa el estatus de tus saneamientos</h2>
         </div>
         <form id="statusLookupForm" class="lookup-form">
-          <input id="statusSearch" type="search" placeholder="Buscar por placa, cedula o cliente" required>
-          <select id="statusAdvisorFilter" aria-label="Filtrar por asesor comercial"></select>
-          <select id="statusAgencyFilter" aria-label="Filtrar por agencia"></select>
-          <select id="statusStateFilter" aria-label="Filtrar por estatus"></select>
-          <input id="statusDateFrom" type="date" aria-label="Fecha desde">
-          <input id="statusDateTo" type="date" aria-label="Fecha hasta">
-          <button class="btn primary" type="submit">Buscar</button>
+          <input id="statusSearch" class="lookup-search-field" type="search" placeholder="Buscar por placa, cedula o cliente" required>
+          <select id="statusAdvisorFilter" class="lookup-advisor-field" aria-label="Filtrar por asesor comercial"></select>
+          <select id="statusAgencyFilter" class="lookup-agency-field" aria-label="Filtrar por agencia"></select>
+          <select id="statusStateFilter" class="lookup-status-field" aria-label="Filtrar por estatus"></select>
+          <input id="statusDateFrom" class="lookup-date-from-field" type="date" aria-label="Fecha desde">
+          <input id="statusDateTo" class="lookup-date-to-field" type="date" aria-label="Fecha hasta">
+          <button class="btn primary lookup-submit-field" type="submit">Buscar</button>
         </form>
         <div id="statusLookupKpis" class="mini-kpis lookup-kpis"></div>
         <div id="statusResults" class="status-results"></div>
@@ -925,7 +959,7 @@
         <div class="commercial-start-hero">
           <div class="commercial-start-copy">
             <p class="eyebrow">Nueva gestion comercial</p>
-            <h2 id="commercialWelcomeTitle">Selecciona el tramite que necesitas crear</h2>
+            <h2 id="commercialProcessTitle">Selecciona el tramite que necesitas crear</h2>
             <p>Cada solicitud quedara separada por proceso y sincronizada con mesa de control.</p>
             <div class="commercial-start-actions">
               <button class="btn primary" type="button" data-commercial-start="commercial-purchase-process">&#128722; Compra</button>
@@ -1932,7 +1966,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260722-commercial-tracking-final"></script>
+  <script src="app.js?v=20260722-commercial-home-lookup-fix"></script>
 </body>
 </html>
 

@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260722-commercial-tracking-final";
+const APP_BUILD_VERSION = "20260722-commercial-home-lookup-fix";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -422,7 +422,7 @@ let providerDuplicatePage = 1;
 let backupRestoreChecked = false;
 let currentPurchaseDetailReport = { title: "", html: "" };
 let activeCommercialProcess = "compra";
-let activeCommercialArea = "dashboard";
+let activeCommercialArea = "home";
 let activeCommercialRequestFilter = "todos";
 let commercialTrackingFilter = "todos";
 let commercialTrackingSearch = "";
@@ -3529,8 +3529,7 @@ function applyCommercialSessionToForm() {
     ensureSelectHasOption(saleAgencyControl, session.agency || "");
     saleAgencyControl.value = session.agency || "";
   }
-  const welcomeTitle = document.querySelector("#commercialWelcomeTitle");
-  if (welcomeTitle) { welcomeTitle.innerHTML = `Bienvenido,<br><span>${escapeHtml(session.name || "Asesor comercial")}</span>`; }
+  renderCommercialHome();
   renderAdvisorSelect();
   if (advisorControl) {
     ensureSelectHasOption(advisorControl, session.name || "");
@@ -5634,7 +5633,7 @@ async function loginCommercial(data) {
   setSession({ role: "commercial", userId: user.id, name: user.name, agency: user.agency });
   commercialLoginForm.reset();
   setView("formulario");
-  setCommercialArea("dashboard", { scroll: false });
+  setCommercialArea("home", { scroll: false });
   applyCommercialSessionToForm();
   showToast(`Bienvenido, ${user.name}.`);
 }
@@ -6300,7 +6299,7 @@ function resetCommercialProcesses() {
   });
 }
 
-function setCommercialArea(area = "dashboard", options = {}) {
+function setCommercialArea(area = "home", options = {}) {
   activeCommercialArea = area;
   if (options.statusView) activeCommercialRequestFilter = options.statusView;
   commercialAreaSections.forEach((section) => {
@@ -6309,8 +6308,10 @@ function setCommercialArea(area = "dashboard", options = {}) {
     section.classList.toggle("is-active-area", isCurrentArea);
   });
   commercialAreaButtons.forEach((button) => {
-    const isActive = options.button
-      ? button === options.button
+    if (!button.classList.contains("commercial-side-link")) return;
+    const explicitButton = options.button?.classList?.contains("commercial-side-link") ? options.button : null;
+    const isActive = explicitButton
+      ? button === explicitButton
       : button.dataset.commercialArea === area && !button.dataset.commercialStatusView && !button.dataset.commercialModuleTarget;
     button.classList.toggle("is-active", isActive);
     if (isActive) button.setAttribute("aria-current", "page");
@@ -6485,6 +6486,39 @@ function getCommercialInfoRequests(tasks = state.tasks) {
   return tasks.filter(isInfoRequestTask);
 }
 
+function getCommercialDisplayName() {
+  return [
+    session.fullName,
+    session.nombreCompleto,
+    [session.nombre, session.apellido].filter(Boolean).join(" "),
+    session.name,
+    session.username
+  ].map((value) => String(value || "").trim()).find(Boolean) || "Asesor";
+}
+
+function renderCommercialHome() {
+  const title = document.querySelector("#commercialWelcomeTitle");
+  if (title) title.textContent = `Hola, ${getCommercialDisplayName()}`;
+  const kpiContainer = document.querySelector("#commercialHomeKpis");
+  if (!kpiContainer) return;
+
+  const ownedTasks = getCommercialOwnedTasks();
+  const operationalTasks = getCommercialOperationalTasks(ownedTasks);
+  const infoRequests = getCommercialInfoRequests(ownedTasks);
+  const kpis = getKpis(operationalTasks);
+  const cuvReady = filterTasksByCommercialProcess(operationalTasks, "cuv").filter((task) => task.cuvPdfDataUrl).length;
+  const rejected = operationalTasks.filter((task) => normalizeLooseText(task.status).includes("RECHAZ")).length;
+  const attention = rejected + infoRequests.filter((task) => task.infoAccessStatus !== "approved" && !isClosedStatus(task.status)).length;
+
+  renderKpiCards("#commercialHomeKpis", [
+    ["Activas", kpis.pending + kpis.inProgress + kpis.unassigned, "Solicitudes abiertas"],
+    ["En proceso", kpis.inProgress, "Gestion activa"],
+    ["Completadas", kpis.completed, "Finalizadas"],
+    ["Atencion", attention, "Requieren revision"],
+    ["CUV listos", cuvReady, "Disponibles para descarga"]
+  ]);
+}
+
 function renderCommercialDashboard() {
   const kpiContainer = document.querySelector("#commercialKpis");
   const chartContainer = document.querySelector("#commercialChart");
@@ -6505,6 +6539,7 @@ function renderCommercialDashboard() {
   const lookupTitle = document.querySelector("#lookup-title");
   if (title) title.textContent = "Dashboard comercial integral";
   if (lookupTitle) lookupTitle.textContent = activeCommercialProcess === "venta" ? "Revisa el estatus de tus contratos" : "Revisa el estatus de tus saneamientos";
+  renderCommercialHome();
 
   renderKpiCards("#commercialKpis", [
     ["Saneamientos", purchaseTasks.length, "Solicitudes de compra"],
