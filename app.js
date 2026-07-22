@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260722-commercial-kanban-fit";
+const APP_BUILD_VERSION = "20260722-commercial-tracking-final";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -16,6 +16,7 @@ const FORCE_LOGOUT_ACK_KEY = "autocor-force-logout-ack";
 const VIEW_STORAGE_KEY = "autocor-active-view";
 const AUTH_STORAGE_KEY = "autocor-access-users";
 const COMMERCIAL_NOTIFICATIONS_SEEN_KEY = "autocor-commercial-notifications-seen";
+const COMMERCIAL_NOTIFICATIONS_STORE_PREFIX = "autocor-commercial-notifications";
 const TASK_SYNC_CURSOR_KEY = "autocor-task-sync-cursor";
 const TASK_DELETE_CURSOR_KEY = "autocor-task-delete-cursor";
 const BACKUP_DB_NAME = "autocor-control-legal-backups";
@@ -3040,6 +3041,7 @@ function closeCommercialModals() {
   [commercialConstructionModal, commercialLeadModal, commercialNotificationsModal, commercialSidebarModal, commercialPilotModal, commercialDuplicateModal, commercialSignatureModal].forEach((modal) => {
     if (modal) modal.hidden = true;
   });
+  document.querySelector("#commercialNotificationBell")?.setAttribute("aria-expanded", "false");
   document.body.classList.remove("has-modal");
 }
 
@@ -3137,6 +3139,9 @@ function openCommercialLeadFicha(taskId) {
   if (!task || !commercialLeadFichaContent) return;
   const latestLegalObservation = getLatestLegalObservation(task);
   const isCuv = isCuvTask(task);
+  const stage = getCommercialTrackingStage(task);
+  const stageItems = getCommercialTrackingStageItems(task);
+  const completedStages = stageItems.filter((item) => item.status === "completed").length;
   const fields = [
     ["Proceso", getCommercialProcessLabel(getTaskProcess(task))],
     ...(isCuv ? [
@@ -3162,15 +3167,37 @@ function openCommercialLeadFicha(taskId) {
     ["Firma / Pilot", getSignatureDisplayStatus(task)],
     ["Asesor legal", task.legalAdvisor],
     ["Fecha de envio", task.createdAt ? formatDateTime(task.createdAt) : ""],
+    ["Etapa actual", stage.label],
+    ["Progreso", `${stage.progress}% | ${completedStages} de ${stageItems.length} etapas completadas`],
+    ["Tiempo de gestion", formatLeadDuration(task)],
     ["Observaciones", task.observaciones],
     ["Observacion de mesa de control", latestLegalObservation ? `${latestLegalObservation.note} (${latestLegalObservation.statusLabel})` : ""]
   ];
-  commercialLeadFichaContent.innerHTML = fields.map(([label, value]) => `
-    <div class="lead-ficha-item ${label === "Observaciones" || label === "Observaciones CUV" || label === "Observacion de mesa de control" ? "span-2" : ""}">
-      <span>${escapeHtml(label)}</span>
-      <strong>${escapeHtml(value || "Sin registro")}</strong>
+  commercialLeadFichaContent.innerHTML = `
+    <div class="tracking-detail-summary span-2">
+      <div>
+        <span class="eyebrow">Detalle del proceso</span>
+        <strong>${escapeHtml(task.placa || "Sin placa")}</strong>
+        <small>${escapeHtml(task.cliente || task.vendedor || "Cliente sin registro")}</small>
+      </div>
+      <div>
+        ${renderStatusPill(task.status)}
+        <small>${escapeHtml(stage.label)} | ${stage.progress}%</small>
+      </div>
     </div>
-  `).join("") + `
+    ${fields.map(([label, value]) => `
+      <div class="lead-ficha-item ${label === "Observaciones" || label === "Observaciones CUV" || label === "Observacion de mesa de control" ? "span-2" : ""}">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(value || "Sin registro")}</strong>
+      </div>
+    `).join("")}
+    <section class="tracking-stage-panel span-2">
+      <p class="eyebrow">Linea de tiempo</p>
+      <div class="tracking-stage-list">
+        ${stageItems.map(renderCommercialTrackingStageItem).join("")}
+      </div>
+    </section>
+    ${renderLegalObservationList(task)}
     <div class="lead-ficha-actions span-2">
       ${isCuv && task.cuvPdfDataUrl ? `<button class="btn primary" type="button" data-pdf-download="${escapeHtml(task.id)}">Descargar PDF CUV</button>` : ""}
       ${buildSignatureActionButtons(task)}
@@ -6473,14 +6500,11 @@ function renderCommercialDashboard() {
   const saleTasks = filterTasksByCommercialProcess(dashboardTasks, "venta");
   const cuvTasks = filterTasksByCommercialProcess(dashboardTasks, "cuv");
   const kpis = getKpis(dashboardTasks);
-  const notificationTasks = getCommercialNotificationTasks(dashboardTasks);
+  updateCommercialNotificationCount(dashboardTasks);
   const title = document.querySelector("#commercial-dashboard-title");
   const lookupTitle = document.querySelector("#lookup-title");
   if (title) title.textContent = "Dashboard comercial integral";
   if (lookupTitle) lookupTitle.textContent = activeCommercialProcess === "venta" ? "Revisa el estatus de tus contratos" : "Revisa el estatus de tus saneamientos";
-  if (commercialNotificationCount) {
-    commercialNotificationCount.textContent = String(notificationTasks.filter((item) => !item.seen).length);
-  }
 
   renderKpiCards("#commercialKpis", [
     ["Saneamientos", purchaseTasks.length, "Solicitudes de compra"],
@@ -6555,6 +6579,75 @@ function getCommercialTrackingStage(task = {}) {
     return { ...base, key: "recibido", label: "Recibida por mesa", className: "info", progress: 22, step: 2 };
   }
   return { ...base, key: "enviado", label: "Solicitud enviada", className: "neutral", progress: 11, step: 1 };
+}
+
+function getCommercialTrackingStageItems(task = {}) {
+  const current = getCommercialTrackingStage(task);
+  const completedStep = Math.max(0, Math.min(COMMERCIAL_TRACKING_STEPS.length, current.step || 0));
+  return COMMERCIAL_TRACKING_STEPS.map((step, index) => {
+    const position = index + 1;
+    let status = "pending";
+    if (position < completedStep) status = "completed";
+    if (position === completedStep) status = "current";
+    if (current.key === "rechazado" && position >= completedStep) status = position === completedStep ? "current" : "pending";
+    const completedAt = getCommercialTrackingStageDate(task, step.id, status);
+    return {
+      ...step,
+      status,
+      completedAt,
+      responsible: getCommercialTrackingStageResponsible(task, step.id, status),
+      note: getCommercialTrackingStageNote(task, step.id, status)
+    };
+  });
+}
+
+function getCommercialTrackingStageDate(task = {}, stepId = "", status = "") {
+  if (status === "pending") return "";
+  const signaturePayload = task.signaturePayload || {};
+  const map = {
+    enviado: task.createdAt,
+    recibido: task.createdAt,
+    tomado: task.takenAt || task.updatedAt,
+    gestion: task.updatedAt || task.takenAt,
+    pilot: task.completedAt || task.updatedAt,
+    "firma-solicitada": task.signatureRequestedAt || signaturePayload.requestedAt || task.updatedAt,
+    "firma-enviada": task.signatureSentAt || task.updatedAt,
+    "pilot-firmados": task.signaturePilotRequestedAt || task.updatedAt,
+    final: task.completedAt || task.updatedAt
+  };
+  return map[stepId] || "";
+}
+
+function getCommercialTrackingStageResponsible(task = {}, stepId = "", status = "") {
+  if (status === "pending") return "";
+  if (["enviado", "recibido", "firma-solicitada"].includes(stepId)) return task.asesor || task.commercialUserName || "Asesor comercial";
+  if (["tomado", "gestion", "pilot", "firma-enviada", "pilot-firmados", "final"].includes(stepId)) return task.legalAdvisor || "Mesa de control";
+  return "";
+}
+
+function getCommercialTrackingStageNote(task = {}, stepId = "", status = "") {
+  if (status === "pending") return "Pendiente";
+  if (status === "current") return "Etapa actual";
+  if (stepId === "final") return "Proceso cerrado";
+  return "Completada";
+}
+
+function renderCommercialTrackingStageItem(item = {}) {
+  const statusLabel = item.status === "completed"
+    ? (item.completedAt ? `Completada el ${formatDateTime(item.completedAt)}` : "Completada")
+    : item.status === "current"
+      ? "Etapa actual"
+      : "Pendiente";
+  const responsible = item.responsible ? ` | ${item.responsible}` : "";
+  return `
+    <article class="tracking-stage-item is-${escapeHtml(item.status)}">
+      <span class="tracking-stage-dot" aria-hidden="true"></span>
+      <div>
+        <strong>${escapeHtml(item.label)}</strong>
+        <span>${escapeHtml(statusLabel + responsible)}</span>
+      </div>
+    </article>
+  `;
 }
 
 function getCommercialTrackingTasks(tasks = []) {
@@ -6645,7 +6738,7 @@ function renderCommercialTrackingBoard(tasks = []) {
       </label>
       <button class="btn secondary tiny" type="button" data-commercial-tracking-clear>Limpiar</button>
     </div>
-    <div class="commercial-kanban-board">
+    <div class="commercial-kanban-board commercial-tracking-grid">
       ${columns.map((column) => {
         const columnTasks = visibleByColumn[column.key] || [];
         return `
@@ -6657,7 +6750,7 @@ function renderCommercialTrackingBoard(tasks = []) {
                 <small>${columnTasks.length} ${escapeHtml(column.hint.toLowerCase())}</small>
               </div>
             </header>
-            <div class="commercial-kanban-cards">
+            <div class="commercial-kanban-cards commercial-tracking-list">
               ${columnTasks.slice(0, 6).map(renderCommercialTrackingCard).join("") || `<div class="empty compact-empty">Sin registros.</div>`}
             </div>
             ${columnTasks.length > 6 ? `<button class="kanban-view-all" type="button" data-commercial-tracking-filter="${escapeHtml(column.key)}">Ver todas (${columnTasks.length})</button>` : ""}
@@ -6683,31 +6776,39 @@ function renderCommercialTrackingCard(task) {
   const completedSteps = Math.max(0, Math.min(COMMERCIAL_TRACKING_STEPS.length, stage.step || 0));
   const totalSteps = COMMERCIAL_TRACKING_STEPS.length;
   return `
-    <article class="commercial-tracking-card ${stage.className} is-${columnKey}" style="--tracking-color:${escapeHtml(stage.statusColor)}; --tracking-text:${getReadableTextColor(stage.statusColor)}">
-      <div class="tracking-card-top">
-        <div>
-          <strong>${escapeHtml(task.placa || "Sin placa")}</strong>
-          <span>${escapeHtml(task.cliente || "Cliente sin nombre")}</span>
+    <article class="commercial-tracking-card tracking-card ${stage.className} is-${columnKey}" data-request-id="${escapeHtml(task.id)}" style="--tracking-color:${escapeHtml(stage.statusColor)}; --tracking-text:${getReadableTextColor(stage.statusColor)}">
+      <header class="tracking-card-header">
+        <div class="tracking-card-identity">
+          <strong class="tracking-card-plate">${escapeHtml(task.placa || "Sin placa")}</strong>
+          <span class="tracking-card-client">${escapeHtml(task.cliente || task.vendedor || "Cliente sin nombre")}</span>
         </div>
-        <span class="tracking-state">${escapeHtml(stage.statusLabel)}</span>
+        <span class="tracking-status-badge tracking-state">${escapeHtml(stage.statusLabel)}</span>
+      </header>
+      <div class="tracking-card-meta">
+        <div><span>Agencia</span><strong>${escapeHtml(task.agencia || "Sin agencia")}</strong></div>
+        <div><span>Mesa</span><strong>${escapeHtml(task.legalAdvisor || "Disponible")}</strong></div>
       </div>
-      <div class="tracking-meta-row">
-        <span><b>Agencia</b>${escapeHtml(task.agencia || "Sin agencia")}</span>
-        <span><b>Mesa</b>${escapeHtml(task.legalAdvisor || "Disponible")}</span>
-        <span><b>Ingreso</b>${escapeHtml(formatDateTime(task.createdAt))}</span>
+      <div class="tracking-card-date">
+        <span>Ingreso</span>
+        <strong>${escapeHtml(formatDateTime(task.createdAt))}</strong>
       </div>
-      <div class="tracking-progress-head"><span>Progreso general</span><strong>${stage.progress}%</strong></div>
-      <div class="tracking-progress"><i style="width:${stage.progress}%"></i></div>
-      <div class="tracking-steps-count">Etapas <b>${completedSteps} de ${totalSteps}</b> completadas</div>
-      <div class="tracking-timeline">
-        ${COMMERCIAL_TRACKING_STEPS.map((step, index) => `<span class="${index + 1 < stage.step ? "done" : index + 1 === stage.step ? "current" : ""}">${escapeHtml(step.label)}</span>`).join("")}
+      <div class="tracking-progress-card">
+        <div class="tracking-progress-header"><span>Progreso general</span><strong>${stage.progress}%</strong></div>
+        <div class="tracking-progress-bar"><span style="width:${stage.progress}%"></span></div>
       </div>
-      <div class="tracking-card-actions">
-        <small>${escapeHtml(formatLeadDuration(task))}</small>
-        <button class="btn tiny secondary" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver ficha</button>
-        ${canCommercialResendTask(task) ? `<button class="btn tiny primary resend-btn" type="button" data-resend-commercial-task="${escapeHtml(task.id)}">Reenviar</button>` : ""}
-        ${buildSignatureActionButtons(task)}
+      <div class="tracking-stage-summary">
+        <span>Etapa actual</span>
+        <strong>${escapeHtml(stage.label)}</strong>
+        <small>${completedSteps} de ${totalSteps} etapas completadas</small>
       </div>
+      <footer class="tracking-card-footer">
+        <span>${escapeHtml(formatLeadDuration(task))}</span>
+        <div>
+          <button class="btn tiny secondary tracking-open-detail" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver ficha</button>
+          ${canCommercialResendTask(task) ? `<button class="btn tiny primary resend-btn" type="button" data-resend-commercial-task="${escapeHtml(task.id)}">Reenviar</button>` : ""}
+          ${buildSignatureActionButtons(task)}
+        </div>
+      </footer>
     </article>
   `;
 }
@@ -6744,8 +6845,35 @@ function setCommercialNotificationSeenMap(map) {
   }
 }
 
+function getCommercialNotificationStoreKey(userId = session.userId || "public") {
+  return `${COMMERCIAL_NOTIFICATIONS_STORE_PREFIX}:${userId || "public"}`;
+}
+
+function getCommercialNotificationStore(userId = session.userId || "public") {
+  try {
+    const list = JSON.parse(localStorage.getItem(getCommercialNotificationStoreKey(userId)) || "[]");
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+function setCommercialNotificationStore(list = [], userId = session.userId || "public") {
+  try {
+    localStorage.setItem(getCommercialNotificationStoreKey(userId), JSON.stringify(list));
+  } catch {
+    // Si el navegador bloquea localStorage, las notificaciones siguen visibles en la sesion.
+  }
+}
+
+function normalizeCommercialNotificationEvent(value = "") {
+  return normalizeLooseText(value).replace(/\s+/g, "_") || "sin_evento";
+}
+
 function getCommercialNotificationKey(task) {
-  return `${session.userId || "public"}::${task.id}::${task.status}::${task.updatedAt || task.completedAt || task.createdAt}`;
+  const statusKey = normalizeCommercialNotificationEvent(task.status || "sin_estatus");
+  const signatureKey = normalizeCommercialNotificationEvent(getSignatureDisplayStatus(task) || "");
+  return `commercial_request:${task.id}:status:${statusKey}:signature:${signatureKey}`;
 }
 
 function isCommercialNotificationStatus(statusValue = "") {
@@ -6757,42 +6885,153 @@ function isCommercialNotificationStatus(statusValue = "") {
     status.includes("SUBIDO A PILOT");
 }
 
+function buildCommercialNotificationFromTask(task = {}) {
+  const eventKey = getCommercialNotificationKey(task);
+  const statusText = getSignatureDisplayStatus(task) || getStatusOption(task.status)?.label || task.status || "Estatus actualizado";
+  const plate = task.placa || "Sin placa";
+  return {
+    id: `commercial-notification-${session.userId || "public"}-${eventKey}`,
+    userId: session.userId || "public",
+    type: "status_change",
+    title: statusText,
+    message: `La solicitud ${plate} cambio a ${statusText}`,
+    entityType: "commercial_request",
+    entityId: task.id,
+    eventKey,
+    isRead: false,
+    isDeleted: false,
+    createdAt: task.updatedAt || task.completedAt || task.createdAt || new Date().toISOString(),
+    readAt: null,
+    deletedAt: null,
+    taskSnapshot: {
+      placa: task.placa || "",
+      cliente: task.cliente || task.vendedor || "",
+      status: task.status || "",
+      updatedAt: task.updatedAt || task.completedAt || task.createdAt || ""
+    }
+  };
+}
+
+function mergeCommercialNotification(existing = {}, incoming = {}) {
+  return {
+    ...incoming,
+    ...existing,
+    id: existing.id || incoming.id,
+    taskSnapshot: { ...(incoming.taskSnapshot || {}), ...(existing.taskSnapshot || {}) },
+    isRead: existing.isRead === true || incoming.isRead === true,
+    isDeleted: existing.isDeleted === true || incoming.isDeleted === true,
+    readAt: existing.readAt || incoming.readAt || null,
+    deletedAt: existing.deletedAt || incoming.deletedAt || null
+  };
+}
+
 function getCommercialNotificationTasks(tasks = getCommercialOperationalTasks(getCommercialOwnedTasks())) {
-  const seen = getCommercialNotificationSeenMap();
-  return tasks
+  const userId = session.userId || "public";
+  const stored = getCommercialNotificationStore(userId);
+  const oldSeen = getCommercialNotificationSeenMap();
+  const byEvent = new Map(stored.map((item) => [item.eventKey, item]));
+  tasks
     .filter((task) => isCommercialNotificationStatus(task.status))
-    .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
-    .map((task) => ({
-      task,
-      key: getCommercialNotificationKey(task),
-      seen: Boolean(seen[getCommercialNotificationKey(task)])
-    }));
+    .forEach((task) => {
+      const incoming = buildCommercialNotificationFromTask(task);
+      const oldKey = `${userId}::${task.id}::${task.status}::${task.updatedAt || task.completedAt || task.createdAt}`;
+      if (oldSeen[oldKey]) {
+        incoming.isRead = true;
+        incoming.readAt = incoming.createdAt;
+      }
+      byEvent.set(incoming.eventKey, mergeCommercialNotification(byEvent.get(incoming.eventKey), incoming));
+    });
+  const merged = Array.from(byEvent.values())
+    .filter((item) => item.userId === userId)
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  setCommercialNotificationStore(merged, userId);
+  return merged;
+}
+
+function getVisibleCommercialNotifications(tasks) {
+  return getCommercialNotificationTasks(tasks).filter((item) => !item.isDeleted);
+}
+
+function updateCommercialNotificationCount(tasks) {
+  if (!commercialNotificationCount) return;
+  const unread = getVisibleCommercialNotifications(tasks)
+    .filter((item) => item.userId === (session.userId || "public") && item.isRead === false).length;
+  commercialNotificationCount.textContent = String(unread);
+  commercialNotificationCount.hidden = unread === 0;
+}
+
+function saveCommercialNotification(notificationId, updater) {
+  const userId = session.userId || "public";
+  const list = getCommercialNotificationStore(userId);
+  const next = list.map((item) => item.id === notificationId ? updater({ ...item }) : item);
+  setCommercialNotificationStore(next, userId);
+  updateCommercialNotificationCount();
+  return next.find((item) => item.id === notificationId);
+}
+
+function markCommercialNotificationRead(notificationId) {
+  return saveCommercialNotification(notificationId, (item) => ({
+    ...item,
+    isRead: true,
+    readAt: item.readAt || new Date().toISOString()
+  }));
+}
+
+function deleteCommercialNotification(notificationId) {
+  saveCommercialNotification(notificationId, (item) => ({
+    ...item,
+    isDeleted: true,
+    deletedAt: item.deletedAt || new Date().toISOString()
+  }));
+}
+
+function markAllCommercialNotificationsRead() {
+  const userId = session.userId || "public";
+  const now = new Date().toISOString();
+  const next = getCommercialNotificationStore(userId).map((item) =>
+    item.isDeleted ? item : { ...item, isRead: true, readAt: item.readAt || now }
+  );
+  setCommercialNotificationStore(next, userId);
+  openCommercialNotificationsModal();
+  updateCommercialNotificationCount();
+}
+
+function deleteReadCommercialNotifications() {
+  const userId = session.userId || "public";
+  const now = new Date().toISOString();
+  const next = getCommercialNotificationStore(userId).map((item) =>
+    item.isRead ? { ...item, isDeleted: true, deletedAt: item.deletedAt || now } : item
+  );
+  setCommercialNotificationStore(next, userId);
+  openCommercialNotificationsModal();
+  updateCommercialNotificationCount();
 }
 
 function openCommercialNotificationsModal() {
   if (!commercialNotificationsModal || !commercialNotificationsContent) return;
-  const notifications = getCommercialNotificationTasks();
+  const notifications = getVisibleCommercialNotifications();
   if (!notifications.length) {
     commercialNotificationsContent.innerHTML = `<div class="empty compact-empty">No tienes notificaciones de estatus por revisar.</div>`;
   } else {
-    commercialNotificationsContent.innerHTML = notifications.map(({ task, seen }) => `
-      <article class="commercial-notification-item ${seen ? "is-seen" : ""}">
-        <div>
-          <strong>${escapeHtml(task.placa || "Sin placa")}</strong>
-          <span>${escapeHtml(task.cliente || task.vendedor || "Sin cliente")}</span>
-        </div>
-        <div>
-          ${renderStatusPill(task.status)}
-          <small>${escapeHtml(formatDateTime(task.updatedAt || task.completedAt || task.createdAt))}</small>
-        </div>
+    commercialNotificationsContent.innerHTML = `
+      <div class="commercial-notification-actions">
+        <button class="btn tiny secondary" type="button" data-commercial-mark-all-read>Marcar todas como leidas</button>
+        <button class="btn tiny secondary" type="button" data-commercial-delete-read>Eliminar leidas</button>
+      </div>
+      ${notifications.map((notification) => `
+      <article class="commercial-notification-item commercial-notification ${notification.isRead ? "is-seen" : "is-unread"}" data-notification-id="${escapeHtml(notification.id)}">
+        <button class="commercial-notification-open" type="button" data-commercial-open-notification="${escapeHtml(notification.id)}">
+          <strong>${escapeHtml(notification.title || "Notificacion")}</strong>
+          <span>${escapeHtml(notification.message || "")}</span>
+          <time datetime="${escapeHtml(notification.createdAt || "")}">${escapeHtml(formatDateTime(notification.createdAt))}</time>
+        </button>
+        <button class="commercial-notification-delete" type="button" data-commercial-delete-notification="${escapeHtml(notification.id)}" aria-label="Eliminar notificacion">x</button>
       </article>
-    `).join("");
+    `).join("")}`;
   }
-  const seenMap = getCommercialNotificationSeenMap();
-  notifications.forEach(({ key }) => { seenMap[key] = true; });
-  setCommercialNotificationSeenMap(seenMap);
   openCommercialModal(commercialNotificationsModal);
-  renderCommercialDashboard();
+  document.querySelector("#commercialNotificationBell")?.setAttribute("aria-expanded", "true");
+  updateCommercialNotificationCount();
 }
 
 function getCommercialRequestFilteredTasks(statusView = activeCommercialRequestFilter) {
@@ -13779,6 +14018,35 @@ legalTaskModalContent?.addEventListener("submit", (event) => {
 
 document.querySelector("#commercialNotificationBell")?.addEventListener("click", () => {
   openCommercialNotificationsModal();
+});
+
+commercialNotificationsContent?.addEventListener("click", (event) => {
+  const openButton = event.target.closest("[data-commercial-open-notification]");
+  if (openButton) {
+    const notification = markCommercialNotificationRead(openButton.dataset.commercialOpenNotification);
+    updateCommercialNotificationCount();
+    if (notification?.entityId) {
+      closeCommercialModals();
+      setCommercialArea("tracking");
+      openCommercialLeadFicha(notification.entityId);
+    } else {
+      openCommercialNotificationsModal();
+    }
+    return;
+  }
+  const deleteButton = event.target.closest("[data-commercial-delete-notification]");
+  if (deleteButton) {
+    deleteCommercialNotification(deleteButton.dataset.commercialDeleteNotification);
+    openCommercialNotificationsModal();
+    return;
+  }
+  if (event.target.closest("[data-commercial-mark-all-read]")) {
+    markAllCommercialNotificationsRead();
+    return;
+  }
+  if (event.target.closest("[data-commercial-delete-read]")) {
+    deleteReadCommercialNotifications();
+  }
 });
 
 legalChatOpenBtn?.addEventListener("click", () => {

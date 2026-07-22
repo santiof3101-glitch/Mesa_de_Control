@@ -850,3 +850,356 @@ body {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* Correccion final: Tracking comercial, tarjetas compactas, detalle y notificaciones. */
+#formulario .commercial-tracking-board,
+#formulario .commercial-tracking-grid,
+#formulario .commercial-kanban-board {
+  width: 100%;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+#formulario .commercial-tracking-board {
+  overflow: visible !important;
+}
+
+#formulario .commercial-tracking-grid,
+#formulario .commercial-kanban-board {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: clamp(12px, 1.3vw, 18px);
+  align-items: start;
+}
+
+#formulario .commercial-kanban-column {
+  width: 100%;
+  min-width: 0 !important;
+  max-width: 100%;
+  overflow: visible;
+}
+
+#formulario .commercial-tracking-list,
+#formulario .commercial-kanban-cards {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+#formulario .tracking-card {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: clamp(12px, 1vw, 16px);
+  border: 1px solid color-mix(in srgb, var(--tracking-color, #dce4ee) 34%, #dce4ee);
+  border-left: 4px solid var(--tracking-color, #dce4ee);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 14px 34px rgb(15 23 42 / 8%);
+  overflow: hidden;
+}
+
+#formulario .tracking-card > * {
+  min-width: 0;
+}
+
+#formulario .tracking-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#formulario .tracking-card-identity {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+#formulario .tracking-card-plate {
+  font-size: clamp(1rem, 0.9rem + 0.3vw, 1.25rem);
+  line-height: 1;
+  color: #0f172a;
+}
+
+#formulario .tracking-card-client {
+  font-size: clamp(0.75rem, 0.7rem + 0.15vw, 0.9rem);
+  color: #475569;
+  overflow-wrap: anywhere;
+}
+
+#formulario .tracking-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: clamp(0.65rem, 0.6rem + 0.1vw, 0.78rem);
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+  color: var(--tracking-text, #fff);
+  background: var(--tracking-color, #64748b);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+#formulario .tracking-card-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+#formulario .tracking-card-meta > div,
+#formulario .tracking-card-date,
+#formulario .tracking-stage-summary {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+#formulario .tracking-card-meta span,
+#formulario .tracking-card-date span,
+#formulario .tracking-stage-summary span,
+#formulario .tracking-progress-header span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+#formulario .tracking-card-meta strong,
+#formulario .tracking-card-date strong,
+#formulario .tracking-stage-summary strong {
+  font-size: clamp(0.72rem, 0.68rem + 0.12vw, 0.86rem);
+  color: #0f172a;
+  overflow-wrap: anywhere;
+}
+
+#formulario .tracking-stage-summary small,
+#formulario .tracking-card-footer span {
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+#formulario .tracking-progress-card {
+  display: grid;
+  gap: 7px;
+}
+
+#formulario .tracking-progress-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+#formulario .tracking-progress-header strong {
+  color: #0f172a;
+}
+
+#formulario .tracking-progress-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: #e7edf4;
+  overflow: hidden;
+}
+
+#formulario .tracking-progress-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tracking-color, #f2182d);
+}
+
+#formulario .tracking-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #e8edf3;
+}
+
+#formulario .tracking-card-footer > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+#formulario .tracking-card-footer .btn {
+  min-height: 36px;
+  padding: 7px 12px;
+  white-space: nowrap;
+}
+
+.tracking-detail-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #e4e9f1;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #fff, #f8fafc);
+}
+
+.tracking-detail-summary > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.tracking-detail-summary strong {
+  font-size: clamp(1.35rem, 1rem + 1vw, 2rem);
+  line-height: 1;
+}
+
+.tracking-stage-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #e4e9f1;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.tracking-stage-list {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+
+.tracking-stage-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+}
+
+.tracking-stage-dot {
+  width: 14px;
+  height: 14px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: #cbd5e1;
+}
+
+.tracking-stage-item > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.tracking-stage-item strong,
+.tracking-stage-item span {
+  overflow-wrap: anywhere;
+}
+
+.tracking-stage-item.is-completed .tracking-stage-dot {
+  background: #169c72;
+}
+
+.tracking-stage-item.is-current .tracking-stage-dot {
+  background: #f59e0b;
+  outline: 3px solid rgb(245 158 11 / 25%);
+  outline-offset: 3px;
+}
+
+.tracking-stage-item.is-pending .tracking-stage-dot {
+  background: #cbd5e1;
+}
+
+.commercial-notification-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 0 12px;
+}
+
+.commercial-notification {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid #edf1f5;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.commercial-notification.is-unread {
+  background: #fff7f6;
+  border-color: #ffd4d0;
+}
+
+.commercial-notification-open {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: #0f172a;
+  text-align: left;
+  cursor: pointer;
+}
+
+.commercial-notification-open strong,
+.commercial-notification-open span,
+.commercial-notification-open time {
+  overflow-wrap: anywhere;
+}
+
+.commercial-notification-open time {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.commercial-notification-delete {
+  align-self: start;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e4e9f1;
+  border-radius: 50%;
+  background: #fff;
+  color: #b42318;
+  cursor: pointer;
+}
+
+@media (max-width: 1499px) {
+  #formulario .commercial-tracking-grid,
+  #formulario .commercial-kanban-board {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 1050px) {
+  #formulario .commercial-tracking-grid,
+  #formulario .commercial-kanban-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 680px) {
+  #formulario .commercial-tracking-grid,
+  #formulario .commercial-kanban-board {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #formulario .tracking-card-meta {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tracking-detail-summary,
+  #formulario .tracking-card-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
