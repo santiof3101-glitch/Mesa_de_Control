@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260721-processing-users-admin";
+const APP_BUILD_VERSION = "20260721-commercial-signature-flow";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -34,8 +34,16 @@ const MAX_FILE_LIBRARY_SIZE = 50 * 1024 * 1024;
 const MAX_PROVIDER_REASONABLE_AMOUNT = 100000;
 const LEGAL_MAILBOXES = [
   { id: "saneamientos", label: "Saneamientos", description: "Compra, saneamiento y consultas de placa" },
-  { id: "contratos", label: "Contratos", description: "Tracking de contratos de compraventa" }
+  { id: "contratos", label: "Contratos", description: "Tracking de contratos de compraventa" },
+  { id: "firmas", label: "Firmas", description: "Envio a firma y contratos firmados en Pilot" }
 ];
+
+const SIGNATURE_STATUS = {
+  requested: "firma solicitada",
+  sent: "enviado a firmar exitoso",
+  pilotRequested: "subida de contratos firmados solicitada",
+  completed: "contratos firmados subidos a pilot"
+};
 
 const PURCHASE_COLUMNS = [
   "NO.",
@@ -479,6 +487,13 @@ const commercialSidebarModalContent = document.querySelector("#commercialSidebar
 const commercialPilotModal = document.querySelector("#commercialPilotModal");
 const pilotConfirmBtn = document.querySelector("#pilotConfirmBtn");
 const pilotCancelBtn = document.querySelector("#pilotCancelBtn");
+const commercialSignatureModal = document.querySelector("#commercialSignatureModal");
+const commercialSignatureForm = document.querySelector("#commercialSignatureForm");
+const signatureTaskIdInput = document.querySelector("#signatureTaskId");
+const signatureSpouseToggle = document.querySelector("#signatureSpouseToggle");
+const signatureSpouseFields = document.querySelector("#signatureSpouseFields");
+const signatureHeirsToggle = document.querySelector("#signatureHeirsToggle");
+const signatureHeirsFields = document.querySelector("#signatureHeirsFields");
 const commercialDuplicateModal = document.querySelector("#commercialDuplicateModal");
 const duplicateConflictContent = document.querySelector("#duplicateConflictContent");
 const duplicateContinueBtn = document.querySelector("#duplicateContinueBtn");
@@ -2824,7 +2839,7 @@ function openCommercialModal(modal) {
 }
 
 function closeCommercialModals() {
-  [commercialConstructionModal, commercialLeadModal, commercialNotificationsModal, commercialSidebarModal, commercialPilotModal, commercialDuplicateModal].forEach((modal) => {
+  [commercialConstructionModal, commercialLeadModal, commercialNotificationsModal, commercialSidebarModal, commercialPilotModal, commercialDuplicateModal, commercialSignatureModal].forEach((modal) => {
     if (modal) modal.hidden = true;
   });
   document.body.classList.remove("has-modal");
@@ -2934,6 +2949,7 @@ function openCommercialLeadFicha(taskId) {
     ["Tipo de compra", task.tipoCompra],
     ["Tipo de saneamiento", task.tipoSaneamiento],
     ["Estatus", task.status],
+    ["Firma / Pilot", getSignatureDisplayStatus(task)],
     ["Asesor legal", task.legalAdvisor],
     ["Fecha de envio", task.createdAt ? formatDateTime(task.createdAt) : ""],
     ["Observaciones", task.observaciones]
@@ -2943,7 +2959,11 @@ function openCommercialLeadFicha(taskId) {
       <span>${escapeHtml(label)}</span>
       <strong>${escapeHtml(value || "Sin registro")}</strong>
     </div>
-  `).join("");
+  `).join("") + `
+    <div class="lead-ficha-actions span-2">
+      ${buildSignatureActionButtons(task)}
+    </div>
+  `;
   openCommercialModal(commercialLeadModal);
 }
 
@@ -4449,7 +4469,12 @@ function getVisibleTasks() {
         task.requestedByAgency,
         task.sourceCliente,
         task.sourceAsesor,
-        task.sourceAgencia
+        task.sourceAgencia,
+        task.signaturePayload?.titular?.email,
+        task.signaturePayload?.titular?.whatsapp,
+        task.signaturePayload?.conyuge?.email,
+        task.signaturePayload?.conyuge?.whatsapp,
+        ...(Array.isArray(task.signaturePayload?.herederos) ? task.signaturePayload.herederos.flatMap((heir) => [heir.email, heir.whatsapp]) : [])
       ].join(" ").toLowerCase();
       return haystack.includes(normalizedSearch);
     })
@@ -4506,6 +4531,7 @@ function renderTasks() {
     const canTake = canLegalUserTakeTask(task);
     const lockedForLegal = isTaskStatusLockedForLegal(task);
     const canEdit = session.role === "admin" || (task.legalUserId === session.userId && !lockedForLegal);
+    const canEditStatus = canEdit && !isSignatureTask(task);
     const status = getStatusOption(task.status);
     const warnings = task.duplicateWarnings?.length ? task.duplicateWarnings : getDuplicateWarnings(task, task.id);
     const card = document.createElement("article");
@@ -4513,7 +4539,7 @@ function renderTasks() {
     card.innerHTML = `
       <div class="task-row-index">${index + 1}</div>
       <div class="task-row-main">
-        <h3>${escapeHtml(task.cliente || task.vendedor || "Solicitud sin nombre")}</h3>
+        <h3>${escapeHtml(isSignatureTask(task) ? getSignatureTaskTitle(task) : (task.cliente || task.vendedor || "Solicitud sin nombre"))}</h3>
         <p class="task-meta">
           <span>Placa: ${escapeHtml(task.placa || "Sin placa")}</span>
           <span>Cliente: ${escapeHtml(task.cliente || task.vendedor || "Sin registro")}</span>
@@ -4533,11 +4559,12 @@ function renderTasks() {
       <div class="task-row-actions">
         <button class="btn secondary tiny view-task-btn" type="button" data-legal-task="${escapeHtml(task.id)}">Ver ficha</button>
         ${canTake ? `<button class="btn primary tiny take-btn" type="button">Tomar</button>` : ""}
+        ${isSignatureTask(task) && canEdit ? `<button class="btn primary tiny" type="button" data-complete-signature-task="${escapeHtml(task.id)}">${task.signatureStage === "subir-pilot" ? "Subido a Pilot" : "Enviado a firmar"}</button>` : ""}
         ${assignedToAnother ? `<small class="locked-note">Tomado por otro asistente</small>` : ""}
         ${lockedForLegal ? `<small class="locked-note">Estatus bloqueado</small>` : ""}
-        <select aria-label="Estatus del saneamiento" ${canEdit ? "" : "disabled"}>
+        ${canEditStatus ? `<select aria-label="Estatus del saneamiento">
           ${state.statusOptions.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join("")}
-        </select>
+        </select>` : ""}
       </div>
     `;
 
@@ -4546,8 +4573,10 @@ function renderTasks() {
     card.querySelector(".view-task-btn")?.addEventListener("click", () => openLegalTaskModal(task.id));
 
     const statusSelect = card.querySelector("select");
-    statusSelect.value = task.status;
-    statusSelect.addEventListener("change", () => updateTaskStatus(task.id, statusSelect.value));
+    if (statusSelect) {
+      statusSelect.value = task.status;
+      statusSelect.addEventListener("change", () => updateTaskStatus(task.id, statusSelect.value));
+    }
     taskList.appendChild(card);
   });
 }
@@ -4559,6 +4588,38 @@ function syncLegalSidebarFilters() {
 }
 
 function renderLegalTaskFullDetails(task) {
+  if (isSignatureTask(task)) {
+    const payload = task.signaturePayload || {};
+    const heirs = Array.isArray(payload.herederos) ? payload.herederos : [];
+    const sourceTask = state.tasks.find((item) => item.id === task.sourceTaskId) || {};
+    const fields = [
+      ["Proceso", getSignatureTaskTitle(task)],
+      ["Placa", task.placa || sourceTask.placa],
+      ["Cliente", task.cliente || sourceTask.cliente],
+      ["Cedula", task.cedula || sourceTask.cedula],
+      ["Agencia", task.agencia || sourceTask.agencia],
+      ["Asesor comercial", task.asesor || task.commercialUserName || sourceTask.asesor],
+      ["Correo titular", payload.titular?.email],
+      ["WhatsApp titular", payload.titular?.whatsapp],
+      ["Correo conyuge", payload.conyuge?.email],
+      ["WhatsApp conyuge", payload.conyuge?.whatsapp],
+      ["Herederos", heirs.length ? heirs.map((heir) => `Heredero ${heir.index}: ${heir.email} | ${heir.whatsapp}`).join(" / ") : ""],
+      ["Estatus de firma", task.signatureStage === "subir-pilot" ? "Contratos firmados para subir a Pilot" : "Pendiente envio a firma"],
+      ["Fecha de solicitud", formatDateTime(task.createdAt)],
+      ["Solicitado por", task.commercialUserName || task.asesor],
+      ["ID de tarea", task.id]
+    ];
+    return `
+      <div class="legal-task-detail-grid">
+        ${fields.map(([label, value]) => `
+          <div class="${label === "Herederos" ? "is-wide" : ""}">
+            <span>${escapeHtml(label)}</span>
+            <strong>${escapeHtml(value || "Sin informacion")}</strong>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
   const isSale = getTaskProcess(task) === "venta";
   const fields = isSale
     ? [
@@ -4956,10 +5017,12 @@ function getKpis(tasks = state.tasks) {
 function getTaskProcess(task = {}) {
   if (task.processType === "cuv") return "cuv";
   if (task.processType === "consulta-info") return "consulta-info";
+  if (task.processType === "firma") return "firma";
   return task.processType === "venta" ? "venta" : "compra";
 }
 
 function getTaskMailbox(task = {}) {
+  if (getTaskProcess(task) === "firma") return "firmas";
   return getTaskProcess(task) === "venta" ? "contratos" : "saneamientos";
 }
 
@@ -4976,6 +5039,7 @@ function canLegalUserSeeTask(task = {}, user = currentLegalUser()) {
   if (session.role === "admin") return true;
   if (!user) return false;
   const mailbox = getTaskMailbox(task);
+  if (mailbox === "firmas") return !task.legalUserId || task.legalUserId === user.id;
   if (!userHasMailbox(user, mailbox)) return false;
   if (mailbox === "saneamientos" && !task.legalUserId && user.legalAvailable === false) return false;
   return !task.legalUserId || task.legalUserId === user.id;
@@ -4983,6 +5047,9 @@ function canLegalUserSeeTask(task = {}, user = currentLegalUser()) {
 
 function getEligibleLegalUsersForTask(task = {}) {
   const mailbox = getTaskMailbox(task);
+  if (mailbox === "firmas") {
+    return normalizeLegalUsers(state.legalUsers || []).filter((user) => user.legalAvailable !== false);
+  }
   return normalizeLegalUsers(state.legalUsers || []).filter((user) =>
     userHasMailbox(user, mailbox) &&
     canLegalUserReceiveNewTask(user, task)
@@ -4999,6 +5066,7 @@ function getLegalUserActiveLoad(userId, mailbox = "") {
 
 function canLegalUserReceiveNewTask(user = {}, task = {}) {
   const mailbox = getTaskMailbox(task);
+  if (mailbox === "firmas") return user.legalAvailable !== false;
   if (!userHasMailbox(user, mailbox)) return false;
   if (mailbox !== "saneamientos") return true;
   if (user.legalAvailable === false) return false;
@@ -5060,8 +5128,279 @@ function filterTasksByCommercialProcess(tasks = [], process = activeCommercialPr
 }
 
 function getCommercialProcessLabel(process = activeCommercialProcess) {
+  if (process === "firma") return "Firmas | Pilot";
   if (process === "cuv") return "CUV | control";
   return process === "venta" ? "Venta | contratos" : "Compra | saneamientos";
+}
+
+function isSignatureTask(task = {}) {
+  return getTaskProcess(task) === "firma";
+}
+
+function canCommercialRequestSignature(task = {}) {
+  if (!task || getTaskProcess(task) !== "compra") return false;
+  if (!ownsCommercialTask(task)) return false;
+  if (normalizeStatusValue(task.status) !== "saneamiento realizado y subido a pilot") return false;
+  return !task.signatureRequestTaskId && task.signatureStatus !== SIGNATURE_STATUS.requested && task.signatureStatus !== SIGNATURE_STATUS.sent && task.signatureStatus !== SIGNATURE_STATUS.completed;
+}
+
+function canCommercialRequestPilotUpload(task = {}) {
+  if (!task || getTaskProcess(task) !== "compra") return false;
+  if (!ownsCommercialTask(task)) return false;
+  return task.signatureStatus === SIGNATURE_STATUS.sent && !task.signaturePilotTaskId && task.signatureStatus !== SIGNATURE_STATUS.completed;
+}
+
+function validateSignatureEmail(value = "") {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(String(value || "").trim());
+}
+
+function normalizeSignatureWhatsapp(value = "") {
+  return String(value || "").replace(/[^\d+]/g, "").replace(/(?!^)\+/g, "");
+}
+
+function validateSignatureWhatsapp(value = "") {
+  const clean = normalizeSignatureWhatsapp(value);
+  return /^\+\d{10,15}$/.test(clean);
+}
+
+function getSignatureTaskTitle(task = {}) {
+  if (task.signatureStage === "subir-pilot") return "Subir contratos firmados a Pilot";
+  return "Enviar documentos a firma";
+}
+
+function getSignatureDisplayStatus(task = {}) {
+  if (task.signatureStatus === SIGNATURE_STATUS.completed) return "Contratos firmados subidos a Pilot";
+  if (task.signatureStatus === SIGNATURE_STATUS.pilotRequested) return "Subida a Pilot solicitada";
+  if (task.signatureStatus === SIGNATURE_STATUS.sent) return "Enviado a firmar exitoso";
+  if (task.signatureStatus === SIGNATURE_STATUS.requested) return "Firma solicitada";
+  return "";
+}
+
+function buildSignatureActionButtons(task = {}) {
+  if (canCommercialRequestSignature(task)) {
+    return `<button class="btn tiny primary" type="button" data-request-signature="${escapeHtml(task.id)}">Solicitar enviar a firmar</button>`;
+  }
+  if (canCommercialRequestPilotUpload(task)) {
+    return `<button class="btn tiny primary" type="button" data-request-pilot-upload="${escapeHtml(task.id)}">Solicitar subir contratos firmados a Pilot</button>`;
+  }
+  const signatureStatus = getSignatureDisplayStatus(task);
+  return signatureStatus ? `<span class="info-request-pending is-approved">${escapeHtml(signatureStatus)}</span>` : "";
+}
+
+function openSignatureRequestModal(taskId) {
+  const task = state.tasks.find((item) => item.id === taskId);
+  if (!task || !commercialSignatureModal || !commercialSignatureForm || !signatureTaskIdInput) return;
+  if (!canCommercialRequestSignature(task)) {
+    showToast("Esta opcion solo aplica para saneamientos realizados y subidos a Pilot.");
+    return;
+  }
+  commercialSignatureForm.reset();
+  signatureTaskIdInput.value = task.id;
+  if (signatureSpouseFields) signatureSpouseFields.hidden = true;
+  if (signatureHeirsFields) signatureHeirsFields.hidden = true;
+  openCommercialModal(commercialSignatureModal);
+}
+
+function collectSignatureFormData() {
+  const data = Object.fromEntries(new FormData(commercialSignatureForm).entries());
+  const titularEmail = String(data.titularEmail || "").trim();
+  const titularWhatsapp = normalizeSignatureWhatsapp(data.titularWhatsapp);
+  const errors = [];
+  if (!validateSignatureEmail(titularEmail)) errors.push("Correo del titular no valido.");
+  if (!validateSignatureWhatsapp(titularWhatsapp)) errors.push("WhatsApp del titular debe iniciar con codigo de pais. Ejemplo: +593999999999.");
+
+  const spouseEnabled = signatureSpouseToggle?.checked;
+  const spouse = spouseEnabled ? {
+    email: String(data.spouseEmail || "").trim(),
+    whatsapp: normalizeSignatureWhatsapp(data.spouseWhatsapp)
+  } : null;
+  if (spouseEnabled) {
+    if (!validateSignatureEmail(spouse.email)) errors.push("Correo del conyuge no valido.");
+    if (!validateSignatureWhatsapp(spouse.whatsapp)) errors.push("WhatsApp del conyuge no valido.");
+  }
+
+  const heirsEnabled = signatureHeirsToggle?.checked;
+  const heirs = [];
+  if (heirsEnabled) {
+    for (let index = 1; index <= 5; index += 1) {
+      const email = String(data[`heirEmail${index}`] || "").trim();
+      const whatsapp = normalizeSignatureWhatsapp(data[`heirWhatsapp${index}`] || "");
+      if (!email && !whatsapp) continue;
+      if (!validateSignatureEmail(email)) errors.push(`Correo del heredero ${index} no valido.`);
+      if (!validateSignatureWhatsapp(whatsapp)) errors.push(`WhatsApp del heredero ${index} no valido.`);
+      heirs.push({ index, email, whatsapp });
+    }
+    if (!heirs.length) errors.push("Agregue al menos un heredero o desactive la opcion.");
+  }
+
+  return {
+    taskId: data.taskId || "",
+    payload: {
+      titular: { email: titularEmail, whatsapp: titularWhatsapp },
+      conyuge: spouse,
+      herederos: heirs,
+      requestedAt: new Date().toISOString(),
+      requestedBy: session.name || "",
+      requestedByUserId: session.userId || ""
+    },
+    errors
+  };
+}
+
+async function submitSignatureRequest(event) {
+  event.preventDefault();
+  const { taskId, payload, errors } = collectSignatureFormData();
+  const source = state.tasks.find((task) => task.id === taskId);
+  if (!source || !canCommercialRequestSignature(source)) {
+    showToast("No se puede crear la solicitud de firma para este lead.");
+    return;
+  }
+  if (errors.length) {
+    showToast(errors[0]);
+    return;
+  }
+  const createdAt = new Date().toISOString();
+  const signatureTask = {
+    id: crypto.randomUUID(),
+    createdAt,
+    updatedAt: createdAt,
+    takenAt: "",
+    completedAt: "",
+    status: "por asignar",
+    legalUserId: "",
+    legalAdvisor: "",
+    processType: "firma",
+    signatureStage: "envio-firma",
+    sourceTaskId: source.id,
+    signaturePayload: payload,
+    cliente: source.cliente || "",
+    vendedor: source.vendedor || "",
+    placa: normalizePlate(source.placa),
+    cedula: source.cedula || source.cedulaVendedor || "",
+    agencia: source.agencia || "",
+    asesor: source.asesor || source.commercialUserName || "",
+    commercialUserId: source.commercialUserId || session.userId || "",
+    commercialUserName: source.commercialUserName || source.asesor || session.name || "",
+    commercialAgency: source.commercialAgency || source.agencia || session.agency || "",
+    tipoSaneamiento: "Envio a firma",
+    tipoCompra: source.tipoCompra || "",
+    observaciones: `SOLICITUD DE ENVIO A FIRMA | Placa: ${normalizePlate(source.placa)} | Solicitante: ${session.name || ""}`,
+    duplicateWarnings: [],
+    syncStatus: "pending",
+    syncAction: "solicitar-firma"
+  };
+  source.signatureStatus = SIGNATURE_STATUS.requested;
+  source.signatureRequestTaskId = signatureTask.id;
+  source.signaturePayload = payload;
+  source.signatureRequestedAt = createdAt;
+  source.updatedAt = createdAt;
+  source.syncStatus = "pending";
+  source.syncAction = "solicitar-firma-origen";
+  state.tasks.push(signatureTask);
+  saveState();
+  closeCommercialModals();
+  renderAll();
+  showToast("Solicitud de firma enviada a Mesa de Control.");
+  const [sourceSaved, requestSaved] = await Promise.all([
+    guardarTareaSupabase(source, "solicitar-firma-origen"),
+    guardarTareaSupabase(signatureTask, "solicitar-firma")
+  ]);
+  saveState();
+  if (!sourceSaved || !requestSaved) showToast("Solicitud guardada localmente. Pendiente de sincronizar.");
+}
+
+async function requestPilotUploadFromCommercial(taskId) {
+  const source = state.tasks.find((task) => task.id === taskId);
+  if (!source || !canCommercialRequestPilotUpload(source)) {
+    showToast("Esta opcion se activa cuando la firma fue enviada exitosamente.");
+    return;
+  }
+  const createdAt = new Date().toISOString();
+  const pilotTask = {
+    id: crypto.randomUUID(),
+    createdAt,
+    updatedAt: createdAt,
+    takenAt: "",
+    completedAt: "",
+    status: "por asignar",
+    legalUserId: "",
+    legalAdvisor: "",
+    processType: "firma",
+    signatureStage: "subir-pilot",
+    sourceTaskId: source.id,
+    signaturePayload: source.signaturePayload || {},
+    cliente: source.cliente || "",
+    vendedor: source.vendedor || "",
+    placa: normalizePlate(source.placa),
+    cedula: source.cedula || source.cedulaVendedor || "",
+    agencia: source.agencia || "",
+    asesor: source.asesor || source.commercialUserName || "",
+    commercialUserId: source.commercialUserId || session.userId || "",
+    commercialUserName: source.commercialUserName || source.asesor || session.name || "",
+    commercialAgency: source.commercialAgency || source.agencia || session.agency || "",
+    tipoSaneamiento: "Subir contratos firmados a Pilot",
+    tipoCompra: source.tipoCompra || "",
+    observaciones: `SOLICITUD DE SUBIDA A PILOT | Placa: ${normalizePlate(source.placa)} | Solicitante: ${session.name || ""}`,
+    duplicateWarnings: [],
+    syncStatus: "pending",
+    syncAction: "solicitar-pilot-firmado"
+  };
+  source.signatureStatus = SIGNATURE_STATUS.pilotRequested;
+  source.signaturePilotTaskId = pilotTask.id;
+  source.signaturePilotRequestedAt = createdAt;
+  source.updatedAt = createdAt;
+  source.syncStatus = "pending";
+  source.syncAction = "solicitar-pilot-firmado-origen";
+  state.tasks.push(pilotTask);
+  saveState();
+  renderAll();
+  showToast("Solicitud enviada a Mesa para subir contratos firmados a Pilot.");
+  const [sourceSaved, requestSaved] = await Promise.all([
+    guardarTareaSupabase(source, "solicitar-pilot-firmado-origen"),
+    guardarTareaSupabase(pilotTask, "solicitar-pilot-firmado")
+  ]);
+  saveState();
+  if (!sourceSaved || !requestSaved) showToast("Solicitud guardada localmente. Pendiente de sincronizar.");
+}
+
+async function completeSignatureTask(taskId) {
+  const task = state.tasks.find((item) => item.id === taskId);
+  if (!task || !isSignatureTask(task)) return;
+  if (session.role === "legal" && task.legalUserId && task.legalUserId !== session.userId) {
+    showToast("Solo puede cerrar la solicitud que tomo.");
+    return;
+  }
+  const now = new Date().toISOString();
+  if (session.role === "legal" && !task.legalUserId) {
+    task.legalUserId = session.userId;
+    task.legalAdvisor = session.name;
+    task.takenAt = now;
+  }
+  const source = state.tasks.find((item) => item.id === task.sourceTaskId);
+  task.status = "saneamiento realizado y subido a pilot";
+  task.completedAt = now;
+  task.updatedAt = now;
+  task.statusLockedAt = now;
+  task.statusLockedBy = session.userId || "";
+  task.statusLockedByName = session.name || "";
+  task.syncStatus = "pending";
+  task.syncAction = task.signatureStage === "subir-pilot" ? "firma-pilot-completada" : "firma-enviada";
+  if (source) {
+    source.signatureStatus = task.signatureStage === "subir-pilot" ? SIGNATURE_STATUS.completed : SIGNATURE_STATUS.sent;
+    if (task.signatureStage === "subir-pilot") source.signaturePilotCompletedAt = now;
+    else source.signatureSentAt = now;
+    source.updatedAt = now;
+    source.syncStatus = "pending";
+    source.syncAction = task.syncAction + "-origen";
+  }
+  saveState();
+  renderAll();
+  showToast(task.signatureStage === "subir-pilot" ? "Contratos firmados marcados como subidos a Pilot." : "Firma marcada como enviada exitosamente.");
+  const saves = [guardarTareaSupabase(task, task.syncAction)];
+  if (source) saves.push(guardarTareaSupabase(source, source.syncAction));
+  const results = await Promise.all(saves);
+  saveState();
+  if (results.some((ok) => !ok)) showToast("Actualizacion guardada localmente. Pendiente de sincronizar.");
 }
 
 function setCommercialArea(area = "dashboard", options = {}) {
@@ -5373,6 +5712,7 @@ function renderCommercialTrackingCard(task) {
         <small>${escapeHtml(formatLeadDuration(task))}</small>
         <button class="btn tiny secondary" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver ficha</button>
         ${canCommercialResendTask(task) ? `<button class="btn tiny primary resend-btn" type="button" data-resend-commercial-task="${escapeHtml(task.id)}">Reenviar</button>` : ""}
+        ${buildSignatureActionButtons(task)}
       </div>
     </article>
   `;
@@ -5663,6 +6003,7 @@ function renderCommercialLeadList(container, tasks, options = {}) {
           <small>${formatDateTime(task.createdAt)}</small>
           <button class="btn tiny secondary" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver ficha</button>
           ${canCommercialResendTask(task) ? `<button class="btn tiny primary resend-btn" type="button" data-resend-commercial-task="${escapeHtml(task.id)}">Reenviar</button>` : ""}
+          ${buildSignatureActionButtons(task)}
         </div>
       </article>
     `).join("")}
@@ -5675,6 +6016,7 @@ function openLegalTaskModal(taskId) {
   const canTake = canLegalUserTakeTask(task);
   const lockedForLegal = isTaskStatusLockedForLegal(task);
   const canEdit = session.role === "admin" || (task.legalUserId === session.userId && !lockedForLegal);
+  const canEditStatus = canEdit && !isSignatureTask(task);
   const sourceTask = isInfoRequestTask(task) ? state.tasks.find((item) => item.id === task.sourceTaskId) : null;
   if (legalTaskModalTitle) legalTaskModalTitle.textContent = `${task.placa || "Sin placa"} | ${isInfoRequestTask(task) ? "Solicitud de informacion" : getCommercialProcessLabel(getTaskProcess(task))}`;
   legalTaskModalContent.innerHTML = `
@@ -5705,8 +6047,9 @@ function openLegalTaskModal(taskId) {
     ` : ""}
     <div class="legal-modal-actions">
       ${canTake ? `<button class="btn primary" type="button" data-modal-take-task="${escapeHtml(task.id)}">Tomar tarea</button>` : ""}
+      ${isSignatureTask(task) && canEdit ? `<button class="btn primary" type="button" data-complete-signature-task="${escapeHtml(task.id)}">${task.signatureStage === "subir-pilot" ? "Marcar subido a Pilot" : "Marcar enviado a firmar"}</button>` : ""}
       ${lockedForLegal ? `<span class="locked-note">Estatus bloqueado. Solicite correccion al administrador.</span>` : ""}
-      ${canEdit ? `
+      ${canEditStatus ? `
         <label>
           Actualizar estatus
           <select data-modal-status-task="${escapeHtml(task.id)}">
@@ -5752,6 +6095,7 @@ function renderCommercialRows(tasks, options = {}) {
         <small>${formatDateTime(task.createdAt)}</small>
         <button class="btn tiny secondary" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver ficha</button>
         ${canResend ? `<button class="btn tiny primary resend-btn" type="button" data-resend-commercial-task="${escapeHtml(task.id)}">Reenviar</button>` : ""}
+        ${buildSignatureActionButtons(task)}
       </div>
     </article>
   `;
@@ -12188,6 +12532,14 @@ document.addEventListener("click", (event) => {
   if (resendButton) {
     resendRejectedCommercialTask(resendButton.dataset.resendCommercialTask);
   }
+  const signatureButton = event.target.closest("[data-request-signature]");
+  if (signatureButton) {
+    openSignatureRequestModal(signatureButton.dataset.requestSignature);
+  }
+  const pilotUploadButton = event.target.closest("[data-request-pilot-upload]");
+  if (pilotUploadButton) {
+    requestPilotUploadFromCommercial(pilotUploadButton.dataset.requestPilotUpload);
+  }
   if (event.target.closest("[data-close-legal-task]")) {
     closeLegalTaskInfoModal();
   }
@@ -12196,6 +12548,20 @@ document.addEventListener("click", (event) => {
     takeTask(modalTakeButton.dataset.modalTakeTask);
     openLegalTaskModal(modalTakeButton.dataset.modalTakeTask);
   }
+  const completeSignatureButton = event.target.closest("[data-complete-signature-task]");
+  if (completeSignatureButton) {
+    completeSignatureTask(completeSignatureButton.dataset.completeSignatureTask);
+  }
+});
+
+commercialSignatureForm?.addEventListener("submit", submitSignatureRequest);
+
+signatureSpouseToggle?.addEventListener("change", () => {
+  if (signatureSpouseFields) signatureSpouseFields.hidden = !signatureSpouseToggle.checked;
+});
+
+signatureHeirsToggle?.addEventListener("change", () => {
+  if (signatureHeirsFields) signatureHeirsFields.hidden = !signatureHeirsToggle.checked;
 });
 
 legalTaskModalContent?.addEventListener("change", (event) => {
