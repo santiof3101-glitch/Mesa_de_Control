@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260721-processing-users-admin">
+<html lang="es" data-app-version="20260721-commercial-signature-flow">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -1707,6 +1707,72 @@
     </section>
   </div>
 
+  <div id="commercialSignatureModal" class="commercial-modal" hidden>
+    <div class="commercial-modal-backdrop" data-close-commercial-modal></div>
+    <section class="commercial-modal-card commercial-signature-card" role="dialog" aria-modal="true" aria-labelledby="signatureRequestTitle">
+      <div class="modal-title-row">
+        <div>
+          <p class="eyebrow">Solicitud de firma</p>
+          <h2 id="signatureRequestTitle">Enviar a firmar</h2>
+          <span class="commercial-modal-subtitle">Completa los contactos que Mesa de Control usara para gestionar la firma.</span>
+        </div>
+        <button class="commercial-modal-close" type="button" data-close-commercial-modal aria-label="Cerrar">x</button>
+      </div>
+      <form id="commercialSignatureForm" class="signature-request-form">
+        <input id="signatureTaskId" name="taskId" type="hidden">
+        <div class="signature-grid">
+          <label>
+            Correo electronico titular
+            <input name="titularEmail" type="email" placeholder="cliente@gmail.com" required>
+          </label>
+          <label>
+            WhatsApp titular
+            <input name="titularWhatsapp" type="tel" placeholder="+593999999999" required>
+          </label>
+        </div>
+        <div class="signature-options">
+          <label class="inline-check">
+            <input id="signatureSpouseToggle" type="checkbox">
+            Incluir conyuge
+          </label>
+          <label class="inline-check">
+            <input id="signatureHeirsToggle" type="checkbox">
+            Incluir herederos
+          </label>
+        </div>
+        <div id="signatureSpouseFields" class="signature-extra signature-grid" hidden>
+          <label>
+            Correo conyuge
+            <input name="spouseEmail" type="email" placeholder="conyuge@gmail.com">
+          </label>
+          <label>
+            WhatsApp conyuge
+            <input name="spouseWhatsapp" type="tel" placeholder="+593999999999">
+          </label>
+        </div>
+        <div id="signatureHeirsFields" class="signature-extra" hidden>
+          <p class="eyebrow">Herederos</p>
+          <div class="signature-heirs-grid">
+            <label>Heredero 1 correo<input name="heirEmail1" type="email" placeholder="heredero1@gmail.com"></label>
+            <label>Heredero 1 WhatsApp<input name="heirWhatsapp1" type="tel" placeholder="+593999999999"></label>
+            <label>Heredero 2 correo<input name="heirEmail2" type="email" placeholder="heredero2@gmail.com"></label>
+            <label>Heredero 2 WhatsApp<input name="heirWhatsapp2" type="tel" placeholder="+593999999999"></label>
+            <label>Heredero 3 correo<input name="heirEmail3" type="email" placeholder="heredero3@gmail.com"></label>
+            <label>Heredero 3 WhatsApp<input name="heirWhatsapp3" type="tel" placeholder="+593999999999"></label>
+            <label>Heredero 4 correo<input name="heirEmail4" type="email" placeholder="heredero4@gmail.com"></label>
+            <label>Heredero 4 WhatsApp<input name="heirWhatsapp4" type="tel" placeholder="+593999999999"></label>
+            <label>Heredero 5 correo<input name="heirEmail5" type="email" placeholder="heredero5@gmail.com"></label>
+            <label>Heredero 5 WhatsApp<input name="heirWhatsapp5" type="tel" placeholder="+593999999999"></label>
+          </div>
+        </div>
+        <div class="commercial-modal-actions">
+          <button class="btn secondary" type="button" data-close-commercial-modal>Cancelar</button>
+          <button class="btn primary" type="submit">Enviar solicitud a Mesa</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
   <div id="commercialDuplicateModal" class="commercial-modal" hidden>
     <div class="commercial-modal-backdrop"></div>
     <section class="commercial-modal-card commercial-warning-card is-conflict" role="dialog" aria-modal="true" aria-labelledby="duplicateConflictTitle">
@@ -1765,7 +1831,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260721-processing-users-admin"></script>
+  <script src="app.js?v=20260721-commercial-signature-flow"></script>
 </body>
 </html>
 
