@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260721-processing-login";
+const APP_BUILD_VERSION = "20260721-processing-users-admin";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -397,6 +397,7 @@ const legalSidebarFilterButtons = document.querySelectorAll("[data-legal-sidebar
 const legalSidebarNavButtons = document.querySelectorAll("[data-legal-scroll]");
 const userForm = document.querySelector("#userForm");
 const managerUserForm = document.querySelector("#managerUserForm");
+const processingUserForm = document.querySelector("#processingUserForm");
 const logoInput = document.querySelector("#logoInput");
 const resetLogoBtn = document.querySelector("#resetLogoBtn");
 const logoSlot = document.querySelector("#logoSlot");
@@ -4168,6 +4169,83 @@ function renderManagerUsers() {
     });
     container.appendChild(item);
   });
+}
+
+function createProcessingUser(data) {
+  const name = String(data.name || "").trim();
+  const username = String(data.username || "").trim();
+  const password = cleanPasswordValue(data.password);
+  if (!name || !username || !password) {
+    showToast("Complete nombre, usuario y contrasena para crear el usuario de datos.");
+    return;
+  }
+  state.processingUsers = Array.isArray(state.processingUsers) && state.processingUsers.length
+    ? state.processingUsers
+    : structuredClone(defaultState.processingUsers);
+  const exists = state.processingUsers.some((user) => user.username?.toLowerCase() === username.toLowerCase());
+  if (exists) {
+    showToast("Ese usuario de procesamiento ya existe.");
+    return;
+  }
+  state.processingUsers.push({
+    id: crypto.randomUUID(),
+    name,
+    username,
+    password
+  });
+  saveState();
+  guardarUsuariosSupabaseAhora();
+  renderAll();
+  showToast("Usuario de procesamiento creado.");
+}
+
+function removeProcessingUser(id) {
+  state.processingUsers = Array.isArray(state.processingUsers) ? state.processingUsers : [];
+  if (state.processingUsers.length === 1) {
+    showToast("Debe quedar al menos un usuario de procesamiento.");
+    return;
+  }
+  state.processingUsers = state.processingUsers.filter((user) => user.id !== id);
+  if (session.role === "processing" && session.userId === id) {
+    setSession(getPublicSession());
+    setView("acceso");
+  }
+  saveState();
+  guardarUsuariosSupabaseAhora();
+  renderAll();
+  showToast("Usuario de procesamiento eliminado.");
+}
+
+function renderProcessingUsers() {
+  const container = document.querySelector("#processingUsersList");
+  if (!container) return;
+  container.innerHTML = "";
+  state.processingUsers = Array.isArray(state.processingUsers) && state.processingUsers.length
+    ? state.processingUsers
+    : structuredClone(defaultState.processingUsers);
+  state.processingUsers.forEach((user) => {
+    const item = document.createElement("article");
+    item.className = "user-row";
+    item.innerHTML = `
+      <div>
+        <strong>${escapeHtml(user.name)}</strong>
+        <span>Usuario: ${escapeHtml(user.username)}</span>
+        <small>Acceso: Procesamiento de datos, proveedores, compras, contratos y archivos.</small>
+      </div>
+      <div class="row-actions">
+        <input type="password" placeholder="Nueva contrasena">
+        <button class="btn secondary change-password" type="button">Cambiar</button>
+        <button class="btn secondary delete-user" type="button">Eliminar</button>
+      </div>
+    `;
+    item.querySelector(".delete-user").addEventListener("click", () => removeProcessingUser(user.id));
+    item.querySelector(".change-password").addEventListener("click", () => {
+      changePassword("processingUsers", user.id, item.querySelector("input").value);
+      item.querySelector("input").value = "";
+    });
+    container.appendChild(item);
+  });
+  initPasswordToggles(container);
 }
 
 async function createTask(data) {
@@ -11928,6 +12006,7 @@ function renderAll() {
   renderAnnouncements();
   renderUsers();
   renderManagerUsers();
+  renderProcessingUsers();
   renderTasks();
   renderDashboards();
   renderAdminLeads();
@@ -12386,6 +12465,12 @@ managerUserForm.addEventListener("submit", (event) => {
   event.preventDefault();
   createManagerUser(Object.fromEntries(new FormData(managerUserForm).entries()));
   managerUserForm.reset();
+});
+
+processingUserForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  createProcessingUser(Object.fromEntries(new FormData(processingUserForm).entries()));
+  processingUserForm.reset();
 });
 
 commercialAdvisorForm.addEventListener("submit", (event) => {
