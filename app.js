@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260721-tracking-search-pagination";
+const APP_BUILD_VERSION = "20260721-legal-dashboard-pending-kpis";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -6497,6 +6497,19 @@ function renderControlDashboard() {
   const tasks = session.role === "legal"
     ? state.tasks.filter((task) => canLegalUserSeeTask(task))
     : state.tasks;
+  const allVisibleLegalTasks = session.role === "legal"
+    ? state.tasks.filter((task) => canLegalUserSeeTask(task))
+    : state.tasks;
+  const pendingSignatureSends = allVisibleLegalTasks.filter((task) =>
+    isSignatureTask(task) &&
+    task.signatureStage === "envio-firma" &&
+    !isClosedStatus(task.status)
+  ).length;
+  const pendingSaneamientoAssignment = allVisibleLegalTasks.filter((task) =>
+    getTaskMailbox(task) === "saneamientos" &&
+    !task.legalUserId &&
+    !isClosedStatus(task.status)
+  ).length;
   const user = currentLegalUser();
   if (legalSessionLabel && user) {
     const labels = normalizeLegalMailboxes(user.mailboxes)
@@ -6506,6 +6519,8 @@ function renderControlDashboard() {
   }
   const kpis = getKpis(tasks);
   renderKpiCards("#controlKpis", [
+    ["Firmas pendientes", pendingSignatureSends, "Por enviar a firma"],
+    ["Saneamientos por asignar", pendingSaneamientoAssignment, "Sin asesor legal"],
     ["Disponibles", kpis.unassigned, "Sin tomar"],
     [" Tomados", kpis.inProgress, "En mesa"],
     ["Cerrados", kpis.completed, "Finalizados"],
