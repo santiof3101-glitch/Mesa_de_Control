@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260721-commercial-signature-flow">
+<html lang="es" data-app-version="20260721-signature-country-mailbox">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -1075,6 +1075,7 @@
         <div class="legal-sidebar-filters">
           <span>Filtros rapidos</span>
           <button class="is-active" type="button" data-legal-sidebar-filter="todos">&#128193; Todos</button>
+          <button type="button" data-legal-sidebar-filter="firmas">&#9997; Firmas</button>
           <button type="button" data-legal-sidebar-filter="por asignar">&#128230; Por asignar</button>
           <button type="button" data-legal-sidebar-filter="pendiente">&#9203; Pendiente</button>
           <button type="button" data-legal-sidebar-filter="tomado">&#128736; Tomado</button>
@@ -1727,7 +1728,10 @@
           </label>
           <label>
             WhatsApp titular
-            <input name="titularWhatsapp" type="tel" placeholder="+593999999999" required>
+            <span class="signature-phone-row">
+              <select name="titularCountry" data-country-select></select>
+              <input name="titularWhatsapp" type="tel" inputmode="numeric" placeholder="999999999" required>
+            </span>
           </label>
         </div>
         <div class="signature-options">
@@ -1747,24 +1751,28 @@
           </label>
           <label>
             WhatsApp conyuge
-            <input name="spouseWhatsapp" type="tel" placeholder="+593999999999">
+            <span class="signature-phone-row">
+              <select name="spouseCountry" data-country-select></select>
+              <input name="spouseWhatsapp" type="tel" inputmode="numeric" placeholder="999999999">
+            </span>
           </label>
         </div>
         <div id="signatureHeirsFields" class="signature-extra" hidden>
           <p class="eyebrow">Herederos</p>
           <div class="signature-heirs-grid">
             <label>Heredero 1 correo<input name="heirEmail1" type="email" placeholder="heredero1@gmail.com"></label>
-            <label>Heredero 1 WhatsApp<input name="heirWhatsapp1" type="tel" placeholder="+593999999999"></label>
+            <label>Heredero 1 WhatsApp<span class="signature-phone-row"><select name="heirCountry1" data-country-select></select><input name="heirWhatsapp1" type="tel" inputmode="numeric" placeholder="999999999"></span></label>
             <label>Heredero 2 correo<input name="heirEmail2" type="email" placeholder="heredero2@gmail.com"></label>
-            <label>Heredero 2 WhatsApp<input name="heirWhatsapp2" type="tel" placeholder="+593999999999"></label>
+            <label>Heredero 2 WhatsApp<span class="signature-phone-row"><select name="heirCountry2" data-country-select></select><input name="heirWhatsapp2" type="tel" inputmode="numeric" placeholder="999999999"></span></label>
             <label>Heredero 3 correo<input name="heirEmail3" type="email" placeholder="heredero3@gmail.com"></label>
-            <label>Heredero 3 WhatsApp<input name="heirWhatsapp3" type="tel" placeholder="+593999999999"></label>
+            <label>Heredero 3 WhatsApp<span class="signature-phone-row"><select name="heirCountry3" data-country-select></select><input name="heirWhatsapp3" type="tel" inputmode="numeric" placeholder="999999999"></span></label>
             <label>Heredero 4 correo<input name="heirEmail4" type="email" placeholder="heredero4@gmail.com"></label>
-            <label>Heredero 4 WhatsApp<input name="heirWhatsapp4" type="tel" placeholder="+593999999999"></label>
+            <label>Heredero 4 WhatsApp<span class="signature-phone-row"><select name="heirCountry4" data-country-select></select><input name="heirWhatsapp4" type="tel" inputmode="numeric" placeholder="999999999"></span></label>
             <label>Heredero 5 correo<input name="heirEmail5" type="email" placeholder="heredero5@gmail.com"></label>
-            <label>Heredero 5 WhatsApp<input name="heirWhatsapp5" type="tel" placeholder="+593999999999"></label>
+            <label>Heredero 5 WhatsApp<span class="signature-phone-row"><select name="heirCountry5" data-country-select></select><input name="heirWhatsapp5" type="tel" inputmode="numeric" placeholder="999999999"></span></label>
           </div>
         </div>
+        <div id="signatureValidationMessage" class="signature-validation-message" hidden></div>
         <div class="commercial-modal-actions">
           <button class="btn secondary" type="button" data-close-commercial-modal>Cancelar</button>
           <button class="btn primary" type="submit">Enviar solicitud a Mesa</button>
@@ -1831,7 +1839,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260721-commercial-signature-flow"></script>
+  <script src="app.js?v=20260721-signature-country-mailbox"></script>
 </body>
 </html>
 
