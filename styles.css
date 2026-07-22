@@ -14303,3 +14303,285 @@ body:has(#procesamiento.view.is-active) main {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
+
+/* Commercial tracking kanban 20260722 */
+#formulario .commercial-tracking-shell {
+  overflow: hidden !important;
+}
+
+#formulario .commercial-tracking-searchbar {
+  grid-template-columns: minmax(260px, 1.35fr) minmax(160px, 0.6fr) minmax(150px, 0.5fr) minmax(150px, 0.5fr) auto !important;
+  align-items: end !important;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.045) !important;
+}
+
+#formulario .commercial-tracking-searchbar select {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #fbfcff;
+  color: var(--commercial-ink);
+  font-size: 0.84rem;
+}
+
+#formulario .commercial-kanban-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(230px, 1fr));
+  gap: 14px;
+  align-items: start;
+  overflow-x: auto;
+  padding: 2px 2px 10px;
+  scrollbar-width: thin;
+}
+
+#formulario .commercial-kanban-column {
+  min-width: 230px;
+  display: grid;
+  gap: 10px;
+  padding: 0 10px 12px;
+  border-right: 1px solid #edf1f7;
+}
+
+#formulario .commercial-kanban-column:last-child {
+  border-right: 0;
+}
+
+#formulario .commercial-kanban-column-head {
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  gap: 10px;
+  align-items: center;
+  min-height: 58px;
+  padding: 8px 0;
+}
+
+#formulario .commercial-kanban-column-head .kanban-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  aspect-ratio: 1;
+  border: 2px solid color-mix(in srgb, var(--column-color) 72%, #ffffff);
+  border-radius: 999px;
+  color: var(--column-color);
+  background: color-mix(in srgb, var(--column-color) 9%, #ffffff);
+  font-size: 1.55rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+#formulario .commercial-kanban-column-head strong {
+  display: block;
+  color: color-mix(in srgb, var(--column-color) 74%, #172033);
+  font-size: 0.86rem;
+  line-height: 1.1;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+#formulario .commercial-kanban-column-head small {
+  display: block;
+  margin-top: 3px;
+  color: #667085;
+  font-size: 0.74rem;
+}
+
+#formulario .commercial-kanban-cards {
+  display: grid;
+  gap: 10px;
+}
+
+#formulario .commercial-kanban-column .empty {
+  min-height: 98px;
+  border: 1px dashed #dbe3ef;
+  border-radius: 16px;
+  background: #fbfcff;
+}
+
+#formulario .commercial-kanban-column .commercial-tracking-card {
+  min-height: 0 !important;
+  padding: 13px !important;
+  gap: 10px !important;
+  border-color: color-mix(in srgb, var(--column-color) 36%, #e7edf5) !important;
+  border-left: 0 !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045) !important;
+}
+
+#formulario .commercial-kanban-column .commercial-tracking-card.is-pendiente {
+  --tracking-color: #98a2b3 !important;
+}
+
+#formulario .commercial-kanban-column .commercial-tracking-card.is-proceso {
+  --tracking-color: #f97316 !important;
+}
+
+#formulario .commercial-kanban-column .commercial-tracking-card.is-revision {
+  --tracking-color: #f5b400 !important;
+}
+
+#formulario .commercial-kanban-column .commercial-tracking-card.is-completado {
+  --tracking-color: #10996a !important;
+}
+
+#formulario .commercial-kanban-column .commercial-tracking-card.is-rechazado {
+  --tracking-color: #ef3d35 !important;
+}
+
+#formulario .commercial-kanban-column .tracking-card-top {
+  align-items: start !important;
+}
+
+#formulario .commercial-kanban-column .tracking-card-top strong {
+  font-size: 1rem !important;
+}
+
+#formulario .commercial-kanban-column .tracking-state {
+  max-width: 112px;
+  padding: 5px 8px !important;
+  border: 1px solid color-mix(in srgb, var(--tracking-color) 45%, #ffffff);
+  color: color-mix(in srgb, var(--tracking-color) 70%, #111827) !important;
+  background: color-mix(in srgb, var(--tracking-color) 10%, #ffffff) !important;
+  font-size: 0.58rem !important;
+  text-align: center;
+}
+
+#formulario .commercial-kanban-column .tracking-meta-row {
+  grid-template-columns: 1fr 1fr !important;
+  gap: 6px !important;
+}
+
+#formulario .commercial-kanban-column .tracking-meta-row span {
+  padding: 0 !important;
+  background: transparent !important;
+  font-size: 0.66rem !important;
+}
+
+#formulario .commercial-kanban-column .tracking-progress {
+  height: 6px !important;
+}
+
+#formulario .tracking-steps-count {
+  display: flex;
+  justify-content: space-between;
+  color: #667085;
+  font-size: 0.66rem;
+}
+
+#formulario .tracking-steps-count b {
+  color: #1f2937;
+}
+
+#formulario .commercial-kanban-column .tracking-timeline {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+}
+
+#formulario .commercial-kanban-column .tracking-timeline span {
+  min-height: 16px;
+  padding-top: 13px !important;
+  font-size: 0 !important;
+}
+
+#formulario .commercial-kanban-column .tracking-timeline span::before {
+  width: 9px !important;
+  height: 9px !important;
+}
+
+#formulario .commercial-kanban-column .tracking-card-actions {
+  align-items: center !important;
+  border-top: 1px solid #eef2f7;
+  padding-top: 9px !important;
+}
+
+#formulario .commercial-kanban-column .tracking-card-actions .btn {
+  min-height: 28px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 0.64rem;
+}
+
+#formulario .kanban-view-all {
+  min-height: 34px;
+  border: 0;
+  border-radius: 999px;
+  color: #344054;
+  background: #f6f8fb;
+  font-size: 0.72rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+#formulario .kanban-view-all:hover {
+  color: #fff;
+  background: var(--commercial-red);
+}
+
+#formulario .commercial-tracking-summary {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid #e8edf5;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.045);
+}
+
+#formulario .commercial-tracking-summary article {
+  min-height: 58px;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 10px 16px;
+  border-right: 1px solid #e8edf5;
+}
+
+#formulario .commercial-tracking-summary article:last-child {
+  border-right: 0;
+}
+
+#formulario .commercial-tracking-summary strong {
+  color: #172033;
+  font-size: 1.08rem;
+  line-height: 1;
+}
+
+#formulario .commercial-tracking-summary span {
+  color: #667085;
+  font-size: 0.68rem;
+}
+
+@media (max-width: 1180px) {
+  #formulario .commercial-tracking-searchbar {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  #formulario .commercial-tracking-searchbar label:first-child {
+    grid-column: 1 / -1;
+  }
+
+  #formulario .commercial-tracking-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  #formulario .commercial-tracking-searchbar,
+  #formulario .commercial-tracking-summary {
+    grid-template-columns: 1fr !important;
+  }
+
+  #formulario .commercial-kanban-board {
+    grid-template-columns: repeat(5, minmax(245px, 82vw));
+    scroll-snap-type: x proximity;
+  }
+
+  #formulario .commercial-kanban-column {
+    scroll-snap-align: start;
+  }
+
+  #formulario .commercial-tracking-summary article {
+    border-right: 0;
+    border-bottom: 1px solid #e8edf5;
+  }
+}
