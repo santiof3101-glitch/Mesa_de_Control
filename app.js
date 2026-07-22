@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260722-commercial-tracking-redesign";
+const APP_BUILD_VERSION = "20260722-commercial-tracking-redesign-2";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -6501,6 +6501,7 @@ function renderCommercialDashboard() {
   const cuvTasks = filterTasksByCommercialProcess(dashboardTasks, "cuv");
   const kpis = getKpis(dashboardTasks);
   updateCommercialNotificationCount(dashboardTasks);
+  updateCommercialStartGreeting();
   const title = document.querySelector("#commercial-dashboard-title");
   const lookupTitle = document.querySelector("#lookup-title");
   if (title) title.textContent = "Dashboard comercial integral";
@@ -6705,6 +6706,13 @@ function getCommercialTrackingUserProfile() {
   const initials = getUserInitials(name);
   const role = session?.role === "admin" ? "Administrador" : "Asesor comercial";
   return { name, initials, role };
+}
+
+function updateCommercialStartGreeting() {
+  const title = document.querySelector("#commercialProcessTitle");
+  if (!title) return;
+  const profile = getCommercialTrackingUserProfile();
+  title.textContent = `Hola, ${profile.name}`;
 }
 
 function getUserInitials(name) {
