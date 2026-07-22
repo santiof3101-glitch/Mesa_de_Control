@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260721-admin-force-logout";
+const APP_BUILD_VERSION = "20260721-announcement-delete-fix";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -285,6 +285,7 @@ const defaultState = {
   announcements: [
     { id: "com-1", title: "Bandeja legal activa", body: "Los asistentes legales pueden tomar leads disponibles por orden de prioridad.", createdAt: new Date().toISOString() }
   ],
+  announcementDeletions: [],
   forceLogoutRequests: [],
   purchaseTypes: ["Compra directa", "Consignacion", "Retoma"],
   sanitationTypes: ["Levantamiento de gravamen", "Cambio de propietario", "Revision documental"],
@@ -727,6 +728,8 @@ function loadState() {
     merged.managerUsers = Array.isArray(merged.managerUsers) ? merged.managerUsers : [];
     merged.processingUsers = Array.isArray(merged.processingUsers) ? merged.processingUsers : structuredClone(defaultState.processingUsers);
     merged.announcements = (merged.announcements || []).map(normalizeAnnouncement);
+    merged.announcementDeletions = (merged.announcementDeletions || []).map(normalizeAnnouncementDeletion);
+    applyAnnouncementDeletions(merged);
     merged.forceLogoutRequests = (merged.forceLogoutRequests || []).map(normalizeForceLogoutRequest);
     merged.legalChatMessages = normalizeLegalChatMessages(merged.legalChatMessages || []);
     merged.theme = { ...structuredClone(defaultState.theme), ...(merged.theme || {}) };
@@ -1270,7 +1273,8 @@ function getSupabaseModuleSnapshots() {
       formConfig: structuredClone(state.formConfig || DEFAULT_FORM_CONFIG)
     },
     saneamientos: {
-      announcements: structuredClone(state.announcements || []),
+      announcements: structuredClone(getActiveAnnouncements()),
+      announcementDeletions: structuredClone(state.announcementDeletions || []),
       forceLogoutRequests: structuredClone(state.forceLogoutRequests || []),
       legalChatMessages: structuredClone(normalizeLegalChatMessages(state.legalChatMessages || []))
     },
@@ -1556,7 +1560,13 @@ function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
         state.tasks = mergedChanges.tasks;
         state.taskDeletions = mergedChanges.deletions;
       }
+      state.announcementDeletions = mergeByKey(
+        (state.announcementDeletions || []).map(normalizeAnnouncementDeletion),
+        (Array.isArray(snapshot.announcementDeletions) ? snapshot.announcementDeletions : []).map(normalizeAnnouncementDeletion),
+        "announcementId"
+      ).slice(0, 200);
       state.announcements = (Array.isArray(snapshot.announcements) ? snapshot.announcements : (state.announcements || [])).map(normalizeAnnouncement);
+      applyAnnouncementDeletions(state);
       state.forceLogoutRequests = mergeByKey(
         (state.forceLogoutRequests || []).map(normalizeForceLogoutRequest),
         (Array.isArray(snapshot.forceLogoutRequests) ? snapshot.forceLogoutRequests : []).map(normalizeForceLogoutRequest),
@@ -1678,6 +1688,8 @@ function mergePcStates(baseState, extraState) {
   const extraProcessing = extraState.dataProcessing || {};
   merged.tasks = mergeByKey(merged.tasks || [], extraState.tasks || [], "id");
   merged.announcements = mergeByKey(merged.announcements || [], extraState.announcements || [], "id").map(normalizeAnnouncement);
+  merged.announcementDeletions = mergeByKey(merged.announcementDeletions || [], extraState.announcementDeletions || [], "announcementId").map(normalizeAnnouncementDeletion);
+  applyAnnouncementDeletions(merged);
   merged.forceLogoutRequests = mergeByKey(merged.forceLogoutRequests || [], extraState.forceLogoutRequests || [], "id").map(normalizeForceLogoutRequest);
   merged.legalChatMessages = mergeLegalChatMessages(merged.legalChatMessages || [], extraState.legalChatMessages || []);
   merged.commercialAdvisors = mergeByKey(merged.commercialAdvisors || [], extraState.commercialAdvisors || [], "id");
@@ -1999,6 +2011,39 @@ function normalizeAnnouncement(announcement = {}) {
     audience: ["all", "commercial", "legal", "specific"].includes(announcement.audience) ? announcement.audience : "all",
     targetUsers: Array.isArray(announcement.targetUsers) ? announcement.targetUsers : []
   };
+}
+
+function normalizeAnnouncementDeletion(deletion = {}) {
+  return {
+    id: deletion.id || deletion.announcementId || "",
+    announcementId: deletion.announcementId || deletion.id || "",
+    deletedAt: deletion.deletedAt || new Date().toISOString(),
+    deletedBy: deletion.deletedBy || "Administrador"
+  };
+}
+
+function getDeletedAnnouncementIds(sourceState = state) {
+  return new Set((sourceState.announcementDeletions || [])
+    .map(normalizeAnnouncementDeletion)
+    .map((item) => item.announcementId || item.id)
+    .filter(Boolean));
+}
+
+function getActiveAnnouncements(sourceState = state) {
+  const deletedIds = getDeletedAnnouncementIds(sourceState);
+  return (sourceState.announcements || [])
+    .map(normalizeAnnouncement)
+    .filter((announcement) => !deletedIds.has(announcement.id));
+}
+
+function applyAnnouncementDeletions(sourceState = state) {
+  const deletedIds = getDeletedAnnouncementIds(sourceState);
+  sourceState.announcementDeletions = (sourceState.announcementDeletions || [])
+    .map(normalizeAnnouncementDeletion)
+    .filter((item) => item.announcementId);
+  sourceState.announcements = (sourceState.announcements || [])
+    .map(normalizeAnnouncement)
+    .filter((announcement) => !deletedIds.has(announcement.id));
 }
 
 function normalizeForceLogoutRequest(request = {}) {
@@ -2509,7 +2554,7 @@ function getStateScore(snapshot = state) {
     snapshot.dataProcessing?.proveedores?.length || 0,
     snapshot.dataProcessing?.providerLoads?.length || 0,
     snapshot.dataProcessing?.files?.length || 0,
-    snapshot.announcements?.length || 0,
+    getActiveAnnouncements(snapshot).length || 0,
     snapshot.commercialAdvisors?.length || 0,
     snapshot.legalUsers?.length || 0,
     snapshot.managerUsers?.length || 0
@@ -2657,6 +2702,8 @@ function normalizeImportedState(importedState) {
   merged.managerUsers = Array.isArray(merged.managerUsers) ? merged.managerUsers : [];
   merged.processingUsers = Array.isArray(merged.processingUsers) ? merged.processingUsers : structuredClone(defaultState.processingUsers);
   merged.announcements = (merged.announcements || []).map(normalizeAnnouncement);
+  merged.announcementDeletions = (merged.announcementDeletions || []).map(normalizeAnnouncementDeletion);
+  applyAnnouncementDeletions(merged);
   merged.forceLogoutRequests = (merged.forceLogoutRequests || []).map(normalizeForceLogoutRequest);
   merged.legalChatMessages = normalizeLegalChatMessages(merged.legalChatMessages || []);
   merged.theme = { ...structuredClone(defaultState.theme), ...(merged.theme || {}) };
@@ -4132,10 +4179,20 @@ function addAnnouncement(data, imageDataUrl = "") {
 }
 
 function removeAnnouncement(id) {
+  const announcement = (state.announcements || []).find((item) => item.id === id);
+  state.announcementDeletions = [
+    normalizeAnnouncementDeletion({
+      announcementId: id,
+      deletedAt: new Date().toISOString(),
+      deletedBy: session?.name || "Administrador"
+    }),
+    ...(state.announcementDeletions || [])
+  ].filter((item, index, arr) => arr.findIndex((other) => other.announcementId === item.announcementId) === index).slice(0, 200);
   state.announcements = state.announcements.filter((announcement) => announcement.id !== id);
   saveState();
+  guardarModulosSupabase();
   renderAll();
-  showToast("Comunicado eliminado.");
+  showToast(`Comunicado eliminado${announcement?.title ? `: ${announcement.title}` : ""}.`);
 }
 
 function createUser(data) {
@@ -12642,7 +12699,8 @@ function renderAnnouncements() {
   const billboardContainer = document.querySelector("#billboardList");
   renderAnnouncementRecipients();
   renderForceLogoutRecipients();
-  const publicItems = state.announcements.slice(0, 3);
+  const activeAnnouncements = getActiveAnnouncements();
+  const publicItems = activeAnnouncements.slice(0, 3);
   if (publicContainer) {
     publicContainer.innerHTML = publicItems.length ? publicItems.map((announcement) => `
       <article class="announcement-card">
@@ -12655,7 +12713,7 @@ function renderAnnouncements() {
   }
 
   if (adminContainer) {
-    adminContainer.innerHTML = state.announcements.length ? state.announcements.map((announcement) => `
+    adminContainer.innerHTML = activeAnnouncements.length ? activeAnnouncements.map((announcement) => `
       <article class="user-row">
         <div>
           <strong>${escapeHtml(announcement.title)}</strong>
@@ -12672,7 +12730,7 @@ function renderAnnouncements() {
   }
 
   if (billboardContainer) {
-    billboardContainer.innerHTML = state.announcements.length ? state.announcements.map((announcement) => `
+    billboardContainer.innerHTML = activeAnnouncements.length ? activeAnnouncements.map((announcement) => `
     <article class="billboard-card">
       ${announcement.imageDataUrl ? `<img src="${announcement.imageDataUrl}" alt="">` : `<div class="billboard-placeholder">${escapeHtml(announcement.title.slice(0, 1))}</div>`}
       <div>
@@ -12686,7 +12744,7 @@ function renderAnnouncements() {
 
     billboardContainer.querySelectorAll("[data-image-id]").forEach((button) => {
       button.addEventListener("click", () => {
-        const announcement = state.announcements.find((item) => item.id === button.dataset.imageId);
+        const announcement = getActiveAnnouncements().find((item) => item.id === button.dataset.imageId);
         if (announcement?.imageDataUrl) openImageModal(announcement.imageDataUrl);
       });
     });
@@ -13080,8 +13138,7 @@ function getAnnouncementAudienceLabel(announcement = {}) {
 }
 
 function getPendingSessionAnnouncements() {
-  return (state.announcements || [])
-    .map(normalizeAnnouncement)
+  return getActiveAnnouncements()
     .filter((announcement) => isAnnouncementForSession(announcement, session))
     .slice(0, 5);
 }
