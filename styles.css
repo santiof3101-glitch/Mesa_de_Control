@@ -2057,6 +2057,7 @@ button.kpi-card {
 @media (max-width: 780px) {
   .commercial-process-grid,
   .lead-ficha-grid,
+  .signature-recipient-grid,
   .duplicate-conflict-card dl {
     grid-template-columns: 1fr;
   }
@@ -7392,6 +7393,107 @@ textarea:focus {
   color: var(--ink);
   font-size: 0.8rem;
   line-height: 1.35;
+}
+
+.signature-recipient-panel,
+.legal-observation-panel {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.signature-recipient-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.signature-recipient-card {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+}
+
+.signature-recipient-card span {
+  color: #334155;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.signature-recipient-card strong,
+.signature-recipient-card small {
+  overflow-wrap: anywhere;
+}
+
+.signature-recipient-card strong {
+  color: #111827;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.signature-recipient-card small {
+  color: #475569;
+  font-weight: 600;
+}
+
+.signature-recipient-card.is-titular {
+  border-color: #bae6fd;
+  background: #eff9ff;
+}
+
+.signature-recipient-card.is-conyuge {
+  border-color: #fbcfe8;
+  background: #fff1f8;
+}
+
+.signature-recipient-card.is-heredero {
+  border-color: #c7d2fe;
+  background: #f3f5ff;
+}
+
+.legal-observation-list {
+  display: grid;
+  gap: 8px;
+}
+
+.legal-observation-list article {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid #fee2e2;
+  border-radius: 10px;
+  background: #fff7f7;
+}
+
+.legal-observation-list article div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.legal-observation-list strong {
+  color: #b91c1c;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+}
+
+.legal-observation-list span {
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.legal-observation-list p {
+  margin: 0;
+  color: #1f2937;
+  font-size: 0.84rem;
+  line-height: 1.4;
 }
 
 .task-detail {
