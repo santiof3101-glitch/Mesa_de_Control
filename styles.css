@@ -7773,7 +7773,31 @@ textarea:focus {
 .status-admin-item i {
   width: 14px;
   height: 14px;
+  flex: 0 0 14px;
   border-radius: 50%;
+}
+
+.status-admin-item {
+  display: grid;
+  grid-template-columns: 14px minmax(180px, 1fr) 72px 140px auto auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.status-admin-item input[data-status-label] {
+  width: 100%;
+}
+
+.status-admin-item input[type="color"] {
+  width: 58px;
+  min-width: 58px;
+  padding: 4px;
+}
+
+.status-admin-item .check-row {
+  min-height: 36px;
+  white-space: nowrap;
 }
 
 .status-admin-item small {
@@ -12801,16 +12825,11 @@ body:has(#procesamiento.view.is-active) main {
   min-width: 0;
   padding: 15px;
   border: 1px solid #e2e8f0;
-  border-left: 4px solid #94a3b8;
+  border-left: 4px solid var(--tracking-color, #94a3b8);
   border-radius: 16px;
   background: #fff;
   box-shadow: 0 14px 34px rgba(15, 23, 42, 0.04);
 }
-
-#formulario .commercial-tracking-card.success { border-left-color: #168a55; }
-#formulario .commercial-tracking-card.warning { border-left-color: #f59e0b; }
-#formulario .commercial-tracking-card.danger { border-left-color: #c92520; }
-#formulario .commercial-tracking-card.info { border-left-color: #2d6cdf; }
 
 #formulario .tracking-card-top,
 #formulario .tracking-card-actions {
@@ -12839,17 +12858,12 @@ body:has(#procesamiento.view.is-active) main {
   flex: 0 0 auto;
   padding: 7px 10px;
   border-radius: 999px;
-  background: #f1f5f9;
-  color: #25324a;
+  background: var(--tracking-color, #f1f5f9);
+  color: var(--tracking-text, #25324a);
   font-size: 0.68rem;
   font-weight: 800;
   text-transform: uppercase;
 }
-
-#formulario .commercial-tracking-card.success .tracking-state { background: #e7f7ef; color: #147949; }
-#formulario .commercial-tracking-card.warning .tracking-state { background: #fff4df; color: #a05c00; }
-#formulario .commercial-tracking-card.danger .tracking-state { background: #ffe9eb; color: #b52831; }
-#formulario .commercial-tracking-card.info .tracking-state { background: #eaf1ff; color: #2d6cdf; }
 
 #formulario .tracking-meta-row {
   display: grid;
@@ -12894,7 +12908,7 @@ body:has(#procesamiento.view.is-active) main {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--commercial-red), #ff7670);
+  background: linear-gradient(90deg, var(--tracking-color, var(--commercial-red)), color-mix(in srgb, var(--tracking-color, var(--commercial-red)) 62%, #ffffff));
 }
 
 #formulario .tracking-timeline {
@@ -12932,7 +12946,7 @@ body:has(#procesamiento.view.is-active) main {
 }
 
 #formulario .tracking-timeline span.done::before {
-  background: var(--commercial-red);
+  background: var(--tracking-color, var(--commercial-red));
 }
 
 #formulario .tracking-timeline span.current::before {
@@ -12940,8 +12954,8 @@ body:has(#procesamiento.view.is-active) main {
   width: 12px;
   height: 12px;
   border: 3px solid #fff;
-  background: #0f172a;
-  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.16);
+  background: var(--tracking-color, #0f172a);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--tracking-color, #0f172a) 32%, transparent);
 }
 
 #formulario .tracking-card-actions {
