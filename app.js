@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260722-commercial-process-default";
+const APP_BUILD_VERSION = "20260722-commercial-tracking-redesign";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -6686,12 +6686,68 @@ function getCommercialTrackingColumnKey(task = {}) {
 
 function getCommercialTrackingColumns() {
   return [
-    { key: "pendiente", label: "Pendiente", hint: "Solicitudes", icon: "⏱", color: "#98a2b3" },
-    { key: "proceso", label: "En proceso", hint: "Solicitudes", icon: "◌", color: "#f97316" },
-    { key: "revision", label: "En revision", hint: "Solicitud", icon: "▣", color: "#f5b400" },
-    { key: "completado", label: "Completado", hint: "Solicitudes", icon: "✓", color: "#10996a" },
-    { key: "rechazado", label: "Rechazado", hint: "Solicitud", icon: "×", color: "#ef3d35" }
+    { key: "pendiente", label: "Pendiente", hint: "Solicitudes", icon: "&#9201;", color: "#64748b", soft: "#f6f8fb" },
+    { key: "proceso", label: "En proceso", hint: "Solicitudes", icon: "&#128260;", color: "#f97316", soft: "#fff8f1" },
+    { key: "revision", label: "En revision", hint: "Solicitud", icon: "&#128203;", color: "#eab308", soft: "#fffbed" },
+    { key: "completado", label: "Completado", hint: "Solicitudes", icon: "&#10003;", color: "#16a36f", soft: "#f2fbf7" },
+    { key: "rechazado", label: "Rechazado", hint: "Solicitud", icon: "&#10005;", color: "#ef4444", soft: "#fff5f5" }
   ];
+}
+
+function getCommercialTrackingUserProfile() {
+  const name = [
+    session?.name,
+    session?.fullName,
+    session?.nombreCompleto,
+    session?.nombre,
+    session?.apellido
+  ].filter(Boolean).join(" ").trim() || "Asesor";
+  const initials = getUserInitials(name);
+  const role = session?.role === "admin" ? "Administrador" : "Asesor comercial";
+  return { name, initials, role };
+}
+
+function getUserInitials(name) {
+  return String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("") || "A";
+}
+
+function closeCommercialProfileMenu() {
+  const menu = document.querySelector("#commercialUserProfileMenu");
+  const button = document.querySelector("#commercialUserProfileButton");
+  if (menu) menu.hidden = true;
+  if (button) button.setAttribute("aria-expanded", "false");
+}
+
+function toggleCommercialProfileMenu() {
+  const menu = document.querySelector("#commercialUserProfileMenu");
+  const button = document.querySelector("#commercialUserProfileButton");
+  if (!menu || !button) return;
+  const nextOpen = menu.hidden;
+  menu.hidden = !nextOpen;
+  button.setAttribute("aria-expanded", String(nextOpen));
+}
+
+function handleCommercialProfileAction(action) {
+  closeCommercialProfileMenu();
+  if (action === "password") {
+    setCommercialArea("dashboard");
+    window.setTimeout(() => {
+      const passwordInput = commercialPasswordForm?.querySelector("input[name='password'], input[type='password']");
+      passwordInput?.focus();
+    }, 80);
+    return;
+  }
+  if (action === "logout") {
+    setSession(getPublicSession());
+    persistView("acceso");
+    setView("acceso");
+  }
 }
 
 function renderCommercialTrackingBoard(tasks = []) {
@@ -6700,6 +6756,9 @@ function renderCommercialTrackingBoard(tasks = []) {
   const purchaseTasks = tasks.filter((task) => getTaskProcess(task) === "compra");
   const visibleTasks = getCommercialTrackingTasks(purchaseTasks);
   const columns = getCommercialTrackingColumns();
+  const columnsByKey = Object.fromEntries(columns.map((column) => [column.key, column]));
+  const profile = getCommercialTrackingUserProfile();
+  const visibleLimit = window.innerWidth <= 680 && commercialTrackingFilter !== "todos" ? 5 : 3;
   const counts = purchaseTasks.reduce((map, task) => {
     const key = getCommercialTrackingColumnKey(task);
     map[key] = (map[key] || 0) + 1;
@@ -6716,47 +6775,73 @@ function renderCommercialTrackingBoard(tasks = []) {
   const totalVisible = visibleTasks.length;
   const uniquePlates = new Set(visibleTasks.map((task) => normalizePlate(task.placa)).filter(Boolean)).size;
   container.innerHTML = `
+    <div class="commercial-tracking-header">
+      <div class="commercial-tracking-heading">
+        <p class="eyebrow">Tracking operativo</p>
+        <h2>Tracking de saneamientos</h2>
+        <p>Busca, filtra y revisa tus saneamientos sin mezclarlo con los formularios.</p>
+      </div>
+      <div class="commercial-user-profile-wrap">
+        <button id="commercialUserProfileButton" class="commercial-user-profile" type="button" aria-expanded="false" aria-controls="commercialUserProfileMenu" data-commercial-profile-toggle>
+          <span class="commercial-user-avatar" aria-hidden="true">${escapeHtml(profile.initials)}</span>
+          <span class="commercial-user-profile-copy">
+            <strong>Hola, ${escapeHtml(profile.name)}</strong>
+            <span>${escapeHtml(profile.role)}</span>
+          </span>
+          <span class="commercial-user-profile-chevron" aria-hidden="true">&#9662;</span>
+        </button>
+        <div id="commercialUserProfileMenu" class="commercial-user-profile-menu" hidden>
+          <button type="button" data-commercial-profile-action="profile" disabled>Mi perfil</button>
+          <button type="button" data-commercial-profile-action="password">Cambiar contrasena</button>
+          <button type="button" data-commercial-profile-action="logout">Cerrar sesion</button>
+        </div>
+      </div>
+    </div>
     <div class="commercial-tracking-searchbar">
-      <label>
-        Buscar por placa, cliente, cedula o asesor
-        <input type="search" data-commercial-tracking-search value="${escapeHtml(commercialTrackingSearch)}" placeholder="Buscar por placa, cliente, cedula o asesor">
+      <label class="tracking-filter-field tracking-filter-search">
+        <span>Buscar por placa, cliente, cedula o asesor</span>
+        <div class="tracking-input-wrap">
+          <input type="search" data-commercial-tracking-search value="${escapeHtml(commercialTrackingSearch)}" placeholder="Buscar por placa, cliente, cedula o asesor">
+          <span aria-hidden="true">&#128269;</span>
+        </div>
       </label>
-      <label>
-        Estado
+      <label class="tracking-filter-field">
+        <span>Estado</span>
         <select data-commercial-tracking-status>
           ${filters.map(([key, label, count]) => `<option value="${escapeHtml(key)}" ${commercialTrackingFilter === key ? "selected" : ""}>${escapeHtml(label)} (${count})</option>`).join("")}
         </select>
       </label>
-      <label>
-        Desde
+      <label class="tracking-filter-field">
+        <span>Desde</span>
         <input type="date" data-commercial-tracking-from value="${escapeHtml(commercialTrackingDateFrom)}">
       </label>
-      <label>
-        Hasta
+      <label class="tracking-filter-field">
+        <span>Hasta</span>
         <input type="date" data-commercial-tracking-to value="${escapeHtml(commercialTrackingDateTo)}">
       </label>
-      <button class="btn secondary tiny" type="button" data-commercial-tracking-clear>Limpiar</button>
+      <button class="tracking-clear-button" type="button" data-commercial-tracking-clear>Limpiar</button>
     </div>
     <div class="commercial-kanban-board commercial-tracking-grid">
       ${columns.map((column) => {
         const columnTasks = visibleByColumn[column.key] || [];
         return `
-          <section class="commercial-kanban-column" style="--column-color:${column.color}">
+          <section class="commercial-kanban-column tracking-column" data-status="${escapeHtml(column.key)}" style="--column-color:${column.color}; --column-soft:${column.soft}">
             <header class="commercial-kanban-column-head">
-              <span class="kanban-icon">${escapeHtml(column.icon)}</span>
+              <span class="kanban-icon" aria-hidden="true">${column.icon}</span>
               <div>
-                <strong>${escapeHtml(column.label)}</strong>
-                <small>${columnTasks.length} ${escapeHtml(column.hint.toLowerCase())}</small>
+                <strong>${escapeHtml(column.label)} (${columnTasks.length})</strong>
+                <small>${escapeHtml(column.hint)}</small>
               </div>
             </header>
             <div class="commercial-kanban-cards commercial-tracking-list">
-              ${columnTasks.slice(0, 6).map(renderCommercialTrackingCard).join("") || `<div class="empty compact-empty">Sin registros.</div>`}
+              ${columnTasks.slice(0, visibleLimit).map(renderCommercialTrackingCard).join("") || `<div class="empty compact-empty">Sin registros.</div>`}
             </div>
-            ${columnTasks.length > 6 ? `<button class="kanban-view-all" type="button" data-commercial-tracking-filter="${escapeHtml(column.key)}">Ver todas (${columnTasks.length})</button>` : ""}
+            ${columnTasks.length ? `<button class="kanban-view-all tracking-column-view-all" type="button" data-commercial-tracking-filter="${escapeHtml(column.key)}">Ver todas <span aria-hidden="true">&#8964;</span></button>` : ""}
           </section>
         `;
       }).join("")}
     </div>
+    ${commercialTrackingFilter !== "todos" ? renderCommercialTrackingExpandedList(visibleTasks, columnsByKey) : ""}
     <div class="commercial-tracking-summary">
       <article><strong>${totalVisible}</strong><span>Total solicitudes</span></article>
       <article><strong>${counts.pendiente || 0}</strong><span>Pendientes</span></article>
@@ -6769,41 +6854,69 @@ function renderCommercialTrackingBoard(tasks = []) {
   `;
 }
 
+function renderCommercialTrackingExpandedList(tasks = [], columnsByKey = {}) {
+  const totalPages = Math.max(1, Math.ceil(tasks.length / COMMERCIAL_TRACKING_PAGE_SIZE));
+  const page = Math.min(Math.max(1, commercialTrackingPage), totalPages);
+  if (page !== commercialTrackingPage) commercialTrackingPage = page;
+  const start = (page - 1) * COMMERCIAL_TRACKING_PAGE_SIZE;
+  const pageTasks = tasks.slice(start, start + COMMERCIAL_TRACKING_PAGE_SIZE);
+  const activeColumn = columnsByKey[commercialTrackingFilter] || { label: "Solicitudes" };
+  return `
+    <section class="commercial-tracking-expanded">
+      <header>
+        <div>
+          <p class="eyebrow">Listado completo</p>
+          <h3>${escapeHtml(activeColumn.label)}</h3>
+          <span>${tasks.length} solicitud(es) encontradas</span>
+        </div>
+        <div class="tracking-pagination">
+          <button type="button" class="btn tiny secondary" data-commercial-tracking-page="prev" ${page <= 1 ? "disabled" : ""}>Anterior</button>
+          <strong>${page} / ${totalPages}</strong>
+          <button type="button" class="btn tiny secondary" data-commercial-tracking-page="next" ${page >= totalPages ? "disabled" : ""}>Siguiente</button>
+        </div>
+      </header>
+      <div class="commercial-tracking-expanded-list">
+        ${pageTasks.map(renderCommercialTrackingRow).join("") || `<div class="empty compact-empty">Sin registros para mostrar.</div>`}
+      </div>
+    </section>
+  `;
+}
+
+function renderCommercialTrackingRow(task) {
+  const stage = getCommercialTrackingStage(task);
+  return `
+    <article class="tracking-expanded-row" data-request-id="${escapeHtml(task.id)}" style="--tracking-color:${escapeHtml(stage.statusColor)}">
+      <div>
+        <strong>${escapeHtml(task.placa || "Sin placa")}</strong>
+        <span>${escapeHtml(task.cliente || task.vendedor || "Cliente sin nombre")}</span>
+      </div>
+      <span>${escapeHtml(formatDateTime(task.createdAt))}</span>
+      <span class="tracking-mini-status-badge">${escapeHtml(stage.statusLabel)}</span>
+      <button class="tracking-mini-view" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver</button>
+    </article>
+  `;
+}
+
 function renderCommercialTrackingCard(task) {
   const stage = getCommercialTrackingStage(task);
   const columnKey = getCommercialTrackingColumnKey(task);
-  const completedSteps = Math.max(0, Math.min(COMMERCIAL_TRACKING_STEPS.length, stage.step || 0));
-  const totalSteps = COMMERCIAL_TRACKING_STEPS.length;
   return `
-    <article class="commercial-tracking-card tracking-card ${stage.className} is-${columnKey}" data-request-id="${escapeHtml(task.id)}" style="--tracking-color:${escapeHtml(stage.statusColor)}; --tracking-text:${getReadableTextColor(stage.statusColor)}">
-      <header class="tracking-card-header">
-        <div class="tracking-card-identity">
-          <strong class="tracking-card-plate">${escapeHtml(task.placa || "Sin placa")}</strong>
-          <span class="tracking-card-client">${escapeHtml(task.cliente || task.vendedor || "Cliente sin nombre")}</span>
-        </div>
-        <span class="tracking-status-badge tracking-state">${escapeHtml(stage.statusLabel)}</span>
-      </header>
-      <div class="tracking-card-meta">
-        <div><span>Agencia</span><strong>${escapeHtml(task.agencia || "Sin agencia")}</strong></div>
-        <div><span>Mesa</span><strong>${escapeHtml(task.legalAdvisor || "Disponible")}</strong></div>
-      </div>
-      <div class="tracking-card-date">
-        <span>Ingreso</span>
-        <strong>${escapeHtml(formatDateTime(task.createdAt))}</strong>
-      </div>
-      <div class="tracking-progress-card">
-        <div class="tracking-progress-header"><span>Progreso general</span><strong>${stage.progress}%</strong></div>
-        <div class="tracking-progress-bar"><span style="width:${stage.progress}%"></span></div>
-      </div>
-      <div class="tracking-stage-summary">
-        <span>Etapa actual</span>
-        <strong>${escapeHtml(stage.label)}</strong>
-        <small>${completedSteps} de ${totalSteps} etapas completadas</small>
-      </div>
-      <footer class="tracking-card-footer">
-        <span>${escapeHtml(formatLeadDuration(task))}</span>
+    <article class="commercial-tracking-card tracking-mini-card ${stage.className} is-${columnKey}" data-request-id="${escapeHtml(task.id)}" style="--tracking-color:${escapeHtml(stage.statusColor)}">
+      <header class="tracking-mini-card-header">
         <div>
-          <button class="btn tiny secondary tracking-open-detail" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver ficha</button>
+          <strong class="tracking-mini-card-plate">${escapeHtml(task.placa || "Sin placa")}</strong>
+          <span class="tracking-mini-card-client">${escapeHtml(task.cliente || task.vendedor || "Cliente sin nombre")}</span>
+        </div>
+      </header>
+      <span class="tracking-mini-status-badge">${escapeHtml(stage.statusLabel)}</span>
+      <div class="tracking-mini-progress">
+        <div class="tracking-mini-progress-bar"><span style="width:${stage.progress}%"></span></div>
+        <strong>${stage.progress}%</strong>
+      </div>
+      <footer class="tracking-mini-card-footer">
+        <span class="tracking-mini-date"><span aria-hidden="true">&#9633;</span> ${escapeHtml(formatDateTime(task.createdAt))}</span>
+        <div>
+          <button class="tracking-mini-view" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver</button>
           ${canCommercialResendTask(task) ? `<button class="btn tiny primary resend-btn" type="button" data-resend-commercial-task="${escapeHtml(task.id)}">Reenviar</button>` : ""}
           ${buildSignatureActionButtons(task)}
         </div>
@@ -13885,6 +13998,7 @@ document.querySelectorAll("[data-close-commercial-modal]").forEach((button) => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;
+  closeCommercialProfileMenu();
   if (legalTaskModal && !legalTaskModal.hidden) {
     closeLegalTaskInfoModal();
     return;
@@ -13898,6 +14012,21 @@ document.addEventListener("keydown", (event) => {
 });
 
 document.addEventListener("click", (event) => {
+  const profileToggle = event.target.closest("[data-commercial-profile-toggle]");
+  if (profileToggle) {
+    event.preventDefault();
+    toggleCommercialProfileMenu();
+    return;
+  }
+  const profileAction = event.target.closest("[data-commercial-profile-action]");
+  if (profileAction) {
+    event.preventDefault();
+    handleCommercialProfileAction(profileAction.dataset.commercialProfileAction);
+    return;
+  }
+  if (!event.target.closest(".commercial-user-profile-wrap")) {
+    closeCommercialProfileMenu();
+  }
   const pdfButton = event.target.closest("[data-pdf-download]");
   if (pdfButton) {
     event.preventDefault();

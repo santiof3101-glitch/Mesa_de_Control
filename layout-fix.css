@@ -1293,3 +1293,589 @@ body {
     flex-direction: column;
   }
 }
+
+/* Rediseño exclusivo del tracking comercial. */
+#formulario .commercial-tracking-shell > .panel-title-row {
+  display: none !important;
+}
+
+#formulario .commercial-tracking-shell {
+  padding: clamp(16px, 2vw, 24px) !important;
+}
+
+#formulario .commercial-tracking-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 16px;
+}
+
+#formulario .commercial-tracking-heading {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  max-width: 680px;
+}
+
+#formulario .commercial-tracking-heading h2 {
+  margin: 0;
+  font-size: clamp(1.35rem, 1.02rem + 1vw, 2.05rem);
+  line-height: 1.05;
+  color: #111827;
+}
+
+#formulario .commercial-tracking-heading p:not(.eyebrow) {
+  margin: 0;
+  color: #64748b;
+  font-size: clamp(0.86rem, 0.8rem + 0.18vw, 1rem);
+}
+
+#formulario .commercial-user-profile-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+#formulario .commercial-user-profile {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  max-width: min(100%, 260px);
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 8px 26px rgb(15 23 42 / 8%);
+  cursor: pointer;
+}
+
+#formulario .commercial-user-profile:hover,
+#formulario .commercial-user-profile:focus-visible {
+  border-color: #ffd1ce;
+}
+
+#formulario .commercial-user-avatar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e7f3ff, #fff1f1);
+  color: #0f4c81;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+#formulario .commercial-user-profile-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  text-align: left;
+}
+
+#formulario .commercial-user-profile-copy strong,
+#formulario .commercial-user-profile-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#formulario .commercial-user-profile-copy strong {
+  font-size: 0.8rem;
+}
+
+#formulario .commercial-user-profile-copy span {
+  color: #64748b;
+  font-size: 0.7rem;
+}
+
+#formulario .commercial-user-profile-chevron {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+#formulario .commercial-user-profile-menu[hidden] {
+  display: none !important;
+}
+
+#formulario .commercial-user-profile-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 2400;
+  display: grid;
+  width: min(220px, 86vw);
+  padding: 8px;
+  border: 1px solid #dfe6ee;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 18px 50px rgb(15 23 42 / 18%);
+}
+
+#formulario .commercial-user-profile-menu button {
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #0f172a;
+  text-align: left;
+  font: inherit;
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+#formulario .commercial-user-profile-menu button:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+#formulario .commercial-user-profile-menu button:not(:disabled):hover,
+#formulario .commercial-user-profile-menu button:not(:disabled):focus-visible {
+  background: #f6f8fa;
+}
+
+#formulario .commercial-tracking-searchbar {
+  display: grid !important;
+  grid-template-columns: minmax(260px, 2fr) minmax(150px, 0.85fr) minmax(140px, 0.8fr) minmax(140px, 0.8fr) auto !important;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 18px;
+  padding: clamp(12px, 1.2vw, 16px);
+  border: 1px solid #e3e8ef;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgb(15 23 42 / 5%);
+}
+
+#formulario .tracking-filter-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: #334155;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+#formulario .tracking-filter-field input,
+#formulario .tracking-filter-field select {
+  min-height: 42px;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #d9e1ea;
+  border-radius: 12px;
+  background: #fff;
+  color: #111827;
+  font-size: 0.86rem;
+  font-weight: 500;
+}
+
+#formulario .tracking-input-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+#formulario .tracking-input-wrap input {
+  padding-right: 38px;
+}
+
+#formulario .tracking-input-wrap > span {
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+}
+
+#formulario .tracking-clear-button {
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid #d9e1ea;
+  border-radius: 999px;
+  background: #fff;
+  color: #0f172a;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+#formulario .commercial-tracking-grid,
+#formulario .commercial-kanban-board {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+#formulario .tracking-column {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--column-color) 20%, #e5eaf0);
+  border-radius: 18px;
+  background: var(--column-soft, #f8fafc);
+  box-shadow: 0 12px 24px rgb(15 23 42 / 4%);
+  overflow: hidden;
+}
+
+#formulario .commercial-kanban-column-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  margin: 0;
+  padding: 4px 3px 7px;
+  border: 0;
+}
+
+#formulario .commercial-kanban-column-head .kanban-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--column-color);
+  box-shadow: 0 4px 12px rgb(15 23 42 / 6%);
+}
+
+#formulario .commercial-kanban-column-head div {
+  min-width: 0;
+}
+
+#formulario .commercial-kanban-column-head strong {
+  display: block;
+  color: var(--column-color);
+  font-size: 0.78rem;
+  line-height: 1.1;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+#formulario .commercial-kanban-column-head small {
+  color: #64748b;
+  font-size: 0.68rem;
+}
+
+#formulario .commercial-tracking-list,
+#formulario .commercial-kanban-cards {
+  gap: 10px;
+}
+
+#formulario .tracking-mini-card {
+  display: grid;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: 12px;
+  border: 1px solid #e1e7ee;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgb(15 23 42 / 4%);
+}
+
+#formulario .tracking-mini-card > * {
+  min-width: 0;
+}
+
+#formulario .tracking-mini-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+#formulario .tracking-mini-card-header > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+#formulario .tracking-mini-card-plate {
+  color: #0f172a;
+  font-size: clamp(0.9rem, 0.84rem + 0.2vw, 1rem);
+  line-height: 1.1;
+}
+
+#formulario .tracking-mini-card-client {
+  color: #475569;
+  font-size: clamp(0.72rem, 0.68rem + 0.1vw, 0.82rem);
+  overflow-wrap: anywhere;
+}
+
+#formulario .tracking-mini-status-badge {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: var(--column-color, var(--tracking-color, #64748b));
+  background: color-mix(in srgb, var(--column-color, var(--tracking-color, #64748b)) 10%, white);
+  font-size: clamp(0.62rem, 0.58rem + 0.1vw, 0.72rem);
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+#formulario .tracking-mini-progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+#formulario .tracking-mini-progress-bar {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5eaf0;
+}
+
+#formulario .tracking-mini-progress-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--column-color, var(--tracking-color, #f2182d));
+}
+
+#formulario .tracking-mini-progress strong {
+  color: #0f172a;
+  font-size: 0.7rem;
+}
+
+#formulario .tracking-mini-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#formulario .tracking-mini-card-footer > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+#formulario .tracking-mini-date {
+  color: #64748b;
+  font-size: 0.7rem;
+}
+
+#formulario .tracking-mini-view {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 46px;
+  min-height: 30px;
+  padding: 5px 11px;
+  border: 1px solid #dbe2ea;
+  border-radius: 999px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+#formulario .tracking-mini-card .btn {
+  min-height: 30px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+}
+
+#formulario .tracking-column-view-all {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 34px;
+  margin-top: 2px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #334155;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+#formulario .tracking-column-view-all:hover,
+#formulario .tracking-column-view-all:focus-visible {
+  background: rgb(255 255 255 / 70%);
+}
+
+#formulario .commercial-tracking-expanded {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #e3e8ef;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgb(15 23 42 / 5%);
+}
+
+#formulario .commercial-tracking-expanded > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+#formulario .commercial-tracking-expanded h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(1rem, 0.9rem + 0.3vw, 1.25rem);
+}
+
+#formulario .commercial-tracking-expanded header span {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+#formulario .tracking-pagination {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#formulario .commercial-tracking-expanded-list {
+  display: grid;
+  gap: 8px;
+}
+
+#formulario .tracking-expanded-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(120px, 0.8fr) minmax(140px, auto) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e6ebf2;
+  border-left: 4px solid var(--tracking-color, #f2182d);
+  border-radius: 13px;
+  background: #fff;
+}
+
+#formulario .tracking-expanded-row > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+#formulario .tracking-expanded-row strong,
+#formulario .tracking-expanded-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#formulario .tracking-expanded-row > span:not(.tracking-mini-status-badge) {
+  color: #64748b;
+  font-size: 0.76rem;
+}
+
+#formulario .commercial-tracking-summary {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+
+#formulario .commercial-tracking-summary article {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #e3e8ef;
+  border-radius: 14px;
+  background: #fff;
+}
+
+#formulario .commercial-tracking-summary strong {
+  display: block;
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+#formulario .commercial-tracking-summary span {
+  color: #64748b;
+  font-size: 0.68rem;
+}
+
+@media (max-width: 1450px) {
+  #formulario .commercial-tracking-grid,
+  #formulario .commercial-kanban-board {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  #formulario .commercial-tracking-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1050px) {
+  #formulario .commercial-tracking-searchbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  #formulario .commercial-tracking-grid,
+  #formulario .commercial-kanban-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  #formulario .tracking-clear-button {
+    width: 100%;
+  }
+
+  #formulario .tracking-expanded-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+@media (max-width: 680px) {
+  #formulario .commercial-tracking-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  #formulario .commercial-user-profile-copy {
+    display: none;
+  }
+
+  #formulario .commercial-user-profile {
+    grid-template-columns: auto auto;
+    padding: 7px;
+  }
+
+  #formulario .commercial-tracking-searchbar,
+  #formulario .commercial-tracking-grid,
+  #formulario .commercial-kanban-board,
+  #formulario .commercial-tracking-summary {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #formulario .tracking-expanded-row {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  #formulario .tracking-expanded-row .tracking-mini-view {
+    width: 100%;
+  }
+}
