@@ -495,3 +495,271 @@ body:has(#procesamiento.view.is-active) main {
     width: 100%;
   }
 }
+
+/* Comercial: correccion estructural definitiva de areas, procesos y responsive. */
+html,
+body {
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+#formulario,
+#formulario.view,
+#formulario.view.is-active {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  overflow: visible;
+}
+
+#formulario .section-head,
+#formulario .commercial-workspace {
+  width: min(100%, 1680px);
+  max-width: 1680px;
+  margin-inline: auto;
+  padding-inline: clamp(12px, 2vw, 28px);
+}
+
+#formulario .commercial-workspace {
+  grid-template-columns: clamp(210px, 16vw, 270px) minmax(0, 1fr);
+  min-width: 0;
+  align-items: start;
+}
+
+#formulario .commercial-sidebar {
+  position: sticky;
+  top: 16px;
+  min-width: 0;
+  max-height: calc(100vh - 32px);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+#formulario .commercial-content {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+#formulario .commercial-content > [hidden],
+#formulario .commercial-process-panel[hidden] {
+  display: none !important;
+}
+
+#formulario .commercial-content > [data-commercial-area-section] {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+#formulario .commercial-content > [data-commercial-area-section].is-active-area,
+#formulario .commercial-process-panel.is-active:not([hidden]) {
+  display: block !important;
+}
+
+#formulario .commercial-process-panel:not(.is-active) {
+  display: none;
+}
+
+#formulario .commercial-area,
+#formulario .commercial-dashboard,
+#formulario .commercial-tracking-shell,
+#formulario .commercial-requests-panel,
+#formulario .commercial-control-panel,
+#formulario .status-lookup,
+#formulario .commercial-process-shell,
+#formulario .commercial-process-panel,
+#formulario .commercial-process-panel > .panel {
+  width: 100%;
+  min-width: 0;
+  max-width: 100% !important;
+}
+
+#formulario .commercial-process-area {
+  display: grid;
+  gap: clamp(16px, 1.6vw, 24px);
+}
+
+#formulario .panel > *,
+#formulario .commercial-content > *,
+#formulario .commercial-dashboard > *,
+#formulario .commercial-process-panel > * {
+  min-width: 0;
+}
+
+#formulario .commercial-content p,
+#formulario .commercial-content span,
+#formulario .commercial-content strong,
+#formulario .commercial-content h1,
+#formulario .commercial-content h2,
+#formulario .commercial-content h3,
+#formulario .commercial-content label {
+  overflow-wrap: anywhere;
+}
+
+#formulario .form-grid,
+#formulario .commercial-process-panel .form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(14px, 1.5vw, 22px);
+  width: 100%;
+  min-width: 0;
+}
+
+#formulario .form-grid label,
+#formulario .commercial-process-panel label {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  line-height: 1.3;
+  font-size: clamp(0.78rem, 0.72rem + 0.18vw, 0.95rem);
+}
+
+#formulario .form-grid input,
+#formulario .form-grid select,
+#formulario .form-grid textarea,
+#formulario .commercial-process-panel input,
+#formulario .commercial-process-panel select,
+#formulario .commercial-process-panel textarea {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  font: inherit;
+}
+
+#formulario .form-custom-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(14px, 1.5vw, 22px);
+  min-width: 0;
+}
+
+#formulario .span-2 {
+  grid-column: 1 / -1;
+}
+
+#formulario .lookup-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) repeat(5, minmax(140px, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+  width: 100%;
+  min-width: 0;
+}
+
+#formulario .lookup-form > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+#formulario .kpi-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)) !important;
+}
+
+#formulario .commercial-module-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)) !important;
+}
+
+#formulario .commercial-tracking-shell {
+  overflow: visible !important;
+}
+
+#formulario .commercial-tracking-board {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  overscroll-behavior-inline: contain;
+}
+
+#formulario .commercial-kanban-board {
+  width: max-content;
+  min-width: min(100%, 1320px);
+  max-width: none;
+}
+
+@media (max-width: 1200px) {
+  #formulario .commercial-workspace {
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  #formulario .lookup-form {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  #formulario .commercial-mobile-menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0 12px;
+    position: relative;
+    z-index: 1001;
+  }
+
+  #formulario .commercial-workspace {
+    display: block;
+  }
+
+  #formulario .commercial-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 1000;
+    width: min(85vw, 300px);
+    max-height: 100dvh;
+    overflow-y: auto;
+    transform: translateX(-105%);
+    transition: transform 180ms ease;
+  }
+
+  #formulario .commercial-workspace.is-menu-open .commercial-sidebar {
+    transform: translateX(0);
+  }
+
+  #formulario .lookup-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  #formulario .section-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  #formulario .form-grid,
+  #formulario .form-custom-fields,
+  #formulario .lookup-form,
+  #formulario .commercial-process-grid,
+  #formulario .commercial-module-grid,
+  #formulario .kpi-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #formulario .span-2 {
+    grid-column: auto;
+  }
+
+  #formulario .panel-title-row,
+  #formulario .session-actions,
+  #formulario .form-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  #formulario .form-actions .btn,
+  #formulario .session-actions .btn,
+  #formulario .lookup-form .btn {
+    width: 100%;
+  }
+}

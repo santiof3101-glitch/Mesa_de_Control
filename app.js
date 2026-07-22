@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260722-commercial-start-process";
+const APP_BUILD_VERSION = "20260722-commercial-area-fix";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -421,7 +421,7 @@ let providerDuplicatePage = 1;
 let backupRestoreChecked = false;
 let currentPurchaseDetailReport = { title: "", html: "" };
 let activeCommercialProcess = "compra";
-let activeCommercialArea = "process";
+let activeCommercialArea = "dashboard";
 let activeCommercialRequestFilter = "todos";
 let commercialTrackingFilter = "todos";
 let commercialTrackingSearch = "";
@@ -5607,7 +5607,7 @@ async function loginCommercial(data) {
   setSession({ role: "commercial", userId: user.id, name: user.name, agency: user.agency });
   commercialLoginForm.reset();
   setView("formulario");
-  setCommercialProcessFromTarget("commercial-purchase-process", false);
+  setCommercialArea("dashboard", { scroll: false });
   applyCommercialSessionToForm();
   showToast(`Bienvenido, ${user.name}.`);
 }
@@ -6262,18 +6262,34 @@ async function completeSignatureTask(taskId) {
   if (results.some((ok) => !ok)) showToast("Actualizacion guardada localmente. Pendiente de sincronizar.");
 }
 
+function resetCommercialProcesses() {
+  commercialProcessSections.forEach((section) => {
+    section.hidden = true;
+    section.classList.remove("is-active", "is-active-area");
+  });
+  commercialProcessButtons.forEach((item) => {
+    item.classList.remove("is-active");
+    item.setAttribute("aria-pressed", "false");
+  });
+}
+
 function setCommercialArea(area = "dashboard", options = {}) {
   activeCommercialArea = area;
   if (options.statusView) activeCommercialRequestFilter = options.statusView;
   commercialAreaSections.forEach((section) => {
-    section.classList.toggle("is-active-area", section.dataset.commercialAreaSection === area);
+    const isCurrentArea = section.dataset.commercialAreaSection === area;
+    section.hidden = !isCurrentArea;
+    section.classList.toggle("is-active-area", isCurrentArea);
   });
   commercialAreaButtons.forEach((button) => {
     const isActive = options.button
       ? button === options.button
       : button.dataset.commercialArea === area && !button.dataset.commercialStatusView && !button.dataset.commercialModuleTarget;
     button.classList.toggle("is-active", isActive);
+    if (isActive) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
   });
+  if (area === "process" && !options.keepProcess) resetCommercialProcesses();
   if (options.moduleTarget) {
     const moduleButton = document.querySelector(`[data-commercial-module="${options.moduleTarget}"]`);
     moduleButton?.click();
@@ -6289,11 +6305,17 @@ function setCommercialArea(area = "dashboard", options = {}) {
 
 function setCommercialProcessFromTarget(target, shouldScroll = true) {
   activeCommercialProcess = target === "commercial-sale-process" ? "venta" : target === "commercial-cuv-process" ? "cuv" : "compra";
-  commercialProcessButtons.forEach((item) => item.classList.toggle("is-active", item.dataset.commercialProcess === target));
-  commercialProcessSections.forEach((section) => {
-    section.classList.toggle("is-active", section.dataset.commercialProcessSection === target);
+  setCommercialArea("process", { scroll: shouldScroll, keepProcess: true });
+  commercialProcessButtons.forEach((item) => {
+    const isActive = item.dataset.commercialProcess === target;
+    item.classList.toggle("is-active", isActive);
+    item.setAttribute("aria-pressed", String(isActive));
   });
-  setCommercialArea("process", { scroll: shouldScroll });
+  commercialProcessSections.forEach((section) => {
+    const isActive = section.dataset.commercialProcessSection === target;
+    section.hidden = !isActive;
+    section.classList.toggle("is-active", isActive);
+  });
   renderCommercialDashboard();
   if (statusSearch?.value || statusAdvisorFilter?.value || statusAgencyFilter?.value || statusStateFilter?.value || statusDateFrom?.value || statusDateTo?.value) {
     renderStatusLookup();
@@ -13577,11 +13599,8 @@ commercialAreaButtons.forEach((button) => {
     document.querySelector(".commercial-workspace")?.classList.remove("is-menu-open");
     document.querySelector("[data-commercial-menu-toggle]")?.setAttribute("aria-expanded", "false");
     const statusView = button.dataset.commercialStatusView || (button.dataset.commercialArea === "requests" ? "todos" : activeCommercialRequestFilter);
-    if (["requests", "control"].includes(button.dataset.commercialArea)) {
+    if (button.dataset.commercialArea === "requests") {
       activeCommercialRequestFilter = statusView;
-      commercialAreaButtons.forEach((item) => item.classList.toggle("is-active", item === button));
-      openCommercialSidebarModal(button.dataset.commercialArea, { statusView, button });
-      return;
     }
     setCommercialArea(button.dataset.commercialArea, {
       button,
