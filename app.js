@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260722-cuv-access-fix";
+const APP_BUILD_VERSION = "20260722-mobile-pdf-download";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -3172,7 +3172,7 @@ function openCommercialLeadFicha(taskId) {
     </div>
   `).join("") + `
     <div class="lead-ficha-actions span-2">
-      ${isCuv && task.cuvPdfDataUrl ? `<a class="btn primary" href="${escapeHtml(task.cuvPdfDataUrl)}" download="${escapeHtml(task.cuvPdfName || `${task.placa || "CUV"}.pdf`)}">Descargar PDF CUV</a>` : ""}
+      ${isCuv && task.cuvPdfDataUrl ? `<button class="btn primary" type="button" data-pdf-download="${escapeHtml(task.id)}">Descargar PDF CUV</button>` : ""}
       ${buildSignatureActionButtons(task)}
     </div>
   `;
@@ -5133,7 +5133,7 @@ function renderLegalTaskFullDetails(task) {
           </div>
         `).join("")}
       </div>
-      ${task.cuvPdfDataUrl ? `<div class="legal-modal-download"><a class="btn primary" href="${escapeHtml(task.cuvPdfDataUrl)}" download="${escapeHtml(task.cuvPdfName || `${task.placa || "CUV"}.pdf`)}">Descargar PDF CUV</a></div>` : ""}
+      ${task.cuvPdfDataUrl ? `<div class="legal-modal-download"><button class="btn primary" type="button" data-pdf-download="${escapeHtml(task.id)}">Descargar PDF CUV</button></div>` : ""}
     `;
   }
   if (isSignatureTask(task)) {
@@ -6494,7 +6494,7 @@ function renderCommercialCuvList() {
       <div class="commercial-lead-actions">
         <span class="info-request-pending ${task.cuvPdfDataUrl ? "is-approved" : ""}">${escapeHtml(task.cuvStatus || "SOLICITADO")}</span>
         <button class="btn tiny secondary" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver ficha</button>
-        ${task.cuvPdfDataUrl ? `<a class="btn tiny primary" href="${escapeHtml(task.cuvPdfDataUrl)}" download="${escapeHtml(task.cuvPdfName || `${task.placa || "CUV"}.pdf`)}">Descargar PDF</a>` : ""}
+        ${task.cuvPdfDataUrl ? `<button class="btn tiny primary" type="button" data-pdf-download="${escapeHtml(task.id)}">Descargar PDF</button>` : ""}
       </div>
     </article>
   `).join("");
@@ -12668,6 +12668,56 @@ function getFileKind(file) {
   return "file";
 }
 
+function dataUrlToBlob(dataUrl = "") {
+  const match = String(dataUrl).match(/^data:([^;,]+)?(;base64)?,(.*)$/);
+  if (!match) return null;
+  const mime = match[1] || "application/octet-stream";
+  const isBase64 = Boolean(match[2]);
+  const payload = match[3] || "";
+  try {
+    const binary = isBase64 ? atob(payload) : decodeURIComponent(payload);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new Blob([bytes], { type: mime });
+  } catch {
+    return null;
+  }
+}
+
+function openOrDownloadDataUrl(dataUrl = "", filename = "archivo.pdf") {
+  if (!dataUrl) {
+    showToast("No se encontro el archivo para descargar.");
+    return;
+  }
+  const blob = dataUrlToBlob(dataUrl);
+  const url = blob ? URL.createObjectURL(blob) : dataUrl;
+  const isTouchDevice = window.matchMedia?.("(pointer: coarse)")?.matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isTouchDevice) {
+    const opened = window.open(url, "_blank", "noopener");
+    if (!opened) showToast("Permite ventanas emergentes para abrir el PDF.");
+    if (blob) window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return;
+  }
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename || "archivo.pdf";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  if (blob) window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+function downloadCuvPdf(taskId = "") {
+  const task = (state.tasks || []).find((item) => item.id === taskId);
+  if (!task?.cuvPdfDataUrl) {
+    showToast("Este CUV aun no tiene PDF disponible.");
+    return;
+  }
+  openOrDownloadDataUrl(task.cuvPdfDataUrl, task.cuvPdfName || `${task.placa || "CUV"}.pdf`);
+}
+
 function formatFileSize(size) {
   const bytes = Number(size || 0);
   if (bytes < 1024) return `${bytes} B`;
@@ -12748,12 +12798,7 @@ async function downloadStoredFile(id) {
     showToast("No se encontro el archivo guardado.");
     return;
   }
-  const link = document.createElement("a");
-  link.href = dataUrl;
-  link.download = file.name || "archivo";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+  openOrDownloadDataUrl(dataUrl, file.name || "archivo");
 }
 
 async function openStoredFilePreview(id) {
@@ -13567,6 +13612,12 @@ document.addEventListener("keydown", (event) => {
 });
 
 document.addEventListener("click", (event) => {
+  const pdfButton = event.target.closest("[data-pdf-download]");
+  if (pdfButton) {
+    event.preventDefault();
+    downloadCuvPdf(pdfButton.dataset.pdfDownload);
+    return;
+  }
   const trackingFilterButton = event.target.closest("[data-commercial-tracking-filter]");
   if (trackingFilterButton) {
     commercialTrackingFilter = trackingFilterButton.dataset.commercialTrackingFilter || "todos";
