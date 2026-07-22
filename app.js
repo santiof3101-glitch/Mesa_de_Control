@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260722-commercial-tracking-redesign-2";
+const APP_BUILD_VERSION = "20260722-commercial-polish-1";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -6696,23 +6696,38 @@ function getCommercialTrackingColumns() {
 }
 
 function getCommercialTrackingUserProfile() {
-  const name = [
-    session?.name,
-    session?.fullName,
-    session?.nombreCompleto,
-    session?.nombre,
-    session?.apellido
-  ].filter(Boolean).join(" ").trim() || "Asesor";
+  const currentUser = session || {};
+  const name = currentUser.fullName ||
+    currentUser.nombreCompleto ||
+    [currentUser.nombre, currentUser.apellido].filter(Boolean).join(" ") ||
+    currentUser.name ||
+    "Asesor";
   const initials = getUserInitials(name);
   const role = session?.role === "admin" ? "Administrador" : "Asesor comercial";
   return { name, initials, role };
 }
 
 function updateCommercialStartGreeting() {
+  const greetingElement = document.querySelector("#commercialNewProcessGreeting");
   const title = document.querySelector("#commercialProcessTitle");
-  if (!title) return;
   const profile = getCommercialTrackingUserProfile();
-  title.textContent = `Hola, ${profile.name}`;
+  if (greetingElement) greetingElement.textContent = `Hola, ${profile.name}`;
+  if (title) title.textContent = "Selecciona el tramite que necesitas crear";
+}
+
+function updateTopbarCommercialProfile() {
+  const profileBox = document.querySelector("#topbarCommercialProfile");
+  if (!profileBox) return;
+  const shouldShow = session.role === "commercial";
+  profileBox.hidden = !shouldShow;
+  if (!shouldShow) return;
+  const profile = getCommercialTrackingUserProfile();
+  const avatar = document.querySelector("#topbarCommercialAvatar");
+  const greeting = document.querySelector("#topbarCommercialGreeting");
+  const role = document.querySelector("#topbarCommercialRole");
+  if (avatar) avatar.textContent = profile.initials;
+  if (greeting) greeting.textContent = `Hola, ${profile.name}`;
+  if (role) role.textContent = profile.role;
 }
 
 function getUserInitials(name) {
@@ -6763,11 +6778,15 @@ function renderCommercialTrackingBoard(tasks = []) {
   if (!container) return;
   const purchaseTasks = tasks.filter((task) => getTaskProcess(task) === "compra");
   const visibleTasks = getCommercialTrackingTasks(purchaseTasks);
+  const visibleKanbanRequests = visibleTasks.filter((request) => Number(getCommercialTrackingStage(request).progress || 0) < 100);
   const columns = getCommercialTrackingColumns();
   const columnsByKey = Object.fromEntries(columns.map((column) => [column.key, column]));
-  const profile = getCommercialTrackingUserProfile();
-  const visibleLimit = window.innerWidth <= 680 && commercialTrackingFilter !== "todos" ? 5 : 3;
   const counts = purchaseTasks.reduce((map, task) => {
+    const key = getCommercialTrackingColumnKey(task);
+    map[key] = (map[key] || 0) + 1;
+    return map;
+  }, {});
+  const kanbanCounts = visibleKanbanRequests.reduce((map, task) => {
     const key = getCommercialTrackingColumnKey(task);
     map[key] = (map[key] || 0) + 1;
     return map;
@@ -6777,32 +6796,21 @@ function renderCommercialTrackingBoard(tasks = []) {
     ...columns.map((column) => [column.key, column.label, counts[column.key] || 0])
   ];
   const visibleByColumn = columns.reduce((map, column) => {
+    map[column.key] = visibleKanbanRequests.filter((task) => getCommercialTrackingColumnKey(task) === column.key);
+    return map;
+  }, {});
+  const allByColumn = columns.reduce((map, column) => {
     map[column.key] = visibleTasks.filter((task) => getCommercialTrackingColumnKey(task) === column.key);
     return map;
   }, {});
-  const totalVisible = visibleTasks.length;
-  const uniquePlates = new Set(visibleTasks.map((task) => normalizePlate(task.placa)).filter(Boolean)).size;
+  const totalVisible = visibleKanbanRequests.length;
+  const uniquePlates = new Set(visibleKanbanRequests.map((task) => normalizePlate(task.placa)).filter(Boolean)).size;
   container.innerHTML = `
     <div class="commercial-tracking-header">
       <div class="commercial-tracking-heading">
         <p class="eyebrow">Tracking operativo</p>
         <h2>Tracking de saneamientos</h2>
         <p>Busca, filtra y revisa tus saneamientos sin mezclarlo con los formularios.</p>
-      </div>
-      <div class="commercial-user-profile-wrap">
-        <button id="commercialUserProfileButton" class="commercial-user-profile" type="button" aria-expanded="false" aria-controls="commercialUserProfileMenu" data-commercial-profile-toggle>
-          <span class="commercial-user-avatar" aria-hidden="true">${escapeHtml(profile.initials)}</span>
-          <span class="commercial-user-profile-copy">
-            <strong>Hola, ${escapeHtml(profile.name)}</strong>
-            <span>${escapeHtml(profile.role)}</span>
-          </span>
-          <span class="commercial-user-profile-chevron" aria-hidden="true">&#9662;</span>
-        </button>
-        <div id="commercialUserProfileMenu" class="commercial-user-profile-menu" hidden>
-          <button type="button" data-commercial-profile-action="profile" disabled>Mi perfil</button>
-          <button type="button" data-commercial-profile-action="password">Cambiar contrasena</button>
-          <button type="button" data-commercial-profile-action="logout">Cerrar sesion</button>
-        </div>
       </div>
     </div>
     <div class="commercial-tracking-searchbar">
@@ -6832,6 +6840,7 @@ function renderCommercialTrackingBoard(tasks = []) {
     <div class="commercial-kanban-board commercial-tracking-grid">
       ${columns.map((column) => {
         const columnTasks = visibleByColumn[column.key] || [];
+        const allColumnTasks = allByColumn[column.key] || [];
         return `
           <section class="commercial-kanban-column tracking-column" data-status="${escapeHtml(column.key)}" style="--column-color:${column.color}; --column-soft:${column.soft}">
             <header class="commercial-kanban-column-head">
@@ -6842,9 +6851,9 @@ function renderCommercialTrackingBoard(tasks = []) {
               </div>
             </header>
             <div class="commercial-kanban-cards commercial-tracking-list">
-              ${columnTasks.slice(0, visibleLimit).map(renderCommercialTrackingCard).join("") || `<div class="empty compact-empty">Sin registros.</div>`}
+              ${columnTasks.map(renderCommercialTrackingCard).join("") || `<div class="empty compact-empty">Sin registros activos.</div>`}
             </div>
-            ${columnTasks.length ? `<button class="kanban-view-all tracking-column-view-all" type="button" data-commercial-tracking-filter="${escapeHtml(column.key)}">Ver todas <span aria-hidden="true">&#8964;</span></button>` : ""}
+            ${allColumnTasks.length ? `<button class="kanban-view-all tracking-column-view-all" type="button" data-commercial-tracking-filter="${escapeHtml(column.key)}">Ver todas <span aria-hidden="true">&#8964;</span></button>` : ""}
           </section>
         `;
       }).join("")}
@@ -6852,11 +6861,11 @@ function renderCommercialTrackingBoard(tasks = []) {
     ${commercialTrackingFilter !== "todos" ? renderCommercialTrackingExpandedList(visibleTasks, columnsByKey) : ""}
     <div class="commercial-tracking-summary">
       <article><strong>${totalVisible}</strong><span>Total solicitudes</span></article>
-      <article><strong>${counts.pendiente || 0}</strong><span>Pendientes</span></article>
-      <article><strong>${counts.proceso || 0}</strong><span>En proceso</span></article>
-      <article><strong>${counts.revision || 0}</strong><span>En revision</span></article>
-      <article><strong>${counts.completado || 0}</strong><span>Completadas</span></article>
-      <article><strong>${counts.rechazado || 0}</strong><span>Rechazadas</span></article>
+      <article><strong>${kanbanCounts.pendiente || 0}</strong><span>Pendientes</span></article>
+      <article><strong>${kanbanCounts.proceso || 0}</strong><span>En proceso</span></article>
+      <article><strong>${kanbanCounts.revision || 0}</strong><span>En revision</span></article>
+      <article><strong>${kanbanCounts.completado || 0}</strong><span>Completadas</span></article>
+      <article><strong>${kanbanCounts.rechazado || 0}</strong><span>Rechazadas</span></article>
       <article><strong>${uniquePlates}</strong><span>Placas unicas</span></article>
     </div>
   `;
@@ -13764,6 +13773,7 @@ function renderAll() {
   applyTheme();
   applyCopy();
   renderLogo();
+  updateTopbarCommercialProfile();
   applyRememberedLogins();
   renderSelects();
   renderOptions();

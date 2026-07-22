@@ -1299,8 +1299,69 @@ body {
   display: none !important;
 }
 
+.topbar-commercial-profile[hidden] {
+  display: none !important;
+}
+
+.topbar-commercial-profile {
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  max-width: min(280px, 34vw);
+  padding: 6px 10px;
+  border: 1px solid #e4eaf2;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgb(15 23 42 / 6%);
+}
+
+.topbar-commercial-copy {
+  display: grid;
+  min-width: 0;
+  text-align: left;
+}
+
+.topbar-commercial-copy strong,
+.topbar-commercial-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-commercial-copy strong {
+  color: #0f172a;
+  font-size: 0.82rem;
+  line-height: 1.1;
+}
+
+.topbar-commercial-copy span {
+  color: #64748b;
+  font-size: 0.7rem;
+  line-height: 1.1;
+}
+
 #formulario .commercial-tracking-shell {
   padding: clamp(16px, 2vw, 24px) !important;
+}
+
+#formulario .commercial-sidebar {
+  align-items: stretch;
+}
+
+#formulario .commercial-support-card {
+  width: calc(100% - 24px);
+  max-width: 190px;
+  margin-inline: auto;
+  text-align: center;
+  justify-self: center;
+  transform: none;
+}
+
+#formulario .commercial-support-card .btn {
+  display: inline-flex;
+  justify-content: center;
+  width: 100%;
 }
 
 #formulario .commercial-tracking-header {
@@ -1312,6 +1373,14 @@ body {
   width: 100%;
   min-width: 0;
   margin-bottom: 16px;
+}
+
+#formulario .commercial-start-copy h3 {
+  margin: -6px 0 0;
+  color: #111827;
+  font-size: clamp(1rem, 0.9rem + 0.35vw, 1.22rem);
+  font-weight: 650;
+  line-height: 1.18;
 }
 
 #formulario .commercial-tracking-heading {
@@ -1538,13 +1607,48 @@ body {
 #formulario .commercial-kanban-column-head .kanban-icon {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
   flex: 0 0 auto;
   border-radius: 50%;
   background: #fff;
   color: var(--column-color);
+  font-size: 18px;
+  line-height: 1;
+  overflow: hidden;
   box-shadow: 0 4px 12px rgb(15 23 42 / 6%);
+}
+
+#formulario .tracking-column-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
+  overflow: hidden;
+}
+
+#formulario .tracking-column-icon > span,
+#formulario .tracking-column-icon > svg,
+#formulario .tracking-column-icon > i,
+#formulario .commercial-kanban-column-head .kanban-icon > span,
+#formulario .commercial-kanban-column-head .kanban-icon > svg,
+#formulario .commercial-kanban-column-head .kanban-icon > i {
+  display: block;
+  width: 18px;
+  height: 18px;
+  max-width: 18px;
+  max-height: 18px;
+  line-height: 1;
+  font-size: 18px;
+  object-fit: contain;
 }
 
 #formulario .commercial-kanban-column-head div {

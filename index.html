@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260722-commercial-tracking-redesign-2">
+<html lang="es" data-app-version="20260722-commercial-polish-1">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260722-commercial-tracking-redesign-2">
-  <link rel="stylesheet" href="layout-fix.css?v=20260722-commercial-tracking-redesign-2">
+  <link rel="stylesheet" href="styles.css?v=20260722-commercial-polish-1">
+  <link rel="stylesheet" href="layout-fix.css?v=20260722-commercial-polish-1">
 </head>
 <body>
   <header class="topbar">
@@ -19,6 +19,13 @@
       <span id="logoSlot" class="logo-slot"></span>
     </button>
     <nav class="nav-tabs" aria-label="Navegacion principal">
+      <div id="topbarCommercialProfile" class="topbar-commercial-profile" hidden>
+        <span id="topbarCommercialAvatar" class="commercial-user-avatar" aria-hidden="true">A</span>
+        <span class="topbar-commercial-copy">
+          <strong id="topbarCommercialGreeting">Hola, Asesor</strong>
+          <span id="topbarCommercialRole">Asesor comercial</span>
+        </span>
+      </div>
       <button class="tab is-active" data-view="acceso">▦ Inicio</button>
       <button id="logoutBtn" class="tab muted-tab" type="button" hidden>Salir</button>
     </nav>
@@ -925,7 +932,8 @@
         <div class="commercial-start-hero">
           <div class="commercial-start-copy">
             <p class="eyebrow">Nueva gestion comercial</p>
-            <h2 id="commercialProcessTitle">Hola, asesor</h2>
+            <h2 id="commercialNewProcessGreeting">Hola, asesor</h2>
+            <h3 id="commercialProcessTitle">Selecciona el tramite que necesitas crear</h3>
             <p>Cada solicitud quedara separada por proceso y sincronizada con mesa de control.</p>
             <div class="commercial-start-actions">
               <button class="btn primary" type="button" data-commercial-start="commercial-purchase-process">&#128722; Compra</button>
@@ -1932,7 +1940,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260722-commercial-tracking-redesign-2"></script>
+  <script src="app.js?v=20260722-commercial-polish-1"></script>
 </body>
 </html>
 
