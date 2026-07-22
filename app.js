@@ -6923,7 +6923,7 @@ function renderCommercialTrackingBoard(tasks = []) {
   if (!container) return;
   const purchaseTasks = tasks.filter((task) => getTaskProcess(task) === "compra");
   const visibleTasks = getCommercialTrackingTasks(purchaseTasks);
-  const visibleKanbanRequests = visibleTasks.filter((task) => !isCommercialTrackingFinished(task));
+  const visibleKanbanRequests = visibleTasks;
   const columns = getCommercialTrackingColumns();
   if (!columns.some((column) => column.key === commercialTrackingMobileStatus)) {
     commercialTrackingMobileStatus = columns[0]?.key || "pendiente";
