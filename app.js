@@ -11531,6 +11531,21 @@ function getFilteredProviderRecords() {
     .filter((record) => !providerFilters.plate || getProviderRecordPlate(record).includes(normalizeLooseText(providerFilters.plate)));
 }
 
+function getSelectedProviderLoad() {
+  const loadId = providerFilters.loadId || providerLoadFilter?.value || "";
+  if (!loadId) return null;
+  return (state.dataProcessing?.providerLoads || []).find((load) => load.id === loadId) || null;
+}
+
+function getProviderEffectivePaidAmount(records = []) {
+  const computedPaid = getProviderPaidAmount(records);
+  if (computedPaid > 0) return computedPaid;
+  const selectedLoad = getSelectedProviderLoad();
+  const paidTotal = Number(selectedLoad?.paidTotal);
+  if (selectedLoad && Number.isFinite(paidTotal) && paidTotal > 0) return paidTotal;
+  return 0;
+}
+
 function renderProviderHeroMetrics(records, allRecords) {
   const providers = new Set(records.map((record) => record.provider).filter(Boolean)).size;
   const pendingDuplicates = getProviderDuplicateGroups(records).filter(isProviderDuplicatePending).length;
@@ -12026,7 +12041,7 @@ function renderProviderKpis(records) {
   providerKpis.hidden = true;
   providerKpis.innerHTML = "";
   return;
-  const paidTotal = getProviderPaidAmount(records);
+  const paidTotal = getProviderEffectivePaidAmount(records);
   const authorizedOvercharge = getProviderAuthorizedOverchargeAmount(records);
   const rejectedOvercharge = getProviderRejectedOverchargeAmount(records);
   const uniquePlates = new Set(records.map(getProviderRecordPlate).filter(Boolean)).size;
@@ -12222,7 +12237,7 @@ function getProviderDashboardMetrics(records) {
   const approvedDuplicates = duplicates.filter(isProviderDuplicateApproved);
   const rejectedDuplicates = duplicates.filter(isProviderDuplicateRejected);
   const overcharge = pendingDuplicates.reduce((sum, group) => sum + getProviderDuplicateUnauthorizedAmount(group, records), 0);
-  const paidTotal = getProviderPaidAmount(records);
+  const paidTotal = getProviderEffectivePaidAmount(records);
   const authorizedOvercharge = getProviderAuthorizedOverchargeAmount(records);
   const rejectedOvercharge = getProviderRejectedOverchargeAmount(records);
   const cleanRecords = Math.max(0, records.length - pendingDuplicates.reduce((sum, group) => sum + Math.max(0, group.items.length - 1), 0));
@@ -12352,7 +12367,7 @@ function renderProviderDuplicates(records) {
   providerDuplicatePage = Math.min(Math.max(providerDuplicatePage, 1), totalPages);
   const pageStart = (providerDuplicatePage - 1) * pageSize;
   const pageItems = visibleDuplicates.slice(pageStart, pageStart + pageSize);
-  const total = getProviderPaidAmount(records);
+  const total = getProviderEffectivePaidAmount(records);
   const possibleOvercharge = pendingDuplicates.reduce((sum, group) => sum + getProviderDuplicateUnauthorizedAmount(group, records), 0);
   if (!records.length) {
     providerDuplicateReport.innerHTML = `<div class="empty compact-empty">Carga un reporte para generar alertas de proveedores.</div>`;
@@ -12595,9 +12610,9 @@ function getProviderReportContext() {
   const pendingDuplicates = duplicates.filter(isProviderDuplicatePending);
   const approvedDuplicates = duplicates.filter(isProviderDuplicateApproved);
   const rejectedDuplicates = duplicates.filter(isProviderDuplicateRejected);
-  const total = getProviderPaidAmount(records);
+  const total = getProviderEffectivePaidAmount(records);
   const authorizedOvercharge = getProviderAuthorizedOverchargeAmount(records);
-  const paidTotal = getProviderPaidAmount(records);
+  const paidTotal = getProviderEffectivePaidAmount(records);
   const rejectedOvercharge = getProviderRejectedOverchargeAmount(records);
   const uniquePlates = new Set(records.map(getProviderRecordPlate).filter(Boolean)).size;
   const providers = new Set(records.map((record) => record.provider).filter(Boolean)).size;
