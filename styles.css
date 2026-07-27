@@ -11205,32 +11205,45 @@ body.legal-chat-is-open #legalChatOpenBtn,
 }
 
 .provider-alert-list p {
-  grid-template-columns: 32px minmax(0, 1fr);
+  grid-template-columns: minmax(44px, auto) minmax(0, 1fr);
   min-height: 54px;
+  align-items: start;
 }
 
 .provider-alert-list b {
-  width: 30px;
-  height: 30px;
+  min-width: 36px;
+  max-width: 62px;
+  min-height: 30px;
+  padding: 0 7px;
   display: grid;
   place-items: center;
   border-radius: 999px;
   background: #eef4ff;
+  color: #0b1f3a;
+  font-size: clamp(0.62rem, 0.54rem + 0.18vw, 0.72rem);
+  line-height: 1;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
 }
 
 .provider-alert-list span {
   display: grid;
   gap: 2px;
+  min-width: 0;
 }
 
 .provider-alert-list strong {
   color: #0b1f3a;
   font-size: 0.86rem;
+  line-height: 1.2;
 }
 
 .provider-alert-list small {
   color: #536177;
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .provider-alert-list .is-ok b {
@@ -11265,6 +11278,24 @@ body.legal-chat-is-open #legalChatOpenBtn,
 
 .provider-exec-footer b {
   color: #0d2d63;
+}
+
+.provider-exec-panel,
+.provider-exec-kpi,
+.provider-alert-list p,
+.payment-insight-list span,
+.provider-donut-legend p {
+  min-width: 0;
+}
+
+.payment-insight-list span {
+  align-items: start;
+  gap: 8px;
+  line-height: 1.25;
+}
+
+.payment-insight-list span b {
+  white-space: nowrap;
 }
 
 @media (max-width: 1380px) {
