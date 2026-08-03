@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260803-process-kanban-separation";
+const APP_BUILD_VERSION = "20260803-task-repository-logic";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -1963,7 +1963,7 @@ function buildStatusOptionsFromLabels(labels = [], fallbackColor = "#64748b") {
     label,
     value: normalizeStatusValue(label),
     color: fallbackColor,
-    closes: /APROB|OK|ENVIADO|CERRAD|COMPLET|FINAL|ANULADO|RECHAZ/.test(normalizeLooseText(label)),
+    closes: /APROB|OK|ENVIADO|CERRAD|COMPLET|FINAL|ANULADO|RECHAZ/.test(normalizeLooseText(label)) && !isNegativeOutcomeText(label),
     isDefault: true,
     substatuses: []
   }));
@@ -3461,7 +3461,7 @@ function renderSignatureRecipientCard(title, recipient = {}, type = "titular") {
 
 function renderSignatureRecipientCards(task = {}) {
   if (!isSignatureTask(task)) return "";
-  const payload = task.signaturePayload || {};
+  const payload = getSignaturePayloadForTask(task);
   const heirs = Array.isArray(payload.herederos) ? payload.herederos.filter((item) => item?.email || item?.whatsapp) : [];
   const cards = [
     renderSignatureRecipientCard("Titular", payload.titular, "titular"),
@@ -3475,6 +3475,13 @@ function renderSignatureRecipientCards(task = {}) {
       <div class="signature-recipient-grid">${cards.join("")}</div>
     </section>
   `;
+}
+
+function getSignaturePayloadForTask(task = {}) {
+  const sourceTask = task.sourceTaskId ? state.tasks.find((item) => item.id === task.sourceTaskId) : null;
+  if (task.signaturePayload && Object.keys(task.signaturePayload || {}).length) return task.signaturePayload;
+  if (sourceTask?.signaturePayload && Object.keys(sourceTask.signaturePayload || {}).length) return sourceTask.signaturePayload;
+  return {};
 }
 
 async function checkForAppUpdate() {
@@ -5298,6 +5305,34 @@ function normalizeStatusValue(value = "") {
   return String(value).trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+function isNegativeOutcomeText(value = "") {
+  const text = normalizeLooseText(value);
+  return Boolean(text) && (
+    text.includes("RECHAZ") ||
+    text.includes("NO APROB") ||
+    text.includes("SIN APROB") ||
+    text.includes("SIN LEAD") ||
+    text.includes("NO GENERAR") ||
+    text.includes("BLOQUEADO") ||
+    text.includes("ANULADO") ||
+    text.includes("ERRONEO")
+  );
+}
+
+function isPositiveOutcomeText(value = "") {
+  const text = normalizeLooseText(value);
+  return Boolean(text) && (
+    text.includes("REALIZADO") ||
+    text.includes("SUBIDO") ||
+    text.includes("APROBADO") ||
+    text.includes("ENVIADO ASESOR") ||
+    text.includes("GESTIONADO") ||
+    text.includes("OK") ||
+    text.includes("CERRADO") ||
+    text.includes("COMPLET")
+  ) && !isNegativeOutcomeText(value);
+}
+
 function getStatusOption(value, processKey = "compra") {
   const normalized = normalizeStatusValue(value);
   const processStatuses = getProcessStatusOptions(processKey);
@@ -5308,7 +5343,15 @@ function getStatusOption(value, processKey = "compra") {
 }
 
 function isClosedStatus(value, processKey = "compra") {
-  return Boolean(getStatusOption(value, processKey)?.closes);
+  return isNegativeOutcomeText(value) || Boolean(getStatusOption(value, processKey)?.closes);
+}
+
+function shouldShowInLegalActiveInbox(task = {}) {
+  const status = normalizeStatusValue(task.status);
+  if (isSignatureTask(task)) return !isClosedStatus(task.status, getTaskProcess(task));
+  if (isCuvTask(task)) return !isClosedStatus(task.status, getTaskProcess(task));
+  if (getTaskMailbox(task) === "contratos") return !isClosedStatus(task.status, getTaskProcess(task));
+  return ["por asignar", "pendiente", "tomado"].includes(status);
 }
 
 function getVisibleTasks() {
@@ -5319,7 +5362,7 @@ function getVisibleTasks() {
       if (activeFilter === "firmas") return isSignatureTask(task);
       if (activeFilter === "cuv") return isCuvTask(task);
       if (activeFilter === "contratos") return getTaskMailbox(task) === "contratos";
-      if (activeFilter === "todos") return getLegalDefaultMailboxScope(task);
+      if (activeFilter === "todos") return getLegalDefaultMailboxScope(task) && shouldShowInLegalActiveInbox(task);
       return !isSignatureTask(task) && !isCuvTask(task) && getTaskMailbox(task) !== "contratos" && task.status === activeFilter;
     })
     .filter((task) => isInsideDateRange(task.createdAt, taskDateFrom, taskDateTo))
@@ -5524,7 +5567,7 @@ function renderLegalTaskFullDetails(task) {
     `;
   }
   if (isSignatureTask(task)) {
-    const payload = task.signaturePayload || {};
+    const payload = getSignaturePayloadForTask(task);
     const heirs = Array.isArray(payload.herederos) ? payload.herederos : [];
     const sourceTask = state.tasks.find((item) => item.id === task.sourceTaskId) || {};
     const fields = [
@@ -7060,7 +7103,7 @@ function renderCommercialCuvList() {
 
 function isCommercialTrackingFinished(task = {}) {
   const normalizedStatus = normalizeStatusValue(task.status);
-  if (normalizedStatus.includes("rechaz")) return false;
+  if (isNegativeOutcomeText(task.status) || normalizedStatus.includes("rechaz")) return false;
   const explicitTerminalStatuses = new Set([
     ...[...getLegalTerminalStatusValues()].filter((status) => !status.includes("rechaz")),
     "contratos firmados subidos a pilot",
@@ -7094,10 +7137,10 @@ function getCommercialTrackingStage(task = {}) {
     return { ...base, key: "cuv-solicitado", label: "CUV solicitado", statusLabel: task.cuvStatus || "SOLICITADO", className: "info", progress: 25, step: 1 };
   }
   if (processKey === "venta") {
-    if (status.includes("RECHAZ") || status.includes("ANULADO") || status.includes("BLOQUEADO")) {
+    if (isNegativeOutcomeText(task.status) || status.includes("RECHAZ") || status.includes("ANULADO") || status.includes("BLOQUEADO")) {
       return { ...base, key: "contrato-observado", label: "Contrato observado", className: "danger", progress: 55, step: 4 };
     }
-    if (isClosedStatus(task.status, "venta") || status.includes("GESTIONADO") || status.includes("OK") || status.includes("CERRADO")) {
+    if (isPositiveOutcomeText(task.status) && (isClosedStatus(task.status, "venta") || status.includes("GESTIONADO") || status.includes("OK") || status.includes("CERRADO"))) {
       return { ...base, key: "contrato-cerrado", label: "Contrato cerrado", className: "success", progress: 100, step: 5 };
     }
     if (task.legalUserId || task.takenAt || status.includes("ACTAS") || status.includes("FIDEVAL") || status.includes("OBSERVADO")) {
@@ -7120,7 +7163,7 @@ function getCommercialTrackingStage(task = {}) {
   if (task.signatureStatus === SIGNATURE_STATUS.requested) {
     return { ...base, key: "firma-solicitada", label: "Firma solicitada", statusLabel: "Firma solicitada", className: "info", progress: 66, step: 6 };
   }
-  if (status.includes("RECHAZ")) {
+  if (isNegativeOutcomeText(task.status) || status.includes("RECHAZ")) {
     return { ...base, key: "rechazado", label: "Rechazado por legal", className: "danger", progress: 44, step: 4 };
   }
   if (isCommercialTrackingFinished(task)) {
@@ -7237,8 +7280,9 @@ function getCommercialTrackingTasks(tasks = []) {
 function getCommercialTrackingColumnKey(task = {}) {
   const stage = getCommercialTrackingStage(task);
   const status = normalizeLooseText(task.status);
-  if (stage.key === "rechazado" || stage.key === "contrato-observado" || status.includes("RECHAZ")) return "rechazado";
-  if (isCommercialTrackingFinished(task) || ["firma-finalizada", "saneamiento-pilot", "contrato-cerrado", "cuv-enviado"].includes(stage.key)) return "completado";
+  const isNegative = isNegativeOutcomeText(task.status) || status.includes("RECHAZ");
+  if (isNegative || stage.key === "rechazado" || stage.key === "contrato-observado") return "rechazado";
+  if (!isNegative && (isCommercialTrackingFinished(task) || ["firma-finalizada", "saneamiento-pilot", "contrato-cerrado", "cuv-enviado"].includes(stage.key))) return "completado";
   if (["firma-solicitada", "firma-enviada", "subir-firmados"].includes(stage.key)) return "revision";
   if (["gestion", "contrato-gestion", "cuv-proceso"].includes(stage.key) || task.legalUserId || task.takenAt || status.includes("TOMADO")) return "proceso";
   return "pendiente";
