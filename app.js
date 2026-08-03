@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260803-legal-task-premium-ui";
+const APP_BUILD_VERSION = "20260803-signature-flow-audit-fix";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -3454,13 +3454,36 @@ function renderSignatureRecipientCard(title, recipient = {}, type = "titular") {
   const email = recipient.email || "";
   const whatsapp = recipient.whatsapp || "";
   if (!email && !whatsapp) return "";
+  const contactActions = renderSignatureContactActions(email, whatsapp);
   return `
     <article class="signature-recipient-card is-${escapeHtml(type)}">
       <span>${escapeHtml(title)}</span>
       <strong>${escapeHtml(email || "Sin correo")}</strong>
       <small>${escapeHtml(whatsapp || "Sin WhatsApp")}</small>
+      ${contactActions}
     </article>
   `;
+}
+
+function normalizeWhatsappForLink(value = "") {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("593")) return digits;
+  if (digits.startsWith("0") && digits.length >= 9) return `593${digits.slice(1)}`;
+  return digits.length === 9 ? `593${digits}` : digits;
+}
+
+function renderSignatureContactActions(email = "", whatsapp = "") {
+  const actions = [];
+  const safeEmail = String(email || "").trim();
+  const whatsappNumber = normalizeWhatsappForLink(whatsapp);
+  if (safeEmail) {
+    actions.push(`<a class="signature-contact-action" href="mailto:${escapeHtml(safeEmail)}">Correo</a>`);
+  }
+  if (whatsappNumber) {
+    actions.push(`<a class="signature-contact-action" href="https://wa.me/${escapeHtml(whatsappNumber)}" target="_blank" rel="noopener">WhatsApp</a>`);
+  }
+  return actions.length ? `<div class="signature-contact-actions">${actions.join("")}</div>` : "";
 }
 
 function renderSignatureRecipientCards(task = {}) {
@@ -5382,6 +5405,10 @@ function isPositiveOutcomeText(value = "") {
 
 function getStatusOption(value, processKey = "compra") {
   const normalized = normalizeStatusValue(value);
+  if (processKey === "firma") {
+    const signatureOption = getSignatureStatusOption(normalized);
+    if (signatureOption) return signatureOption;
+  }
   const processStatuses = getProcessStatusOptions(processKey);
   return processStatuses.find((status) => status.value === normalized) ||
     state.statusOptions.find((status) => status.value === normalized) ||
@@ -5389,7 +5416,34 @@ function getStatusOption(value, processKey = "compra") {
     state.statusOptions[0];
 }
 
+function getSignatureStatusOption(value = "") {
+  const normalized = normalizeStatusValue(value);
+  const baseOptions = normalizeStatusOptions(DEFAULT_TASK_STATUS_OPTIONS);
+  const base = baseOptions.find((status) => status.value === normalized);
+  if (base) return base;
+  if (normalized === normalizeStatusValue(SIGNATURE_STATUS.requested)) {
+    return { id: "signature-requested", label: "Firma solicitada", value: normalized, color: "#2563eb", closes: false };
+  }
+  if (normalized === normalizeStatusValue(SIGNATURE_STATUS.sent)) {
+    return { id: "signature-sent", label: "Enviado a firmar exitoso", value: normalized, color: "#22c55e", closes: true };
+  }
+  if (normalized === normalizeStatusValue(SIGNATURE_STATUS.pilotRequested)) {
+    return { id: "signature-pilot-requested", label: "Subida a Pilot solicitada", value: normalized, color: "#f59e0b", closes: false };
+  }
+  if (normalized === normalizeStatusValue(SIGNATURE_STATUS.completed)) {
+    return { id: "signature-completed", label: "Contratos subidos a Pilot", value: normalized, color: "#15803d", closes: true };
+  }
+  return null;
+}
+
 function isClosedStatus(value, processKey = "compra") {
+  if (processKey === "firma") {
+    const normalized = normalizeStatusValue(value);
+    return [
+      normalizeStatusValue(SIGNATURE_STATUS.sent),
+      normalizeStatusValue(SIGNATURE_STATUS.completed)
+    ].includes(normalized) || isNegativeOutcomeText(value);
+  }
   return isNegativeOutcomeText(value) || Boolean(getStatusOption(value, processKey)?.closes);
 }
 
@@ -6404,7 +6458,7 @@ function getLegalTakenStatusForTask(task = {}) {
   const processKey = getTaskProcess(task);
   if (processKey === "cuv") return "en proceso";
   if (processKey === "venta") return "pendiente / por confirmar";
-  if (processKey === "firma") return "en proceso";
+  if (processKey === "firma") return "tomado";
   return "tomado";
 }
 
@@ -6485,13 +6539,20 @@ function canCommercialRequestSignature(task = {}) {
   if (!task || getTaskProcess(task) !== "compra") return false;
   if (!ownsCommercialTask(task)) return false;
   if (normalizeStatusValue(task.status) !== "saneamiento realizado y subido a pilot") return false;
-  return !task.signatureRequestTaskId && task.signatureStatus !== SIGNATURE_STATUS.requested && task.signatureStatus !== SIGNATURE_STATUS.sent && task.signatureStatus !== SIGNATURE_STATUS.completed;
+  return !task.signatureRequestTaskId &&
+    !findSignatureWorkflowTask(task.id, "envio-firma") &&
+    task.signatureStatus !== SIGNATURE_STATUS.requested &&
+    task.signatureStatus !== SIGNATURE_STATUS.sent &&
+    task.signatureStatus !== SIGNATURE_STATUS.completed;
 }
 
 function canCommercialRequestPilotUpload(task = {}) {
   if (!task || getTaskProcess(task) !== "compra") return false;
   if (!ownsCommercialTask(task)) return false;
-  return task.signatureStatus === SIGNATURE_STATUS.sent && !task.signaturePilotTaskId && task.signatureStatus !== SIGNATURE_STATUS.completed;
+  return task.signatureStatus === SIGNATURE_STATUS.sent &&
+    !task.signaturePilotTaskId &&
+    !findSignatureWorkflowTask(task.id, "subir-pilot") &&
+    task.signatureStatus !== SIGNATURE_STATUS.completed;
 }
 
 function validateSignatureEmail(value = "") {
@@ -6550,6 +6611,21 @@ function getSignatureDisplayStatus(task = {}) {
   if (task.signatureStatus === SIGNATURE_STATUS.sent) return "Enviado a firmar exitoso";
   if (task.signatureStatus === SIGNATURE_STATUS.requested) return "Firma solicitada";
   return "";
+}
+
+function findSignatureWorkflowTask(sourceTaskId, stage = "envio-firma") {
+  return (state.tasks || []).find((task) =>
+    isSignatureTask(task) &&
+    task.sourceTaskId === sourceTaskId &&
+    task.signatureStage === stage &&
+    !task.deleted
+  ) || null;
+}
+
+function findLegalModalTask(taskId) {
+  return (state.tasks || []).find((task) => task.id === taskId) ||
+    (state.tasks || []).find((task) => task.signatureRequestTaskId === taskId || task.signaturePilotTaskId === taskId) ||
+    null;
 }
 
 function buildSignatureActionButtons(task = {}) {
@@ -6646,6 +6722,31 @@ async function submitSignatureRequest(event) {
   }
   showSignatureValidation([]);
   const createdAt = new Date().toISOString();
+  const existingSignatureTask = findSignatureWorkflowTask(source.id, "envio-firma");
+  if (existingSignatureTask) {
+    existingSignatureTask.signaturePayload = payload;
+    existingSignatureTask.updatedAt = createdAt;
+    existingSignatureTask.syncStatus = "pending";
+    existingSignatureTask.syncAction = "actualizar-firma";
+    source.signatureStatus = SIGNATURE_STATUS.requested;
+    source.signatureRequestTaskId = existingSignatureTask.id;
+    source.signaturePayload = payload;
+    source.signatureRequestedAt = source.signatureRequestedAt || existingSignatureTask.createdAt || createdAt;
+    source.updatedAt = createdAt;
+    source.syncStatus = "pending";
+    source.syncAction = "actualizar-firma-origen";
+    saveState();
+    closeCommercialModals();
+    renderAll();
+    showToast("Ya existia una solicitud de firma. Se actualizo la ficha sin duplicar tarea.");
+    const [sourceSaved, requestSaved] = await Promise.all([
+      guardarTareaSupabase(source, "actualizar-firma-origen"),
+      guardarTareaSupabase(existingSignatureTask, "actualizar-firma")
+    ]);
+    saveState();
+    if (!sourceSaved || !requestSaved) showToast("Solicitud guardada localmente. Pendiente de sincronizar.");
+    return;
+  }
   const signatureTask = {
     id: crypto.randomUUID(),
     createdAt,
@@ -6702,6 +6803,28 @@ async function requestPilotUploadFromCommercial(taskId) {
     return;
   }
   const createdAt = new Date().toISOString();
+  const existingPilotTask = findSignatureWorkflowTask(source.id, "subir-pilot");
+  if (existingPilotTask) {
+    source.signatureStatus = SIGNATURE_STATUS.pilotRequested;
+    source.signaturePilotTaskId = existingPilotTask.id;
+    source.signaturePilotRequestedAt = source.signaturePilotRequestedAt || existingPilotTask.createdAt || createdAt;
+    source.updatedAt = createdAt;
+    source.syncStatus = "pending";
+    source.syncAction = "actualizar-pilot-firmado-origen";
+    existingPilotTask.updatedAt = createdAt;
+    existingPilotTask.syncStatus = "pending";
+    existingPilotTask.syncAction = "actualizar-pilot-firmado";
+    saveState();
+    renderAll();
+    showToast("Ya existia una solicitud de subida a Pilot. Se actualizo sin duplicar tarea.");
+    const [sourceSaved, requestSaved] = await Promise.all([
+      guardarTareaSupabase(source, "actualizar-pilot-firmado-origen"),
+      guardarTareaSupabase(existingPilotTask, "actualizar-pilot-firmado")
+    ]);
+    saveState();
+    if (!sourceSaved || !requestSaved) showToast("Solicitud guardada localmente. Pendiente de sincronizar.");
+    return;
+  }
   const pilotTask = {
     id: crypto.randomUUID(),
     createdAt,
@@ -6843,7 +6966,7 @@ async function completeSignatureTask(taskId) {
     task.takenAt = now;
   }
   const source = state.tasks.find((item) => item.id === task.sourceTaskId);
-  task.status = "saneamiento realizado y subido a pilot";
+  task.status = task.signatureStage === "subir-pilot" ? SIGNATURE_STATUS.completed : SIGNATURE_STATUS.sent;
   task.completedAt = now;
   task.updatedAt = now;
   task.statusLockedAt = now;
@@ -8129,8 +8252,17 @@ function renderCommercialLeadList(container, tasks, options = {}) {
 }
 
 function openLegalTaskModal(taskId) {
-  const task = state.tasks.find((item) => item.id === taskId);
-  if (!task || !legalTaskModal || !legalTaskModalContent) return;
+  const task = findLegalModalTask(taskId);
+  if (!task) {
+    console.warn("No se encontro la tarea para abrir ficha:", taskId);
+    showToast("No se encontro la ficha de esta tarea. Actualice la pagina e intente nuevamente.");
+    return;
+  }
+  if (!legalTaskModal || !legalTaskModalContent) {
+    console.error("No se encontro el modal legal en el DOM.");
+    showToast("No se pudo abrir la ficha por un error de interfaz.");
+    return;
+  }
   const canTake = canLegalUserTakeTask(task);
   const lockedForLegal = isTaskStatusLockedForLegal(task);
   const canEdit = session.role === "admin" || (task.legalUserId === session.userId && !lockedForLegal);
@@ -14934,14 +15066,17 @@ document.addEventListener("click", (event) => {
   if (modalTakeButton) {
     takeTask(modalTakeButton.dataset.modalTakeTask);
     openLegalTaskModal(modalTakeButton.dataset.modalTakeTask);
+    return;
   }
   const completeSignatureButton = event.target.closest("[data-complete-signature-task]");
   if (completeSignatureButton) {
     completeSignatureTask(completeSignatureButton.dataset.completeSignatureTask);
+    return;
   }
   const openCuvButton = event.target.closest("[data-open-cuv-task]");
   if (openCuvButton) {
     openLegalTaskModal(openCuvButton.dataset.openCuvTask);
+    return;
   }
 });
 

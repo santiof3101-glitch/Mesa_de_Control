@@ -7663,6 +7663,36 @@ textarea:focus {
   background: #f3f5ff;
 }
 
+.signature-contact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.signature-contact-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 6px 10px;
+  border: 1px solid #d8dce5;
+  border-radius: 999px;
+  background: #fff;
+  color: #1f2937;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.signature-contact-action:hover,
+.signature-contact-action:focus-visible {
+  border-color: #ef4444;
+  box-shadow: 0 10px 22px rgba(239, 68, 68, 0.14);
+  transform: translateY(-1px);
+}
+
 .legal-observation-list {
   display: grid;
   gap: 8px;
