@@ -2013,6 +2013,35 @@ body {
   font-size: clamp(0.86rem, 0.8rem + 0.18vw, 1rem);
 }
 
+#formulario .tracking-process-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+#formulario .tracking-process-summary span,
+#formulario .tracking-process-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #1f2937;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+#formulario .tracking-process-summary span {
+  padding: 7px 10px;
+}
+
+#formulario .tracking-process-badge {
+  padding: 5px 8px;
+}
+
 #formulario .commercial-user-profile-wrap {
   position: relative;
   min-width: 0;

@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260803-legal-home-redesign";
+const APP_BUILD_VERSION = "20260803-process-admin-tracking";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -176,6 +176,37 @@ const CONTRACT_STATUS_OPTIONS = [
   "SIN ESTATUS"
 ];
 
+const DEFAULT_TASK_STATUS_OPTIONS = [
+  { id: "status-por-asignar", label: "Por asignar", value: "por asignar", color: "#64748b", closes: false, isDefault: true },
+  { id: "status-pendiente", label: "Pendiente", value: "pendiente", color: "#8d8d92", closes: false, isDefault: true },
+  { id: "status-tomado", label: "Tomado", value: "tomado", color: "#d98612", closes: false, isDefault: true },
+  { id: "status-rechazado", label: "Rechazado por saneamiento", value: "rechazado por saneamiento", color: "#c92520", closes: true, isDefault: false },
+  { id: "status-pilot", label: "Saneamiento realizado y subido a Pilot", value: "saneamiento realizado y subido a pilot", color: "#23865d", closes: true, isDefault: false }
+];
+
+const PROCESS_DEFINITIONS = {
+  compra: { label: "Compras | Saneamientos", shortLabel: "Saneamientos" },
+  venta: { label: "Ventas | Contratos", shortLabel: "Contratos" },
+  cuv: { label: "CUV", shortLabel: "CUV" }
+};
+
+const DEFAULT_PROCESS_TRACKING_STEPS = {
+  compra: COMMERCIAL_TRACKING_STEPS,
+  venta: [
+    { id: "contrato-solicitado", label: "Contrato solicitado" },
+    { id: "contrato-recibido", label: "Recibido por mesa" },
+    { id: "contrato-asignado", label: "Asignado a legal" },
+    { id: "contrato-gestion", label: "Gestion contractual" },
+    { id: "contrato-cerrado", label: "Contrato cerrado" }
+  ],
+  cuv: [
+    { id: "cuv-solicitado", label: "CUV solicitado" },
+    { id: "cuv-recibido", label: "Recibido por mesa" },
+    { id: "cuv-proceso", label: "Gestion CUV" },
+    { id: "cuv-enviado", label: "PDF enviado al asesor" }
+  ]
+};
+
 const PROVIDER_COLUMNS = [
   "CUV",
   "CODIGO",
@@ -299,13 +330,8 @@ const defaultState = {
   forceLogoutRequests: [],
   purchaseTypes: ["Compra directa", "Consignacion", "Retoma"],
   sanitationTypes: ["Levantamiento de gravamen", "Cambio de propietario", "Revision documental"],
-  statusOptions: [
-    { id: "status-por-asignar", label: "Por asignar", value: "por asignar", color: "#64748b", closes: false, isDefault: true },
-    { id: "status-pendiente", label: "Pendiente", value: "pendiente", color: "#8d8d92", closes: false, isDefault: true },
-    { id: "status-tomado", label: "Tomado", value: "tomado", color: "#d98612", closes: false, isDefault: true },
-    { id: "status-rechazado", label: "Rechazado por saneamiento", value: "rechazado por saneamiento", color: "#c92520", closes: true, isDefault: false },
-    { id: "status-pilot", label: "Saneamiento realizado y subido a Pilot", value: "saneamiento realizado y subido a pilot", color: "#23865d", closes: true, isDefault: false }
-  ],
+  statusOptions: structuredClone(DEFAULT_TASK_STATUS_OPTIONS),
+  processSettings: {},
   formConfig: structuredClone(DEFAULT_FORM_CONFIG),
   agencies: ["Matriz Guayaquil", "Sucursal Norte", "Sucursal Sur", "Via Daule", "Samborondon", "Duran", "Quito", "Cuenca", "Manta"],
   commercialAdvisors: [
@@ -588,7 +614,9 @@ const duplicateConflictContent = document.querySelector("#duplicateConflictConte
 const duplicateContinueBtn = document.querySelector("#duplicateContinueBtn");
 const duplicateCancelBtn = document.querySelector("#duplicateCancelBtn");
 const commercialNotificationCount = document.querySelector("#commercialNotificationCount");
+const processSettingsSelect = document.querySelector("#processSettingsSelect");
 const statusOptionForm = document.querySelector("#statusOptionForm");
+const trackingStepForm = document.querySelector("#trackingStepForm");
 const statusFilterButtons = document.querySelector("#statusFilterButtons");
 const imageModal = document.querySelector("#imageModal");
 const imageModalImg = document.querySelector("#imageModalImg");
@@ -769,6 +797,8 @@ function loadState() {
     merged.dataProcessing.folders = normalizeFileFolders(merged.dataProcessing.folders || []);
     merged.dataProcessing.files = (merged.dataProcessing.files || []).map(normalizeStoredFile);
     merged.statusOptions = normalizeStatusOptions(merged.statusOptions || defaultState.statusOptions);
+    merged.processSettings = normalizeProcessSettings(merged.processSettings || {}, merged.statusOptions);
+    merged.statusOptions = normalizeStatusOptions(merged.processSettings.compra?.statuses || merged.statusOptions);
     merged.formConfig = normalizeFormConfig(merged.formConfig);
     merged.taskDeletions = Array.isArray(merged.taskDeletions) ? merged.taskDeletions.filter((item) => item?.id) : [];
     merged.tasks = (merged.tasks || [])
@@ -1086,7 +1116,7 @@ async function obtenerUltimaTareaRemota(taskId) {
 
 function getTaskLifecycleRank(task = {}) {
   if (task.deleted) return 100;
-  if (isClosedStatus(task.status)) return 80;
+  if (isClosedStatus(task.status, getTaskProcess(task))) return 80;
   if (task.completedAt) return 75;
   if (task.takenAt || task.legalUserId || task.status === "tomado") return 60;
   if (task.status && !["pendiente", "por asignar"].includes(task.status)) return 40;
@@ -1289,6 +1319,7 @@ function getSupabaseModuleSnapshots() {
       purchaseTypes: structuredClone(state.purchaseTypes || []),
       sanitationTypes: structuredClone(state.sanitationTypes || []),
       statusOptions: structuredClone(state.statusOptions || []),
+      processSettings: structuredClone(state.processSettings || {}),
       formConfig: structuredClone(state.formConfig || DEFAULT_FORM_CONFIG)
     },
     saneamientos: {
@@ -1585,6 +1616,8 @@ function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
       state.purchaseTypes = Array.isArray(snapshot.purchaseTypes) ? snapshot.purchaseTypes : (state.purchaseTypes || []);
       state.sanitationTypes = Array.isArray(snapshot.sanitationTypes) ? snapshot.sanitationTypes : (state.sanitationTypes || []);
       state.statusOptions = normalizeStatusOptions(snapshot.statusOptions || state.statusOptions || []);
+      state.processSettings = normalizeProcessSettings(snapshot.processSettings || state.processSettings || {}, state.statusOptions);
+      state.statusOptions = normalizeStatusOptions(state.processSettings.compra?.statuses || state.statusOptions);
       state.formConfig = normalizeFormConfig(snapshot.formConfig || state.formConfig);
       return true;
     case "saneamientos":
@@ -1905,7 +1938,8 @@ function restorePcBackup(name) {
 }
 
 function normalizeStatusOptions(options) {
-  const normalized = options.map((option) => {
+  const safeOptions = Array.isArray(options) ? options : [];
+  const normalized = safeOptions.map((option) => {
     const label = option.label || option;
     return {
       id: option.id || crypto.randomUUID(),
@@ -1913,13 +1947,81 @@ function normalizeStatusOptions(options) {
       value: option.value || normalizeStatusValue(label),
       color: option.color || "#8d8d92",
       closes: Boolean(option.closes),
-      isDefault: Boolean(option.isDefault)
+      isDefault: Boolean(option.isDefault),
+      substatuses: parseFormOptions(option.substatuses || option.substatusOptions || option.substatus || [])
     };
   });
   if (!normalized.some((option) => option.value === "por asignar")) {
     normalized.unshift({ id: "status-por-asignar", label: "Por asignar", value: "por asignar", color: "#64748b", closes: false, isDefault: true });
   }
   return normalized;
+}
+
+function buildStatusOptionsFromLabels(labels = [], fallbackColor = "#64748b") {
+  return (labels || []).map((label, index) => ({
+    id: `status-${normalizeStatusValue(label).replace(/[^a-z0-9]+/g, "-") || index}`,
+    label,
+    value: normalizeStatusValue(label),
+    color: fallbackColor,
+    closes: /APROB|OK|ENVIADO|CERRAD|COMPLET|FINAL|ANULADO|RECHAZ/.test(normalizeLooseText(label)),
+    isDefault: true,
+    substatuses: []
+  }));
+}
+
+function getDefaultProcessSettings(sourceStatusOptions = DEFAULT_TASK_STATUS_OPTIONS) {
+  return {
+    compra: {
+      label: PROCESS_DEFINITIONS.compra.label,
+      statuses: normalizeStatusOptions(sourceStatusOptions || DEFAULT_TASK_STATUS_OPTIONS),
+      substatuses: ["Documentacion incompleta", "Revision de informacion", "Observacion legal"],
+      trackingSteps: normalizeTrackingSteps(DEFAULT_PROCESS_TRACKING_STEPS.compra)
+    },
+    venta: {
+      label: PROCESS_DEFINITIONS.venta.label,
+      statuses: normalizeStatusOptions(buildStatusOptionsFromLabels(CONTRACT_STATUS_OPTIONS, "#1d4ed8")),
+      substatuses: ["Acta pendiente", "Validacion documental", "Firma pendiente"],
+      trackingSteps: normalizeTrackingSteps(DEFAULT_PROCESS_TRACKING_STEPS.venta)
+    },
+    cuv: {
+      label: PROCESS_DEFINITIONS.cuv.label,
+      statuses: normalizeStatusOptions(buildStatusOptionsFromLabels(CUV_STATUS_OPTIONS, "#7c3aed")),
+      substatuses: ["Deposito pendiente", "Documento observado", "PDF cargado"],
+      trackingSteps: normalizeTrackingSteps(DEFAULT_PROCESS_TRACKING_STEPS.cuv)
+    }
+  };
+}
+
+function normalizeTrackingSteps(steps = []) {
+  return (Array.isArray(steps) ? steps : [])
+    .map((step, index) => {
+      const label = step?.label || step || `Paso ${index + 1}`;
+      return {
+        id: step?.id || `step-${index + 1}-${normalizeStatusValue(label).replace(/[^a-z0-9]+/g, "-")}`,
+        label,
+        order: Number(step?.order || index + 1)
+      };
+    })
+    .sort((a, b) => a.order - b.order);
+}
+
+function normalizeProcessSettings(settings = {}, sourceStatusOptions = DEFAULT_TASK_STATUS_OPTIONS) {
+  const defaults = getDefaultProcessSettings(sourceStatusOptions);
+  return Object.keys(PROCESS_DEFINITIONS).reduce((result, key) => {
+    const saved = settings?.[key] || {};
+    result[key] = {
+      label: saved.label || defaults[key].label,
+      statuses: normalizeStatusOptions(saved.statuses || defaults[key].statuses),
+      substatuses: parseFormOptions(saved.substatuses || defaults[key].substatuses),
+      trackingSteps: normalizeTrackingSteps(saved.trackingSteps || defaults[key].trackingSteps)
+    };
+    return result;
+  }, {});
+}
+
+function syncLegacyStatusOptionsFromProcessSettings() {
+  state.processSettings = normalizeProcessSettings(state.processSettings, state.statusOptions);
+  state.statusOptions = normalizeStatusOptions(state.processSettings.compra?.statuses || state.statusOptions || DEFAULT_TASK_STATUS_OPTIONS);
 }
 
 function normalizeCommercialAdvisors(advisors) {
@@ -2762,10 +2864,12 @@ function normalizeImportedState(importedState) {
   importedState.theme = parseMaybeJson(importedState.theme) || importedState.theme;
   importedState.dataProcessing = parseMaybeJson(importedState.dataProcessing) || importedState.dataProcessing;
   importedState.statusOptions = parseMaybeJson(importedState.statusOptions) || importedState.statusOptions;
+  importedState.processSettings = parseMaybeJson(importedState.processSettings) || importedState.processSettings;
   importedState.tasks = parseMaybeJson(importedState.tasks) || importedState.tasks;
   if (!isPlainObject(importedState.copy)) importedState.copy = {};
   if (!isPlainObject(importedState.theme)) importedState.theme = {};
   if (!isPlainObject(importedState.dataProcessing)) importedState.dataProcessing = {};
+  if (!isPlainObject(importedState.processSettings)) importedState.processSettings = {};
   if (!Array.isArray(importedState.statusOptions)) importedState.statusOptions = [];
   if (!Array.isArray(importedState.tasks)) importedState.tasks = [];
   const merged = { ...structuredClone(defaultState), ...importedState };
@@ -2796,6 +2900,8 @@ function normalizeImportedState(importedState) {
   merged.dataProcessing.folders = normalizeFileFolders(merged.dataProcessing.folders || []);
   merged.dataProcessing.files = (merged.dataProcessing.files || []).map(normalizeStoredFile);
   merged.statusOptions = normalizeStatusOptions(merged.statusOptions || defaultState.statusOptions);
+  merged.processSettings = normalizeProcessSettings(merged.processSettings || {}, merged.statusOptions);
+  merged.statusOptions = normalizeStatusOptions(merged.processSettings.compra?.statuses || merged.statusOptions);
   merged.formConfig = normalizeFormConfig(merged.formConfig);
   merged.taskDeletions = Array.isArray(merged.taskDeletions) ? merged.taskDeletions.filter((item) => item?.id) : [];
   merged.tasks = (merged.tasks || [])
@@ -3265,7 +3371,7 @@ function openCommercialLeadFicha(taskId) {
         <small>${escapeHtml(task.cliente || task.vendedor || "Cliente sin registro")}</small>
       </div>
       <div>
-        ${renderStatusPill(task.status)}
+        ${renderTaskStatusPill(task)}
         ${renderRelatedCuvBadge(task)}
         <small>${escapeHtml(stage.label)} | ${stage.progress}%</small>
       </div>
@@ -4012,8 +4118,12 @@ function renderCommercialAdvisors() {
 
 function renderStatusOptions() {
   const container = document.querySelector("#statusOptionsList");
+  if (!container) return;
+  syncLegacyStatusOptionsFromProcessSettings();
+  const processKey = getSelectedProcessSettingsKey();
+  const process = state.processSettings[processKey] || state.processSettings.compra;
   container.innerHTML = "";
-  state.statusOptions.forEach((status) => {
+  (process.statuses || []).forEach((status) => {
     const item = document.createElement("article");
     item.className = "option-item status-admin-item";
     item.dataset.statusOptionId = status.id;
@@ -4021,6 +4131,7 @@ function renderStatusOptions() {
       <i style="background:${escapeHtml(status.color)}"></i>
       <input data-status-label value="${escapeHtml(status.label)}" aria-label="Nombre del estatus">
       <input data-status-color type="color" value="${escapeHtml(status.color || "#8d8d92")}" aria-label="Color del estatus ${escapeHtml(status.label)}">
+      <input data-status-substatuses value="${escapeHtml((status.substatuses || []).join(", "))}" placeholder="Subestatus separados por coma" aria-label="Subestatus de ${escapeHtml(status.label)}">
       <label class="check-row"><input data-status-closes type="checkbox" ${status.closes ? "checked" : ""}> Cierra tarea</label>
       <button class="btn secondary tiny" type="button" data-save-status-option>Guardar</button>
       ${status.isDefault ? "" : `<button class="remove-option" type="button" aria-label="Eliminar ${escapeHtml(status.label)}">x</button>`}
@@ -4032,6 +4143,45 @@ function renderStatusOptions() {
     const button = item.querySelector(".remove-option");
     if (button) button.addEventListener("click", () => removeStatusOption(status.id));
     container.appendChild(item);
+  });
+  renderTrackingStepsAdmin(processKey);
+}
+
+function getSelectedProcessSettingsKey() {
+  const selected = processSettingsSelect?.value || "compra";
+  return PROCESS_DEFINITIONS[selected] ? selected : "compra";
+}
+
+function getProcessSettings(processKey = "compra") {
+  state.processSettings = normalizeProcessSettings(state.processSettings || {}, state.statusOptions || DEFAULT_TASK_STATUS_OPTIONS);
+  return state.processSettings[PROCESS_DEFINITIONS[processKey] ? processKey : "compra"];
+}
+
+function getProcessStatusOptions(processKey = "compra") {
+  return normalizeStatusOptions(getProcessSettings(processKey)?.statuses || state.statusOptions || DEFAULT_TASK_STATUS_OPTIONS);
+}
+
+function getProcessTrackingSteps(processKey = "compra") {
+  return normalizeTrackingSteps(getProcessSettings(processKey)?.trackingSteps || DEFAULT_PROCESS_TRACKING_STEPS[processKey] || []);
+}
+
+function renderTrackingStepsAdmin(processKey = getSelectedProcessSettingsKey()) {
+  const container = document.querySelector("#trackingStepsList");
+  if (!container) return;
+  const steps = getProcessTrackingSteps(processKey);
+  container.innerHTML = steps.map((step, index) => `
+    <article class="option-item tracking-step-admin-item" data-tracking-step="${escapeHtml(step.id)}">
+      <span><strong>${index + 1}. ${escapeHtml(step.label)}</strong><small>${escapeHtml(PROCESS_DEFINITIONS[processKey]?.shortLabel || processKey)}</small></span>
+      <input data-tracking-step-label value="${escapeHtml(step.label)}" aria-label="Nombre del paso">
+      <button class="btn secondary tiny" type="button" data-save-tracking-step>Guardar</button>
+      <button class="remove-option" type="button" data-delete-tracking-step aria-label="Eliminar paso ${escapeHtml(step.label)}">x</button>
+    </article>
+  `).join("");
+  container.querySelectorAll("[data-save-tracking-step]").forEach((button) => {
+    button.addEventListener("click", () => updateTrackingStep(processKey, button.closest("[data-tracking-step]")));
+  });
+  container.querySelectorAll("[data-delete-tracking-step]").forEach((button) => {
+    button.addEventListener("click", () => removeTrackingStep(processKey, button.closest("[data-tracking-step]")?.dataset.trackingStep));
   });
 }
 
@@ -4084,32 +4234,38 @@ function removeOption(key, value) {
 function addStatusOption(data) {
   const label = data.label.trim();
   if (!label) return;
+  const processKey = getSelectedProcessSettingsKey();
+  const process = getProcessSettings(processKey);
   const value = normalizeStatusValue(label);
-  const exists = state.statusOptions.some((status) => status.value === value);
+  const exists = (process.statuses || []).some((status) => status.value === value);
   if (exists) {
     showToast("Ese estatus ya existe.");
     return;
   }
-  state.statusOptions.push({
+  process.statuses.push({
     id: crypto.randomUUID(),
     label,
     value,
     color: data.color || "#8d8d92",
     closes: data.closes === "on",
-    isDefault: false
+    isDefault: false,
+    substatuses: parseFormOptions(data.substatuses)
   });
+  syncLegacyStatusOptionsFromProcessSettings();
   saveState();
   renderAll();
   showToast("Estatus agregado.");
 }
 
 function updateStatusOption(id, row) {
-  const status = state.statusOptions.find((item) => item.id === id);
+  const processKey = getSelectedProcessSettingsKey();
+  const process = getProcessSettings(processKey);
+  const status = (process.statuses || []).find((item) => item.id === id);
   if (!status || !row) return;
   const oldValue = status.value;
   const label = row.querySelector("[data-status-label]")?.value.trim() || status.label;
   const value = normalizeStatusValue(label);
-  const duplicated = state.statusOptions.some((item) => item.id !== id && item.value === value);
+  const duplicated = (process.statuses || []).some((item) => item.id !== id && item.value === value);
   if (duplicated) {
     showToast("Ya existe otro estatus con ese nombre.");
     return;
@@ -4118,7 +4274,8 @@ function updateStatusOption(id, row) {
   status.value = value;
   status.color = row.querySelector("[data-status-color]")?.value || status.color || "#8d8d92";
   status.closes = Boolean(row.querySelector("[data-status-closes]")?.checked);
-  if (oldValue !== value) {
+  status.substatuses = parseFormOptions(row.querySelector("[data-status-substatuses]")?.value || "");
+  if (oldValue !== value && processKey === "compra") {
     state.tasks.forEach((task) => {
       if (normalizeStatusValue(task.status) === oldValue) {
         task.status = value;
@@ -4129,6 +4286,7 @@ function updateStatusOption(id, row) {
     });
     if (activeFilter === oldValue) activeFilter = value;
   }
+  syncLegacyStatusOptionsFromProcessSettings();
   saveState();
   renderAll();
   guardarModulosSupabase();
@@ -4138,19 +4296,64 @@ function updateStatusOption(id, row) {
 }
 
 function removeStatusOption(id) {
-  const status = state.statusOptions.find((item) => item.id === id);
+  const processKey = getSelectedProcessSettingsKey();
+  const process = getProcessSettings(processKey);
+  const status = (process.statuses || []).find((item) => item.id === id);
   if (!status || status.isDefault) return;
-  state.statusOptions = state.statusOptions.filter((item) => item.id !== id);
-  state.tasks.forEach((task) => {
-    if (task.status === status.value) {
-      task.status = "pendiente";
-      task.completedAt = "";
-    }
-  });
-  if (activeFilter === status.value) activeFilter = "todos";
+  process.statuses = (process.statuses || []).filter((item) => item.id !== id);
+  if (processKey === "compra") {
+    state.tasks.forEach((task) => {
+      if (task.status === status.value) {
+        task.status = "pendiente";
+        task.completedAt = "";
+      }
+    });
+    if (activeFilter === status.value) activeFilter = "todos";
+  }
+  syncLegacyStatusOptionsFromProcessSettings();
   saveState();
   renderAll();
   showToast("Estatus eliminado.");
+}
+
+function addTrackingStep(data = {}) {
+  const label = String(data.label || "").trim();
+  if (!label) return;
+  const processKey = getSelectedProcessSettingsKey();
+  const process = getProcessSettings(processKey);
+  process.trackingSteps = normalizeTrackingSteps(process.trackingSteps || []);
+  process.trackingSteps.push({
+    id: crypto.randomUUID(),
+    label,
+    order: process.trackingSteps.length + 1
+  });
+  saveState();
+  renderAll();
+  guardarModulosSupabase();
+  showToast("Paso de tracking agregado.");
+}
+
+function updateTrackingStep(processKey, row) {
+  if (!row) return;
+  const process = getProcessSettings(processKey);
+  const step = (process.trackingSteps || []).find((item) => item.id === row.dataset.trackingStep);
+  if (!step) return;
+  step.label = row.querySelector("[data-tracking-step-label]")?.value.trim() || step.label;
+  process.trackingSteps = normalizeTrackingSteps(process.trackingSteps);
+  saveState();
+  renderAll();
+  guardarModulosSupabase();
+  showToast("Paso de tracking actualizado.");
+}
+
+function removeTrackingStep(processKey, id) {
+  const process = getProcessSettings(processKey);
+  process.trackingSteps = normalizeTrackingSteps((process.trackingSteps || []).filter((item) => item.id !== id))
+    .map((step, index) => ({ ...step, order: index + 1 }));
+  saveState();
+  renderAll();
+  guardarModulosSupabase();
+  showToast("Paso de tracking eliminado.");
 }
 
 function addCommercialAdvisor(data) {
@@ -4390,7 +4593,7 @@ function removeUser(id) {
   }
 
   state.tasks = (state.tasks || []).map((task) => {
-    if (task.legalUserId !== id || isClosedStatus(task.status)) return task;
+    if (task.legalUserId !== id || isClosedStatus(task.status, getTaskProcess(task))) return task;
     return {
       ...task,
       legalUserId: "",
@@ -4509,7 +4712,7 @@ function updateLegalUserTaskAccess(id, mailboxes, contractAgencies = undefined) 
     const mailbox = getTaskMailbox(task);
     const stillHasMailbox = nextMailboxes.includes(mailbox);
     const stillHandlesAgency = mailbox !== "contratos" || legalUserHandlesContractAgency(user, task);
-    if (task.legalUserId !== id || isClosedStatus(task.status) || (stillHasMailbox && stillHandlesAgency)) return task;
+    if (task.legalUserId !== id || isClosedStatus(task.status, getTaskProcess(task)) || (stillHasMailbox && stillHandlesAgency)) return task;
     return {
       ...task,
       legalUserId: "",
@@ -5085,13 +5288,17 @@ function normalizeStatusValue(value = "") {
   return String(value).trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-function getStatusOption(value) {
+function getStatusOption(value, processKey = "compra") {
   const normalized = normalizeStatusValue(value);
-  return state.statusOptions.find((status) => status.value === normalized) || state.statusOptions[0];
+  const processStatuses = getProcessStatusOptions(processKey);
+  return processStatuses.find((status) => status.value === normalized) ||
+    state.statusOptions.find((status) => status.value === normalized) ||
+    processStatuses[0] ||
+    state.statusOptions[0];
 }
 
-function isClosedStatus(value) {
-  return Boolean(getStatusOption(value)?.closes);
+function isClosedStatus(value, processKey = "compra") {
+  return Boolean(getStatusOption(value, processKey)?.closes);
 }
 
 function getVisibleTasks() {
@@ -5166,7 +5373,7 @@ function renderTasks() {
     if (activeFilter === "cuv") return isCuvTask(task);
     return !isSignatureTask(task) && !isCuvTask(task);
   });
-  const pendingTasks = visiblePool.filter((task) => !isClosedStatus(task.status));
+  const pendingTasks = visiblePool.filter((task) => !isClosedStatus(task.status, getTaskProcess(task)));
   if (queueCount) queueCount.textContent = pendingTasks.length;
   const user = currentLegalUser();
   const mailboxLabel = user
@@ -5182,7 +5389,7 @@ function renderTasks() {
 
   const filteredTasks = getVisibleTasks();
   document.querySelector("#visibleTaskCount").textContent = filteredTasks.length;
-  document.querySelector("#unassignedTaskCount").textContent = visiblePool.filter((task) => !task.legalUserId && !isClosedStatus(task.status)).length;
+  document.querySelector("#unassignedTaskCount").textContent = visiblePool.filter((task) => !task.legalUserId && !isClosedStatus(task.status, getTaskProcess(task))).length;
   document.querySelector("#avgLeadTime").textContent = formatMinutes(getAverageCompletionMinutes(visiblePool));
 
   if (!filteredTasks.length) {
@@ -5200,7 +5407,7 @@ function renderTasks() {
     const lockedForLegal = isTaskStatusLockedForLegal(task);
     const canEdit = session.role === "admin" || (task.legalUserId === session.userId && !lockedForLegal);
     const canEditStatus = canEdit && !isSignatureTask(task) && !isCuvTask(task);
-    const status = getStatusOption(task.status);
+    const status = getStatusOption(task.status, getTaskProcess(task));
     const warnings = task.duplicateWarnings?.length ? task.duplicateWarnings : getDuplicateWarnings(task, task.id);
     const card = document.createElement("article");
     card.className = `task-card task-row-card ${warnings.length ? "has-warning" : ""}`;
@@ -5221,7 +5428,7 @@ function renderTasks() {
         <small>Creado: ${formatDateTime(task.createdAt)}</small>
       </div>
       <div class="task-row-status">
-        ${renderStatusPill(task.status)}
+        ${renderTaskStatusPill(task)}
         <span class="time-chip">${formatLeadDuration(task)}</span>
       </div>
       <div class="task-row-actions">
@@ -5232,7 +5439,7 @@ function renderTasks() {
         ${assignedToAnother ? `<small class="locked-note">Tomado por otro asistente</small>` : ""}
         ${lockedForLegal ? `<small class="locked-note">Estatus bloqueado</small>` : ""}
         ${canEditStatus ? `<select aria-label="Estatus del saneamiento">
-          ${state.statusOptions.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join("")}
+          ${getProcessStatusOptions(getTaskProcess(task)).map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join("")}
         </select>` : ""}
       </div>
     `;
@@ -5341,7 +5548,7 @@ function renderLegalTaskFullDetails(task) {
         ["Telefono", task.telefono],
         ["Correo", task.correo],
         ["Asesor comercial", task.asesor || task.commercialUserName],
-        ["Estatus", getStatusOption(task.status)?.label || task.status],
+        ["Estatus", getStatusOption(task.status, getTaskProcess(task))?.label || task.status],
         ["Observaciones", task.observaciones]
       ]
     : [
@@ -5356,7 +5563,7 @@ function renderLegalTaskFullDetails(task) {
         ["Asesor comercial", task.asesor || task.commercialUserName],
         ["Tipo de compra", task.tipoCompra],
         ["Tipo de saneamiento", task.tipoSaneamiento],
-        ["Estatus", getStatusOption(task.status)?.label || task.status],
+        ["Estatus", getStatusOption(task.status, getTaskProcess(task))?.label || task.status],
         ["Observaciones", task.observaciones]
       ];
   const operationalFields = [
@@ -5451,7 +5658,7 @@ function renderCuvLegalForm(task = {}) {
         <label>
           Estatus
           <select name="cuvStatus" required>
-            ${CUV_STATUS_OPTIONS.map((status) => `<option value="${escapeHtml(status)}" ${status === (task.cuvStatus || "SOLICITADO") ? "selected" : ""}>${escapeHtml(status)}</option>`).join("")}
+            ${getProcessStatusOptions("cuv").map((status) => `<option value="${escapeHtml(status.label)}" ${status.label === (task.cuvStatus || "SOLICITADO") || status.value === normalizeStatusValue(task.cuvStatus || "SOLICITADO") ? "selected" : ""}>${escapeHtml(status.label)}</option>`).join("")}
           </select>
         </label>
         <label>
@@ -5633,7 +5840,7 @@ function takeTask(id) {
 function isTaskStatusLockedForLegal(task = {}) {
   if (session.role !== "legal") return false;
   if (task.statusLockedAt) return true;
-  if (isClosedStatus(task.status)) return true;
+  if (isClosedStatus(task.status, getTaskProcess(task))) return true;
   return Boolean(task.legalUserId && task.legalUserId === session.userId && task.status && !["tomado", "pendiente", "por asignar"].includes(task.status));
 }
 
@@ -5669,11 +5876,11 @@ function updateTaskStatus(id, status, legalObservation = "") {
     task.legalUserId = session.userId;
     task.legalAdvisor = session.name;
   }
-  if (isClosedStatus(status) && !task.completedAt) {
+  if (isClosedStatus(status, getTaskProcess(task)) && !task.completedAt) {
     if (!task.takenAt) task.takenAt = new Date().toISOString();
     task.completedAt = new Date().toISOString();
   }
-  if (!isClosedStatus(status)) {
+  if (!isClosedStatus(status, getTaskProcess(task))) {
     task.completedAt = "";
   }
   if (session.role === "legal" && !["tomado", "pendiente", "por asignar"].includes(status)) {
@@ -5690,7 +5897,7 @@ function updateTaskStatus(id, status, legalObservation = "") {
   task.syncStatus = "pending";
 
   saveState();
-  if (isClosedStatus(status)) autoAssignOpenSaneamientos();
+  if (isClosedStatus(status, getTaskProcess(task))) autoAssignOpenSaneamientos();
   renderAll();
   showToast("Estatus actualizado.");
   guardarTareaSupabase(task, "estatus").then((ok) => {
@@ -5840,9 +6047,9 @@ function getKpis(tasks = state.tasks) {
   const total = tasks.length;
   const uniquePlates = new Set(tasks.map((task) => normalizePlate(task.placa)).filter(Boolean)).size;
   const pending = tasks.filter((task) => task.status === "pendiente" || task.status === "por asignar").length;
-  const inProgress = tasks.filter((task) => task.status !== "pendiente" && task.status !== "por asignar" && !isClosedStatus(task.status)).length;
-  const completed = tasks.filter((task) => isClosedStatus(task.status)).length;
-  const unassigned = tasks.filter((task) => !task.legalUserId && !isClosedStatus(task.status)).length;
+  const inProgress = tasks.filter((task) => task.status !== "pendiente" && task.status !== "por asignar" && !isClosedStatus(task.status, getTaskProcess(task))).length;
+  const completed = tasks.filter((task) => isClosedStatus(task.status, getTaskProcess(task))).length;
+  const unassigned = tasks.filter((task) => !task.legalUserId && !isClosedStatus(task.status, getTaskProcess(task))).length;
   const duplicates = tasks.filter((task) => (task.duplicateWarnings?.length || getDuplicateWarnings(task, task.id).length)).length;
   const avgTake = getAverageMinutes(tasks.filter((task) => task.takenAt), "createdAt", "takenAt");
   const avgCompletion = getAverageCompletionMinutes(tasks);
@@ -6044,7 +6251,7 @@ function getLegalActiveStatusValues() {
 }
 
 function isLegalTaskTerminal(task = {}) {
-  return getLegalTerminalStatusValues().has(normalizeStatusValue(task.status)) || Boolean(task.completedAt && isClosedStatus(task.status));
+  return getLegalTerminalStatusValues().has(normalizeStatusValue(task.status)) || Boolean(task.completedAt && isClosedStatus(task.status, getTaskProcess(task)));
 }
 
 function isActiveSaneamientoTask(task = {}) {
@@ -6076,7 +6283,7 @@ function canLegalUserReceiveNewTask(user = {}, task = {}) {
 
 function canLegalUserTakeTask(task = {}, user = currentLegalUser()) {
   if (session.role !== "legal" || !user) return false;
-  if (task.legalUserId || isClosedStatus(task.status)) return false;
+  if (task.legalUserId || isClosedStatus(task.status, getTaskProcess(task))) return false;
   if (!canLegalUserSeeTask(task, user)) return false;
   return canLegalUserReceiveNewTask(user, task);
 }
@@ -6705,7 +6912,7 @@ function renderCommercialLeadList(container, tasks) {
           <span>${escapeHtml(task.cliente || "Cliente sin nombre")}</span>
         </div>
         <div>
-          ${renderStatusPill(task.status)}
+          ${renderTaskStatusPill(task)}
           <small>${formatDateTime(task.createdAt)}</small>
         </div>
       </article>
@@ -6785,7 +6992,7 @@ function renderCommercialDashboard() {
     ["Saneamientos", purchaseTasks.length, "Solicitudes de compra"],
     ["Contratos", saleTasks.length, "Tracking de compraventa"],
     ["CUV", cuvTasks.length, "Proceso comercial separado"],
-    ["Info pendiente", infoRequests.filter((task) => task.infoAccessStatus !== "approved" && !isClosedStatus(task.status)).length, "Solicitudes por autorizar"],
+    ["Info pendiente", infoRequests.filter((task) => task.infoAccessStatus !== "approved" && !isClosedStatus(task.status, getTaskProcess(task))).length, "Solicitudes por autorizar"],
     ["Total cerradas", kpis.completed, "Compra, venta y CUV"]
   ]);
   chartContainer.innerHTML = renderBarRows(groupByStatus(dashboardTasks), Math.max(dashboardTasks.length, 1));
@@ -6794,7 +7001,7 @@ function renderCommercialDashboard() {
     leadList.innerHTML = "";
   }
   renderCommercialCuvList();
-  renderCommercialTrackingBoard(purchaseTasks);
+  renderCommercialTrackingBoard(dashboardTasks);
   if (generalKpiContainer && generalChartContainer) renderCommercialGeneralDashboard();
 }
 
@@ -6840,12 +7047,38 @@ function isCommercialTrackingFinished(task = {}) {
 }
 
 function getCommercialTrackingStage(task = {}) {
+  const processKey = getTaskProcess(task);
   const status = normalizeLooseText(task.status);
-  const statusOption = getStatusOption(task.status);
+  const statusOption = getStatusOption(task.status, processKey);
   const base = {
     statusColor: statusOption?.color || "#64748b",
     statusLabel: statusOption?.label || task.status || "Sin estatus"
   };
+  if (processKey === "cuv") {
+    const cuvStatus = normalizeLooseText(task.cuvStatus || task.status);
+    if (task.cuvPdfDataUrl || cuvStatus.includes("ENVIADO")) {
+      return { ...base, key: "cuv-enviado", label: "PDF enviado", statusLabel: task.cuvStatus || "ENVIADO ASESOR", className: "success", progress: 100, step: 4 };
+    }
+    if (cuvStatus.includes("PROCESO")) {
+      return { ...base, key: "cuv-proceso", label: "Gestion CUV", statusLabel: task.cuvStatus || "EN PROCESO", className: "warning", progress: 60, step: 3 };
+    }
+    return { ...base, key: "cuv-solicitado", label: "CUV solicitado", statusLabel: task.cuvStatus || "SOLICITADO", className: "info", progress: 25, step: 1 };
+  }
+  if (processKey === "venta") {
+    if (status.includes("RECHAZ") || status.includes("ANULADO") || status.includes("BLOQUEADO")) {
+      return { ...base, key: "contrato-observado", label: "Contrato observado", className: "danger", progress: 55, step: 4 };
+    }
+    if (isClosedStatus(task.status, "venta") || status.includes("GESTIONADO") || status.includes("OK") || status.includes("CERRADO")) {
+      return { ...base, key: "contrato-cerrado", label: "Contrato cerrado", className: "success", progress: 100, step: 5 };
+    }
+    if (task.legalUserId || task.takenAt || status.includes("ACTAS") || status.includes("FIDEVAL") || status.includes("OBSERVADO")) {
+      return { ...base, key: "contrato-gestion", label: "Gestion contractual", className: "warning", progress: 70, step: 4 };
+    }
+    if (status.includes("PEND") || status.includes("ASIGNAR")) {
+      return { ...base, key: "contrato-recibido", label: "Recibido por mesa", className: "info", progress: 35, step: 2 };
+    }
+    return { ...base, key: "contrato-solicitado", label: "Contrato solicitado", className: "neutral", progress: 20, step: 1 };
+  }
   if (task.signatureStatus === SIGNATURE_STATUS.completed) {
     return { ...base, key: "firma-finalizada", label: "Proceso finalizado", statusLabel: "Contratos firmados subidos a Pilot", className: "success", progress: 100, step: 9 };
   }
@@ -6875,8 +7108,9 @@ function getCommercialTrackingStage(task = {}) {
 
 function getCommercialTrackingStageItems(task = {}) {
   const current = getCommercialTrackingStage(task);
-  const completedStep = Math.max(0, Math.min(COMMERCIAL_TRACKING_STEPS.length, current.step || 0));
-  return COMMERCIAL_TRACKING_STEPS.map((step, index) => {
+  const steps = getProcessTrackingSteps(getTaskProcess(task));
+  const completedStep = Math.max(0, Math.min(steps.length, current.step || 0));
+  return steps.map((step, index) => {
     const position = index + 1;
     let status = "pending";
     if (position < completedStep) status = "completed";
@@ -6945,7 +7179,6 @@ function renderCommercialTrackingStageItem(item = {}) {
 function getCommercialTrackingTasks(tasks = []) {
   const query = commercialTrackingSearch.trim().toLowerCase();
   return tasks
-    .filter((task) => getTaskProcess(task) === "compra")
     .filter((task) => commercialTrackingFilter === "todos" || getCommercialTrackingColumnKey(task) === commercialTrackingFilter)
     .filter((task) => isInsideDateRange(task.createdAt, commercialTrackingDateFrom, commercialTrackingDateTo))
     .filter((task) => {
@@ -6961,6 +7194,9 @@ function getCommercialTrackingTasks(tasks = []) {
         task.legalAdvisor,
         task.tipoSaneamiento,
         task.tipoCompra,
+        task.cuvStatus,
+        task.cuvOrderNumber,
+        task.precioContrato,
         getSignatureDisplayStatus(task),
         task.status
       ].join(" ").toLowerCase();
@@ -6972,10 +7208,10 @@ function getCommercialTrackingTasks(tasks = []) {
 function getCommercialTrackingColumnKey(task = {}) {
   const stage = getCommercialTrackingStage(task);
   const status = normalizeLooseText(task.status);
-  if (stage.key === "rechazado" || status.includes("RECHAZ")) return "rechazado";
-  if (isCommercialTrackingFinished(task) || stage.key === "firma-finalizada" || stage.key === "saneamiento-pilot") return "completado";
+  if (stage.key === "rechazado" || stage.key === "contrato-observado" || status.includes("RECHAZ")) return "rechazado";
+  if (isCommercialTrackingFinished(task) || ["firma-finalizada", "saneamiento-pilot", "contrato-cerrado", "cuv-enviado"].includes(stage.key)) return "completado";
   if (["firma-solicitada", "firma-enviada", "subir-firmados"].includes(stage.key)) return "revision";
-  if (stage.key === "gestion" || task.legalUserId || task.takenAt || status.includes("TOMADO")) return "proceso";
+  if (["gestion", "contrato-gestion", "cuv-proceso"].includes(stage.key) || task.legalUserId || task.takenAt || status.includes("TOMADO")) return "proceso";
   return "pendiente";
 }
 
@@ -7118,15 +7354,15 @@ function handleCommercialProfileAction(action) {
 function renderCommercialTrackingBoard(tasks = []) {
   const container = document.querySelector("#commercialTrackingBoard");
   if (!container) return;
-  const purchaseTasks = tasks.filter((task) => getTaskProcess(task) === "compra");
-  const visibleTasks = getCommercialTrackingTasks(purchaseTasks);
+  const processTasks = getCommercialOperationalTasks(tasks);
+  const visibleTasks = getCommercialTrackingTasks(processTasks);
   const visibleKanbanRequests = visibleTasks;
   const columns = getCommercialTrackingColumns();
   if (!columns.some((column) => column.key === commercialTrackingMobileStatus)) {
     commercialTrackingMobileStatus = columns[0]?.key || "pendiente";
   }
   const columnsByKey = Object.fromEntries(columns.map((column) => [column.key, column]));
-  const counts = purchaseTasks.reduce((map, task) => {
+  const counts = processTasks.reduce((map, task) => {
     const key = getCommercialTrackingColumnKey(task);
     map[key] = (map[key] || 0) + 1;
     return map;
@@ -7137,9 +7373,14 @@ function renderCommercialTrackingBoard(tasks = []) {
     return map;
   }, {});
   const filters = [
-    ["todos", "Todos", purchaseTasks.length],
+    ["todos", "Todos", processTasks.length],
     ...columns.map((column) => [column.key, column.label, counts[column.key] || 0])
   ];
+  const processCounts = {
+    compra: processTasks.filter((task) => getTaskProcess(task) === "compra").length,
+    venta: processTasks.filter((task) => getTaskProcess(task) === "venta").length,
+    cuv: processTasks.filter((task) => getTaskProcess(task) === "cuv").length
+  };
   const visibleByColumn = columns.reduce((map, column) => {
     map[column.key] = visibleKanbanRequests.filter((task) => getCommercialTrackingColumnKey(task) === column.key);
     return map;
@@ -7154,8 +7395,13 @@ function renderCommercialTrackingBoard(tasks = []) {
     <div class="commercial-tracking-header">
       <div class="commercial-tracking-heading">
         <p class="eyebrow">Tracking operativo</p>
-        <h2>Tracking de saneamientos</h2>
-        <p>Busca, filtra y revisa tus saneamientos sin mezclarlo con los formularios.</p>
+        <h2>Tracking comercial</h2>
+        <p>Saneamientos, contratos y CUV separados del formulario para seguimiento operativo.</p>
+        <div class="tracking-process-summary">
+          <span>Saneamientos: <b>${processCounts.compra}</b></span>
+          <span>Contratos: <b>${processCounts.venta}</b></span>
+          <span>CUV: <b>${processCounts.cuv}</b></span>
+        </div>
       </div>
     </div>
     <div class="commercial-tracking-searchbar">
@@ -7252,6 +7498,7 @@ function renderCommercialTrackingExpandedList(tasks = [], columnsByKey = {}) {
 
 function renderCommercialTrackingRow(task) {
   const stage = getCommercialTrackingStage(task);
+  const processLabel = PROCESS_DEFINITIONS[getTaskProcess(task)]?.shortLabel || "Gestion";
   return `
     <article class="tracking-expanded-row" data-request-id="${escapeHtml(task.id)}" style="--tracking-color:${escapeHtml(stage.statusColor)}">
       <div>
@@ -7260,6 +7507,7 @@ function renderCommercialTrackingRow(task) {
         ${renderRelatedCuvBadge(task)}
       </div>
       <span>${escapeHtml(formatDateTime(task.createdAt))}</span>
+      <span class="tracking-process-badge">${escapeHtml(processLabel)}</span>
       <span class="tracking-mini-status-badge">${escapeHtml(stage.statusLabel)}</span>
       <button class="tracking-mini-view" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver</button>
     </article>
@@ -7269,6 +7517,7 @@ function renderCommercialTrackingRow(task) {
 function renderCommercialTrackingCard(task) {
   const stage = getCommercialTrackingStage(task);
   const columnKey = getCommercialTrackingColumnKey(task);
+  const processLabel = PROCESS_DEFINITIONS[getTaskProcess(task)]?.shortLabel || "Gestion";
   return `
     <article class="commercial-tracking-card tracking-mini-card ${stage.className} is-${columnKey}" data-request-id="${escapeHtml(task.id)}" style="--tracking-color:${escapeHtml(stage.statusColor)}">
       <header class="tracking-mini-card-header">
@@ -7279,6 +7528,7 @@ function renderCommercialTrackingCard(task) {
         </div>
         ${renderRelatedCuvBadge(task)}
       </header>
+      <span class="tracking-process-badge">${escapeHtml(processLabel)}</span>
       <span class="tracking-mini-status-badge">${escapeHtml(stage.statusLabel)}</span>
       <div class="tracking-mini-progress">
         <div class="tracking-mini-progress-bar"><span style="width:${stage.progress}%"></span></div>
@@ -7370,7 +7620,7 @@ function isCommercialNotificationStatus(statusValue = "") {
 
 function buildCommercialNotificationFromTask(task = {}) {
   const eventKey = getCommercialNotificationKey(task);
-  const statusText = getSignatureDisplayStatus(task) || getStatusOption(task.status)?.label || task.status || "Estatus actualizado";
+  const statusText = getSignatureDisplayStatus(task) || getStatusOption(task.status, getTaskProcess(task))?.label || task.status || "Estatus actualizado";
   const plate = task.placa || "Sin placa";
   return {
     id: `commercial-notification-${session.userId || "public"}-${eventKey}`,
@@ -7523,10 +7773,10 @@ function getCommercialRequestFilteredTasks(statusView = activeCommercialRequestF
     return tasks.filter((task) => ["pendiente", "por asignar"].includes(task.status));
   }
   if (statusView === "en-proceso") {
-    return tasks.filter((task) => !["pendiente", "por asignar"].includes(task.status) && !isClosedStatus(task.status));
+    return tasks.filter((task) => !["pendiente", "por asignar"].includes(task.status) && !isClosedStatus(task.status, getTaskProcess(task)));
   }
   if (statusView === "cerradas") {
-    return tasks.filter((task) => isClosedStatus(task.status));
+    return tasks.filter((task) => isClosedStatus(task.status, getTaskProcess(task)));
   }
   return tasks;
 }
@@ -7716,7 +7966,7 @@ function renderCommercialLeadList(container, tasks, options = {}) {
           <span>${escapeHtml(activeCommercialProcess === "venta" ? (task.vendedor || task.cliente || "Vendedor sin nombre") : (task.cliente || "Cliente sin nombre"))}</span>
         </div>
         <div class="commercial-lead-actions">
-          ${renderStatusPill(task.status)}
+          ${renderTaskStatusPill(task)}
           <small>${formatDateTime(task.createdAt)}</small>
           <button class="btn tiny secondary" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver ficha</button>
           ${canCommercialResendTask(task) ? `<button class="btn tiny primary resend-btn" type="button" data-resend-commercial-task="${escapeHtml(task.id)}">Reenviar</button>` : ""}
@@ -7744,7 +7994,7 @@ function openLegalTaskModal(taskId) {
       </div>
       <div>
         <span>Estatus</span>
-        ${renderStatusPill(task.status)}
+        ${renderTaskStatusPill(task)}
       </div>
       <div>
         <span>Asistente legal</span>
@@ -7771,7 +8021,7 @@ function openLegalTaskModal(taskId) {
         <label>
           Actualizar estatus
           <select data-modal-status-task="${escapeHtml(task.id)}">
-            ${state.statusOptions.map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === task.status ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
+            ${getProcessStatusOptions(getTaskProcess(task)).map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === task.status ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
           </select>
         </label>
       ` : ""}
@@ -7810,7 +8060,7 @@ function renderCommercialRows(tasks, options = {}) {
         ` : ""}
       </div>
       <div class="commercial-lead-actions">
-        ${renderStatusPill(task.status)}
+        ${renderTaskStatusPill(task)}
         <small>${formatDateTime(task.createdAt)}</small>
         <button class="btn tiny secondary" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver ficha</button>
         ${canResend ? `<button class="btn tiny primary resend-btn" type="button" data-resend-commercial-task="${escapeHtml(task.id)}">Reenviar</button>` : ""}
@@ -7906,12 +8156,12 @@ function renderControlDashboard() {
   const pendingSignatureSends = allVisibleLegalTasks.filter((task) =>
     isSignatureTask(task) &&
     task.signatureStage === "envio-firma" &&
-    !isClosedStatus(task.status)
+    !isClosedStatus(task.status, getTaskProcess(task))
   ).length;
   const pendingSaneamientoAssignment = allVisibleLegalTasks.filter((task) =>
     getTaskMailbox(task) === "saneamientos" &&
     !task.legalUserId &&
-    !isClosedStatus(task.status)
+    !isClosedStatus(task.status, getTaskProcess(task))
   ).length;
   const user = currentLegalUser();
   if (legalSessionLabel && user) {
@@ -7984,7 +8234,7 @@ function renderManagerDetails(tasks) {
         <strong>${escapeHtml(task.placa)}</strong>
         <span>${escapeHtml(task.agencia || "Sin agencia")}</span>
         <span>${escapeHtml(task.asesor || "Sin asesor")}</span>
-        <span>${renderStatusPill(task.status)}</span>
+        <span>${renderTaskStatusPill(task)}</span>
         <span>${formatDateTime(task.createdAt)}</span>
       </article>
     `).join("")}
@@ -8002,11 +8252,15 @@ function getManagerFilteredDetails(tasks) {
 }
 
 function groupByStatus(tasks) {
-  return state.statusOptions.map((status) => ({
-    label: status.label,
-    color: status.color,
-    value: tasks.filter((task) => task.status === status.value).length
-  })).filter((item) => item.value > 0);
+  const grouped = new Map();
+  tasks.forEach((task) => {
+    const status = getStatusOption(task.status, getTaskProcess(task));
+    const key = `${status.value}-${status.label}`;
+    const current = grouped.get(key) || { label: status.label, color: status.color, value: 0 };
+    current.value += 1;
+    grouped.set(key, current);
+  });
+  return [...grouped.values()].filter((item) => item.value > 0);
 }
 
 function groupByField(tasks, field, fallback = "Sin dato") {
@@ -8059,7 +8313,7 @@ function renderAdminLeads() {
       <span>${escapeHtml(task.agencia || "Sin agencia")}</span>
       <span>${escapeHtml(task.asesor || "Sin asesor")}</span>
       <span>${formatDateTime(task.createdAt)}</span>
-      ${renderStatusPill(task.status)}
+      ${renderTaskStatusPill(task)}
       <div class="row-actions compact-actions">
         <button class="btn secondary" type="button" data-edit-lead="${escapeHtml(task.id)}">Editar</button>
         <button class="btn danger" type="button" data-delete-lead="${escapeHtml(task.id)}">Borrar</button>
@@ -8088,8 +8342,8 @@ function renderAdvisorOptionsMarkup(selectedValue = "") {
   ).join("")}`;
 }
 
-function renderStatusOptionsMarkup(selectedValue = "") {
-  return state.statusOptions.map((status) =>
+function renderStatusOptionsMarkup(selectedValue = "", processKey = "compra") {
+  return getProcessStatusOptions(processKey).map((status) =>
     `<option value="${escapeHtml(status.value)}" ${status.value === selectedValue ? "selected" : ""}>${escapeHtml(status.label)}</option>`
   ).join("");
 }
@@ -8108,7 +8362,7 @@ function openAdminLeadEditor(id) {
   adminLeadForm.elements.asesor.innerHTML = renderAdvisorOptionsMarkup(task.asesor);
   adminLeadForm.elements.tipoCompra.innerHTML = renderOptionsMarkup(state.purchaseTypes, task.tipoCompra, "Seleccione tipo");
   adminLeadForm.elements.tipoSaneamiento.innerHTML = renderOptionsMarkup(state.sanitationTypes, task.tipoSaneamiento, "Seleccione saneamiento");
-  adminLeadForm.elements.status.innerHTML = renderStatusOptionsMarkup(task.status);
+  adminLeadForm.elements.status.innerHTML = renderStatusOptionsMarkup(task.status, getTaskProcess(task));
   adminLeadForm.elements.legalUserId.innerHTML = renderLegalUserOptionsMarkup(task.legalUserId, task);
 
   adminLeadForm.elements.id.value = task.id;
@@ -8162,11 +8416,11 @@ function saveAdminLead(id, card) {
   });
 
   if (task.status === "tomado" && !task.takenAt) task.takenAt = new Date().toISOString();
-  if (isClosedStatus(task.status) && !task.completedAt) {
+  if (isClosedStatus(task.status, getTaskProcess(task)) && !task.completedAt) {
     if (!task.takenAt) task.takenAt = new Date().toISOString();
     task.completedAt = new Date().toISOString();
   }
-  if (!isClosedStatus(task.status)) task.completedAt = "";
+  if (!isClosedStatus(task.status, getTaskProcess(task))) task.completedAt = "";
   task.duplicateWarnings = getDuplicateWarnings(task, task.id);
   task.updatedAt = new Date().toISOString();
   task.syncStatus = "pending";
@@ -13889,7 +14143,7 @@ function findPendingPlateInfoRequest(sourceTask = {}) {
     normalizePlate(task.placa) === plate &&
     task.commercialUserId === session.userId &&
     task.infoAccessStatus !== "approved" &&
-    !isClosedStatus(task.status)
+    !isClosedStatus(task.status, getTaskProcess(task))
   );
 }
 
@@ -13900,7 +14154,7 @@ function findApprovedPlateInfoRequest(sourceTask = {}) {
     isInfoRequestTask(task) &&
     normalizePlate(task.placa) === plate &&
     task.commercialUserId === session.userId &&
-    (task.infoAccessStatus === "approved" || isClosedStatus(task.status))
+    (task.infoAccessStatus === "approved" || isClosedStatus(task.status, getTaskProcess(task)))
   );
 }
 
@@ -14028,7 +14282,7 @@ function renderStatusLookup() {
         ${canSeeFullInfo ? `<span>Agencia: ${escapeHtml(task.agencia || "Sin agencia")} | Proceso: ${escapeHtml(getCommercialProcessLabel(getTaskProcess(task)))}</span>` : ""}
       </div>
       <div>
-        ${renderStatusPill(task.status)}
+        ${renderTaskStatusPill(task)}
         <small>Ingresado: ${formatDateTime(task.createdAt)}</small>
         ${isOwner ? "" : approvedInfoRequest
           ? `<span class="info-request-pending is-approved">Informacion autorizada</span>`
@@ -14116,8 +14370,13 @@ function formatDateTime(value) {
   }).format(new Date(value));
 }
 
-function renderStatusPill(statusValue) {
-  const status = getStatusOption(statusValue);
+function renderStatusPill(statusValue, processKey = "compra") {
+  const status = getStatusOption(statusValue, processKey);
+  return `<span class="status-pill" style="background:${escapeHtml(status.color)}; color:${getReadableTextColor(status.color)}">${escapeHtml(status.label)}</span>`;
+}
+
+function renderTaskStatusPill(task = {}) {
+  const status = getStatusOption(task.status, getTaskProcess(task));
   return `<span class="status-pill" style="background:${escapeHtml(status.color)}; color:${getReadableTextColor(status.color)}">${escapeHtml(status.label)}</span>`;
 }
 
@@ -14230,6 +14489,12 @@ adminModuleButtons.forEach((button) => {
 
 if (adminFormProcessSelect) {
   adminFormProcessSelect.addEventListener("change", renderFormAdministration);
+}
+
+if (processSettingsSelect) {
+  processSettingsSelect.addEventListener("change", () => {
+    renderStatusOptions();
+  });
 }
 
 if (adminFormFieldsList) {
@@ -14991,11 +15256,17 @@ resetCopyBtn.addEventListener("click", () => {
   showToast("Textos restaurados.");
 });
 
-statusOptionForm.addEventListener("submit", (event) => {
+statusOptionForm?.addEventListener("submit", (event) => {
   event.preventDefault();
   addStatusOption(Object.fromEntries(new FormData(statusOptionForm).entries()));
   statusOptionForm.reset();
   statusOptionForm.elements.color.value = "#8d8d92";
+});
+
+trackingStepForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  addTrackingStep(Object.fromEntries(new FormData(trackingStepForm).entries()));
+  trackingStepForm.reset();
 });
 
 [adminLegalFilter, adminCommercialFilter, adminAgencyFilter, adminStatusFilter, adminDateFrom, adminDateTo].forEach((control) => {

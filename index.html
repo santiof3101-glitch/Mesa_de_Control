@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260803-legal-home-redesign">
+<html lang="es" data-app-version="20260803-process-admin-tracking">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260803-legal-home-redesign">
-  <link rel="stylesheet" href="layout-fix.css?v=20260803-legal-home-redesign">
+  <link rel="stylesheet" href="styles.css?v=20260803-process-admin-tracking">
+  <link rel="stylesheet" href="layout-fix.css?v=20260803-process-admin-tracking">
 </head>
 <body>
   <header class="topbar">
@@ -1503,10 +1503,22 @@
         </section>
 
         <section class="panel span-admin admin-module-section" data-admin-section="admin-catalogs-module">
-          <h2>Estatus de tareas legales</h2>
+          <div class="panel-title-row">
+            <div>
+              <p class="eyebrow">Configuracion por proceso</p>
+              <h2>Estatus, subestatus y tracking</h2>
+            </div>
+            <select id="processSettingsSelect" aria-label="Proceso a configurar">
+              <option value="compra">Compras | Saneamientos</option>
+              <option value="venta">Ventas | Contratos</option>
+              <option value="cuv">CUV</option>
+            </select>
+          </div>
+          <p class="helper-text">Administra los estados, subestados y pasos de linea de tiempo por cada proceso. Compras mantiene compatibilidad con el repositorio de tareas legales.</p>
           <form id="statusOptionForm" class="status-option-form">
             <input name="label" placeholder="Nombre del estatus" required>
             <input name="color" type="color" value="#8d8d92" aria-label="Color del estatus">
+            <input name="substatuses" placeholder="Subestatus separados por coma">
             <label class="check-row">
               <input name="closes" type="checkbox">
               Cierra tarea
@@ -1514,6 +1526,17 @@
             <button class="btn primary" type="submit">Agregar estatus</button>
           </form>
           <div id="statusOptionsList" class="option-list"></div>
+          <div class="process-tracking-admin">
+            <div>
+              <p class="eyebrow">Linea de tiempo</p>
+              <h3>Pasos del tracking</h3>
+            </div>
+            <form id="trackingStepForm" class="inline-form">
+              <input name="label" placeholder="Nuevo paso del tracking" required>
+              <button class="btn primary" type="submit">Agregar paso</button>
+            </form>
+          </div>
+          <div id="trackingStepsList" class="option-list tracking-steps-list"></div>
         </section>
 
         <section id="admin-forms-module" class="panel span-admin admin-module-section" data-admin-section="admin-forms-module">
@@ -1979,7 +2002,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260803-legal-home-redesign"></script>
+  <script src="app.js?v=20260803-process-admin-tracking"></script>
 </body>
 </html>
 
