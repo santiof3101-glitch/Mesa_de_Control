@@ -3098,13 +3098,38 @@ function confirmPilotDocuments() {
   });
 }
 
-function getDuplicateConflicts(data, excludeId = "") {
+function getDuplicateScopeFromData(data = {}) {
+  const process = data.processType || "";
+  const tipoCompra = normalizeLooseText(data.tipoCompra || "");
+  const tipoSaneamiento = normalizeLooseText(data.tipoSaneamiento || "");
+  if (process === "cuv" || tipoCompra === "CUV" || tipoSaneamiento === "SOLICITUD CUV") return "cuv";
+  if (process === "venta" || data.precioContrato || data.vendedor || data.cedulaVendedor) return "venta";
+  if (process === "firma") return "firma";
+  return "saneamiento";
+}
+
+function taskMatchesDuplicateScope(task = {}, scope = "saneamiento") {
+  const process = getTaskProcess(task);
+  const tipoCompra = normalizeLooseText(task.tipoCompra || "");
+  const tipoSaneamiento = normalizeLooseText(task.tipoSaneamiento || "");
+  if (scope === "saneamiento") {
+    return process === "compra" && tipoCompra !== "CUV" && tipoSaneamiento !== "SOLICITUD CUV";
+  }
+  if (scope === "venta") return process === "venta";
+  if (scope === "cuv") return process === "cuv";
+  if (scope === "firma") return process === "firma";
+  return true;
+}
+
+function getDuplicateConflicts(data, excludeId = "", options = {}) {
+  const scope = options.scope || getDuplicateScopeFromData(data);
   const placa = normalizePlate(data.placa);
   const cedula = normalizeId(data.cedula);
   const cliente = normalizeLooseText(data.cliente || data.vendedor || "");
   const conflicts = [];
   state.tasks.forEach((task) => {
     if (task.id === excludeId) return;
+    if (!taskMatchesDuplicateScope(task, scope)) return;
     const taskPlate = normalizePlate(task.placa);
     const taskId = normalizeId(task.cedula || task.cedulaVendedor);
     const taskClient = normalizeLooseText(task.cliente || task.vendedor || "");
@@ -4815,7 +4840,7 @@ function renderProcessingUsers() {
 }
 
 async function createTask(data) {
-  const duplicateWarnings = getDuplicateWarnings(data);
+  const duplicateWarnings = getDuplicateWarnings(data, "", { scope: "saneamiento" });
   const createdAt = new Date().toISOString();
   const commercialOwner = session.role === "commercial"
     ? { id: session.userId, name: session.name, agency: session.agency }
@@ -4896,7 +4921,7 @@ async function createSaleContractTask(data) {
     customFields: extractCustomFields(data, "venta"),
     kilometraje: "",
     observaciones: `CONTRATO COMPRAVENTA | Vendedor: ${normalizeLooseText(data.vendedor)} | Direccion: ${normalizeLooseText(data.direccion)} | Telefono: ${String(data.telefono || "").trim()} | Correo: ${String(data.correo || "").trim().toLowerCase()}`,
-    duplicateWarnings: getDuplicateWarnings({ placa: data.placa, cedula: data.cedulaVendedor }),
+    duplicateWarnings: getDuplicateWarnings({ placa: data.placa, cedula: data.cedulaVendedor }, "", { scope: "venta" }),
     commercialUserId: commercialOwner.id,
     commercialUserName: commercialOwner.name,
     commercialAgency: commercialOwner.agency || data.agencia,
@@ -4917,8 +4942,8 @@ async function createSaleContractTask(data) {
   );
 }
 
-function getDuplicateWarnings(data, excludeId = "") {
-  return getDuplicateConflicts(data, excludeId).map((conflict) => {
+function getDuplicateWarnings(data, excludeId = "", options = {}) {
+  return getDuplicateConflicts(data, excludeId, options).map((conflict) => {
     const task = conflict.task || {};
     const advisor = task.commercialUserName || task.asesor || "otro asesor";
     const date = task.createdAt ? formatDateTime(task.createdAt) : "fecha no registrada";
