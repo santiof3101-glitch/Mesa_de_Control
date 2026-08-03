@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260802-cuv-duplicate-scope">
+<html lang="es" data-app-version="20260802-header-corporativo">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260802-cuv-duplicate-scope">
-  <link rel="stylesheet" href="layout-fix.css?v=20260802-cuv-duplicate-scope">
+  <link rel="stylesheet" href="styles.css?v=20260802-header-corporativo">
+  <link rel="stylesheet" href="layout-fix.css?v=20260802-header-corporativo">
 </head>
 <body>
   <header class="topbar">
@@ -36,7 +36,10 @@
           <button type="button" data-commercial-profile-action="logout">Cerrar sesion</button>
         </div>
       </div>
-      <button class="tab is-active" data-view="acceso">▦ Inicio</button>
+      <button class="tab topbar-home-tab is-active" data-view="acceso">
+        <span class="home-grid-icon" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+        <span>Inicio</span>
+      </button>
       <button id="logoutBtn" class="tab muted-tab" type="button" hidden>Salir</button>
     </nav>
   </header>
@@ -1961,7 +1964,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260802-cuv-duplicate-scope"></script>
+  <script src="app.js?v=20260802-header-corporativo"></script>
 </body>
 </html>
 
