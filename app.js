@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260803-task-repository-ui-clean";
+const APP_BUILD_VERSION = "20260803-signature-task-sync-fix";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -1127,10 +1127,11 @@ function shouldRemoteTaskReplacePendingLocal(remote, local) {
   if (!remote) return false;
   const remoteRank = getTaskLifecycleRank(remote);
   const localRank = getTaskLifecycleRank(local);
-  if (remoteRank !== localRank) return remoteRank > localRank;
+  if (remoteRank < localRank) return false;
   const remoteTime = new Date(remote.updatedAt || remote.remoteCreatedAt || 0).getTime() || 0;
   const localTime = new Date(local.updatedAt || 0).getTime() || 0;
-  return remoteTime >= localTime;
+  if (remoteRank > localRank) return remoteTime >= localTime - 30000;
+  return remoteTime > localTime + 1000;
 }
 
 function collapseTaskHistoryByLifecycle(items = []) {
@@ -1814,10 +1815,13 @@ function getTaskFreshness(task = {}) {
 function shouldTaskVersionReplace(candidate, current) {
   if (!candidate) return false;
   if (!current) return true;
+  if (current.syncStatus === "pending" && !shouldRemoteTaskReplacePendingLocal(candidate, current)) {
+    return false;
+  }
   const candidateRank = getTaskLifecycleRank(candidate);
   const currentRank = getTaskLifecycleRank(current);
   if (candidateRank !== currentRank) return candidateRank > currentRank;
-  return getTaskFreshness(candidate) >= getTaskFreshness(current);
+  return getTaskFreshness(candidate) > getTaskFreshness(current);
 }
 
 function mergeTasksByFreshness(baseItems = [], extraItems = []) {
@@ -3468,7 +3472,14 @@ function renderSignatureRecipientCards(task = {}) {
     renderSignatureRecipientCard("Conyuge", payload.conyuge, "conyuge"),
     ...heirs.map((heir, index) => renderSignatureRecipientCard(`Heredero ${heir.index || index + 1}`, heir, "heredero"))
   ].filter(Boolean);
-  if (!cards.length) return "";
+  if (!cards.length) {
+    return `
+      <section class="signature-recipient-panel">
+        <p class="eyebrow">Datos para firma</p>
+        <div class="empty compact-empty">No se encontraron correos o WhatsApp en esta solicitud. Revise la tarea origen o solicite el dato al asesor comercial.</div>
+      </section>
+    `;
+  }
   return `
     <section class="signature-recipient-panel">
       <p class="eyebrow">Datos para firma</p>
@@ -3477,11 +3488,47 @@ function renderSignatureRecipientCards(task = {}) {
   `;
 }
 
+function pickSignatureField(items = [], keys = []) {
+  for (const item of items) {
+    if (!item) continue;
+    for (const key of keys) {
+      const value = item[key];
+      if (value !== undefined && value !== null && String(value).trim()) return String(value).trim();
+    }
+  }
+  return "";
+}
+
+function normalizeSignaturePayload(payload = {}, fallbackTasks = []) {
+  const safePayload = payload && typeof payload === "object" ? payload : {};
+  const titular = {
+    ...(safePayload.titular || {}),
+    email: safePayload.titular?.email || pickSignatureField(fallbackTasks, ["titularEmail", "emailTitular", "correoTitular", "correoElectronicoTitular", "correo", "email"]),
+    whatsapp: safePayload.titular?.whatsapp || pickSignatureField(fallbackTasks, ["titularWhatsapp", "whatsappTitular", "telefonoTitular", "celularTitular", "whatsapp", "telefono", "celular"])
+  };
+  const conyuge = safePayload.conyuge || pickSignatureField(fallbackTasks, ["conyugeEmail", "emailConyuge", "correoConyuge", "whatsappConyuge", "conyugeWhatsapp"])
+    ? {
+        ...(safePayload.conyuge || {}),
+        email: safePayload.conyuge?.email || pickSignatureField(fallbackTasks, ["conyugeEmail", "emailConyuge", "correoConyuge"]),
+        whatsapp: safePayload.conyuge?.whatsapp || pickSignatureField(fallbackTasks, ["conyugeWhatsapp", "whatsappConyuge", "telefonoConyuge", "celularConyuge"])
+      }
+    : null;
+  return {
+    ...safePayload,
+    titular,
+    conyuge,
+    herederos: Array.isArray(safePayload.herederos) ? safePayload.herederos : []
+  };
+}
+
 function getSignaturePayloadForTask(task = {}) {
   const sourceTask = task.sourceTaskId ? state.tasks.find((item) => item.id === task.sourceTaskId) : null;
-  if (task.signaturePayload && Object.keys(task.signaturePayload || {}).length) return task.signaturePayload;
-  if (sourceTask?.signaturePayload && Object.keys(sourceTask.signaturePayload || {}).length) return sourceTask.signaturePayload;
-  return {};
+  const payload = task.signaturePayload && Object.keys(task.signaturePayload || {}).length
+    ? task.signaturePayload
+    : sourceTask?.signaturePayload && Object.keys(sourceTask.signaturePayload || {}).length
+      ? sourceTask.signaturePayload
+      : {};
+  return normalizeSignaturePayload(payload, [task, sourceTask]);
 }
 
 async function checkForAppUpdate() {
@@ -5897,6 +5944,7 @@ function takeTask(id) {
   showToast("Tarea tomada. Temporizador iniciado.");
   guardarTareaSupabase(task, "tomar").then((ok) => {
     saveState();
+    safeRenderAll();
     if (!ok) showToast("Tarea tomada localmente. Pendiente de sincronizar.");
   });
 }
