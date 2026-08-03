@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260802-login-guard">
+<html lang="es" data-app-version="20260803-legal-home-redesign">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260802-login-guard">
-  <link rel="stylesheet" href="layout-fix.css?v=20260802-login-guard">
+  <link rel="stylesheet" href="styles.css?v=20260803-legal-home-redesign">
+  <link rel="stylesheet" href="layout-fix.css?v=20260803-legal-home-redesign">
 </head>
 <body>
   <header class="topbar">
@@ -1150,19 +1150,32 @@
       </aside>
 
       <div class="legal-main">
-        <div class="section-head legal-task-head">
-          <div>
+        <div class="section-head legal-task-head legal-command-hero">
+          <div class="legal-command-copy">
             <p class="eyebrow" id="legalSessionLabel">Asistente de control legal</p>
             <h1 id="tasks-title">Repositorio de tareas</h1>
             <span>Gestiona y da seguimiento a las tareas del proceso legal.</span>
+            <div class="legal-outcome-chips" aria-label="Estados operativos destacados">
+              <span>OK Saneamiento realizado</span>
+              <span>NO Actualizacion rechazada</span>
+              <span>PILOT Sin Lead en Pilot</span>
+              <span>SYNC Actualizacion realizada</span>
+              <span>JEF Sin aprobacion Jefatura</span>
+            </div>
           </div>
-          <div id="statusFilterButtons" class="filters" role="group" aria-label="Filtros de tareas"></div>
+          <div class="legal-command-filter-card">
+            <div id="statusFilterButtons" class="filters" role="group" aria-label="Filtros de tareas"></div>
+          </div>
         </div>
 
         <section id="legalControlSummary" class="panel control-dashboard">
-          <div>
-            <p class="eyebrow">Mesa de control</p>
-            <h2>Resumen operativo</h2>
+          <div class="control-dashboard-title">
+            <span class="summary-icon">TASK</span>
+            <div>
+              <p class="eyebrow">Mesa de control</p>
+              <h2>Resumen operativo</h2>
+              <small>Vista general del estado actual del repositorio.</small>
+            </div>
           </div>
           <form id="legalPasswordForm" class="password-form" data-legal-anchor="legalPasswordBlock">
             <input name="password" type="password" placeholder="Nueva contrasena" required>
@@ -1966,7 +1979,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260802-login-guard"></script>
+  <script src="app.js?v=20260803-legal-home-redesign"></script>
 </body>
 </html>
 
