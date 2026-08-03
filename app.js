@@ -3145,17 +3145,19 @@ function getDuplicateConflicts(data, excludeId = "", options = {}) {
 
 function renderDuplicateConflict(conflict) {
   const task = conflict.task || {};
+  const process = getTaskProcess(task);
+  const processLabel = process === "cuv" ? "CUV" : process === "venta" ? "contrato" : "saneamiento";
   const advisor = task.commercialUserName || task.asesor || "asesor no registrado";
   const date = task.createdAt ? formatDateTime(task.createdAt) : "fecha no registrada";
-  const value = task.valorToma || task.precioContrato || "sin valor";
+  const value = task.valorToma || task.precioContrato || task.cuvValue || "sin valor";
   return `
     <article class="duplicate-conflict-card">
       <strong>${escapeHtml(conflict.reason)}</strong>
-      <p>Este saneamiento ya fue solicitado por el asesor <b>${escapeHtml(advisor)}</b> el <b>${escapeHtml(date)}</b>.</p>
+      <p>Este ${escapeHtml(processLabel)} ya fue solicitado por el asesor <b>${escapeHtml(advisor)}</b> el <b>${escapeHtml(date)}</b>.</p>
       <dl>
         <div><dt>Placa</dt><dd>${escapeHtml(task.placa || "Sin placa")}</dd></div>
         <div><dt>Cliente</dt><dd>${escapeHtml(task.cliente || task.vendedor || "Sin cliente")}</dd></div>
-        <div><dt>Valor de toma</dt><dd>${escapeHtml(value)}</dd></div>
+        <div><dt>Valor</dt><dd>${escapeHtml(value)}</dd></div>
         <div><dt>Estatus</dt><dd>${escapeHtml(task.status || "Sin estatus")}</dd></div>
       </dl>
       <span>Accion sugerida: contactar al asesor ${escapeHtml(advisor)} antes de continuar.</span>
@@ -3163,8 +3165,8 @@ function renderDuplicateConflict(conflict) {
   `;
 }
 
-function confirmDuplicateConflict(data) {
-  const conflicts = getDuplicateConflicts(data);
+function confirmDuplicateConflict(data, options = {}) {
+  const conflicts = getDuplicateConflicts(data, "", options);
   if (!conflicts.length) return Promise.resolve(true);
   return new Promise((resolve) => {
     if (!commercialDuplicateModal || !duplicateConflictContent || !duplicateContinueBtn || !duplicateCancelBtn) {
@@ -5829,6 +5831,13 @@ async function createCuvTask(data) {
   const commercialOwner = session.role === "commercial"
     ? { id: session.userId, name: session.name, agency: session.agency }
     : { id: "", name: session.name || "", agency: session.agency || "" };
+  const duplicateSource = {
+    ...data,
+    processType: "cuv",
+    tipoCompra: "CUV",
+    tipoSaneamiento: "Solicitud CUV"
+  };
+  const duplicateWarnings = getDuplicateWarnings(duplicateSource, "", { scope: "cuv" });
   const task = {
     id: crypto.randomUUID(),
     createdAt,
@@ -5859,7 +5868,7 @@ async function createCuvTask(data) {
     cuvPdfName: "",
     cuvPdfDataUrl: "",
     observaciones: `SOLICITUD CUV | Placa: ${normalizePlate(data.placa)} | Titular: ${normalizeLooseText(data.cliente)}`,
-    duplicateWarnings: [],
+    duplicateWarnings,
     syncStatus: "pending"
   };
 
@@ -14663,9 +14672,20 @@ cuvRequestForm?.addEventListener("submit", async (event) => {
   const submitButton = cuvRequestForm.querySelector("button[type='submit']");
   if (submitButton) {
     submitButton.disabled = true;
-    submitButton.textContent = "Guardando...";
+    submitButton.textContent = "Validando...";
   }
   try {
+    const canContinueDuplicate = await confirmDuplicateConflict({
+      ...data,
+      processType: "cuv",
+      tipoCompra: "CUV",
+      tipoSaneamiento: "Solicitud CUV"
+    }, { scope: "cuv" });
+    if (!canContinueDuplicate) {
+      showToast("Envio cancelado. Revise el posible duplicado CUV antes de continuar.");
+      return;
+    }
+    if (submitButton) submitButton.textContent = "Guardando...";
     await createCuvTask(data);
     cuvRequestForm.reset();
     setDefaultCuvRequestDate();
