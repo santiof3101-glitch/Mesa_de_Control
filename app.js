@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260722-commercial-fixes-1";
+const APP_BUILD_VERSION = "20260802-login-guard";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -1560,10 +1560,24 @@ function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
   supabaseModuleVersions[modulo] = version || new Date().toISOString();
   switch (modulo) {
     case "usuarios":
-      state.commercialAdvisors = normalizeCommercialAdvisors(snapshot.commercialAdvisors || state.commercialAdvisors || []);
-      state.legalUsers = normalizeLegalUsers(Array.isArray(snapshot.legalUsers) ? snapshot.legalUsers : (state.legalUsers || []));
-      state.managerUsers = Array.isArray(snapshot.managerUsers) ? snapshot.managerUsers : (state.managerUsers || []);
-      state.processingUsers = Array.isArray(snapshot.processingUsers) ? snapshot.processingUsers : (state.processingUsers || structuredClone(defaultState.processingUsers));
+      {
+        const commercialUsers = Array.isArray(snapshot.commercialAdvisors)
+          ? normalizeCommercialAdvisors(snapshot.commercialAdvisors)
+          : [];
+        const legalUsers = Array.isArray(snapshot.legalUsers)
+          ? normalizeLegalUsers(snapshot.legalUsers)
+          : [];
+        const managerUsers = Array.isArray(snapshot.managerUsers)
+          ? snapshot.managerUsers.filter((user) => user?.username && user?.password)
+          : [];
+        const processingUsers = Array.isArray(snapshot.processingUsers)
+          ? snapshot.processingUsers.filter((user) => user?.username && user?.password)
+          : [];
+        if (commercialUsers.length) state.commercialAdvisors = commercialUsers;
+        if (legalUsers.length) state.legalUsers = legalUsers;
+        if (managerUsers.length) state.managerUsers = managerUsers;
+        if (processingUsers.length) state.processingUsers = processingUsers;
+      }
       persistAccessUsers(state);
       return true;
     case "catalogos":
@@ -1933,10 +1947,9 @@ function normalizeLegalMailboxes(mailboxes = []) {
 
 function normalizeAgencyList(agencies = []) {
   const source = Array.isArray(agencies) ? agencies : String(agencies || "").split(",");
-  const validAgencies = new Set((state.agencies || []).map((agency) => normalizeLooseText(agency)));
   return [...new Set(source
     .map((agency) => normalizeLooseText(agency))
-    .filter((agency) => agency && (!validAgencies.size || validAgencies.has(agency)))
+    .filter(Boolean)
   )];
 }
 
