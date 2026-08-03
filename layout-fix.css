@@ -1956,6 +1956,37 @@ body {
   min-width: 0;
 }
 
+#formulario .tracking-cuv-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 25px;
+  padding: 5px 9px;
+  border: 1px solid #a9dfbd;
+  border-radius: 999px;
+  background: #eaf8ef;
+  color: #159447;
+  box-shadow: 0 4px 12px rgba(21, 148, 71, 0.08);
+  font-size: clamp(0.58rem, 0.54rem + 0.1vw, 0.68rem);
+  font-weight: 800;
+  line-height: 1.1;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+#formulario .tracking-cuv-badge.is-process {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #2563eb;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+}
+
+#formulario .tracking-expanded-row .tracking-cuv-badge {
+  margin-top: 5px;
+}
+
 #formulario .tracking-mini-card-plate {
   color: #0f172a;
   font-size: clamp(0.9rem, 0.84rem + 0.2vw, 1rem);

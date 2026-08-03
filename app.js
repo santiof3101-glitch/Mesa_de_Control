@@ -3194,6 +3194,7 @@ function openCommercialLeadFicha(taskId) {
   const latestLegalObservation = getLatestLegalObservation(task);
   const isCuv = isCuvTask(task);
   const stage = getCommercialTrackingStage(task);
+  const relatedCuvInfo = getRelatedCuvInfo(task);
   const stageItems = getCommercialTrackingStageItems(task);
   const completedStages = stageItems.filter((item) => item.status === "completed").length;
   const fields = [
@@ -3217,6 +3218,9 @@ function openCommercialLeadFicha(taskId) {
     ["Kilometraje", task.kilometraje],
     ["Tipo de compra", task.tipoCompra],
     ["Tipo de saneamiento", task.tipoSaneamiento],
+    ...(relatedCuvInfo ? [
+      ["CUV relacionado", `${relatedCuvInfo.label} | ${relatedCuvInfo.detail} | Solicitado ${formatDateTime(relatedCuvInfo.task.createdAt)}`]
+    ] : []),
     ["Estatus", task.status],
     ["Firma / Pilot", getSignatureDisplayStatus(task)],
     ["Asesor legal", task.legalAdvisor],
@@ -3236,6 +3240,7 @@ function openCommercialLeadFicha(taskId) {
       </div>
       <div>
         ${renderStatusPill(task.status)}
+        ${renderRelatedCuvBadge(task)}
         <small>${escapeHtml(stage.label)} | ${stage.progress}%</small>
       </div>
     </div>
@@ -5810,6 +5815,43 @@ function isCuvTask(task = {}) {
   return getTaskProcess(task) === "cuv";
 }
 
+function getRelatedCuvTask(task = {}) {
+  const plate = normalizePlate(task.placa);
+  if (!plate || isCuvTask(task)) return null;
+  return state.tasks
+    .filter((item) => isCuvTask(item) && normalizePlate(item.placa) === plate)
+    .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))[0] || null;
+}
+
+function getRelatedCuvInfo(task = {}) {
+  const cuvTask = getRelatedCuvTask(task);
+  if (!cuvTask) return null;
+  const cuvStatus = normalizeLooseText(cuvTask.cuvStatus || cuvTask.status || "");
+  const isFound = Boolean(
+    cuvTask.cuvPdfDataUrl ||
+    cuvStatus.includes("ENVIADO") ||
+    cuvStatus.includes("COMPLET") ||
+    cuvStatus.includes("FINAL") ||
+    cuvStatus.includes("OK")
+  );
+  return {
+    task: cuvTask,
+    state: isFound ? "found" : "process",
+    label: isFound ? "CUV encontrado" : "CUV en proceso",
+    detail: cuvTask.cuvStatus || cuvTask.status || "Sin estatus"
+  };
+}
+
+function renderRelatedCuvBadge(task = {}) {
+  const cuvInfo = getRelatedCuvInfo(task);
+  if (!cuvInfo) return "";
+  return `
+    <span class="tracking-cuv-badge is-${escapeHtml(cuvInfo.state)}" title="${escapeHtml(cuvInfo.detail)}">
+      ${cuvInfo.state === "found" ? "OK" : "..."} ${escapeHtml(cuvInfo.label)}
+    </span>
+  `;
+}
+
 function getEligibleLegalUsersForTask(task = {}) {
   const mailbox = getTaskMailbox(task);
   if (mailbox === "firmas") {
@@ -7125,6 +7167,7 @@ function renderCommercialTrackingRow(task) {
       <div>
         <strong>${escapeHtml(task.placa || "Sin placa")}</strong>
         <span>${escapeHtml(task.cliente || task.vendedor || "Cliente sin nombre")}</span>
+        ${renderRelatedCuvBadge(task)}
       </div>
       <span>${escapeHtml(formatDateTime(task.createdAt))}</span>
       <span class="tracking-mini-status-badge">${escapeHtml(stage.statusLabel)}</span>
@@ -7144,6 +7187,7 @@ function renderCommercialTrackingCard(task) {
           <span class="tracking-mini-card-client">${escapeHtml(task.cliente || task.vendedor || "Cliente sin nombre")}</span>
           <span class="tracking-mini-card-user">${escapeHtml(formatDisplayName(task.commercialUserName || task.asesor || "Asesor comercial"))}</span>
         </div>
+        ${renderRelatedCuvBadge(task)}
       </header>
       <span class="tracking-mini-status-badge">${escapeHtml(stage.statusLabel)}</span>
       <div class="tracking-mini-progress">
