@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260803-signature-task-sync-fix";
+const APP_BUILD_VERSION = "20260803-legal-task-premium-ui";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -4242,21 +4242,21 @@ function renderTrackingStepsAdmin(processKey = getSelectedProcessSettingsKey()) 
 function renderStatusFilters() {
   const getFilterIcon = (value = "") => {
     const normalized = normalizeStatusValue(value);
-    if (value === "todos") return "▦";
-    if (normalized.includes("asignar")) return "👥";
-    if (normalized.includes("pendiente")) return "◷";
-    if (normalized.includes("tomado")) return "👤";
-    if (normalized.includes("rechaz")) return "✕";
-    if (normalized.includes("realizado") || normalized.includes("subido")) return "✓";
-    return "⋮";
+    if (value === "todos") return "fa-table-cells-large";
+    if (normalized.includes("asignar")) return "fa-user-plus";
+    if (normalized.includes("pendiente")) return "fa-clock";
+    if (normalized.includes("tomado")) return "fa-user-check";
+    if (normalized.includes("rechaz")) return "fa-circle-xmark";
+    if (normalized.includes("realizado") || normalized.includes("subido")) return "fa-circle-check";
+    return "fa-ellipsis";
   };
-  statusFilterButtons.innerHTML = `<button class="chip legal-filter-tab ${activeFilter === "todos" ? "is-active" : ""}" data-filter="todos"><span class="legal-tab-icon">${getFilterIcon("todos")}</span><span>Todos</span></button>`;
+  statusFilterButtons.innerHTML = `<button class="chip legal-filter-tab ${activeFilter === "todos" ? "is-active" : ""}" data-filter="todos"><span class="legal-tab-icon"><i class="fa-solid ${getFilterIcon("todos")}" aria-hidden="true"></i></span><span>Todos</span></button>`;
   state.statusOptions.forEach((status) => {
     const button = document.createElement("button");
     button.className = `chip legal-filter-tab ${activeFilter === status.value ? "is-active" : ""}`;
     button.dataset.filter = status.value;
     button.type = "button";
-    button.innerHTML = `<span class="legal-tab-icon">${getFilterIcon(status.value)}</span><span>${escapeHtml(status.label)}</span>`;
+    button.innerHTML = `<span class="legal-tab-icon"><i class="fa-solid ${getFilterIcon(status.value)}" aria-hidden="true"></i></span><span>${escapeHtml(status.label)}</span>`;
     statusFilterButtons.appendChild(button);
   });
 

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260803-signature-task-sync-fix">
+<html lang="es" data-app-version="20260803-legal-task-premium-ui">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -9,9 +9,10 @@
   <title>Autocor | Control Legal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260803-signature-task-sync-fix">
-  <link rel="stylesheet" href="layout-fix.css?v=20260803-task-repository-ui-clean">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="styles.css?v=20260803-legal-task-premium-ui">
+  <link rel="stylesheet" href="layout-fix.css?v=20260803-legal-task-premium-ui">
 </head>
 <body>
   <header class="topbar">
@@ -1118,27 +1119,27 @@
     <section id="tareas" class="view legal-desk" aria-labelledby="tasks-title">
       <aside class="legal-sidebar">
         <div class="legal-sidebar-brand">
-          <span class="legal-sidebar-icon">&#128203;</span>
+          <span class="legal-sidebar-icon"><i class="fa-regular fa-folder-open" aria-hidden="true"></i></span>
           <strong>Repositorio de tareas</strong>
         </div>
         <nav class="legal-sidebar-nav" aria-label="Mesa de control">
-          <button class="is-active" type="button" data-legal-scroll="tasks-title">&#128203; Repositorio</button>
-          <button type="button" data-legal-scroll="legalControlSummary">&#128200; Resumen operativo</button>
-          <button type="button" data-legal-scroll="legalPasswordForm">&#128273; Cambiar clave</button>
-          <button type="button" data-legal-scroll="taskList">&#128269; Bandeja de tareas</button>
-          <button type="button" data-legal-scroll="legalAvailabilityBlock">&#128994; Disponibilidad</button>
+          <button class="is-active" type="button" data-legal-scroll="tasks-title"><i class="fa-regular fa-clipboard" aria-hidden="true"></i><span>Repositorio</span></button>
+          <button type="button" data-legal-scroll="legalControlSummary"><i class="fa-solid fa-chart-line" aria-hidden="true"></i><span>Resumen operativo</span></button>
+          <button type="button" data-legal-scroll="legalPasswordForm"><i class="fa-solid fa-key" aria-hidden="true"></i><span>Cambiar clave</span></button>
+          <button type="button" data-legal-scroll="taskList"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><span>Bandeja de tareas</span></button>
+          <button type="button" data-legal-scroll="legalAvailabilityBlock"><i class="fa-regular fa-calendar-check" aria-hidden="true"></i><span>Disponibilidad</span></button>
         </nav>
         <div class="legal-sidebar-filters">
           <span>Filtros rapidos</span>
-          <button class="is-active" type="button" data-legal-sidebar-filter="todos">&#128193; Todos</button>
-          <button type="button" data-legal-sidebar-filter="contratos" data-mailbox-filter="contratos">&#128663; Contratos</button>
-          <button type="button" data-legal-sidebar-filter="firmas" data-mailbox-filter="firmas">&#9997; Firmas</button>
-          <button type="button" data-legal-sidebar-filter="cuv" data-mailbox-filter="cuv">CUV</button>
-          <button type="button" data-legal-sidebar-filter="por asignar">&#128230; Por asignar</button>
-          <button type="button" data-legal-sidebar-filter="pendiente">&#9203; Pendiente</button>
-          <button type="button" data-legal-sidebar-filter="tomado">&#128736; Tomado</button>
-          <button type="button" data-legal-sidebar-filter="rechazado por saneamiento">&#10060; Rechazado</button>
-          <button type="button" data-legal-sidebar-filter="saneamiento realizado y subido a pilot">&#9989; Realizado</button>
+          <button class="is-active" type="button" data-legal-sidebar-filter="todos"><i class="fa-solid fa-layer-group" aria-hidden="true"></i><span>Todos</span></button>
+          <button type="button" data-legal-sidebar-filter="contratos" data-mailbox-filter="contratos"><i class="fa-regular fa-file-lines" aria-hidden="true"></i><span>Contratos</span></button>
+          <button type="button" data-legal-sidebar-filter="firmas" data-mailbox-filter="firmas"><i class="fa-solid fa-signature" aria-hidden="true"></i><span>Firmas</span></button>
+          <button type="button" data-legal-sidebar-filter="cuv" data-mailbox-filter="cuv"><i class="fa-solid fa-car-side" aria-hidden="true"></i><span>CUV</span></button>
+          <button type="button" data-legal-sidebar-filter="por asignar"><i class="fa-solid fa-user-plus" aria-hidden="true"></i><span>Por asignar</span></button>
+          <button type="button" data-legal-sidebar-filter="pendiente"><i class="fa-regular fa-clock" aria-hidden="true"></i><span>Pendiente</span></button>
+          <button type="button" data-legal-sidebar-filter="tomado"><i class="fa-solid fa-user-check" aria-hidden="true"></i><span>Tomado</span></button>
+          <button type="button" data-legal-sidebar-filter="rechazado por saneamiento"><i class="fa-regular fa-circle-xmark" aria-hidden="true"></i><span>Rechazado</span></button>
+          <button type="button" data-legal-sidebar-filter="saneamiento realizado y subido a pilot"><i class="fa-regular fa-circle-check" aria-hidden="true"></i><span>Realizado</span></button>
         </div>
         <div class="legal-sidebar-user">
           <span>SO</span>
@@ -1156,11 +1157,11 @@
             <h1 id="tasks-title">Repositorio de tareas</h1>
             <span>Gestiona y da seguimiento a las tareas del proceso legal.</span>
             <div class="legal-outcome-chips" aria-label="Estados operativos destacados">
-              <span>&#9989; Saneamiento realizado</span>
-              <span>&#10060; Actualizacion rechazada</span>
-              <span>&#9888; Sin Lead en Pilot</span>
-              <span>&#128260; Actualizacion realizada</span>
-              <span>&#128737; Sin aprobacion Jefatura</span>
+              <span><i class="fa-regular fa-circle-check" aria-hidden="true"></i> Saneamiento realizado</span>
+              <span><i class="fa-regular fa-circle-xmark" aria-hidden="true"></i> Actualizacion rechazada</span>
+              <span><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Sin Lead en Pilot</span>
+              <span><i class="fa-solid fa-rotate" aria-hidden="true"></i> Actualizacion realizada</span>
+              <span><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Sin aprobacion Jefatura</span>
             </div>
           </div>
           <div class="legal-command-filter-card">
@@ -1170,7 +1171,7 @@
 
         <section id="legalControlSummary" class="panel control-dashboard">
           <div class="control-dashboard-title">
-            <span class="summary-icon">&#128203;</span>
+            <span class="summary-icon"><i class="fa-regular fa-clipboard" aria-hidden="true"></i></span>
             <div>
               <p class="eyebrow">Mesa de control</p>
               <h2>Resumen operativo</h2>
@@ -2002,7 +2003,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260803-signature-task-sync-fix"></script>
+  <script src="app.js?v=20260803-legal-task-premium-ui"></script>
 </body>
 </html>
 

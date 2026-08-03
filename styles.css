@@ -16999,3 +16999,842 @@ button {
     padding: 16px !important;
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Legal task repository premium UI - final compatibility layer               */
+/* -------------------------------------------------------------------------- */
+#tareas.legal-desk.is-active {
+  --legal-red: #e43d30;
+  --legal-red-soft: #fff1f0;
+  --legal-ink: #1b1b1b;
+  --legal-text: #374151;
+  --legal-muted: #667085;
+  --legal-border: #d8dce5;
+  --legal-bg: #f7f8fa;
+  --legal-card: #ffffff;
+  --legal-green: #22c55e;
+  --legal-blue: #2563eb;
+  --legal-amber: #f59e0b;
+  --legal-shadow: 0 18px 50px rgba(17, 24, 39, 0.08);
+  --legal-shadow-soft: 0 8px 24px rgba(17, 24, 39, 0.06);
+  display: grid !important;
+  grid-template-columns: clamp(210px, 14vw, 244px) minmax(0, 1fr) !important;
+  gap: clamp(18px, 2vw, 28px) !important;
+  width: min(100%, 1760px) !important;
+  max-width: 1760px !important;
+  margin: 0 auto !important;
+  padding: clamp(18px, 2vw, 30px) !important;
+  background:
+    radial-gradient(circle at 0 10%, rgba(228, 61, 48, 0.08), transparent 28%),
+    linear-gradient(135deg, #fff 0%, var(--legal-bg) 54%, #f1f5f9 100%) !important;
+  color: var(--legal-text) !important;
+  font-family: "Inter", "Roboto Condensed", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  overflow-x: hidden !important;
+}
+
+#tareas *,
+#tareas *::before,
+#tareas *::after {
+  box-sizing: border-box !important;
+}
+
+#tareas .legal-sidebar {
+  position: sticky !important;
+  top: 92px !important;
+  align-self: start !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-height: calc(100vh - 118px) !important;
+  padding: 18px !important;
+  border: 1px solid rgba(216, 220, 229, 0.9) !important;
+  border-radius: 22px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: var(--legal-shadow-soft) !important;
+  backdrop-filter: blur(16px) !important;
+  overflow: auto !important;
+}
+
+#tareas .legal-sidebar-brand,
+#tareas .legal-sidebar-user {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 12px !important;
+  border-radius: 18px !important;
+  background: linear-gradient(135deg, #ffffff, #fff6f5) !important;
+}
+
+#tareas .legal-sidebar-icon,
+#tareas .legal-sidebar-user > span,
+#tareas .summary-icon,
+#tareas #controlKpis .metric-card > span:first-child {
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  border-radius: 14px !important;
+  background: var(--legal-red-soft) !important;
+  color: var(--legal-red) !important;
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  box-shadow: inset 0 0 0 1px rgba(228, 61, 48, 0.08) !important;
+}
+
+#tareas .legal-sidebar-brand strong,
+#tareas .legal-sidebar-user strong {
+  color: #101828 !important;
+  font-size: 0.88rem !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+}
+
+#tareas .legal-sidebar-user small {
+  color: var(--legal-muted) !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+}
+
+#tareas .legal-sidebar-nav,
+#tareas .legal-sidebar-filters {
+  display: grid !important;
+  gap: 6px !important;
+  margin-top: 18px !important;
+  padding-top: 18px !important;
+  border-top: 1px solid rgba(216, 220, 229, 0.72) !important;
+}
+
+#tareas .legal-sidebar-filters > span {
+  padding: 0 8px 6px !important;
+  color: #667085 !important;
+  font-size: 0.68rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+}
+
+#tareas .legal-sidebar button {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: 22px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 40px !important;
+  width: 100% !important;
+  padding: 10px 12px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  color: #344054 !important;
+  font-size: 0.82rem !important;
+  font-weight: 650 !important;
+  line-height: 1.1 !important;
+  text-align: left !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease !important;
+}
+
+#tareas .legal-sidebar button i {
+  color: #667085 !important;
+  font-size: 0.95rem !important;
+}
+
+#tareas .legal-sidebar button:hover {
+  transform: translateX(2px) !important;
+  background: #f2f4f7 !important;
+  color: #101828 !important;
+}
+
+#tareas .legal-sidebar button.is-active {
+  background: var(--legal-red-soft) !important;
+  color: var(--legal-red) !important;
+}
+
+#tareas .legal-sidebar button.is-active::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 8px !important;
+  bottom: 8px !important;
+  width: 3px !important;
+  border-radius: 999px !important;
+  background: var(--legal-red) !important;
+}
+
+#tareas .legal-main {
+  width: 100% !important;
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 16px !important;
+}
+
+#tareas .legal-command-hero,
+#tareas .legal-task-head {
+  display: grid !important;
+  grid-template-columns: minmax(330px, 1fr) minmax(360px, 0.82fr) !important;
+  align-items: center !important;
+  gap: clamp(18px, 3vw, 40px) !important;
+  min-height: 170px !important;
+  width: 100% !important;
+  padding: clamp(22px, 3vw, 38px) !important;
+  border: 1px solid rgba(216, 220, 229, 0.86) !important;
+  border-radius: 24px !important;
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.92) 58%, rgba(248, 250, 252, 0.82) 100%),
+    radial-gradient(circle at 95% 0, rgba(37, 99, 235, 0.08), transparent 34%) !important;
+  box-shadow: var(--legal-shadow) !important;
+  overflow: hidden !important;
+}
+
+#tareas .legal-command-copy {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+#tareas .legal-command-copy .eyebrow,
+#tareas .control-dashboard .eyebrow {
+  margin: 0 0 9px !important;
+  color: var(--legal-red) !important;
+  font-size: 0.7rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.055em !important;
+  text-transform: uppercase !important;
+}
+
+#tareas .legal-command-copy h1 {
+  max-width: 720px !important;
+  margin: 0 !important;
+  color: #101828 !important;
+  font-size: clamp(2rem, 3.2vw, 3.7rem) !important;
+  line-height: 0.96 !important;
+  letter-spacing: -0.04em !important;
+  font-weight: 900 !important;
+}
+
+#tareas .legal-command-copy > span {
+  display: block !important;
+  max-width: 560px !important;
+  margin-top: 12px !important;
+  color: #667085 !important;
+  font-size: clamp(0.94rem, 1vw, 1.05rem) !important;
+  font-weight: 500 !important;
+  line-height: 1.45 !important;
+}
+
+#tareas .legal-outcome-chips {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  max-width: 760px !important;
+  margin-top: 22px !important;
+}
+
+#tareas .legal-outcome-chips span {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  min-height: 34px !important;
+  padding: 8px 12px !important;
+  border: 1px solid rgba(216, 220, 229, 0.9) !important;
+  border-radius: 999px !important;
+  background: #ffffff !important;
+  color: #475467 !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  box-shadow: 0 6px 18px rgba(17, 24, 39, 0.04) !important;
+}
+
+#tareas .legal-outcome-chips i {
+  color: var(--legal-red) !important;
+}
+
+#tareas .legal-command-filter-card {
+  width: 100% !important;
+  max-width: 620px !important;
+  justify-self: end !important;
+  padding: 10px !important;
+  border: 1px solid rgba(216, 220, 229, 0.95) !important;
+  border-radius: 22px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.09) !important;
+  overflow: hidden !important;
+}
+
+#tareas #statusFilterButtons.filters {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+  min-height: 54px !important;
+  height: auto !important;
+  padding: 2px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: thin !important;
+}
+
+#tareas #statusFilterButtons .legal-filter-tab,
+#tareas #statusFilterButtons button {
+  flex: 0 0 auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 9px !important;
+  min-width: max-content !important;
+  min-height: 48px !important;
+  height: 48px !important;
+  padding: 0 16px !important;
+  border: 1px solid transparent !important;
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  color: #475467 !important;
+  font-size: 0.83rem !important;
+  font-weight: 750 !important;
+  white-space: nowrap !important;
+  transition: background 0.18s ease, border 0.18s ease, color 0.18s ease, transform 0.18s ease !important;
+  box-shadow: none !important;
+}
+
+#tareas #statusFilterButtons .legal-filter-tab:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(228, 61, 48, 0.22) !important;
+  background: #fff8f7 !important;
+}
+
+#tareas #statusFilterButtons .legal-tab-icon {
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  border-radius: 10px !important;
+  background: #f2f4f7 !important;
+  color: #667085 !important;
+  font-size: 0.82rem !important;
+}
+
+#tareas #statusFilterButtons .legal-filter-tab.is-active,
+#tareas #statusFilterButtons button.is-active {
+  background: var(--legal-red-soft) !important;
+  border-color: rgba(228, 61, 48, 0.32) !important;
+  color: var(--legal-red) !important;
+  box-shadow: inset 0 -2px 0 var(--legal-red) !important;
+}
+
+#tareas #statusFilterButtons .legal-filter-tab.is-active .legal-tab-icon {
+  background: #ffffff !important;
+  color: var(--legal-red) !important;
+}
+
+#tareas #legalControlSummary.control-dashboard,
+#tareas .task-toolbar.panel,
+#tareas .task-row-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  border: 1px solid rgba(216, 220, 229, 0.9) !important;
+  border-radius: 22px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: var(--legal-shadow-soft) !important;
+}
+
+#tareas #legalControlSummary.control-dashboard {
+  display: grid !important;
+  grid-template-columns: minmax(280px, 1fr) minmax(320px, 0.72fr) !important;
+  gap: 14px !important;
+  padding: 22px !important;
+}
+
+#tareas .control-dashboard-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  min-width: 0 !important;
+}
+
+#tareas .control-dashboard-title h2 {
+  margin: 0 !important;
+  color: #101828 !important;
+  font-size: 1.1rem !important;
+  line-height: 1.2 !important;
+  font-weight: 850 !important;
+}
+
+#tareas .control-dashboard-title small {
+  color: #667085 !important;
+  font-weight: 500 !important;
+}
+
+#tareas #legalPasswordForm.password-form {
+  display: grid !important;
+  grid-template-columns: minmax(160px, 1fr) auto !important;
+  gap: 10px !important;
+  align-self: center !important;
+  width: 100% !important;
+}
+
+#tareas .availability-panel {
+  grid-column: 1 / -1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  min-height: 72px !important;
+  padding: 16px 18px !important;
+  border: 1px solid rgba(34, 197, 94, 0.26) !important;
+  border-left: 4px solid var(--legal-green) !important;
+  border-radius: 18px !important;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.09), rgba(255, 255, 255, 0.96)) !important;
+}
+
+#tareas .availability-panel span {
+  color: #667085 !important;
+  font-size: 0.72rem !important;
+  font-weight: 850 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+}
+
+#tareas .availability-panel strong {
+  display: block !important;
+  margin-top: 3px !important;
+  color: #027a48 !important;
+  font-size: 1rem !important;
+  font-weight: 850 !important;
+}
+
+#tareas #controlKpis.compact-kpis,
+#tareas #controlKpis.kpi-grid {
+  grid-column: 1 / -1 !important;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)) !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+
+#tareas #controlKpis .metric-card {
+  display: grid !important;
+  grid-template-columns: 46px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 13px !important;
+  min-height: 104px !important;
+  padding: 16px !important;
+  border: 1px solid rgba(216, 220, 229, 0.88) !important;
+  border-radius: 18px !important;
+  background: linear-gradient(145deg, #ffffff, #fbfcfe) !important;
+  box-shadow: 0 8px 22px rgba(17, 24, 39, 0.045) !important;
+}
+
+#tareas #controlKpis .metric-card strong {
+  display: block !important;
+  color: #101828 !important;
+  font-size: 1.75rem !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+}
+
+#tareas #controlKpis .metric-card span,
+#tareas #controlKpis .metric-card small {
+  color: #667085 !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+}
+
+#tareas .task-toolbar.panel {
+  display: grid !important;
+  grid-template-columns: minmax(260px, 1fr) minmax(150px, 0.22fr) minmax(150px, 0.22fr) minmax(148px, 0.18fr) !important;
+  align-items: end !important;
+  gap: 14px !important;
+  padding: 18px !important;
+}
+
+#tareas .task-toolbar label {
+  display: grid !important;
+  gap: 7px !important;
+  color: #475467 !important;
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+}
+
+#tareas input,
+#tareas select,
+#tareas textarea {
+  width: 100% !important;
+  min-height: 46px !important;
+  border: 1px solid rgba(216, 220, 229, 0.95) !important;
+  border-radius: 13px !important;
+  background: #ffffff !important;
+  color: #101828 !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  outline: none !important;
+  transition: border 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+#tareas input:focus,
+#tareas select:focus,
+#tareas textarea:focus {
+  border-color: rgba(228, 61, 48, 0.48) !important;
+  box-shadow: 0 0 0 4px rgba(228, 61, 48, 0.11) !important;
+}
+
+#tareas .mini-kpis {
+  display: grid !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+}
+
+#tareas .mini-kpis span {
+  display: flex !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  min-height: 28px !important;
+  padding: 6px 10px !important;
+  border-radius: 10px !important;
+  background: #f2f4f7 !important;
+  color: #667085 !important;
+  font-size: 0.75rem !important;
+}
+
+#tareas .task-list {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+#tareas .task-row-card {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: 42px minmax(230px, 1.3fr) minmax(170px, 0.65fr) minmax(145px, 0.45fr) minmax(220px, 0.85fr) !important;
+  align-items: center !important;
+  gap: 14px !important;
+  min-height: 88px !important;
+  padding: 16px 18px !important;
+  overflow: hidden !important;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease !important;
+}
+
+#tareas .task-row-card::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 auto 0 0 !important;
+  width: 4px !important;
+  background: var(--legal-green) !important;
+}
+
+#tareas .task-row-card.has-warning::before,
+#tareas .task-row-card.info-request-card::before {
+  background: var(--legal-red) !important;
+}
+
+#tareas .task-row-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 20px 46px rgba(17, 24, 39, 0.09) !important;
+}
+
+#tareas .task-row-index {
+  width: 32px !important;
+  height: 32px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 999px !important;
+  background: #f2f4f7 !important;
+  color: #475467 !important;
+  font-weight: 850 !important;
+  font-size: 0.86rem !important;
+}
+
+#tareas .task-row-main {
+  min-width: 0 !important;
+}
+
+#tareas .task-row-main h3 {
+  margin: 0 0 6px !important;
+  color: #101828 !important;
+  font-size: 1rem !important;
+  line-height: 1.15 !important;
+  font-weight: 850 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#tareas .task-meta {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px 12px !important;
+  margin: 0 !important;
+  color: #667085 !important;
+  font-size: 0.75rem !important;
+  font-weight: 550 !important;
+  line-height: 1.25 !important;
+}
+
+#tareas .task-row-alert {
+  display: inline-flex !important;
+  align-items: center !important;
+  width: max-content !important;
+  max-width: 100% !important;
+  margin-top: 8px !important;
+  padding: 5px 9px !important;
+  border-radius: 999px !important;
+  background: #fff1f0 !important;
+  color: #c81e1e !important;
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+}
+
+#tareas .task-row-assignee span {
+  display: block !important;
+  color: #667085 !important;
+  font-size: 0.68rem !important;
+  font-weight: 850 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+}
+
+#tareas .task-row-assignee strong {
+  display: block !important;
+  margin-top: 3px !important;
+  color: #101828 !important;
+  font-size: 0.86rem !important;
+  font-weight: 800 !important;
+}
+
+#tareas .task-row-assignee small,
+#tareas .time-chip,
+#tareas .locked-note {
+  color: #667085 !important;
+  font-size: 0.73rem !important;
+  font-weight: 600 !important;
+}
+
+#tareas .status-pill,
+#tareas .task-row-status .chip,
+#tareas .task-row-status span:first-child {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 28px !important;
+  max-width: 100% !important;
+  padding: 6px 10px !important;
+  border-radius: 999px !important;
+  background: #eff6ff !important;
+  color: var(--legal-blue) !important;
+  font-size: 0.7rem !important;
+  font-weight: 850 !important;
+  line-height: 1.1 !important;
+  text-transform: uppercase !important;
+}
+
+#tareas .time-chip {
+  display: block !important;
+  margin-top: 7px !important;
+  width: max-content !important;
+  padding: 5px 9px !important;
+  border-radius: 999px !important;
+  background: #f2f4f7 !important;
+  text-transform: none !important;
+}
+
+#tareas .task-row-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+#tareas .btn,
+#tareas button.btn,
+#tareas .task-row-actions button,
+#tareas .task-row-actions select {
+  min-height: 38px !important;
+  height: 38px !important;
+  padding: 0 14px !important;
+  border-radius: 12px !important;
+  font-size: 0.78rem !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease !important;
+}
+
+#tareas .btn.primary,
+#tareas .task-row-actions .btn.primary {
+  border: 1px solid var(--legal-red) !important;
+  background: linear-gradient(135deg, #f04438, #e43d30) !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 24px rgba(228, 61, 48, 0.18) !important;
+}
+
+#tareas .btn.secondary,
+#tareas .task-row-actions .btn.secondary {
+  border: 1px solid rgba(216, 220, 229, 0.95) !important;
+  background: #ffffff !important;
+  color: #101828 !important;
+}
+
+#tareas .btn:hover,
+#tareas .task-row-actions button:hover {
+  transform: translateY(-1px) !important;
+}
+
+#tareas .view-task-btn::before {
+  content: "\f06e";
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  margin-right: 7px;
+}
+
+#tareas .empty {
+  padding: 34px !important;
+  border: 1px dashed rgba(216, 220, 229, 0.95) !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  color: #667085 !important;
+  text-align: center !important;
+  font-weight: 650 !important;
+}
+
+#tareas .legal-chat-floating-btn {
+  position: fixed !important;
+  right: clamp(18px, 2vw, 32px) !important;
+  bottom: clamp(18px, 2vw, 32px) !important;
+  z-index: 80 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 52px !important;
+  padding: 0 22px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: linear-gradient(135deg, #7f1d1d, var(--legal-red)) !important;
+  color: #ffffff !important;
+  font-size: 0.92rem !important;
+  font-weight: 850 !important;
+  box-shadow: 0 18px 42px rgba(127, 29, 29, 0.26) !important;
+}
+
+@media (max-width: 1280px) {
+  #tareas .legal-command-hero,
+  #tareas .legal-task-head,
+  #tareas #legalControlSummary.control-dashboard,
+  #tareas .task-toolbar.panel {
+    grid-template-columns: 1fr !important;
+  }
+
+  #tareas .legal-command-filter-card {
+    justify-self: stretch !important;
+    max-width: 100% !important;
+  }
+
+  #tareas .task-row-card {
+    grid-template-columns: 40px minmax(220px, 1fr) minmax(150px, 0.65fr) minmax(132px, 0.4fr) !important;
+  }
+
+  #tareas .task-row-actions {
+    grid-column: 2 / -1 !important;
+    justify-content: flex-start !important;
+  }
+}
+
+@media (max-width: 940px) {
+  #tareas.legal-desk.is-active {
+    grid-template-columns: 1fr !important;
+    padding: 14px !important;
+  }
+
+  #tareas .legal-sidebar {
+    position: static !important;
+    max-height: none !important;
+  }
+
+  #tareas .legal-sidebar-nav,
+  #tareas .legal-sidebar-filters {
+    grid-template-columns: repeat(auto-fit, minmax(136px, 1fr)) !important;
+  }
+
+  #tareas .task-row-card {
+    grid-template-columns: 36px minmax(0, 1fr) !important;
+  }
+
+  #tareas .task-row-assignee,
+  #tareas .task-row-status,
+  #tareas .task-row-actions {
+    grid-column: 2 / -1 !important;
+  }
+}
+
+@media (max-width: 640px) {
+  #tareas.legal-desk.is-active {
+    padding: 10px !important;
+    gap: 12px !important;
+  }
+
+  #tareas .legal-sidebar {
+    padding: 12px !important;
+    border-radius: 18px !important;
+  }
+
+  #tareas .legal-sidebar-user {
+    display: none !important;
+  }
+
+  #tareas .legal-command-hero,
+  #tareas .legal-task-head,
+  #tareas #legalControlSummary.control-dashboard,
+  #tareas .task-toolbar.panel {
+    padding: 16px !important;
+    border-radius: 18px !important;
+  }
+
+  #tareas .legal-command-copy h1 {
+    font-size: clamp(2rem, 13vw, 2.8rem) !important;
+  }
+
+  #tareas .legal-outcome-chips {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    padding-bottom: 4px !important;
+  }
+
+  #tareas #controlKpis.compact-kpis,
+  #tareas #controlKpis.kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  #tareas .availability-panel {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  #tareas .task-toolbar.panel {
+    grid-template-columns: 1fr !important;
+  }
+
+  #tareas .task-row-card {
+    min-height: 0 !important;
+    padding: 14px !important;
+    gap: 10px !important;
+  }
+
+  #tareas .task-row-main h3 {
+    white-space: normal !important;
+  }
+
+  #tareas .task-row-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  #tareas .task-row-actions button,
+  #tareas .task-row-actions select {
+    width: 100% !important;
+  }
+
+  #tareas .legal-chat-floating-btn {
+    right: 12px !important;
+    bottom: 12px !important;
+    min-height: 46px !important;
+    padding: 0 16px !important;
+  }
+}
