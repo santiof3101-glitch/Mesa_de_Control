@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260803-signature-flow-audit-fix">
+<html lang="es" data-app-version="20260727-ui-sanity-provider-fix">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -9,10 +9,9 @@
   <title>Autocor | Control Legal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="styles.css?v=20260803-signature-flow-audit-fix">
-  <link rel="stylesheet" href="layout-fix.css?v=20260803-signature-flow-audit-fix">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20260727-ui-sanity-provider-fix">
+  <link rel="stylesheet" href="layout-fix.css?v=20260727-ui-sanity-provider-fix">
 </head>
 <body>
   <header class="topbar">
@@ -37,10 +36,7 @@
           <button type="button" data-commercial-profile-action="logout">Cerrar sesion</button>
         </div>
       </div>
-      <button class="tab topbar-home-tab is-active" data-view="acceso">
-        <span class="home-grid-icon" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
-        <span>Inicio</span>
-      </button>
+      <button class="tab is-active" data-view="acceso">â–¦ Inicio</button>
       <button id="logoutBtn" class="tab muted-tab" type="button" hidden>Salir</button>
     </nav>
   </header>
@@ -73,67 +69,67 @@
 
       <div class="access-grid">
         <article class="panel access-card">
-          <span class="access-icon">📋</span>
+          <span class="access-icon">ðŸ“‹</span>
           <h2 id="commercialAccessTitle">Acceso comercial</h2>
           <p id="commercialAccessText">Formulario de solicitudes y dashboard personal de saneamientos.</p>
-          <button class="btn primary" type="button" data-view="login-comercial">Ingresar <span>→</span></button>
+          <button class="btn primary" type="button" data-view="login-comercial">Ingresar <span>â†’</span></button>
         </article>
 
         <article class="panel access-card">
-          <span class="access-icon">⚖️</span>
+          <span class="access-icon">âš–ï¸</span>
           <h2 id="legalAccessTitle">Acceso mesa de control</h2>
           <p id="legalAccessText">Bandeja legal para tomar, gestionar y cerrar saneamientos.</p>
-          <button class="btn primary" type="button" data-view="login-legal">Ingresar <span>→</span></button>
+          <button class="btn primary" type="button" data-view="login-legal">Ingresar <span>â†’</span></button>
         </article>
 
         <article class="panel access-card">
-          <span class="access-icon">🛡️</span>
+          <span class="access-icon">ðŸ›¡ï¸</span>
           <h2 id="adminAccessTitle">Acceso administrador</h2>
           <p id="adminAccessText">Configuracion de usuarios, agencias, estados, diseno y comunicados.</p>
-          <button class="btn primary" type="button" data-view="login-admin">Ingresar <span>→</span></button>
+          <button class="btn primary" type="button" data-view="login-admin">Ingresar <span>â†’</span></button>
         </article>
 
         <article class="panel access-card">
-          <span class="access-icon">📣</span>
+          <span class="access-icon">ðŸ“£</span>
           <h2 id="announcementsAccessTitle">Acceso a comunicados</h2>
           <p id="announcementsAccessText">Cartelera completa de anuncios, novedades y procesos internos.</p>
-          <button class="btn primary" type="button" data-view="comunicados">Ver cartelera <span>→</span></button>
+          <button class="btn primary" type="button" data-view="comunicados">Ver cartelera <span>â†’</span></button>
         </article>
 
         <article class="panel access-card">
-          <span class="access-icon">📊</span>
+          <span class="access-icon">ðŸ“Š</span>
           <h2 id="managerAccessTitle">Acceso consulta de saneamientos</h2>
           <p id="managerAccessText">Dashboard gerencial con filtros, graficos e indicadores de operacion.</p>
-          <button class="btn primary" type="button" data-view="login-gerencial">Ingresar <span>→</span></button>
+          <button class="btn primary" type="button" data-view="login-gerencial">Ingresar <span>â†’</span></button>
         </article>
         <article class="panel access-card">
-          <span class="access-icon">🗄️</span>
+          <span class="access-icon">ðŸ—„ï¸</span>
           <h2>Procesamiento de datos</h2>
           <p>Depura bases mensuales, detecta duplicados y genera reportes operativos estandarizados.</p>
-          <button class="btn primary" type="button" data-view="login-procesamiento">Abrir modulo <span>→</span></button>
+          <button class="btn primary" type="button" data-view="login-procesamiento">Abrir modulo <span>â†’</span></button>
         </article>
       </div>
 
       <section class="access-trust-panel" aria-label="Resumen operativo">
         <div class="trust-main">
-          <span class="trust-icon">🛡️</span>
+          <span class="trust-icon">ðŸ›¡ï¸</span>
           <div>
             <strong>Control centralizado.</strong>
             <p>Toda la gestion legal en un solo lugar, con informacion confiable y al dia.</p>
           </div>
         </div>
         <div class="trust-stat">
-          <span>👥</span>
+          <span>ðŸ‘¥</span>
           <strong id="homeProviderMetric">691</strong>
           <small>Proveedores activos</small>
         </div>
         <div class="trust-stat">
-          <span>📄</span>
+          <span>ðŸ“„</span>
           <strong>+16.5K</strong>
           <small>Registros gestionados</small>
         </div>
         <div class="trust-stat">
-          <span>✅</span>
+          <span>âœ…</span>
           <strong>100%</strong>
           <small>Control y trazabilidad operativa</small>
         </div>
@@ -150,11 +146,11 @@
       </div>
 
       <div class="processing-tabs">
-        <button class="processing-tab" type="button" data-processing-tab="proveedores">👥 Proveedores y Pagos</button>
-        <button class="processing-tab is-active" type="button" data-processing-tab="compras">🧾 Compras</button>
-        <button class="processing-tab" type="button" data-processing-tab="contratos">📄 Contratos</button>
-        <button class="processing-tab" type="button" data-processing-tab="saneamientos">🛡️ Saneamientos</button>
-        <button class="processing-tab" type="button" data-processing-tab="archivos">📁 Archivos</button>
+        <button class="processing-tab" type="button" data-processing-tab="proveedores">ðŸ‘¥ Proveedores y Pagos</button>
+        <button class="processing-tab is-active" type="button" data-processing-tab="compras">ðŸ§¾ Compras</button>
+        <button class="processing-tab" type="button" data-processing-tab="contratos">ðŸ“„ Contratos</button>
+        <button class="processing-tab" type="button" data-processing-tab="saneamientos">ðŸ›¡ï¸ Saneamientos</button>
+        <button class="processing-tab" type="button" data-processing-tab="archivos">ðŸ“ Archivos</button>
         <div class="processing-sidebar-spacer"></div>
         <div class="processing-sidebar-help">
           <strong>Necesitas ayuda?</strong>
@@ -409,7 +405,7 @@
 
       <section class="panel processing-panel processing-workspace provider-workspace" data-processing-panel="proveedores">
         <div class="report-hero provider-hero">
-          <div class="provider-hero-icon" aria-hidden="true">📄</div>
+          <div class="provider-hero-icon" aria-hidden="true">ðŸ“„</div>
           <div>
             <p class="eyebrow">Proveedores</p>
             <h2>Mesa de Control</h2>
@@ -885,11 +881,11 @@
         <div class="panel-title-row">
           <div>
             <p class="eyebrow">Tracking operativo</p>
-            <h2>Tracking por proceso</h2>
-            <span class="commercial-section-note">Compra, venta y CUV se muestran en kanban separados para evitar cruces de gestion.</span>
+            <h2>Tracking de saneamientos</h2>
+            <span class="commercial-section-note">Busca, filtra y revisa tus saneamientos sin mezclarlo con los formularios.</span>
           </div>
         </div>
-        <section id="commercialTrackingBoard" class="commercial-tracking-board" aria-label="Tracking operativo por proceso"></section>
+        <section id="commercialTrackingBoard" class="commercial-tracking-board" aria-label="Tracking de saneamientos"></section>
       </section>
 
       <section class="commercial-requests-panel panel" data-commercial-area-section="requests" hidden>
@@ -942,7 +938,7 @@
             <p>Cada solicitud quedara separada por proceso y sincronizada con mesa de control.</p>
             <div class="commercial-start-actions">
               <button class="btn primary" type="button" data-commercial-start="commercial-purchase-process">&#128722; Compra</button>
-              <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-sale-process">&#128663; Venta</button>
+              <button class="btn secondary light-btn is-disabled" type="button" data-coming-soon="venta" aria-disabled="true">&#128663; Venta</button>
               <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-cuv-process">&#128196; CUV</button>
             </div>
           </div>
@@ -960,7 +956,7 @@
               <strong>Compra</strong>
               <span>Solicitud de toma y saneamiento.</span>
             </button>
-            <button class="commercial-process-card" type="button" data-commercial-process="commercial-sale-process" aria-pressed="false">
+            <button class="commercial-process-card is-disabled" type="button" data-coming-soon="venta" aria-disabled="true">
               <strong>Venta</strong>
               <span>Tracking de contratos de compraventa.</span>
             </button>
@@ -1119,27 +1115,26 @@
     <section id="tareas" class="view legal-desk" aria-labelledby="tasks-title">
       <aside class="legal-sidebar">
         <div class="legal-sidebar-brand">
-          <span class="legal-sidebar-icon"><i class="fa-regular fa-folder-open" aria-hidden="true"></i></span>
+          <span class="legal-sidebar-icon">&#128203;</span>
           <strong>Repositorio de tareas</strong>
         </div>
         <nav class="legal-sidebar-nav" aria-label="Mesa de control">
-          <button class="is-active" type="button" data-legal-scroll="tasks-title"><i class="fa-regular fa-clipboard" aria-hidden="true"></i><span>Repositorio</span></button>
-          <button type="button" data-legal-scroll="legalControlSummary"><i class="fa-solid fa-chart-line" aria-hidden="true"></i><span>Resumen operativo</span></button>
-          <button type="button" data-legal-scroll="legalPasswordForm"><i class="fa-solid fa-key" aria-hidden="true"></i><span>Cambiar clave</span></button>
-          <button type="button" data-legal-scroll="taskList"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><span>Bandeja de tareas</span></button>
-          <button type="button" data-legal-scroll="legalAvailabilityBlock"><i class="fa-regular fa-calendar-check" aria-hidden="true"></i><span>Disponibilidad</span></button>
+          <button class="is-active" type="button" data-legal-scroll="tasks-title">&#128203; Repositorio</button>
+          <button type="button" data-legal-scroll="legalControlSummary">&#128200; Resumen operativo</button>
+          <button type="button" data-legal-scroll="legalPasswordForm">&#128273; Cambiar clave</button>
+          <button type="button" data-legal-scroll="taskList">&#128269; Bandeja de tareas</button>
+          <button type="button" data-legal-scroll="legalAvailabilityBlock">&#128994; Disponibilidad</button>
         </nav>
         <div class="legal-sidebar-filters">
           <span>Filtros rapidos</span>
-          <button class="is-active" type="button" data-legal-sidebar-filter="todos"><i class="fa-solid fa-layer-group" aria-hidden="true"></i><span>Todos</span></button>
-          <button type="button" data-legal-sidebar-filter="contratos" data-mailbox-filter="contratos"><i class="fa-regular fa-file-lines" aria-hidden="true"></i><span>Contratos</span></button>
-          <button type="button" data-legal-sidebar-filter="firmas" data-mailbox-filter="firmas"><i class="fa-solid fa-signature" aria-hidden="true"></i><span>Firmas</span></button>
-          <button type="button" data-legal-sidebar-filter="cuv" data-mailbox-filter="cuv"><i class="fa-solid fa-car-side" aria-hidden="true"></i><span>CUV</span></button>
-          <button type="button" data-legal-sidebar-filter="por asignar"><i class="fa-solid fa-user-plus" aria-hidden="true"></i><span>Por asignar</span></button>
-          <button type="button" data-legal-sidebar-filter="pendiente"><i class="fa-regular fa-clock" aria-hidden="true"></i><span>Pendiente</span></button>
-          <button type="button" data-legal-sidebar-filter="tomado"><i class="fa-solid fa-user-check" aria-hidden="true"></i><span>Tomado</span></button>
-          <button type="button" data-legal-sidebar-filter="rechazado por saneamiento"><i class="fa-regular fa-circle-xmark" aria-hidden="true"></i><span>Rechazado</span></button>
-          <button type="button" data-legal-sidebar-filter="saneamiento realizado y subido a pilot"><i class="fa-regular fa-circle-check" aria-hidden="true"></i><span>Realizado</span></button>
+          <button class="is-active" type="button" data-legal-sidebar-filter="todos">&#128193; Todos</button>
+          <button type="button" data-legal-sidebar-filter="firmas">&#9997; Firmas</button>
+          <button type="button" data-legal-sidebar-filter="cuv" data-mailbox-filter="cuv">CUV</button>
+          <button type="button" data-legal-sidebar-filter="por asignar">&#128230; Por asignar</button>
+          <button type="button" data-legal-sidebar-filter="pendiente">&#9203; Pendiente</button>
+          <button type="button" data-legal-sidebar-filter="tomado">&#128736; Tomado</button>
+          <button type="button" data-legal-sidebar-filter="rechazado por saneamiento">&#10060; Rechazado</button>
+          <button type="button" data-legal-sidebar-filter="saneamiento realizado y subido a pilot">&#9989; Realizado</button>
         </div>
         <div class="legal-sidebar-user">
           <span>SO</span>
@@ -1151,32 +1146,19 @@
       </aside>
 
       <div class="legal-main">
-        <div class="section-head legal-task-head legal-command-hero">
-          <div class="legal-command-copy">
+        <div class="section-head legal-task-head">
+          <div>
             <p class="eyebrow" id="legalSessionLabel">Asistente de control legal</p>
             <h1 id="tasks-title">Repositorio de tareas</h1>
             <span>Gestiona y da seguimiento a las tareas del proceso legal.</span>
-            <div class="legal-outcome-chips" aria-label="Estados operativos destacados">
-              <span><i class="fa-regular fa-circle-check" aria-hidden="true"></i> Saneamiento realizado</span>
-              <span><i class="fa-regular fa-circle-xmark" aria-hidden="true"></i> Actualizacion rechazada</span>
-              <span><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Sin Lead en Pilot</span>
-              <span><i class="fa-solid fa-rotate" aria-hidden="true"></i> Actualizacion realizada</span>
-              <span><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Sin aprobacion Jefatura</span>
-            </div>
           </div>
-          <div class="legal-command-filter-card">
-            <div id="statusFilterButtons" class="filters" role="group" aria-label="Filtros de tareas"></div>
-          </div>
+          <div id="statusFilterButtons" class="filters" role="group" aria-label="Filtros de tareas"></div>
         </div>
 
         <section id="legalControlSummary" class="panel control-dashboard">
-          <div class="control-dashboard-title">
-            <span class="summary-icon"><i class="fa-regular fa-clipboard" aria-hidden="true"></i></span>
-            <div>
-              <p class="eyebrow">Mesa de control</p>
-              <h2>Resumen operativo</h2>
-              <small>Vista general del estado actual del repositorio.</small>
-            </div>
+          <div>
+            <p class="eyebrow">Mesa de control</p>
+            <h2>Resumen operativo</h2>
           </div>
           <form id="legalPasswordForm" class="password-form" data-legal-anchor="legalPasswordBlock">
             <input name="password" type="password" placeholder="Nueva contrasena" required>
@@ -1339,7 +1321,7 @@
               <span id="adminLeadCount" class="soft-badge">0 leads</span>
             </div>
           </div>
-          <p class="helper-text">Usa “Conciliar con Supabase” para recuperar leads antiguos que quedaron visibles en comercial, pero ya no aparecen en este administrador.</p>
+          <p class="helper-text">Usa â€œConciliar con Supabaseâ€ para recuperar leads antiguos que quedaron visibles en comercial, pero ya no aparecen en este administrador.</p>
           <div id="adminLeadsList" class="admin-leads-list"></div>
         </section>
 
@@ -1504,22 +1486,10 @@
         </section>
 
         <section class="panel span-admin admin-module-section" data-admin-section="admin-catalogs-module">
-          <div class="panel-title-row">
-            <div>
-              <p class="eyebrow">Configuracion por proceso</p>
-              <h2>Estatus, subestatus y tracking</h2>
-            </div>
-            <select id="processSettingsSelect" aria-label="Proceso a configurar">
-              <option value="compra">Compras | Saneamientos</option>
-              <option value="venta">Ventas | Contratos</option>
-              <option value="cuv">CUV</option>
-            </select>
-          </div>
-          <p class="helper-text">Administra los estados, subestados y pasos de linea de tiempo por cada proceso. Compras mantiene compatibilidad con el repositorio de tareas legales.</p>
+          <h2>Estatus de tareas legales</h2>
           <form id="statusOptionForm" class="status-option-form">
             <input name="label" placeholder="Nombre del estatus" required>
             <input name="color" type="color" value="#8d8d92" aria-label="Color del estatus">
-            <input name="substatuses" placeholder="Subestatus separados por coma">
             <label class="check-row">
               <input name="closes" type="checkbox">
               Cierra tarea
@@ -1527,17 +1497,6 @@
             <button class="btn primary" type="submit">Agregar estatus</button>
           </form>
           <div id="statusOptionsList" class="option-list"></div>
-          <div class="process-tracking-admin">
-            <div>
-              <p class="eyebrow">Linea de tiempo</p>
-              <h3>Pasos del tracking</h3>
-            </div>
-            <form id="trackingStepForm" class="inline-form">
-              <input name="label" placeholder="Nuevo paso del tracking" required>
-              <button class="btn primary" type="submit">Agregar paso</button>
-            </form>
-          </div>
-          <div id="trackingStepsList" class="option-list tracking-steps-list"></div>
         </section>
 
         <section id="admin-forms-module" class="panel span-admin admin-module-section" data-admin-section="admin-forms-module">
@@ -1611,7 +1570,6 @@
               <label><input type="checkbox" name="mailboxes" value="contratos"> Contratos</label>
               <label><input type="checkbox" name="mailboxes" value="cuv"> CUV</label>
             </div>
-            <select name="contractAgencies" id="legalContractAgenciesInput" multiple title="Agencias de contratos asignadas"></select>
             <button class="btn primary" type="submit">Crear usuario</button>
           </form>
           <div id="usersList" class="users-list"></div>
@@ -2003,7 +1961,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260803-signature-flow-audit-fix"></script>
+  <script src="app.js?v=20260727-ui-sanity-provider-fix"></script>
 </body>
 </html>
 

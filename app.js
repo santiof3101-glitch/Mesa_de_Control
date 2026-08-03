@@ -1,5 +1,5 @@
-﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260803-signature-flow-audit-fix";
+const STORAGE_KEY = "autocor-control-legal";
+const APP_BUILD_VERSION = "20260722-commercial-fixes-1";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -176,37 +176,6 @@ const CONTRACT_STATUS_OPTIONS = [
   "SIN ESTATUS"
 ];
 
-const DEFAULT_TASK_STATUS_OPTIONS = [
-  { id: "status-por-asignar", label: "Por asignar", value: "por asignar", color: "#64748b", closes: false, isDefault: true },
-  { id: "status-pendiente", label: "Pendiente", value: "pendiente", color: "#8d8d92", closes: false, isDefault: true },
-  { id: "status-tomado", label: "Tomado", value: "tomado", color: "#d98612", closes: false, isDefault: true },
-  { id: "status-rechazado", label: "Rechazado por saneamiento", value: "rechazado por saneamiento", color: "#c92520", closes: true, isDefault: false },
-  { id: "status-pilot", label: "Saneamiento realizado y subido a Pilot", value: "saneamiento realizado y subido a pilot", color: "#23865d", closes: true, isDefault: false }
-];
-
-const PROCESS_DEFINITIONS = {
-  compra: { label: "Compras | Saneamientos", shortLabel: "Saneamientos" },
-  venta: { label: "Ventas | Contratos", shortLabel: "Contratos" },
-  cuv: { label: "CUV", shortLabel: "CUV" }
-};
-
-const DEFAULT_PROCESS_TRACKING_STEPS = {
-  compra: COMMERCIAL_TRACKING_STEPS,
-  venta: [
-    { id: "contrato-solicitado", label: "Contrato solicitado" },
-    { id: "contrato-recibido", label: "Recibido por mesa" },
-    { id: "contrato-asignado", label: "Asignado a legal" },
-    { id: "contrato-gestion", label: "Gestion contractual" },
-    { id: "contrato-cerrado", label: "Contrato cerrado" }
-  ],
-  cuv: [
-    { id: "cuv-solicitado", label: "CUV solicitado" },
-    { id: "cuv-recibido", label: "Recibido por mesa" },
-    { id: "cuv-proceso", label: "Gestion CUV" },
-    { id: "cuv-enviado", label: "PDF enviado al asesor" }
-  ]
-};
-
 const PROVIDER_COLUMNS = [
   "CUV",
   "CODIGO",
@@ -330,8 +299,13 @@ const defaultState = {
   forceLogoutRequests: [],
   purchaseTypes: ["Compra directa", "Consignacion", "Retoma"],
   sanitationTypes: ["Levantamiento de gravamen", "Cambio de propietario", "Revision documental"],
-  statusOptions: structuredClone(DEFAULT_TASK_STATUS_OPTIONS),
-  processSettings: {},
+  statusOptions: [
+    { id: "status-por-asignar", label: "Por asignar", value: "por asignar", color: "#64748b", closes: false, isDefault: true },
+    { id: "status-pendiente", label: "Pendiente", value: "pendiente", color: "#8d8d92", closes: false, isDefault: true },
+    { id: "status-tomado", label: "Tomado", value: "tomado", color: "#d98612", closes: false, isDefault: true },
+    { id: "status-rechazado", label: "Rechazado por saneamiento", value: "rechazado por saneamiento", color: "#c92520", closes: true, isDefault: false },
+    { id: "status-pilot", label: "Saneamiento realizado y subido a Pilot", value: "saneamiento realizado y subido a pilot", color: "#23865d", closes: true, isDefault: false }
+  ],
   formConfig: structuredClone(DEFAULT_FORM_CONFIG),
   agencies: ["Matriz Guayaquil", "Sucursal Norte", "Sucursal Sur", "Via Daule", "Samborondon", "Duran", "Quito", "Cuenca", "Manta"],
   commercialAdvisors: [
@@ -614,9 +588,7 @@ const duplicateConflictContent = document.querySelector("#duplicateConflictConte
 const duplicateContinueBtn = document.querySelector("#duplicateContinueBtn");
 const duplicateCancelBtn = document.querySelector("#duplicateCancelBtn");
 const commercialNotificationCount = document.querySelector("#commercialNotificationCount");
-const processSettingsSelect = document.querySelector("#processSettingsSelect");
 const statusOptionForm = document.querySelector("#statusOptionForm");
-const trackingStepForm = document.querySelector("#trackingStepForm");
 const statusFilterButtons = document.querySelector("#statusFilterButtons");
 const imageModal = document.querySelector("#imageModal");
 const imageModalImg = document.querySelector("#imageModalImg");
@@ -797,8 +769,6 @@ function loadState() {
     merged.dataProcessing.folders = normalizeFileFolders(merged.dataProcessing.folders || []);
     merged.dataProcessing.files = (merged.dataProcessing.files || []).map(normalizeStoredFile);
     merged.statusOptions = normalizeStatusOptions(merged.statusOptions || defaultState.statusOptions);
-    merged.processSettings = normalizeProcessSettings(merged.processSettings || {}, merged.statusOptions);
-    merged.statusOptions = normalizeStatusOptions(merged.processSettings.compra?.statuses || merged.statusOptions);
     merged.formConfig = normalizeFormConfig(merged.formConfig);
     merged.taskDeletions = Array.isArray(merged.taskDeletions) ? merged.taskDeletions.filter((item) => item?.id) : [];
     merged.tasks = (merged.tasks || [])
@@ -1116,7 +1086,7 @@ async function obtenerUltimaTareaRemota(taskId) {
 
 function getTaskLifecycleRank(task = {}) {
   if (task.deleted) return 100;
-  if (isClosedStatus(task.status, getTaskProcess(task))) return 80;
+  if (isClosedStatus(task.status)) return 80;
   if (task.completedAt) return 75;
   if (task.takenAt || task.legalUserId || task.status === "tomado") return 60;
   if (task.status && !["pendiente", "por asignar"].includes(task.status)) return 40;
@@ -1127,11 +1097,10 @@ function shouldRemoteTaskReplacePendingLocal(remote, local) {
   if (!remote) return false;
   const remoteRank = getTaskLifecycleRank(remote);
   const localRank = getTaskLifecycleRank(local);
-  if (remoteRank < localRank) return false;
+  if (remoteRank !== localRank) return remoteRank > localRank;
   const remoteTime = new Date(remote.updatedAt || remote.remoteCreatedAt || 0).getTime() || 0;
   const localTime = new Date(local.updatedAt || 0).getTime() || 0;
-  if (remoteRank > localRank) return remoteTime >= localTime - 30000;
-  return remoteTime > localTime + 1000;
+  return remoteTime >= localTime;
 }
 
 function collapseTaskHistoryByLifecycle(items = []) {
@@ -1320,7 +1289,6 @@ function getSupabaseModuleSnapshots() {
       purchaseTypes: structuredClone(state.purchaseTypes || []),
       sanitationTypes: structuredClone(state.sanitationTypes || []),
       statusOptions: structuredClone(state.statusOptions || []),
-      processSettings: structuredClone(state.processSettings || {}),
       formConfig: structuredClone(state.formConfig || DEFAULT_FORM_CONFIG)
     },
     saneamientos: {
@@ -1592,24 +1560,10 @@ function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
   supabaseModuleVersions[modulo] = version || new Date().toISOString();
   switch (modulo) {
     case "usuarios":
-      {
-        const commercialUsers = Array.isArray(snapshot.commercialAdvisors)
-          ? normalizeCommercialAdvisors(snapshot.commercialAdvisors)
-          : [];
-        const legalUsers = Array.isArray(snapshot.legalUsers)
-          ? normalizeLegalUsers(snapshot.legalUsers)
-          : [];
-        const managerUsers = Array.isArray(snapshot.managerUsers)
-          ? snapshot.managerUsers.filter((user) => user?.username && user?.password)
-          : [];
-        const processingUsers = Array.isArray(snapshot.processingUsers)
-          ? snapshot.processingUsers.filter((user) => user?.username && user?.password)
-          : [];
-        if (commercialUsers.length) state.commercialAdvisors = commercialUsers;
-        if (legalUsers.length) state.legalUsers = legalUsers;
-        if (managerUsers.length) state.managerUsers = managerUsers;
-        if (processingUsers.length) state.processingUsers = processingUsers;
-      }
+      state.commercialAdvisors = normalizeCommercialAdvisors(snapshot.commercialAdvisors || state.commercialAdvisors || []);
+      state.legalUsers = normalizeLegalUsers(Array.isArray(snapshot.legalUsers) ? snapshot.legalUsers : (state.legalUsers || []));
+      state.managerUsers = Array.isArray(snapshot.managerUsers) ? snapshot.managerUsers : (state.managerUsers || []);
+      state.processingUsers = Array.isArray(snapshot.processingUsers) ? snapshot.processingUsers : (state.processingUsers || structuredClone(defaultState.processingUsers));
       persistAccessUsers(state);
       return true;
     case "catalogos":
@@ -1617,8 +1571,6 @@ function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
       state.purchaseTypes = Array.isArray(snapshot.purchaseTypes) ? snapshot.purchaseTypes : (state.purchaseTypes || []);
       state.sanitationTypes = Array.isArray(snapshot.sanitationTypes) ? snapshot.sanitationTypes : (state.sanitationTypes || []);
       state.statusOptions = normalizeStatusOptions(snapshot.statusOptions || state.statusOptions || []);
-      state.processSettings = normalizeProcessSettings(snapshot.processSettings || state.processSettings || {}, state.statusOptions);
-      state.statusOptions = normalizeStatusOptions(state.processSettings.compra?.statuses || state.statusOptions);
       state.formConfig = normalizeFormConfig(snapshot.formConfig || state.formConfig);
       return true;
     case "saneamientos":
@@ -1815,13 +1767,10 @@ function getTaskFreshness(task = {}) {
 function shouldTaskVersionReplace(candidate, current) {
   if (!candidate) return false;
   if (!current) return true;
-  if (current.syncStatus === "pending" && !shouldRemoteTaskReplacePendingLocal(candidate, current)) {
-    return false;
-  }
   const candidateRank = getTaskLifecycleRank(candidate);
   const currentRank = getTaskLifecycleRank(current);
   if (candidateRank !== currentRank) return candidateRank > currentRank;
-  return getTaskFreshness(candidate) > getTaskFreshness(current);
+  return getTaskFreshness(candidate) >= getTaskFreshness(current);
 }
 
 function mergeTasksByFreshness(baseItems = [], extraItems = []) {
@@ -1942,8 +1891,7 @@ function restorePcBackup(name) {
 }
 
 function normalizeStatusOptions(options) {
-  const safeOptions = Array.isArray(options) ? options : [];
-  const normalized = safeOptions.map((option) => {
+  const normalized = options.map((option) => {
     const label = option.label || option;
     return {
       id: option.id || crypto.randomUUID(),
@@ -1951,81 +1899,13 @@ function normalizeStatusOptions(options) {
       value: option.value || normalizeStatusValue(label),
       color: option.color || "#8d8d92",
       closes: Boolean(option.closes),
-      isDefault: Boolean(option.isDefault),
-      substatuses: parseFormOptions(option.substatuses || option.substatusOptions || option.substatus || [])
+      isDefault: Boolean(option.isDefault)
     };
   });
   if (!normalized.some((option) => option.value === "por asignar")) {
     normalized.unshift({ id: "status-por-asignar", label: "Por asignar", value: "por asignar", color: "#64748b", closes: false, isDefault: true });
   }
   return normalized;
-}
-
-function buildStatusOptionsFromLabels(labels = [], fallbackColor = "#64748b") {
-  return (labels || []).map((label, index) => ({
-    id: `status-${normalizeStatusValue(label).replace(/[^a-z0-9]+/g, "-") || index}`,
-    label,
-    value: normalizeStatusValue(label),
-    color: fallbackColor,
-    closes: /APROB|OK|ENVIADO|CERRAD|COMPLET|FINAL|ANULADO|RECHAZ/.test(normalizeLooseText(label)) && !isNegativeOutcomeText(label),
-    isDefault: true,
-    substatuses: []
-  }));
-}
-
-function getDefaultProcessSettings(sourceStatusOptions = DEFAULT_TASK_STATUS_OPTIONS) {
-  return {
-    compra: {
-      label: PROCESS_DEFINITIONS.compra.label,
-      statuses: normalizeStatusOptions(sourceStatusOptions || DEFAULT_TASK_STATUS_OPTIONS),
-      substatuses: ["Documentacion incompleta", "Revision de informacion", "Observacion legal"],
-      trackingSteps: normalizeTrackingSteps(DEFAULT_PROCESS_TRACKING_STEPS.compra)
-    },
-    venta: {
-      label: PROCESS_DEFINITIONS.venta.label,
-      statuses: normalizeStatusOptions(buildStatusOptionsFromLabels(CONTRACT_STATUS_OPTIONS, "#1d4ed8")),
-      substatuses: ["Acta pendiente", "Validacion documental", "Firma pendiente"],
-      trackingSteps: normalizeTrackingSteps(DEFAULT_PROCESS_TRACKING_STEPS.venta)
-    },
-    cuv: {
-      label: PROCESS_DEFINITIONS.cuv.label,
-      statuses: normalizeStatusOptions(buildStatusOptionsFromLabels(CUV_STATUS_OPTIONS, "#7c3aed")),
-      substatuses: ["Deposito pendiente", "Documento observado", "PDF cargado"],
-      trackingSteps: normalizeTrackingSteps(DEFAULT_PROCESS_TRACKING_STEPS.cuv)
-    }
-  };
-}
-
-function normalizeTrackingSteps(steps = []) {
-  return (Array.isArray(steps) ? steps : [])
-    .map((step, index) => {
-      const label = step?.label || step || `Paso ${index + 1}`;
-      return {
-        id: step?.id || `step-${index + 1}-${normalizeStatusValue(label).replace(/[^a-z0-9]+/g, "-")}`,
-        label,
-        order: Number(step?.order || index + 1)
-      };
-    })
-    .sort((a, b) => a.order - b.order);
-}
-
-function normalizeProcessSettings(settings = {}, sourceStatusOptions = DEFAULT_TASK_STATUS_OPTIONS) {
-  const defaults = getDefaultProcessSettings(sourceStatusOptions);
-  return Object.keys(PROCESS_DEFINITIONS).reduce((result, key) => {
-    const saved = settings?.[key] || {};
-    result[key] = {
-      label: saved.label || defaults[key].label,
-      statuses: normalizeStatusOptions(saved.statuses || defaults[key].statuses),
-      substatuses: parseFormOptions(saved.substatuses || defaults[key].substatuses),
-      trackingSteps: normalizeTrackingSteps(saved.trackingSteps || defaults[key].trackingSteps)
-    };
-    return result;
-  }, {});
-}
-
-function syncLegacyStatusOptionsFromProcessSettings() {
-  state.processSettings = normalizeProcessSettings(state.processSettings, state.statusOptions);
-  state.statusOptions = normalizeStatusOptions(state.processSettings.compra?.statuses || state.statusOptions || DEFAULT_TASK_STATUS_OPTIONS);
 }
 
 function normalizeCommercialAdvisors(advisors) {
@@ -2051,14 +1931,6 @@ function normalizeLegalMailboxes(mailboxes = []) {
   return normalized.length ? [...new Set(normalized)] : ["saneamientos"];
 }
 
-function normalizeAgencyList(agencies = []) {
-  const source = Array.isArray(agencies) ? agencies : String(agencies || "").split(",");
-  return [...new Set(source
-    .map((agency) => normalizeLooseText(agency))
-    .filter(Boolean)
-  )];
-}
-
 function normalizeLegalUsers(users = []) {
   return users.map((user, index) => {
     if (typeof user === "string") {
@@ -2068,7 +1940,6 @@ function normalizeLegalUsers(users = []) {
         username: `legal${index + 1}`,
         password: "Legal123",
         mailboxes: ["saneamientos"],
-        contractAgencies: [],
         legalAvailable: true
       };
     }
@@ -2078,7 +1949,6 @@ function normalizeLegalUsers(users = []) {
       username: user.username || `legal${index + 1}`,
       password: user.password || "Legal123",
       mailboxes: normalizeLegalMailboxes(user.mailboxes || user.profiles || user.buzones || user.profile),
-      contractAgencies: normalizeAgencyList(user.contractAgencies || user.contractAgenciesAssigned || user.contractAgency || user.agenciasContratos),
       legalAvailable: user.legalAvailable !== false
     };
   }).filter((user) => user.name && user.username);
@@ -2868,12 +2738,10 @@ function normalizeImportedState(importedState) {
   importedState.theme = parseMaybeJson(importedState.theme) || importedState.theme;
   importedState.dataProcessing = parseMaybeJson(importedState.dataProcessing) || importedState.dataProcessing;
   importedState.statusOptions = parseMaybeJson(importedState.statusOptions) || importedState.statusOptions;
-  importedState.processSettings = parseMaybeJson(importedState.processSettings) || importedState.processSettings;
   importedState.tasks = parseMaybeJson(importedState.tasks) || importedState.tasks;
   if (!isPlainObject(importedState.copy)) importedState.copy = {};
   if (!isPlainObject(importedState.theme)) importedState.theme = {};
   if (!isPlainObject(importedState.dataProcessing)) importedState.dataProcessing = {};
-  if (!isPlainObject(importedState.processSettings)) importedState.processSettings = {};
   if (!Array.isArray(importedState.statusOptions)) importedState.statusOptions = [];
   if (!Array.isArray(importedState.tasks)) importedState.tasks = [];
   const merged = { ...structuredClone(defaultState), ...importedState };
@@ -2904,8 +2772,6 @@ function normalizeImportedState(importedState) {
   merged.dataProcessing.folders = normalizeFileFolders(merged.dataProcessing.folders || []);
   merged.dataProcessing.files = (merged.dataProcessing.files || []).map(normalizeStoredFile);
   merged.statusOptions = normalizeStatusOptions(merged.statusOptions || defaultState.statusOptions);
-  merged.processSettings = normalizeProcessSettings(merged.processSettings || {}, merged.statusOptions);
-  merged.statusOptions = normalizeStatusOptions(merged.processSettings.compra?.statuses || merged.statusOptions);
   merged.formConfig = normalizeFormConfig(merged.formConfig);
   merged.taskDeletions = Array.isArray(merged.taskDeletions) ? merged.taskDeletions.filter((item) => item?.id) : [];
   merged.tasks = (merged.tasks || [])
@@ -3232,38 +3098,13 @@ function confirmPilotDocuments() {
   });
 }
 
-function getDuplicateScopeFromData(data = {}) {
-  const process = data.processType || "";
-  const tipoCompra = normalizeLooseText(data.tipoCompra || "");
-  const tipoSaneamiento = normalizeLooseText(data.tipoSaneamiento || "");
-  if (process === "cuv" || tipoCompra === "CUV" || tipoSaneamiento === "SOLICITUD CUV") return "cuv";
-  if (process === "venta" || data.precioContrato || data.vendedor || data.cedulaVendedor) return "venta";
-  if (process === "firma") return "firma";
-  return "saneamiento";
-}
-
-function taskMatchesDuplicateScope(task = {}, scope = "saneamiento") {
-  const process = getTaskProcess(task);
-  const tipoCompra = normalizeLooseText(task.tipoCompra || "");
-  const tipoSaneamiento = normalizeLooseText(task.tipoSaneamiento || "");
-  if (scope === "saneamiento") {
-    return process === "compra" && tipoCompra !== "CUV" && tipoSaneamiento !== "SOLICITUD CUV";
-  }
-  if (scope === "venta") return process === "venta";
-  if (scope === "cuv") return process === "cuv";
-  if (scope === "firma") return process === "firma";
-  return true;
-}
-
-function getDuplicateConflicts(data, excludeId = "", options = {}) {
-  const scope = options.scope || getDuplicateScopeFromData(data);
+function getDuplicateConflicts(data, excludeId = "") {
   const placa = normalizePlate(data.placa);
   const cedula = normalizeId(data.cedula);
   const cliente = normalizeLooseText(data.cliente || data.vendedor || "");
   const conflicts = [];
   state.tasks.forEach((task) => {
     if (task.id === excludeId) return;
-    if (!taskMatchesDuplicateScope(task, scope)) return;
     const taskPlate = normalizePlate(task.placa);
     const taskId = normalizeId(task.cedula || task.cedulaVendedor);
     const taskClient = normalizeLooseText(task.cliente || task.vendedor || "");
@@ -3279,19 +3120,17 @@ function getDuplicateConflicts(data, excludeId = "", options = {}) {
 
 function renderDuplicateConflict(conflict) {
   const task = conflict.task || {};
-  const process = getTaskProcess(task);
-  const processLabel = process === "cuv" ? "CUV" : process === "venta" ? "contrato" : "saneamiento";
   const advisor = task.commercialUserName || task.asesor || "asesor no registrado";
   const date = task.createdAt ? formatDateTime(task.createdAt) : "fecha no registrada";
-  const value = task.valorToma || task.precioContrato || task.cuvValue || "sin valor";
+  const value = task.valorToma || task.precioContrato || "sin valor";
   return `
     <article class="duplicate-conflict-card">
       <strong>${escapeHtml(conflict.reason)}</strong>
-      <p>Este ${escapeHtml(processLabel)} ya fue solicitado por el asesor <b>${escapeHtml(advisor)}</b> el <b>${escapeHtml(date)}</b>.</p>
+      <p>Este saneamiento ya fue solicitado por el asesor <b>${escapeHtml(advisor)}</b> el <b>${escapeHtml(date)}</b>.</p>
       <dl>
         <div><dt>Placa</dt><dd>${escapeHtml(task.placa || "Sin placa")}</dd></div>
         <div><dt>Cliente</dt><dd>${escapeHtml(task.cliente || task.vendedor || "Sin cliente")}</dd></div>
-        <div><dt>Valor</dt><dd>${escapeHtml(value)}</dd></div>
+        <div><dt>Valor de toma</dt><dd>${escapeHtml(value)}</dd></div>
         <div><dt>Estatus</dt><dd>${escapeHtml(task.status || "Sin estatus")}</dd></div>
       </dl>
       <span>Accion sugerida: contactar al asesor ${escapeHtml(advisor)} antes de continuar.</span>
@@ -3299,8 +3138,8 @@ function renderDuplicateConflict(conflict) {
   `;
 }
 
-function confirmDuplicateConflict(data, options = {}) {
-  const conflicts = getDuplicateConflicts(data, "", options);
+function confirmDuplicateConflict(data) {
+  const conflicts = getDuplicateConflicts(data);
   if (!conflicts.length) return Promise.resolve(true);
   return new Promise((resolve) => {
     if (!commercialDuplicateModal || !duplicateConflictContent || !duplicateContinueBtn || !duplicateCancelBtn) {
@@ -3328,7 +3167,6 @@ function openCommercialLeadFicha(taskId) {
   const latestLegalObservation = getLatestLegalObservation(task);
   const isCuv = isCuvTask(task);
   const stage = getCommercialTrackingStage(task);
-  const relatedCuvInfo = getRelatedCuvInfo(task);
   const stageItems = getCommercialTrackingStageItems(task);
   const completedStages = stageItems.filter((item) => item.status === "completed").length;
   const fields = [
@@ -3352,11 +3190,6 @@ function openCommercialLeadFicha(taskId) {
     ["Kilometraje", task.kilometraje],
     ["Tipo de compra", task.tipoCompra],
     ["Tipo de saneamiento", task.tipoSaneamiento],
-    ...(relatedCuvInfo ? [
-      ["CUV relacionado", relatedCuvInfo.task
-        ? `${relatedCuvInfo.label} | ${relatedCuvInfo.detail} | Solicitado ${formatDateTime(relatedCuvInfo.task.createdAt)}`
-        : relatedCuvInfo.label]
-    ] : []),
     ["Estatus", task.status],
     ["Firma / Pilot", getSignatureDisplayStatus(task)],
     ["Asesor legal", task.legalAdvisor],
@@ -3375,8 +3208,7 @@ function openCommercialLeadFicha(taskId) {
         <small>${escapeHtml(task.cliente || task.vendedor || "Cliente sin registro")}</small>
       </div>
       <div>
-        ${renderTaskStatusPill(task)}
-        ${renderRelatedCuvBadge(task)}
+        ${renderStatusPill(task.status)}
         <small>${escapeHtml(stage.label)} | ${stage.progress}%</small>
       </div>
     </div>
@@ -3454,104 +3286,31 @@ function renderSignatureRecipientCard(title, recipient = {}, type = "titular") {
   const email = recipient.email || "";
   const whatsapp = recipient.whatsapp || "";
   if (!email && !whatsapp) return "";
-  const contactActions = renderSignatureContactActions(email, whatsapp);
   return `
     <article class="signature-recipient-card is-${escapeHtml(type)}">
       <span>${escapeHtml(title)}</span>
       <strong>${escapeHtml(email || "Sin correo")}</strong>
       <small>${escapeHtml(whatsapp || "Sin WhatsApp")}</small>
-      ${contactActions}
     </article>
   `;
 }
 
-function normalizeWhatsappForLink(value = "") {
-  const digits = String(value || "").replace(/\D/g, "");
-  if (!digits) return "";
-  if (digits.startsWith("593")) return digits;
-  if (digits.startsWith("0") && digits.length >= 9) return `593${digits.slice(1)}`;
-  return digits.length === 9 ? `593${digits}` : digits;
-}
-
-function renderSignatureContactActions(email = "", whatsapp = "") {
-  const actions = [];
-  const safeEmail = String(email || "").trim();
-  const whatsappNumber = normalizeWhatsappForLink(whatsapp);
-  if (safeEmail) {
-    actions.push(`<a class="signature-contact-action" href="mailto:${escapeHtml(safeEmail)}">Correo</a>`);
-  }
-  if (whatsappNumber) {
-    actions.push(`<a class="signature-contact-action" href="https://wa.me/${escapeHtml(whatsappNumber)}" target="_blank" rel="noopener">WhatsApp</a>`);
-  }
-  return actions.length ? `<div class="signature-contact-actions">${actions.join("")}</div>` : "";
-}
-
 function renderSignatureRecipientCards(task = {}) {
   if (!isSignatureTask(task)) return "";
-  const payload = getSignaturePayloadForTask(task);
+  const payload = task.signaturePayload || {};
   const heirs = Array.isArray(payload.herederos) ? payload.herederos.filter((item) => item?.email || item?.whatsapp) : [];
   const cards = [
     renderSignatureRecipientCard("Titular", payload.titular, "titular"),
     renderSignatureRecipientCard("Conyuge", payload.conyuge, "conyuge"),
     ...heirs.map((heir, index) => renderSignatureRecipientCard(`Heredero ${heir.index || index + 1}`, heir, "heredero"))
   ].filter(Boolean);
-  if (!cards.length) {
-    return `
-      <section class="signature-recipient-panel">
-        <p class="eyebrow">Datos para firma</p>
-        <div class="empty compact-empty">No se encontraron correos o WhatsApp en esta solicitud. Revise la tarea origen o solicite el dato al asesor comercial.</div>
-      </section>
-    `;
-  }
+  if (!cards.length) return "";
   return `
     <section class="signature-recipient-panel">
       <p class="eyebrow">Datos para firma</p>
       <div class="signature-recipient-grid">${cards.join("")}</div>
     </section>
   `;
-}
-
-function pickSignatureField(items = [], keys = []) {
-  for (const item of items) {
-    if (!item) continue;
-    for (const key of keys) {
-      const value = item[key];
-      if (value !== undefined && value !== null && String(value).trim()) return String(value).trim();
-    }
-  }
-  return "";
-}
-
-function normalizeSignaturePayload(payload = {}, fallbackTasks = []) {
-  const safePayload = payload && typeof payload === "object" ? payload : {};
-  const titular = {
-    ...(safePayload.titular || {}),
-    email: safePayload.titular?.email || pickSignatureField(fallbackTasks, ["titularEmail", "emailTitular", "correoTitular", "correoElectronicoTitular", "correo", "email"]),
-    whatsapp: safePayload.titular?.whatsapp || pickSignatureField(fallbackTasks, ["titularWhatsapp", "whatsappTitular", "telefonoTitular", "celularTitular", "whatsapp", "telefono", "celular"])
-  };
-  const conyuge = safePayload.conyuge || pickSignatureField(fallbackTasks, ["conyugeEmail", "emailConyuge", "correoConyuge", "whatsappConyuge", "conyugeWhatsapp"])
-    ? {
-        ...(safePayload.conyuge || {}),
-        email: safePayload.conyuge?.email || pickSignatureField(fallbackTasks, ["conyugeEmail", "emailConyuge", "correoConyuge"]),
-        whatsapp: safePayload.conyuge?.whatsapp || pickSignatureField(fallbackTasks, ["conyugeWhatsapp", "whatsappConyuge", "telefonoConyuge", "celularConyuge"])
-      }
-    : null;
-  return {
-    ...safePayload,
-    titular,
-    conyuge,
-    herederos: Array.isArray(safePayload.herederos) ? safePayload.herederos : []
-  };
-}
-
-function getSignaturePayloadForTask(task = {}) {
-  const sourceTask = task.sourceTaskId ? state.tasks.find((item) => item.id === task.sourceTaskId) : null;
-  const payload = task.signaturePayload && Object.keys(task.signaturePayload || {}).length
-    ? task.signaturePayload
-    : sourceTask?.signaturePayload && Object.keys(sourceTask.signaturePayload || {}).length
-      ? sourceTask.signaturePayload
-      : {};
-  return normalizeSignaturePayload(payload, [task, sourceTask]);
 }
 
 async function checkForAppUpdate() {
@@ -3728,7 +3487,6 @@ function renderSelects() {
   renderSelect("tipoSaneamientoSelect", state.sanitationTypes);
   renderSelect("agenciaSelect", state.agencies);
   renderSelect("saleAgencySelect", state.agencies);
-  renderMultiSelect("legalContractAgenciesInput", state.agencies);
   renderAgencySelect("advisorAgencyInput");
   renderAgencySelect("adminAgencyFilter", true);
   renderLegalFilter();
@@ -3741,7 +3499,6 @@ function renderSelects() {
 
 function renderSelect(id, options) {
   const select = document.querySelector(`#${id}`);
-  if (!select) return;
   const current = select.value;
   select.innerHTML = `<option value="">Seleccione una opcion</option>`;
   options.forEach((option) => {
@@ -3751,20 +3508,6 @@ function renderSelect(id, options) {
     select.appendChild(item);
   });
   select.value = current && [...select.options].some((option) => option.value === current) ? current : "";
-}
-
-function renderMultiSelect(id, options = []) {
-  const select = document.querySelector(`#${id}`);
-  if (!select) return;
-  const current = [...select.selectedOptions].map((option) => option.value);
-  select.innerHTML = "";
-  options.forEach((option) => {
-    const item = document.createElement("option");
-    item.value = option;
-    item.textContent = option;
-    item.selected = current.includes(option);
-    select.appendChild(item);
-  });
 }
 
 function renderAgencySelect(id, includeAll = false) {
@@ -4195,12 +3938,8 @@ function renderCommercialAdvisors() {
 
 function renderStatusOptions() {
   const container = document.querySelector("#statusOptionsList");
-  if (!container) return;
-  syncLegacyStatusOptionsFromProcessSettings();
-  const processKey = getSelectedProcessSettingsKey();
-  const process = state.processSettings[processKey] || state.processSettings.compra;
   container.innerHTML = "";
-  (process.statuses || []).forEach((status) => {
+  state.statusOptions.forEach((status) => {
     const item = document.createElement("article");
     item.className = "option-item status-admin-item";
     item.dataset.statusOptionId = status.id;
@@ -4208,7 +3947,6 @@ function renderStatusOptions() {
       <i style="background:${escapeHtml(status.color)}"></i>
       <input data-status-label value="${escapeHtml(status.label)}" aria-label="Nombre del estatus">
       <input data-status-color type="color" value="${escapeHtml(status.color || "#8d8d92")}" aria-label="Color del estatus ${escapeHtml(status.label)}">
-      <input data-status-substatuses value="${escapeHtml((status.substatuses || []).join(", "))}" placeholder="Subestatus separados por coma" aria-label="Subestatus de ${escapeHtml(status.label)}">
       <label class="check-row"><input data-status-closes type="checkbox" ${status.closes ? "checked" : ""}> Cierra tarea</label>
       <button class="btn secondary tiny" type="button" data-save-status-option>Guardar</button>
       ${status.isDefault ? "" : `<button class="remove-option" type="button" aria-label="Eliminar ${escapeHtml(status.label)}">x</button>`}
@@ -4221,65 +3959,16 @@ function renderStatusOptions() {
     if (button) button.addEventListener("click", () => removeStatusOption(status.id));
     container.appendChild(item);
   });
-  renderTrackingStepsAdmin(processKey);
-}
-
-function getSelectedProcessSettingsKey() {
-  const selected = processSettingsSelect?.value || "compra";
-  return PROCESS_DEFINITIONS[selected] ? selected : "compra";
-}
-
-function getProcessSettings(processKey = "compra") {
-  state.processSettings = normalizeProcessSettings(state.processSettings || {}, state.statusOptions || DEFAULT_TASK_STATUS_OPTIONS);
-  return state.processSettings[PROCESS_DEFINITIONS[processKey] ? processKey : "compra"];
-}
-
-function getProcessStatusOptions(processKey = "compra") {
-  return normalizeStatusOptions(getProcessSettings(processKey)?.statuses || state.statusOptions || DEFAULT_TASK_STATUS_OPTIONS);
-}
-
-function getProcessTrackingSteps(processKey = "compra") {
-  return normalizeTrackingSteps(getProcessSettings(processKey)?.trackingSteps || DEFAULT_PROCESS_TRACKING_STEPS[processKey] || []);
-}
-
-function renderTrackingStepsAdmin(processKey = getSelectedProcessSettingsKey()) {
-  const container = document.querySelector("#trackingStepsList");
-  if (!container) return;
-  const steps = getProcessTrackingSteps(processKey);
-  container.innerHTML = steps.map((step, index) => `
-    <article class="option-item tracking-step-admin-item" data-tracking-step="${escapeHtml(step.id)}">
-      <span><strong>${index + 1}. ${escapeHtml(step.label)}</strong><small>${escapeHtml(PROCESS_DEFINITIONS[processKey]?.shortLabel || processKey)}</small></span>
-      <input data-tracking-step-label value="${escapeHtml(step.label)}" aria-label="Nombre del paso">
-      <button class="btn secondary tiny" type="button" data-save-tracking-step>Guardar</button>
-      <button class="remove-option" type="button" data-delete-tracking-step aria-label="Eliminar paso ${escapeHtml(step.label)}">x</button>
-    </article>
-  `).join("");
-  container.querySelectorAll("[data-save-tracking-step]").forEach((button) => {
-    button.addEventListener("click", () => updateTrackingStep(processKey, button.closest("[data-tracking-step]")));
-  });
-  container.querySelectorAll("[data-delete-tracking-step]").forEach((button) => {
-    button.addEventListener("click", () => removeTrackingStep(processKey, button.closest("[data-tracking-step]")?.dataset.trackingStep));
-  });
 }
 
 function renderStatusFilters() {
-  const getFilterIcon = (value = "") => {
-    const normalized = normalizeStatusValue(value);
-    if (value === "todos") return "fa-table-cells-large";
-    if (normalized.includes("asignar")) return "fa-user-plus";
-    if (normalized.includes("pendiente")) return "fa-clock";
-    if (normalized.includes("tomado")) return "fa-user-check";
-    if (normalized.includes("rechaz")) return "fa-circle-xmark";
-    if (normalized.includes("realizado") || normalized.includes("subido")) return "fa-circle-check";
-    return "fa-ellipsis";
-  };
-  statusFilterButtons.innerHTML = `<button class="chip legal-filter-tab ${activeFilter === "todos" ? "is-active" : ""}" data-filter="todos"><span class="legal-tab-icon"><i class="fa-solid ${getFilterIcon("todos")}" aria-hidden="true"></i></span><span>Todos</span></button>`;
+  statusFilterButtons.innerHTML = `<button class="chip ${activeFilter === "todos" ? "is-active" : ""}" data-filter="todos">Todos</button>`;
   state.statusOptions.forEach((status) => {
     const button = document.createElement("button");
-    button.className = `chip legal-filter-tab ${activeFilter === status.value ? "is-active" : ""}`;
+    button.className = `chip ${activeFilter === status.value ? "is-active" : ""}`;
     button.dataset.filter = status.value;
     button.type = "button";
-    button.innerHTML = `<span class="legal-tab-icon"><i class="fa-solid ${getFilterIcon(status.value)}" aria-hidden="true"></i></span><span>${escapeHtml(status.label)}</span>`;
+    button.textContent = status.label;
     statusFilterButtons.appendChild(button);
   });
 
@@ -4321,38 +4010,32 @@ function removeOption(key, value) {
 function addStatusOption(data) {
   const label = data.label.trim();
   if (!label) return;
-  const processKey = getSelectedProcessSettingsKey();
-  const process = getProcessSettings(processKey);
   const value = normalizeStatusValue(label);
-  const exists = (process.statuses || []).some((status) => status.value === value);
+  const exists = state.statusOptions.some((status) => status.value === value);
   if (exists) {
     showToast("Ese estatus ya existe.");
     return;
   }
-  process.statuses.push({
+  state.statusOptions.push({
     id: crypto.randomUUID(),
     label,
     value,
     color: data.color || "#8d8d92",
     closes: data.closes === "on",
-    isDefault: false,
-    substatuses: parseFormOptions(data.substatuses)
+    isDefault: false
   });
-  syncLegacyStatusOptionsFromProcessSettings();
   saveState();
   renderAll();
   showToast("Estatus agregado.");
 }
 
 function updateStatusOption(id, row) {
-  const processKey = getSelectedProcessSettingsKey();
-  const process = getProcessSettings(processKey);
-  const status = (process.statuses || []).find((item) => item.id === id);
+  const status = state.statusOptions.find((item) => item.id === id);
   if (!status || !row) return;
   const oldValue = status.value;
   const label = row.querySelector("[data-status-label]")?.value.trim() || status.label;
   const value = normalizeStatusValue(label);
-  const duplicated = (process.statuses || []).some((item) => item.id !== id && item.value === value);
+  const duplicated = state.statusOptions.some((item) => item.id !== id && item.value === value);
   if (duplicated) {
     showToast("Ya existe otro estatus con ese nombre.");
     return;
@@ -4361,8 +4044,7 @@ function updateStatusOption(id, row) {
   status.value = value;
   status.color = row.querySelector("[data-status-color]")?.value || status.color || "#8d8d92";
   status.closes = Boolean(row.querySelector("[data-status-closes]")?.checked);
-  status.substatuses = parseFormOptions(row.querySelector("[data-status-substatuses]")?.value || "");
-  if (oldValue !== value && processKey === "compra") {
+  if (oldValue !== value) {
     state.tasks.forEach((task) => {
       if (normalizeStatusValue(task.status) === oldValue) {
         task.status = value;
@@ -4373,7 +4055,6 @@ function updateStatusOption(id, row) {
     });
     if (activeFilter === oldValue) activeFilter = value;
   }
-  syncLegacyStatusOptionsFromProcessSettings();
   saveState();
   renderAll();
   guardarModulosSupabase();
@@ -4383,64 +4064,19 @@ function updateStatusOption(id, row) {
 }
 
 function removeStatusOption(id) {
-  const processKey = getSelectedProcessSettingsKey();
-  const process = getProcessSettings(processKey);
-  const status = (process.statuses || []).find((item) => item.id === id);
+  const status = state.statusOptions.find((item) => item.id === id);
   if (!status || status.isDefault) return;
-  process.statuses = (process.statuses || []).filter((item) => item.id !== id);
-  if (processKey === "compra") {
-    state.tasks.forEach((task) => {
-      if (task.status === status.value) {
-        task.status = "pendiente";
-        task.completedAt = "";
-      }
-    });
-    if (activeFilter === status.value) activeFilter = "todos";
-  }
-  syncLegacyStatusOptionsFromProcessSettings();
+  state.statusOptions = state.statusOptions.filter((item) => item.id !== id);
+  state.tasks.forEach((task) => {
+    if (task.status === status.value) {
+      task.status = "pendiente";
+      task.completedAt = "";
+    }
+  });
+  if (activeFilter === status.value) activeFilter = "todos";
   saveState();
   renderAll();
   showToast("Estatus eliminado.");
-}
-
-function addTrackingStep(data = {}) {
-  const label = String(data.label || "").trim();
-  if (!label) return;
-  const processKey = getSelectedProcessSettingsKey();
-  const process = getProcessSettings(processKey);
-  process.trackingSteps = normalizeTrackingSteps(process.trackingSteps || []);
-  process.trackingSteps.push({
-    id: crypto.randomUUID(),
-    label,
-    order: process.trackingSteps.length + 1
-  });
-  saveState();
-  renderAll();
-  guardarModulosSupabase();
-  showToast("Paso de tracking agregado.");
-}
-
-function updateTrackingStep(processKey, row) {
-  if (!row) return;
-  const process = getProcessSettings(processKey);
-  const step = (process.trackingSteps || []).find((item) => item.id === row.dataset.trackingStep);
-  if (!step) return;
-  step.label = row.querySelector("[data-tracking-step-label]")?.value.trim() || step.label;
-  process.trackingSteps = normalizeTrackingSteps(process.trackingSteps);
-  saveState();
-  renderAll();
-  guardarModulosSupabase();
-  showToast("Paso de tracking actualizado.");
-}
-
-function removeTrackingStep(processKey, id) {
-  const process = getProcessSettings(processKey);
-  process.trackingSteps = normalizeTrackingSteps((process.trackingSteps || []).filter((item) => item.id !== id))
-    .map((step, index) => ({ ...step, order: index + 1 }));
-  saveState();
-  renderAll();
-  guardarModulosSupabase();
-  showToast("Paso de tracking eliminado.");
 }
 
 function addCommercialAdvisor(data) {
@@ -4662,7 +4298,6 @@ function createUser(data) {
     username,
     password,
     mailboxes,
-    contractAgencies: normalizeAgencyList(data.contractAgencies),
     legalAvailable: true
   });
   saveState();
@@ -4680,7 +4315,7 @@ function removeUser(id) {
   }
 
   state.tasks = (state.tasks || []).map((task) => {
-    if (task.legalUserId !== id || isClosedStatus(task.status, getTaskProcess(task))) return task;
+    if (task.legalUserId !== id || isClosedStatus(task.status)) return task;
     return {
       ...task,
       legalUserId: "",
@@ -4708,7 +4343,6 @@ function renderUsers() {
   state.legalUsers = normalizeLegalUsers(state.legalUsers || []);
   state.legalUsers.forEach((user) => {
     const mailboxes = normalizeLegalMailboxes(user.mailboxes);
-    const contractAgencies = normalizeAgencyList(user.contractAgencies);
     const item = document.createElement("article");
     item.className = "user-row";
     item.innerHTML = `
@@ -4716,7 +4350,6 @@ function renderUsers() {
         <strong>${escapeHtml(user.name)}</strong>
         <span>Usuario: ${escapeHtml(user.username)}</span>
         <small>Buzones: ${mailboxes.map((mailbox) => LEGAL_MAILBOXES.find((entry) => entry.id === mailbox)?.label || mailbox).join(", ")}</small>
-        <small>Agencias contratos: ${contractAgencies.length ? contractAgencies.join(", ") : "Todas las agencias"}</small>
         <small class="availability-badge ${user.legalAvailable === false ? "is-off" : "is-on"}">${user.legalAvailable === false ? "No disponible para nuevas tareas" : "Disponible para nuevas tareas"}</small>
       </div>
       <div class="row-actions">
@@ -4728,12 +4361,6 @@ function renderUsers() {
             </label>
           `).join("")}
         </div>
-        <label class="contract-agency-admin">
-          <span>Agencias contratos</span>
-          <select multiple>
-            ${renderContractAgencyOptions(contractAgencies)}
-          </select>
-        </label>
         <button class="btn secondary save-mailboxes" type="button">Guardar buzones</button>
         <button class="btn secondary toggle-legal-availability" type="button">${user.legalAvailable === false ? "Poner disponible" : "Marcar no disponible"}</button>
         <input type="password" placeholder="Nueva contrasena">
@@ -4749,8 +4376,7 @@ function renderUsers() {
     });
     item.querySelector(".save-mailboxes").addEventListener("click", () => {
       const selected = [...item.querySelectorAll(".mailbox-picker input:checked")].map((input) => input.value);
-      const selectedAgencies = [...item.querySelectorAll(".contract-agency-admin select option:checked")].map((option) => option.value);
-      updateLegalUserTaskAccess(user.id, selected, selectedAgencies);
+      updateLegalUserMailboxes(user.id, selected);
     });
     item.querySelector(".toggle-legal-availability").addEventListener("click", () => {
       setLegalUserAvailability(user.id, user.legalAvailable === false);
@@ -4758,14 +4384,6 @@ function renderUsers() {
     container.appendChild(item);
   });
   initPasswordToggles(container);
-}
-
-function renderContractAgencyOptions(selectedAgencies = []) {
-  return (state.agencies || []).map((agency) => `
-    <option value="${escapeHtml(agency)}" ${selectedAgencies.includes(normalizeLooseText(agency)) || selectedAgencies.includes(agency) ? "selected" : ""}>
-      ${escapeHtml(agency)}
-    </option>
-  `).join("");
 }
 
 function setLegalUserAvailability(id, available) {
@@ -4784,31 +4402,21 @@ function setLegalUserAvailability(id, available) {
 }
 
 function updateLegalUserMailboxes(id, mailboxes) {
-  updateLegalUserTaskAccess(id, mailboxes);
-}
-
-function updateLegalUserTaskAccess(id, mailboxes, contractAgencies = undefined) {
   const user = state.legalUsers.find((item) => item.id === id);
   if (!user) return;
   const nextMailboxes = normalizeLegalMailboxes(mailboxes);
   user.mailboxes = nextMailboxes;
-  if (contractAgencies !== undefined) {
-    user.contractAgencies = normalizeAgencyList(contractAgencies);
-  }
   state.tasks = (state.tasks || []).map((task) => {
-    const mailbox = getTaskMailbox(task);
-    const stillHasMailbox = nextMailboxes.includes(mailbox);
-    const stillHandlesAgency = mailbox !== "contratos" || legalUserHandlesContractAgency(user, task);
-    if (task.legalUserId !== id || isClosedStatus(task.status, getTaskProcess(task)) || (stillHasMailbox && stillHandlesAgency)) return task;
+    if (task.legalUserId !== id || isClosedStatus(task.status) || nextMailboxes.includes(getTaskMailbox(task))) return task;
     return {
       ...task,
       legalUserId: "",
       legalAdvisor: "",
       takenAt: "",
-      status: ["contratos", "cuv", "firmas"].includes(mailbox) ? "por asignar" : "pendiente",
+      status: ["contratos", "cuv", "firmas"].includes(getTaskMailbox(task)) ? "por asignar" : "pendiente",
       updatedAt: new Date().toISOString(),
       syncStatus: "pending",
-      syncAction: mailbox === "contratos" ? "reasignar-agencia-contrato" : "reasignar-buzon"
+      syncAction: "reasignar-buzon"
     };
   });
   saveState();
@@ -4816,7 +4424,7 @@ function updateLegalUserTaskAccess(id, mailboxes, contractAgencies = undefined) 
   sincronizarTareasPendientesSupabase();
   guardarUsuariosSupabaseAhora();
   renderAll();
-  showToast("Accesos del asistente actualizados.");
+  showToast("Buzones del asistente actualizados.");
 }
 
 function normalizeLegalChatMessages(messages = []) {
@@ -5207,7 +4815,7 @@ function renderProcessingUsers() {
 }
 
 async function createTask(data) {
-  const duplicateWarnings = getDuplicateWarnings(data, "", { scope: "saneamiento" });
+  const duplicateWarnings = getDuplicateWarnings(data);
   const createdAt = new Date().toISOString();
   const commercialOwner = session.role === "commercial"
     ? { id: session.userId, name: session.name, agency: session.agency }
@@ -5288,7 +4896,7 @@ async function createSaleContractTask(data) {
     customFields: extractCustomFields(data, "venta"),
     kilometraje: "",
     observaciones: `CONTRATO COMPRAVENTA | Vendedor: ${normalizeLooseText(data.vendedor)} | Direccion: ${normalizeLooseText(data.direccion)} | Telefono: ${String(data.telefono || "").trim()} | Correo: ${String(data.correo || "").trim().toLowerCase()}`,
-    duplicateWarnings: getDuplicateWarnings({ placa: data.placa, cedula: data.cedulaVendedor }, "", { scope: "venta" }),
+    duplicateWarnings: getDuplicateWarnings({ placa: data.placa, cedula: data.cedulaVendedor }),
     commercialUserId: commercialOwner.id,
     commercialUserName: commercialOwner.name,
     commercialAgency: commercialOwner.agency || data.agencia,
@@ -5309,8 +4917,8 @@ async function createSaleContractTask(data) {
   );
 }
 
-function getDuplicateWarnings(data, excludeId = "", options = {}) {
-  return getDuplicateConflicts(data, excludeId, options).map((conflict) => {
+function getDuplicateWarnings(data, excludeId = "") {
+  return getDuplicateConflicts(data, excludeId).map((conflict) => {
     const task = conflict.task || {};
     const advisor = task.commercialUserName || task.asesor || "otro asesor";
     const date = task.createdAt ? formatDateTime(task.createdAt) : "fecha no registrada";
@@ -5375,84 +4983,13 @@ function normalizeStatusValue(value = "") {
   return String(value).trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-function isNegativeOutcomeText(value = "") {
-  const text = normalizeLooseText(value);
-  return Boolean(text) && (
-    text.includes("RECHAZ") ||
-    text.includes("NO APROB") ||
-    text.includes("SIN APROB") ||
-    text.includes("SIN LEAD") ||
-    text.includes("NO GENERAR") ||
-    text.includes("BLOQUEADO") ||
-    text.includes("ANULADO") ||
-    text.includes("ERRONEO")
-  );
-}
-
-function isPositiveOutcomeText(value = "") {
-  const text = normalizeLooseText(value);
-  return Boolean(text) && (
-    text.includes("REALIZADO") ||
-    text.includes("SUBIDO") ||
-    text.includes("APROBADO") ||
-    text.includes("ENVIADO ASESOR") ||
-    text.includes("GESTIONADO") ||
-    text.includes("OK") ||
-    text.includes("CERRADO") ||
-    text.includes("COMPLET")
-  ) && !isNegativeOutcomeText(value);
-}
-
-function getStatusOption(value, processKey = "compra") {
+function getStatusOption(value) {
   const normalized = normalizeStatusValue(value);
-  if (processKey === "firma") {
-    const signatureOption = getSignatureStatusOption(normalized);
-    if (signatureOption) return signatureOption;
-  }
-  const processStatuses = getProcessStatusOptions(processKey);
-  return processStatuses.find((status) => status.value === normalized) ||
-    state.statusOptions.find((status) => status.value === normalized) ||
-    processStatuses[0] ||
-    state.statusOptions[0];
+  return state.statusOptions.find((status) => status.value === normalized) || state.statusOptions[0];
 }
 
-function getSignatureStatusOption(value = "") {
-  const normalized = normalizeStatusValue(value);
-  const baseOptions = normalizeStatusOptions(DEFAULT_TASK_STATUS_OPTIONS);
-  const base = baseOptions.find((status) => status.value === normalized);
-  if (base) return base;
-  if (normalized === normalizeStatusValue(SIGNATURE_STATUS.requested)) {
-    return { id: "signature-requested", label: "Firma solicitada", value: normalized, color: "#2563eb", closes: false };
-  }
-  if (normalized === normalizeStatusValue(SIGNATURE_STATUS.sent)) {
-    return { id: "signature-sent", label: "Enviado a firmar exitoso", value: normalized, color: "#22c55e", closes: true };
-  }
-  if (normalized === normalizeStatusValue(SIGNATURE_STATUS.pilotRequested)) {
-    return { id: "signature-pilot-requested", label: "Subida a Pilot solicitada", value: normalized, color: "#f59e0b", closes: false };
-  }
-  if (normalized === normalizeStatusValue(SIGNATURE_STATUS.completed)) {
-    return { id: "signature-completed", label: "Contratos subidos a Pilot", value: normalized, color: "#15803d", closes: true };
-  }
-  return null;
-}
-
-function isClosedStatus(value, processKey = "compra") {
-  if (processKey === "firma") {
-    const normalized = normalizeStatusValue(value);
-    return [
-      normalizeStatusValue(SIGNATURE_STATUS.sent),
-      normalizeStatusValue(SIGNATURE_STATUS.completed)
-    ].includes(normalized) || isNegativeOutcomeText(value);
-  }
-  return isNegativeOutcomeText(value) || Boolean(getStatusOption(value, processKey)?.closes);
-}
-
-function shouldShowInLegalActiveInbox(task = {}) {
-  const status = normalizeStatusValue(task.status);
-  if (isSignatureTask(task)) return !isClosedStatus(task.status, getTaskProcess(task));
-  if (isCuvTask(task)) return !isClosedStatus(task.status, getTaskProcess(task));
-  if (getTaskMailbox(task) === "contratos") return !isClosedStatus(task.status, getTaskProcess(task));
-  return ["por asignar", "pendiente", "tomado"].includes(status);
+function isClosedStatus(value) {
+  return Boolean(getStatusOption(value)?.closes);
 }
 
 function getVisibleTasks() {
@@ -5462,9 +4999,8 @@ function getVisibleTasks() {
     .filter((task) => {
       if (activeFilter === "firmas") return isSignatureTask(task);
       if (activeFilter === "cuv") return isCuvTask(task);
-      if (activeFilter === "contratos") return getTaskMailbox(task) === "contratos";
-      if (activeFilter === "todos") return getLegalDefaultMailboxScope(task) && shouldShowInLegalActiveInbox(task);
-      return !isSignatureTask(task) && !isCuvTask(task) && getTaskMailbox(task) !== "contratos" && task.status === activeFilter;
+      if (activeFilter === "todos") return !isSignatureTask(task) && !isCuvTask(task);
+      return !isSignatureTask(task) && !isCuvTask(task) && task.status === activeFilter;
     })
     .filter((task) => isInsideDateRange(task.createdAt, taskDateFrom, taskDateTo))
     .filter((task) => {
@@ -5525,11 +5061,9 @@ function renderTasks() {
   const visiblePool = state.tasks.filter((task) => canLegalUserSeeTask(task)).filter((task) => {
     if (activeFilter === "firmas") return isSignatureTask(task);
     if (activeFilter === "cuv") return isCuvTask(task);
-    if (activeFilter === "contratos") return getTaskMailbox(task) === "contratos";
-    if (activeFilter === "todos") return getLegalDefaultMailboxScope(task);
-    return !isSignatureTask(task) && !isCuvTask(task) && getTaskMailbox(task) !== "contratos";
+    return !isSignatureTask(task) && !isCuvTask(task);
   });
-  const pendingTasks = visiblePool.filter((task) => !isClosedStatus(task.status, getTaskProcess(task)));
+  const pendingTasks = visiblePool.filter((task) => !isClosedStatus(task.status));
   if (queueCount) queueCount.textContent = pendingTasks.length;
   const user = currentLegalUser();
   const mailboxLabel = user
@@ -5545,7 +5079,7 @@ function renderTasks() {
 
   const filteredTasks = getVisibleTasks();
   document.querySelector("#visibleTaskCount").textContent = filteredTasks.length;
-  document.querySelector("#unassignedTaskCount").textContent = visiblePool.filter((task) => !task.legalUserId && !isClosedStatus(task.status, getTaskProcess(task))).length;
+  document.querySelector("#unassignedTaskCount").textContent = visiblePool.filter((task) => !task.legalUserId && !isClosedStatus(task.status)).length;
   document.querySelector("#avgLeadTime").textContent = formatMinutes(getAverageCompletionMinutes(visiblePool));
 
   if (!filteredTasks.length) {
@@ -5563,7 +5097,7 @@ function renderTasks() {
     const lockedForLegal = isTaskStatusLockedForLegal(task);
     const canEdit = session.role === "admin" || (task.legalUserId === session.userId && !lockedForLegal);
     const canEditStatus = canEdit && !isSignatureTask(task) && !isCuvTask(task);
-    const status = getStatusOption(task.status, getTaskProcess(task));
+    const status = getStatusOption(task.status);
     const warnings = task.duplicateWarnings?.length ? task.duplicateWarnings : getDuplicateWarnings(task, task.id);
     const card = document.createElement("article");
     card.className = `task-card task-row-card ${warnings.length ? "has-warning" : ""}`;
@@ -5584,7 +5118,7 @@ function renderTasks() {
         <small>Creado: ${formatDateTime(task.createdAt)}</small>
       </div>
       <div class="task-row-status">
-        ${renderTaskStatusPill(task)}
+        ${renderStatusPill(task.status)}
         <span class="time-chip">${formatLeadDuration(task)}</span>
       </div>
       <div class="task-row-actions">
@@ -5595,7 +5129,7 @@ function renderTasks() {
         ${assignedToAnother ? `<small class="locked-note">Tomado por otro asistente</small>` : ""}
         ${lockedForLegal ? `<small class="locked-note">Estatus bloqueado</small>` : ""}
         ${canEditStatus ? `<select aria-label="Estatus del saneamiento">
-          ${getProcessStatusOptions(getTaskProcess(task)).map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join("")}
+          ${state.statusOptions.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join("")}
         </select>` : ""}
       </div>
     `;
@@ -5626,15 +5160,6 @@ function syncLegalSidebarFilters() {
     }
     button.classList.toggle("is-active", button.dataset.legalSidebarFilter === activeFilter);
   });
-}
-
-function getLegalDefaultMailboxScope(task = {}) {
-  if (session.role === "admin") return true;
-  const user = currentLegalUser();
-  if (!user) return false;
-  const mailboxes = normalizeLegalMailboxes(user.mailboxes);
-  if (mailboxes.length === 1) return getTaskMailbox(task) === mailboxes[0];
-  return true;
 }
 
 function renderLegalTaskFullDetails(task) {
@@ -5668,7 +5193,7 @@ function renderLegalTaskFullDetails(task) {
     `;
   }
   if (isSignatureTask(task)) {
-    const payload = getSignaturePayloadForTask(task);
+    const payload = task.signaturePayload || {};
     const heirs = Array.isArray(payload.herederos) ? payload.herederos : [];
     const sourceTask = state.tasks.find((item) => item.id === task.sourceTaskId) || {};
     const fields = [
@@ -5713,7 +5238,7 @@ function renderLegalTaskFullDetails(task) {
         ["Telefono", task.telefono],
         ["Correo", task.correo],
         ["Asesor comercial", task.asesor || task.commercialUserName],
-        ["Estatus", getStatusOption(task.status, getTaskProcess(task))?.label || task.status],
+        ["Estatus", getStatusOption(task.status)?.label || task.status],
         ["Observaciones", task.observaciones]
       ]
     : [
@@ -5728,7 +5253,7 @@ function renderLegalTaskFullDetails(task) {
         ["Asesor comercial", task.asesor || task.commercialUserName],
         ["Tipo de compra", task.tipoCompra],
         ["Tipo de saneamiento", task.tipoSaneamiento],
-        ["Estatus", getStatusOption(task.status, getTaskProcess(task))?.label || task.status],
+        ["Estatus", getStatusOption(task.status)?.label || task.status],
         ["Observaciones", task.observaciones]
       ];
   const operationalFields = [
@@ -5823,7 +5348,7 @@ function renderCuvLegalForm(task = {}) {
         <label>
           Estatus
           <select name="cuvStatus" required>
-            ${getProcessStatusOptions("cuv").map((status) => `<option value="${escapeHtml(status.label)}" ${status.label === (task.cuvStatus || "SOLICITADO") || status.value === normalizeStatusValue(task.cuvStatus || "SOLICITADO") ? "selected" : ""}>${escapeHtml(status.label)}</option>`).join("")}
+            ${CUV_STATUS_OPTIONS.map((status) => `<option value="${escapeHtml(status)}" ${status === (task.cuvStatus || "SOLICITADO") ? "selected" : ""}>${escapeHtml(status)}</option>`).join("")}
           </select>
         </label>
         <label>
@@ -5905,7 +5430,7 @@ async function saveCuvLegalTask(formElement) {
       task.cuvPdfName = file.name || `${task.placa || "CUV"}.pdf`;
       task.cuvPdfUploadedAt = now;
       task.cuvStatus = "ENVIADO ASESOR";
-      task.status = "enviado asesor";
+      task.status = "saneamiento realizado y subido a pilot";
       task.completedAt = now;
       task.statusLockedAt = now;
       task.statusLockedBy = session.userId || "";
@@ -5913,7 +5438,7 @@ async function saveCuvLegalTask(formElement) {
     } else if (!task.takenAt) {
       task.takenAt = now;
     }
-    if (!pdfDataUrl && task.status === "por asignar") task.status = "en proceso";
+    if (!pdfDataUrl && task.status === "por asignar") task.status = "tomado";
     task.updatedAt = now;
     task.syncStatus = "pending";
     task.syncAction = pdfDataUrl ? "cuv-pdf-enviado" : "cuv-actualizado";
@@ -5982,7 +5507,7 @@ function takeTask(id) {
     return;
   }
 
-  assignTaskToLegalUser(task, { id: session.userId, name: session.name }, getLegalTakenStatusForTask(task));
+  assignTaskToLegalUser(task, { id: session.userId, name: session.name }, "tomado");
   if (task.legalUserId !== session.userId) {
     showToast("Ya tienes un saneamiento activo. Finalizalo antes de tomar una nueva tarea.");
     renderTasks();
@@ -5995,18 +5520,17 @@ function takeTask(id) {
   task.syncStatus = "pending";
   saveState();
   renderAll();
-  showToast("Tarea tomada. Temporizador iniciado.");
+  showToast("Lead tomado. Temporizador legal iniciado.");
   guardarTareaSupabase(task, "tomar").then((ok) => {
     saveState();
-    safeRenderAll();
-    if (!ok) showToast("Tarea tomada localmente. Pendiente de sincronizar.");
+    if (!ok) showToast("Lead tomado localmente. Pendiente de sincronizar.");
   });
 }
 
 function isTaskStatusLockedForLegal(task = {}) {
   if (session.role !== "legal") return false;
   if (task.statusLockedAt) return true;
-  if (isClosedStatus(task.status, getTaskProcess(task))) return true;
+  if (isClosedStatus(task.status)) return true;
   return Boolean(task.legalUserId && task.legalUserId === session.userId && task.status && !["tomado", "pendiente", "por asignar"].includes(task.status));
 }
 
@@ -6042,11 +5566,11 @@ function updateTaskStatus(id, status, legalObservation = "") {
     task.legalUserId = session.userId;
     task.legalAdvisor = session.name;
   }
-  if (isClosedStatus(status, getTaskProcess(task)) && !task.completedAt) {
+  if (isClosedStatus(status) && !task.completedAt) {
     if (!task.takenAt) task.takenAt = new Date().toISOString();
     task.completedAt = new Date().toISOString();
   }
-  if (!isClosedStatus(status, getTaskProcess(task))) {
+  if (!isClosedStatus(status)) {
     task.completedAt = "";
   }
   if (session.role === "legal" && !["tomado", "pendiente", "por asignar"].includes(status)) {
@@ -6063,7 +5587,7 @@ function updateTaskStatus(id, status, legalObservation = "") {
   task.syncStatus = "pending";
 
   saveState();
-  if (isClosedStatus(status, getTaskProcess(task))) autoAssignOpenSaneamientos();
+  if (isClosedStatus(status)) autoAssignOpenSaneamientos();
   renderAll();
   showToast("Estatus actualizado.");
   guardarTareaSupabase(task, "estatus").then((ok) => {
@@ -6213,9 +5737,9 @@ function getKpis(tasks = state.tasks) {
   const total = tasks.length;
   const uniquePlates = new Set(tasks.map((task) => normalizePlate(task.placa)).filter(Boolean)).size;
   const pending = tasks.filter((task) => task.status === "pendiente" || task.status === "por asignar").length;
-  const inProgress = tasks.filter((task) => task.status !== "pendiente" && task.status !== "por asignar" && !isClosedStatus(task.status, getTaskProcess(task))).length;
-  const completed = tasks.filter((task) => isClosedStatus(task.status, getTaskProcess(task))).length;
-  const unassigned = tasks.filter((task) => !task.legalUserId && !isClosedStatus(task.status, getTaskProcess(task))).length;
+  const inProgress = tasks.filter((task) => task.status !== "pendiente" && task.status !== "por asignar" && !isClosedStatus(task.status)).length;
+  const completed = tasks.filter((task) => isClosedStatus(task.status)).length;
+  const unassigned = tasks.filter((task) => !task.legalUserId && !isClosedStatus(task.status)).length;
   const duplicates = tasks.filter((task) => (task.duplicateWarnings?.length || getDuplicateWarnings(task, task.id).length)).length;
   const avgTake = getAverageMinutes(tasks.filter((task) => task.takenAt), "createdAt", "takenAt");
   const avgCompletion = getAverageCompletionMinutes(tasks);
@@ -6240,14 +5764,6 @@ function userHasMailbox(user = {}, mailbox = "saneamientos") {
   return normalizeLegalMailboxes(user.mailboxes).includes(mailbox);
 }
 
-function legalUserHandlesContractAgency(user = {}, task = {}) {
-  if (getTaskMailbox(task) !== "contratos") return true;
-  const assignedAgencies = normalizeAgencyList(user.contractAgencies);
-  if (!assignedAgencies.length) return true;
-  const taskAgency = normalizeLooseText(task.agencia || task.commercialAgency || "");
-  return Boolean(taskAgency && assignedAgencies.includes(taskAgency));
-}
-
 function currentLegalUser() {
   if (session.role !== "legal") return null;
   return state.legalUsers.find((user) => user.id === session.userId) || null;
@@ -6257,9 +5773,8 @@ function canLegalUserSeeTask(task = {}, user = currentLegalUser()) {
   if (session.role === "admin") return true;
   if (!user) return false;
   const mailbox = getTaskMailbox(task);
-  if (mailbox === "firmas") return userHasMailbox(user, "firmas") && (!task.legalUserId || task.legalUserId === user.id);
+  if (mailbox === "firmas") return !task.legalUserId || task.legalUserId === user.id;
   if (!userHasMailbox(user, mailbox)) return false;
-  if (!legalUserHandlesContractAgency(user, task)) return false;
   if (mailbox === "saneamientos" && !task.legalUserId && user.legalAvailable === false) return false;
   return !task.legalUserId || task.legalUserId === user.id;
 }
@@ -6268,56 +5783,10 @@ function isCuvTask(task = {}) {
   return getTaskProcess(task) === "cuv";
 }
 
-function getRelatedCuvTask(task = {}) {
-  const plate = normalizePlate(task.placa);
-  if (!plate || isCuvTask(task)) return null;
-  return state.tasks
-    .filter((item) => isCuvTask(item) && normalizePlate(item.placa) === plate)
-    .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))[0] || null;
-}
-
-function getRelatedCuvInfo(task = {}) {
-  if (getTaskProcess(task) !== "compra") return null;
-  const cuvTask = getRelatedCuvTask(task);
-  if (!cuvTask) {
-    return {
-      task: null,
-      state: "none",
-      label: "SIN CUV",
-      detail: "No existe solicitud CUV relacionada"
-    };
-  }
-  const cuvStatus = normalizeLooseText(cuvTask.cuvStatus || cuvTask.status || "");
-  const isFound = Boolean(
-    cuvTask.cuvPdfDataUrl ||
-    cuvStatus.includes("ENVIADO") ||
-    cuvStatus.includes("COMPLET") ||
-    cuvStatus.includes("FINAL") ||
-    cuvStatus.includes("OK")
-  );
-  return {
-    task: cuvTask,
-    state: isFound ? "found" : "process",
-    label: isFound ? "CUV encontrado" : "CUV en proceso",
-    detail: cuvTask.cuvStatus || cuvTask.status || "Sin estatus"
-  };
-}
-
-function renderRelatedCuvBadge(task = {}) {
-  const cuvInfo = getRelatedCuvInfo(task);
-  if (!cuvInfo) return "";
-  const badgePrefix = cuvInfo.state === "found" ? "OK " : cuvInfo.state === "process" ? "... " : "";
-  return `
-    <span class="tracking-cuv-badge is-${escapeHtml(cuvInfo.state)}" title="${escapeHtml(cuvInfo.detail)}">
-      ${badgePrefix}${escapeHtml(cuvInfo.label)}
-    </span>
-  `;
-}
-
 function getEligibleLegalUsersForTask(task = {}) {
   const mailbox = getTaskMailbox(task);
   if (mailbox === "firmas") {
-    return normalizeLegalUsers(state.legalUsers || []).filter((user) => userHasMailbox(user, "firmas") && user.legalAvailable !== false);
+    return normalizeLegalUsers(state.legalUsers || []).filter((user) => user.legalAvailable !== false);
   }
   return normalizeLegalUsers(state.legalUsers || []).filter((user) =>
     userHasMailbox(user, mailbox) &&
@@ -6335,13 +5804,6 @@ async function createCuvTask(data) {
   const commercialOwner = session.role === "commercial"
     ? { id: session.userId, name: session.name, agency: session.agency }
     : { id: "", name: session.name || "", agency: session.agency || "" };
-  const duplicateSource = {
-    ...data,
-    processType: "cuv",
-    tipoCompra: "CUV",
-    tipoSaneamiento: "Solicitud CUV"
-  };
-  const duplicateWarnings = getDuplicateWarnings(duplicateSource, "", { scope: "cuv" });
   const task = {
     id: crypto.randomUUID(),
     createdAt,
@@ -6372,7 +5834,7 @@ async function createCuvTask(data) {
     cuvPdfName: "",
     cuvPdfDataUrl: "",
     observaciones: `SOLICITUD CUV | Placa: ${normalizePlate(data.placa)} | Titular: ${normalizeLooseText(data.cliente)}`,
-    duplicateWarnings,
+    duplicateWarnings: [],
     syncStatus: "pending"
   };
 
@@ -6417,7 +5879,7 @@ function getLegalActiveStatusValues() {
 }
 
 function isLegalTaskTerminal(task = {}) {
-  return getLegalTerminalStatusValues().has(normalizeStatusValue(task.status)) || Boolean(task.completedAt && isClosedStatus(task.status, getTaskProcess(task)));
+  return getLegalTerminalStatusValues().has(normalizeStatusValue(task.status)) || Boolean(task.completedAt && isClosedStatus(task.status));
 }
 
 function isActiveSaneamientoTask(task = {}) {
@@ -6441,7 +5903,6 @@ function canLegalUserReceiveNewTask(user = {}, task = {}) {
   const mailbox = getTaskMailbox(task);
   if (mailbox === "firmas") return user.legalAvailable !== false;
   if (!userHasMailbox(user, mailbox)) return false;
-  if (!legalUserHandlesContractAgency(user, task)) return false;
   if (mailbox !== "saneamientos") return true;
   if (user.legalAvailable === false) return false;
   return task.legalUserId === user.id || isLegalAdvisorAvailable(user.id, state.tasks);
@@ -6449,17 +5910,9 @@ function canLegalUserReceiveNewTask(user = {}, task = {}) {
 
 function canLegalUserTakeTask(task = {}, user = currentLegalUser()) {
   if (session.role !== "legal" || !user) return false;
-  if (task.legalUserId || isClosedStatus(task.status, getTaskProcess(task))) return false;
+  if (task.legalUserId || isClosedStatus(task.status)) return false;
   if (!canLegalUserSeeTask(task, user)) return false;
   return canLegalUserReceiveNewTask(user, task);
-}
-
-function getLegalTakenStatusForTask(task = {}) {
-  const processKey = getTaskProcess(task);
-  if (processKey === "cuv") return "en proceso";
-  if (processKey === "venta") return "pendiente / por confirmar";
-  if (processKey === "firma") return "tomado";
-  return "tomado";
 }
 
 function assignTaskToLegalUser(task, user, status = "tomado") {
@@ -6539,20 +5992,13 @@ function canCommercialRequestSignature(task = {}) {
   if (!task || getTaskProcess(task) !== "compra") return false;
   if (!ownsCommercialTask(task)) return false;
   if (normalizeStatusValue(task.status) !== "saneamiento realizado y subido a pilot") return false;
-  return !task.signatureRequestTaskId &&
-    !findSignatureWorkflowTask(task.id, "envio-firma") &&
-    task.signatureStatus !== SIGNATURE_STATUS.requested &&
-    task.signatureStatus !== SIGNATURE_STATUS.sent &&
-    task.signatureStatus !== SIGNATURE_STATUS.completed;
+  return !task.signatureRequestTaskId && task.signatureStatus !== SIGNATURE_STATUS.requested && task.signatureStatus !== SIGNATURE_STATUS.sent && task.signatureStatus !== SIGNATURE_STATUS.completed;
 }
 
 function canCommercialRequestPilotUpload(task = {}) {
   if (!task || getTaskProcess(task) !== "compra") return false;
   if (!ownsCommercialTask(task)) return false;
-  return task.signatureStatus === SIGNATURE_STATUS.sent &&
-    !task.signaturePilotTaskId &&
-    !findSignatureWorkflowTask(task.id, "subir-pilot") &&
-    task.signatureStatus !== SIGNATURE_STATUS.completed;
+  return task.signatureStatus === SIGNATURE_STATUS.sent && !task.signaturePilotTaskId && task.signatureStatus !== SIGNATURE_STATUS.completed;
 }
 
 function validateSignatureEmail(value = "") {
@@ -6611,21 +6057,6 @@ function getSignatureDisplayStatus(task = {}) {
   if (task.signatureStatus === SIGNATURE_STATUS.sent) return "Enviado a firmar exitoso";
   if (task.signatureStatus === SIGNATURE_STATUS.requested) return "Firma solicitada";
   return "";
-}
-
-function findSignatureWorkflowTask(sourceTaskId, stage = "envio-firma") {
-  return (state.tasks || []).find((task) =>
-    isSignatureTask(task) &&
-    task.sourceTaskId === sourceTaskId &&
-    task.signatureStage === stage &&
-    !task.deleted
-  ) || null;
-}
-
-function findLegalModalTask(taskId) {
-  return (state.tasks || []).find((task) => task.id === taskId) ||
-    (state.tasks || []).find((task) => task.signatureRequestTaskId === taskId || task.signaturePilotTaskId === taskId) ||
-    null;
 }
 
 function buildSignatureActionButtons(task = {}) {
@@ -6722,31 +6153,6 @@ async function submitSignatureRequest(event) {
   }
   showSignatureValidation([]);
   const createdAt = new Date().toISOString();
-  const existingSignatureTask = findSignatureWorkflowTask(source.id, "envio-firma");
-  if (existingSignatureTask) {
-    existingSignatureTask.signaturePayload = payload;
-    existingSignatureTask.updatedAt = createdAt;
-    existingSignatureTask.syncStatus = "pending";
-    existingSignatureTask.syncAction = "actualizar-firma";
-    source.signatureStatus = SIGNATURE_STATUS.requested;
-    source.signatureRequestTaskId = existingSignatureTask.id;
-    source.signaturePayload = payload;
-    source.signatureRequestedAt = source.signatureRequestedAt || existingSignatureTask.createdAt || createdAt;
-    source.updatedAt = createdAt;
-    source.syncStatus = "pending";
-    source.syncAction = "actualizar-firma-origen";
-    saveState();
-    closeCommercialModals();
-    renderAll();
-    showToast("Ya existia una solicitud de firma. Se actualizo la ficha sin duplicar tarea.");
-    const [sourceSaved, requestSaved] = await Promise.all([
-      guardarTareaSupabase(source, "actualizar-firma-origen"),
-      guardarTareaSupabase(existingSignatureTask, "actualizar-firma")
-    ]);
-    saveState();
-    if (!sourceSaved || !requestSaved) showToast("Solicitud guardada localmente. Pendiente de sincronizar.");
-    return;
-  }
   const signatureTask = {
     id: crypto.randomUUID(),
     createdAt,
@@ -6803,28 +6209,6 @@ async function requestPilotUploadFromCommercial(taskId) {
     return;
   }
   const createdAt = new Date().toISOString();
-  const existingPilotTask = findSignatureWorkflowTask(source.id, "subir-pilot");
-  if (existingPilotTask) {
-    source.signatureStatus = SIGNATURE_STATUS.pilotRequested;
-    source.signaturePilotTaskId = existingPilotTask.id;
-    source.signaturePilotRequestedAt = source.signaturePilotRequestedAt || existingPilotTask.createdAt || createdAt;
-    source.updatedAt = createdAt;
-    source.syncStatus = "pending";
-    source.syncAction = "actualizar-pilot-firmado-origen";
-    existingPilotTask.updatedAt = createdAt;
-    existingPilotTask.syncStatus = "pending";
-    existingPilotTask.syncAction = "actualizar-pilot-firmado";
-    saveState();
-    renderAll();
-    showToast("Ya existia una solicitud de subida a Pilot. Se actualizo sin duplicar tarea.");
-    const [sourceSaved, requestSaved] = await Promise.all([
-      guardarTareaSupabase(source, "actualizar-pilot-firmado-origen"),
-      guardarTareaSupabase(existingPilotTask, "actualizar-pilot-firmado")
-    ]);
-    saveState();
-    if (!sourceSaved || !requestSaved) showToast("Solicitud guardada localmente. Pendiente de sincronizar.");
-    return;
-  }
   const pilotTask = {
     id: crypto.randomUUID(),
     createdAt,
@@ -6966,7 +6350,7 @@ async function completeSignatureTask(taskId) {
     task.takenAt = now;
   }
   const source = state.tasks.find((item) => item.id === task.sourceTaskId);
-  task.status = task.signatureStage === "subir-pilot" ? SIGNATURE_STATUS.completed : SIGNATURE_STATUS.sent;
+  task.status = "saneamiento realizado y subido a pilot";
   task.completedAt = now;
   task.updatedAt = now;
   task.statusLockedAt = now;
@@ -7155,7 +6539,7 @@ function renderCommercialLeadList(container, tasks) {
           <span>${escapeHtml(task.cliente || "Cliente sin nombre")}</span>
         </div>
         <div>
-          ${renderTaskStatusPill(task)}
+          ${renderStatusPill(task.status)}
           <small>${formatDateTime(task.createdAt)}</small>
         </div>
       </article>
@@ -7235,7 +6619,7 @@ function renderCommercialDashboard() {
     ["Saneamientos", purchaseTasks.length, "Solicitudes de compra"],
     ["Contratos", saleTasks.length, "Tracking de compraventa"],
     ["CUV", cuvTasks.length, "Proceso comercial separado"],
-    ["Info pendiente", infoRequests.filter((task) => task.infoAccessStatus !== "approved" && !isClosedStatus(task.status, getTaskProcess(task))).length, "Solicitudes por autorizar"],
+    ["Info pendiente", infoRequests.filter((task) => task.infoAccessStatus !== "approved" && !isClosedStatus(task.status)).length, "Solicitudes por autorizar"],
     ["Total cerradas", kpis.completed, "Compra, venta y CUV"]
   ]);
   chartContainer.innerHTML = renderBarRows(groupByStatus(dashboardTasks), Math.max(dashboardTasks.length, 1));
@@ -7244,7 +6628,7 @@ function renderCommercialDashboard() {
     leadList.innerHTML = "";
   }
   renderCommercialCuvList();
-  renderCommercialTrackingBoard(dashboardTasks);
+  renderCommercialTrackingBoard(purchaseTasks);
   if (generalKpiContainer && generalChartContainer) renderCommercialGeneralDashboard();
 }
 
@@ -7274,7 +6658,7 @@ function renderCommercialCuvList() {
 
 function isCommercialTrackingFinished(task = {}) {
   const normalizedStatus = normalizeStatusValue(task.status);
-  if (isNegativeOutcomeText(task.status) || normalizedStatus.includes("rechaz")) return false;
+  if (normalizedStatus.includes("rechaz")) return false;
   const explicitTerminalStatuses = new Set([
     ...[...getLegalTerminalStatusValues()].filter((status) => !status.includes("rechaz")),
     "contratos firmados subidos a pilot",
@@ -7290,38 +6674,12 @@ function isCommercialTrackingFinished(task = {}) {
 }
 
 function getCommercialTrackingStage(task = {}) {
-  const processKey = getTaskProcess(task);
   const status = normalizeLooseText(task.status);
-  const statusOption = getStatusOption(task.status, processKey);
+  const statusOption = getStatusOption(task.status);
   const base = {
     statusColor: statusOption?.color || "#64748b",
     statusLabel: statusOption?.label || task.status || "Sin estatus"
   };
-  if (processKey === "cuv") {
-    const cuvStatus = normalizeLooseText(task.cuvStatus || task.status);
-    if (task.cuvPdfDataUrl || cuvStatus.includes("ENVIADO")) {
-      return { ...base, key: "cuv-enviado", label: "PDF enviado", statusLabel: task.cuvStatus || "ENVIADO ASESOR", className: "success", progress: 100, step: 4 };
-    }
-    if (cuvStatus.includes("PROCESO")) {
-      return { ...base, key: "cuv-proceso", label: "Gestion CUV", statusLabel: task.cuvStatus || "EN PROCESO", className: "warning", progress: 60, step: 3 };
-    }
-    return { ...base, key: "cuv-solicitado", label: "CUV solicitado", statusLabel: task.cuvStatus || "SOLICITADO", className: "info", progress: 25, step: 1 };
-  }
-  if (processKey === "venta") {
-    if (isNegativeOutcomeText(task.status) || status.includes("RECHAZ") || status.includes("ANULADO") || status.includes("BLOQUEADO")) {
-      return { ...base, key: "contrato-observado", label: "Contrato observado", className: "danger", progress: 55, step: 4 };
-    }
-    if (isPositiveOutcomeText(task.status) && (isClosedStatus(task.status, "venta") || status.includes("GESTIONADO") || status.includes("OK") || status.includes("CERRADO"))) {
-      return { ...base, key: "contrato-cerrado", label: "Contrato cerrado", className: "success", progress: 100, step: 5 };
-    }
-    if (task.legalUserId || task.takenAt || status.includes("ACTAS") || status.includes("FIDEVAL") || status.includes("OBSERVADO")) {
-      return { ...base, key: "contrato-gestion", label: "Gestion contractual", className: "warning", progress: 70, step: 4 };
-    }
-    if (status.includes("PEND") || status.includes("ASIGNAR")) {
-      return { ...base, key: "contrato-recibido", label: "Recibido por mesa", className: "info", progress: 35, step: 2 };
-    }
-    return { ...base, key: "contrato-solicitado", label: "Contrato solicitado", className: "neutral", progress: 20, step: 1 };
-  }
   if (task.signatureStatus === SIGNATURE_STATUS.completed) {
     return { ...base, key: "firma-finalizada", label: "Proceso finalizado", statusLabel: "Contratos firmados subidos a Pilot", className: "success", progress: 100, step: 9 };
   }
@@ -7334,7 +6692,7 @@ function getCommercialTrackingStage(task = {}) {
   if (task.signatureStatus === SIGNATURE_STATUS.requested) {
     return { ...base, key: "firma-solicitada", label: "Firma solicitada", statusLabel: "Firma solicitada", className: "info", progress: 66, step: 6 };
   }
-  if (isNegativeOutcomeText(task.status) || status.includes("RECHAZ")) {
+  if (status.includes("RECHAZ")) {
     return { ...base, key: "rechazado", label: "Rechazado por legal", className: "danger", progress: 44, step: 4 };
   }
   if (isCommercialTrackingFinished(task)) {
@@ -7351,9 +6709,8 @@ function getCommercialTrackingStage(task = {}) {
 
 function getCommercialTrackingStageItems(task = {}) {
   const current = getCommercialTrackingStage(task);
-  const steps = getProcessTrackingSteps(getTaskProcess(task));
-  const completedStep = Math.max(0, Math.min(steps.length, current.step || 0));
-  return steps.map((step, index) => {
+  const completedStep = Math.max(0, Math.min(COMMERCIAL_TRACKING_STEPS.length, current.step || 0));
+  return COMMERCIAL_TRACKING_STEPS.map((step, index) => {
     const position = index + 1;
     let status = "pending";
     if (position < completedStep) status = "completed";
@@ -7422,6 +6779,7 @@ function renderCommercialTrackingStageItem(item = {}) {
 function getCommercialTrackingTasks(tasks = []) {
   const query = commercialTrackingSearch.trim().toLowerCase();
   return tasks
+    .filter((task) => getTaskProcess(task) === "compra")
     .filter((task) => commercialTrackingFilter === "todos" || getCommercialTrackingColumnKey(task) === commercialTrackingFilter)
     .filter((task) => isInsideDateRange(task.createdAt, commercialTrackingDateFrom, commercialTrackingDateTo))
     .filter((task) => {
@@ -7437,9 +6795,6 @@ function getCommercialTrackingTasks(tasks = []) {
         task.legalAdvisor,
         task.tipoSaneamiento,
         task.tipoCompra,
-        task.cuvStatus,
-        task.cuvOrderNumber,
-        task.precioContrato,
         getSignatureDisplayStatus(task),
         task.status
       ].join(" ").toLowerCase();
@@ -7451,11 +6806,10 @@ function getCommercialTrackingTasks(tasks = []) {
 function getCommercialTrackingColumnKey(task = {}) {
   const stage = getCommercialTrackingStage(task);
   const status = normalizeLooseText(task.status);
-  const isNegative = isNegativeOutcomeText(task.status) || status.includes("RECHAZ");
-  if (isNegative || stage.key === "rechazado" || stage.key === "contrato-observado") return "rechazado";
-  if (!isNegative && (isCommercialTrackingFinished(task) || ["firma-finalizada", "saneamiento-pilot", "contrato-cerrado", "cuv-enviado"].includes(stage.key))) return "completado";
+  if (stage.key === "rechazado" || status.includes("RECHAZ")) return "rechazado";
+  if (isCommercialTrackingFinished(task) || stage.key === "firma-finalizada" || stage.key === "saneamiento-pilot") return "completado";
   if (["firma-solicitada", "firma-enviada", "subir-firmados"].includes(stage.key)) return "revision";
-  if (["gestion", "contrato-gestion", "cuv-proceso"].includes(stage.key) || task.legalUserId || task.takenAt || status.includes("TOMADO")) return "proceso";
+  if (stage.key === "gestion" || task.legalUserId || task.takenAt || status.includes("TOMADO")) return "proceso";
   return "pendiente";
 }
 
@@ -7595,107 +6949,47 @@ function handleCommercialProfileAction(action) {
   }
 }
 
-function getCommercialTrackingProcessDefinitions() {
-  return [
-    { key: "compra", title: "Compra | Saneamientos", subtitle: "Solicitudes de toma y saneamiento", icon: "&#128196;", accent: "#ef233c" },
-    { key: "venta", title: "Venta | Contratos", subtitle: "Tracking de contratos de compraventa", icon: "&#128663;", accent: "#2563eb" },
-    { key: "cuv", title: "CUV", subtitle: "Certificado unico vehicular", icon: "&#128203;", accent: "#7c3aed" }
-  ];
-}
-
-function renderCommercialProcessTrackingKanban(processInfo, visibleTasks = [], allTasks = [], columns = []) {
-  const processVisible = visibleTasks.filter((task) => getTaskProcess(task) === processInfo.key);
-  const processAll = allTasks.filter((task) => getTaskProcess(task) === processInfo.key);
-  const uniquePlates = new Set(processVisible.map((task) => normalizePlate(task.placa)).filter(Boolean)).size;
-  const columnCounts = columns.reduce((map, column) => {
-    map[column.key] = processVisible.filter((task) => getCommercialTrackingColumnKey(task) === column.key).length;
-    return map;
-  }, {});
-  return `
-    <section class="commercial-process-kanban" data-tracking-process="${escapeHtml(processInfo.key)}" style="--process-accent:${escapeHtml(processInfo.accent)}">
-      <header class="commercial-process-kanban-head">
-        <span class="process-kanban-icon" aria-hidden="true">${processInfo.icon}</span>
-        <div>
-          <p class="eyebrow">Kanban operativo</p>
-          <h3>${escapeHtml(processInfo.title)}</h3>
-          <span>${escapeHtml(processInfo.subtitle)}</span>
-        </div>
-        <div class="process-kanban-stats">
-          <strong>${processVisible.length}</strong><span>visibles</span>
-          <strong>${processAll.length}</strong><span>total</span>
-          <strong>${uniquePlates}</strong><span>placas</span>
-        </div>
-      </header>
-      <div class="commercial-kanban-board commercial-tracking-grid is-process-board">
-        ${columns.map((column) => {
-          const columnTasks = processVisible.filter((task) => getCommercialTrackingColumnKey(task) === column.key);
-          const hasProcessColumnTasks = processAll.some((task) => getCommercialTrackingColumnKey(task) === column.key);
-          return `
-            <section class="commercial-kanban-column tracking-column ${commercialTrackingMobileStatus === column.key ? "is-mobile-selected" : ""}" data-status="${escapeHtml(column.key)}" style="--column-color:${column.color}; --column-soft:${column.soft}">
-              <header class="commercial-kanban-column-head">
-                <span class="kanban-icon" aria-hidden="true">${column.icon}</span>
-                <div>
-                  <strong>${escapeHtml(column.label)} (${columnCounts[column.key] || 0})</strong>
-                  <small>${escapeHtml(column.hint)}</small>
-                </div>
-              </header>
-              <div class="commercial-kanban-cards commercial-tracking-list">
-                ${columnTasks.map(renderCommercialTrackingCard).join("") || `<div class="empty compact-empty">Sin registros.</div>`}
-              </div>
-              ${hasProcessColumnTasks ? `<button class="kanban-view-all tracking-column-view-all" type="button" data-commercial-tracking-filter="${escapeHtml(column.key)}">Ver todas <span aria-hidden="true">&#8964;</span></button>` : ""}
-            </section>
-          `;
-        }).join("")}
-      </div>
-    </section>
-  `;
-}
-
 function renderCommercialTrackingBoard(tasks = []) {
   const container = document.querySelector("#commercialTrackingBoard");
   if (!container) return;
-  const processTasks = getCommercialOperationalTasks(tasks);
-  const visibleTasks = getCommercialTrackingTasks(processTasks);
+  const purchaseTasks = tasks.filter((task) => getTaskProcess(task) === "compra");
+  const visibleTasks = getCommercialTrackingTasks(purchaseTasks);
+  const visibleKanbanRequests = visibleTasks;
   const columns = getCommercialTrackingColumns();
   if (!columns.some((column) => column.key === commercialTrackingMobileStatus)) {
     commercialTrackingMobileStatus = columns[0]?.key || "pendiente";
   }
   const columnsByKey = Object.fromEntries(columns.map((column) => [column.key, column]));
-  const counts = processTasks.reduce((map, task) => {
+  const counts = purchaseTasks.reduce((map, task) => {
     const key = getCommercialTrackingColumnKey(task);
     map[key] = (map[key] || 0) + 1;
     return map;
   }, {});
-  const kanbanCounts = visibleTasks.reduce((map, task) => {
+  const kanbanCounts = visibleKanbanRequests.reduce((map, task) => {
     const key = getCommercialTrackingColumnKey(task);
     map[key] = (map[key] || 0) + 1;
     return map;
   }, {});
   const filters = [
-    ["todos", "Todos", processTasks.length],
+    ["todos", "Todos", purchaseTasks.length],
     ...columns.map((column) => [column.key, column.label, counts[column.key] || 0])
   ];
-  const processCounts = {
-    compra: processTasks.filter((task) => getTaskProcess(task) === "compra").length,
-    venta: processTasks.filter((task) => getTaskProcess(task) === "venta").length,
-    cuv: processTasks.filter((task) => getTaskProcess(task) === "cuv").length
-  };
-  const totalVisible = visibleTasks.length;
-  const uniquePlates = new Set(visibleTasks.map((task) => normalizePlate(task.placa)).filter(Boolean)).size;
-  const processBoards = getCommercialTrackingProcessDefinitions()
-    .map((processInfo) => renderCommercialProcessTrackingKanban(processInfo, visibleTasks, processTasks, columns))
-    .join("");
+  const visibleByColumn = columns.reduce((map, column) => {
+    map[column.key] = visibleKanbanRequests.filter((task) => getCommercialTrackingColumnKey(task) === column.key);
+    return map;
+  }, {});
+  const allByColumn = columns.reduce((map, column) => {
+    map[column.key] = visibleTasks.filter((task) => getCommercialTrackingColumnKey(task) === column.key);
+    return map;
+  }, {});
+  const totalVisible = visibleKanbanRequests.length;
+  const uniquePlates = new Set(visibleKanbanRequests.map((task) => normalizePlate(task.placa)).filter(Boolean)).size;
   container.innerHTML = `
     <div class="commercial-tracking-header">
       <div class="commercial-tracking-heading">
         <p class="eyebrow">Tracking operativo</p>
-        <h2>Tracking por proceso</h2>
-        <p>Compra, venta y CUV se muestran en kanban separados para evitar cruces de gestion.</p>
-        <div class="tracking-process-summary">
-          <span>Saneamientos: <b>${processCounts.compra}</b></span>
-          <span>Contratos: <b>${processCounts.venta}</b></span>
-          <span>CUV: <b>${processCounts.cuv}</b></span>
-        </div>
+        <h2>Tracking de saneamientos</h2>
+        <p>Busca, filtra y revisa tus saneamientos sin mezclarlo con los formularios.</p>
       </div>
     </div>
     <div class="commercial-tracking-searchbar">
@@ -7728,7 +7022,27 @@ function renderCommercialTrackingBoard(tasks = []) {
         </select>
       </label>
     </div>
-    <div class="commercial-process-kanban-stack">${processBoards}</div>
+    <div class="commercial-kanban-board commercial-tracking-grid">
+      ${columns.map((column) => {
+        const columnTasks = visibleByColumn[column.key] || [];
+        const allColumnTasks = allByColumn[column.key] || [];
+        return `
+          <section class="commercial-kanban-column tracking-column ${commercialTrackingMobileStatus === column.key ? "is-mobile-selected" : ""}" data-status="${escapeHtml(column.key)}" style="--column-color:${column.color}; --column-soft:${column.soft}">
+            <header class="commercial-kanban-column-head">
+              <span class="kanban-icon" aria-hidden="true">${column.icon}</span>
+              <div>
+                <strong>${escapeHtml(column.label)} (${columnTasks.length})</strong>
+                <small>${escapeHtml(column.hint)}</small>
+              </div>
+            </header>
+            <div class="commercial-kanban-cards commercial-tracking-list">
+              ${columnTasks.map(renderCommercialTrackingCard).join("") || `<div class="empty compact-empty">Sin registros activos.</div>`}
+            </div>
+            ${allColumnTasks.length ? `<button class="kanban-view-all tracking-column-view-all" type="button" data-commercial-tracking-filter="${escapeHtml(column.key)}">Ver todas <span aria-hidden="true">&#8964;</span></button>` : ""}
+          </section>
+        `;
+      }).join("")}
+    </div>
     ${commercialTrackingFilter !== "todos" ? renderCommercialTrackingExpandedList(visibleTasks, columnsByKey) : ""}
     <div class="commercial-tracking-summary">
       <article><strong>${totalVisible}</strong><span>Total solicitudes</span></article>
@@ -7772,16 +7086,13 @@ function renderCommercialTrackingExpandedList(tasks = [], columnsByKey = {}) {
 
 function renderCommercialTrackingRow(task) {
   const stage = getCommercialTrackingStage(task);
-  const processLabel = PROCESS_DEFINITIONS[getTaskProcess(task)]?.shortLabel || "Gestion";
   return `
     <article class="tracking-expanded-row" data-request-id="${escapeHtml(task.id)}" style="--tracking-color:${escapeHtml(stage.statusColor)}">
       <div>
         <strong>${escapeHtml(task.placa || "Sin placa")}</strong>
         <span>${escapeHtml(task.cliente || task.vendedor || "Cliente sin nombre")}</span>
-        ${renderRelatedCuvBadge(task)}
       </div>
       <span>${escapeHtml(formatDateTime(task.createdAt))}</span>
-      <span class="tracking-process-badge">${escapeHtml(processLabel)}</span>
       <span class="tracking-mini-status-badge">${escapeHtml(stage.statusLabel)}</span>
       <button class="tracking-mini-view" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver</button>
     </article>
@@ -7791,7 +7102,6 @@ function renderCommercialTrackingRow(task) {
 function renderCommercialTrackingCard(task) {
   const stage = getCommercialTrackingStage(task);
   const columnKey = getCommercialTrackingColumnKey(task);
-  const processLabel = PROCESS_DEFINITIONS[getTaskProcess(task)]?.shortLabel || "Gestion";
   return `
     <article class="commercial-tracking-card tracking-mini-card ${stage.className} is-${columnKey}" data-request-id="${escapeHtml(task.id)}" style="--tracking-color:${escapeHtml(stage.statusColor)}">
       <header class="tracking-mini-card-header">
@@ -7800,9 +7110,7 @@ function renderCommercialTrackingCard(task) {
           <span class="tracking-mini-card-client">${escapeHtml(task.cliente || task.vendedor || "Cliente sin nombre")}</span>
           <span class="tracking-mini-card-user">${escapeHtml(formatDisplayName(task.commercialUserName || task.asesor || "Asesor comercial"))}</span>
         </div>
-        ${renderRelatedCuvBadge(task)}
       </header>
-      <span class="tracking-process-badge">${escapeHtml(processLabel)}</span>
       <span class="tracking-mini-status-badge">${escapeHtml(stage.statusLabel)}</span>
       <div class="tracking-mini-progress">
         <div class="tracking-mini-progress-bar"><span style="width:${stage.progress}%"></span></div>
@@ -7894,7 +7202,7 @@ function isCommercialNotificationStatus(statusValue = "") {
 
 function buildCommercialNotificationFromTask(task = {}) {
   const eventKey = getCommercialNotificationKey(task);
-  const statusText = getSignatureDisplayStatus(task) || getStatusOption(task.status, getTaskProcess(task))?.label || task.status || "Estatus actualizado";
+  const statusText = getSignatureDisplayStatus(task) || getStatusOption(task.status)?.label || task.status || "Estatus actualizado";
   const plate = task.placa || "Sin placa";
   return {
     id: `commercial-notification-${session.userId || "public"}-${eventKey}`,
@@ -8047,10 +7355,10 @@ function getCommercialRequestFilteredTasks(statusView = activeCommercialRequestF
     return tasks.filter((task) => ["pendiente", "por asignar"].includes(task.status));
   }
   if (statusView === "en-proceso") {
-    return tasks.filter((task) => !["pendiente", "por asignar"].includes(task.status) && !isClosedStatus(task.status, getTaskProcess(task)));
+    return tasks.filter((task) => !["pendiente", "por asignar"].includes(task.status) && !isClosedStatus(task.status));
   }
   if (statusView === "cerradas") {
-    return tasks.filter((task) => isClosedStatus(task.status, getTaskProcess(task)));
+    return tasks.filter((task) => isClosedStatus(task.status));
   }
   return tasks;
 }
@@ -8240,7 +7548,7 @@ function renderCommercialLeadList(container, tasks, options = {}) {
           <span>${escapeHtml(activeCommercialProcess === "venta" ? (task.vendedor || task.cliente || "Vendedor sin nombre") : (task.cliente || "Cliente sin nombre"))}</span>
         </div>
         <div class="commercial-lead-actions">
-          ${renderTaskStatusPill(task)}
+          ${renderStatusPill(task.status)}
           <small>${formatDateTime(task.createdAt)}</small>
           <button class="btn tiny secondary" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver ficha</button>
           ${canCommercialResendTask(task) ? `<button class="btn tiny primary resend-btn" type="button" data-resend-commercial-task="${escapeHtml(task.id)}">Reenviar</button>` : ""}
@@ -8252,21 +7560,12 @@ function renderCommercialLeadList(container, tasks, options = {}) {
 }
 
 function openLegalTaskModal(taskId) {
-  const task = findLegalModalTask(taskId);
-  if (!task) {
-    console.warn("No se encontro la tarea para abrir ficha:", taskId);
-    showToast("No se encontro la ficha de esta tarea. Actualice la pagina e intente nuevamente.");
-    return;
-  }
-  if (!legalTaskModal || !legalTaskModalContent) {
-    console.error("No se encontro el modal legal en el DOM.");
-    showToast("No se pudo abrir la ficha por un error de interfaz.");
-    return;
-  }
+  const task = state.tasks.find((item) => item.id === taskId);
+  if (!task || !legalTaskModal || !legalTaskModalContent) return;
   const canTake = canLegalUserTakeTask(task);
   const lockedForLegal = isTaskStatusLockedForLegal(task);
   const canEdit = session.role === "admin" || (task.legalUserId === session.userId && !lockedForLegal);
-  const canEditStatus = canEdit && !isSignatureTask(task) && !isCuvTask(task);
+  const canEditStatus = canEdit && !isSignatureTask(task);
   const sourceTask = isInfoRequestTask(task) ? state.tasks.find((item) => item.id === task.sourceTaskId) : null;
   if (legalTaskModalTitle) legalTaskModalTitle.textContent = `${task.placa || "Sin placa"} | ${isInfoRequestTask(task) ? "Solicitud de informacion" : getCommercialProcessLabel(getTaskProcess(task))}`;
   legalTaskModalContent.innerHTML = `
@@ -8277,7 +7576,7 @@ function openLegalTaskModal(taskId) {
       </div>
       <div>
         <span>Estatus</span>
-        ${renderTaskStatusPill(task)}
+        ${renderStatusPill(task.status)}
       </div>
       <div>
         <span>Asistente legal</span>
@@ -8304,7 +7603,7 @@ function openLegalTaskModal(taskId) {
         <label>
           Actualizar estatus
           <select data-modal-status-task="${escapeHtml(task.id)}">
-            ${getProcessStatusOptions(getTaskProcess(task)).map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === task.status ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
+            ${state.statusOptions.map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === task.status ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
           </select>
         </label>
       ` : ""}
@@ -8343,7 +7642,7 @@ function renderCommercialRows(tasks, options = {}) {
         ` : ""}
       </div>
       <div class="commercial-lead-actions">
-        ${renderTaskStatusPill(task)}
+        ${renderStatusPill(task.status)}
         <small>${formatDateTime(task.createdAt)}</small>
         <button class="btn tiny secondary" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver ficha</button>
         ${canResend ? `<button class="btn tiny primary resend-btn" type="button" data-resend-commercial-task="${escapeHtml(task.id)}">Reenviar</button>` : ""}
@@ -8439,12 +7738,12 @@ function renderControlDashboard() {
   const pendingSignatureSends = allVisibleLegalTasks.filter((task) =>
     isSignatureTask(task) &&
     task.signatureStage === "envio-firma" &&
-    !isClosedStatus(task.status, getTaskProcess(task))
+    !isClosedStatus(task.status)
   ).length;
   const pendingSaneamientoAssignment = allVisibleLegalTasks.filter((task) =>
     getTaskMailbox(task) === "saneamientos" &&
     !task.legalUserId &&
-    !isClosedStatus(task.status, getTaskProcess(task))
+    !isClosedStatus(task.status)
   ).length;
   const user = currentLegalUser();
   if (legalSessionLabel && user) {
@@ -8455,12 +7754,12 @@ function renderControlDashboard() {
   }
   const kpis = getKpis(tasks);
   renderKpiCards("#controlKpis", [
-    ["✍️ Firmas pendientes", pendingSignatureSends, "Por enviar a firma"],
-    ["📂 Saneamientos por asignar", pendingSaneamientoAssignment, "Sin asesor legal"],
-    ["📥 Disponibles", kpis.unassigned, "Sin tomar"],
-    ["🧑‍💼 Tomados", kpis.inProgress, "En mesa"],
-    ["✅ Cerrados", kpis.completed, "Finalizados"],
-    ["🚗 Placas unicas", kpis.uniquePlates, "Vehiculos"]
+    ["Firmas pendientes", pendingSignatureSends, "Por enviar a firma"],
+    ["Saneamientos por asignar", pendingSaneamientoAssignment, "Sin asesor legal"],
+    ["Disponibles", kpis.unassigned, "Sin tomar"],
+    [" Tomados", kpis.inProgress, "En mesa"],
+    ["Cerrados", kpis.completed, "Finalizados"],
+    [" Placas unicas", kpis.uniquePlates, "Vehiculos"]
   ]);
 }
 
@@ -8517,7 +7816,7 @@ function renderManagerDetails(tasks) {
         <strong>${escapeHtml(task.placa)}</strong>
         <span>${escapeHtml(task.agencia || "Sin agencia")}</span>
         <span>${escapeHtml(task.asesor || "Sin asesor")}</span>
-        <span>${renderTaskStatusPill(task)}</span>
+        <span>${renderStatusPill(task.status)}</span>
         <span>${formatDateTime(task.createdAt)}</span>
       </article>
     `).join("")}
@@ -8535,15 +7834,11 @@ function getManagerFilteredDetails(tasks) {
 }
 
 function groupByStatus(tasks) {
-  const grouped = new Map();
-  tasks.forEach((task) => {
-    const status = getStatusOption(task.status, getTaskProcess(task));
-    const key = `${status.value}-${status.label}`;
-    const current = grouped.get(key) || { label: status.label, color: status.color, value: 0 };
-    current.value += 1;
-    grouped.set(key, current);
-  });
-  return [...grouped.values()].filter((item) => item.value > 0);
+  return state.statusOptions.map((status) => ({
+    label: status.label,
+    color: status.color,
+    value: tasks.filter((task) => task.status === status.value).length
+  })).filter((item) => item.value > 0);
 }
 
 function groupByField(tasks, field, fallback = "Sin dato") {
@@ -8596,7 +7891,7 @@ function renderAdminLeads() {
       <span>${escapeHtml(task.agencia || "Sin agencia")}</span>
       <span>${escapeHtml(task.asesor || "Sin asesor")}</span>
       <span>${formatDateTime(task.createdAt)}</span>
-      ${renderTaskStatusPill(task)}
+      ${renderStatusPill(task.status)}
       <div class="row-actions compact-actions">
         <button class="btn secondary" type="button" data-edit-lead="${escapeHtml(task.id)}">Editar</button>
         <button class="btn danger" type="button" data-delete-lead="${escapeHtml(task.id)}">Borrar</button>
@@ -8625,8 +7920,8 @@ function renderAdvisorOptionsMarkup(selectedValue = "") {
   ).join("")}`;
 }
 
-function renderStatusOptionsMarkup(selectedValue = "", processKey = "compra") {
-  return getProcessStatusOptions(processKey).map((status) =>
+function renderStatusOptionsMarkup(selectedValue = "") {
+  return state.statusOptions.map((status) =>
     `<option value="${escapeHtml(status.value)}" ${status.value === selectedValue ? "selected" : ""}>${escapeHtml(status.label)}</option>`
   ).join("");
 }
@@ -8645,7 +7940,7 @@ function openAdminLeadEditor(id) {
   adminLeadForm.elements.asesor.innerHTML = renderAdvisorOptionsMarkup(task.asesor);
   adminLeadForm.elements.tipoCompra.innerHTML = renderOptionsMarkup(state.purchaseTypes, task.tipoCompra, "Seleccione tipo");
   adminLeadForm.elements.tipoSaneamiento.innerHTML = renderOptionsMarkup(state.sanitationTypes, task.tipoSaneamiento, "Seleccione saneamiento");
-  adminLeadForm.elements.status.innerHTML = renderStatusOptionsMarkup(task.status, getTaskProcess(task));
+  adminLeadForm.elements.status.innerHTML = renderStatusOptionsMarkup(task.status);
   adminLeadForm.elements.legalUserId.innerHTML = renderLegalUserOptionsMarkup(task.legalUserId, task);
 
   adminLeadForm.elements.id.value = task.id;
@@ -8699,11 +7994,11 @@ function saveAdminLead(id, card) {
   });
 
   if (task.status === "tomado" && !task.takenAt) task.takenAt = new Date().toISOString();
-  if (isClosedStatus(task.status, getTaskProcess(task)) && !task.completedAt) {
+  if (isClosedStatus(task.status) && !task.completedAt) {
     if (!task.takenAt) task.takenAt = new Date().toISOString();
     task.completedAt = new Date().toISOString();
   }
-  if (!isClosedStatus(task.status, getTaskProcess(task))) task.completedAt = "";
+  if (!isClosedStatus(task.status)) task.completedAt = "";
   task.duplicateWarnings = getDuplicateWarnings(task, task.id);
   task.updatedAt = new Date().toISOString();
   task.syncStatus = "pending";
@@ -14426,7 +13721,7 @@ function findPendingPlateInfoRequest(sourceTask = {}) {
     normalizePlate(task.placa) === plate &&
     task.commercialUserId === session.userId &&
     task.infoAccessStatus !== "approved" &&
-    !isClosedStatus(task.status, getTaskProcess(task))
+    !isClosedStatus(task.status)
   );
 }
 
@@ -14437,7 +13732,7 @@ function findApprovedPlateInfoRequest(sourceTask = {}) {
     isInfoRequestTask(task) &&
     normalizePlate(task.placa) === plate &&
     task.commercialUserId === session.userId &&
-    (task.infoAccessStatus === "approved" || isClosedStatus(task.status, getTaskProcess(task)))
+    (task.infoAccessStatus === "approved" || isClosedStatus(task.status))
   );
 }
 
@@ -14565,7 +13860,7 @@ function renderStatusLookup() {
         ${canSeeFullInfo ? `<span>Agencia: ${escapeHtml(task.agencia || "Sin agencia")} | Proceso: ${escapeHtml(getCommercialProcessLabel(getTaskProcess(task)))}</span>` : ""}
       </div>
       <div>
-        ${renderTaskStatusPill(task)}
+        ${renderStatusPill(task.status)}
         <small>Ingresado: ${formatDateTime(task.createdAt)}</small>
         ${isOwner ? "" : approvedInfoRequest
           ? `<span class="info-request-pending is-approved">Informacion autorizada</span>`
@@ -14653,13 +13948,8 @@ function formatDateTime(value) {
   }).format(new Date(value));
 }
 
-function renderStatusPill(statusValue, processKey = "compra") {
-  const status = getStatusOption(statusValue, processKey);
-  return `<span class="status-pill" style="background:${escapeHtml(status.color)}; color:${getReadableTextColor(status.color)}">${escapeHtml(status.label)}</span>`;
-}
-
-function renderTaskStatusPill(task = {}) {
-  const status = getStatusOption(task.status, getTaskProcess(task));
+function renderStatusPill(statusValue) {
+  const status = getStatusOption(statusValue);
   return `<span class="status-pill" style="background:${escapeHtml(status.color)}; color:${getReadableTextColor(status.color)}">${escapeHtml(status.label)}</span>`;
 }
 
@@ -14772,12 +14062,6 @@ adminModuleButtons.forEach((button) => {
 
 if (adminFormProcessSelect) {
   adminFormProcessSelect.addEventListener("change", renderFormAdministration);
-}
-
-if (processSettingsSelect) {
-  processSettingsSelect.addEventListener("change", () => {
-    renderStatusOptions();
-  });
 }
 
 if (adminFormFieldsList) {
@@ -15056,27 +14340,18 @@ document.addEventListener("click", (event) => {
   if (event.target.closest("[data-close-legal-task]")) {
     closeLegalTaskInfoModal();
   }
-  const legalTaskButton = event.target.closest("[data-legal-task]");
-  if (legalTaskButton) {
-    event.preventDefault();
-    openLegalTaskModal(legalTaskButton.dataset.legalTask);
-    return;
-  }
   const modalTakeButton = event.target.closest("[data-modal-take-task]");
   if (modalTakeButton) {
     takeTask(modalTakeButton.dataset.modalTakeTask);
     openLegalTaskModal(modalTakeButton.dataset.modalTakeTask);
-    return;
   }
   const completeSignatureButton = event.target.closest("[data-complete-signature-task]");
   if (completeSignatureButton) {
     completeSignatureTask(completeSignatureButton.dataset.completeSignatureTask);
-    return;
   }
   const openCuvButton = event.target.closest("[data-open-cuv-task]");
   if (openCuvButton) {
     openLegalTaskModal(openCuvButton.dataset.openCuvTask);
-    return;
   }
 });
 
@@ -15363,20 +14638,9 @@ cuvRequestForm?.addEventListener("submit", async (event) => {
   const submitButton = cuvRequestForm.querySelector("button[type='submit']");
   if (submitButton) {
     submitButton.disabled = true;
-    submitButton.textContent = "Validando...";
+    submitButton.textContent = "Guardando...";
   }
   try {
-    const canContinueDuplicate = await confirmDuplicateConflict({
-      ...data,
-      processType: "cuv",
-      tipoCompra: "CUV",
-      tipoSaneamiento: "Solicitud CUV"
-    }, { scope: "cuv" });
-    if (!canContinueDuplicate) {
-      showToast("Envio cancelado. Revise el posible duplicado CUV antes de continuar.");
-      return;
-    }
-    if (submitButton) submitButton.textContent = "Guardando...";
     await createCuvTask(data);
     cuvRequestForm.reset();
     setDefaultCuvRequestDate();
@@ -15455,8 +14719,7 @@ userForm.addEventListener("submit", (event) => {
   const formData = new FormData(userForm);
   createUser({
     ...Object.fromEntries(formData.entries()),
-    mailboxes: formData.getAll("mailboxes"),
-    contractAgencies: formData.getAll("contractAgencies")
+    mailboxes: formData.getAll("mailboxes")
   });
   userForm.reset();
   userForm.querySelector("[name='mailboxes'][value='saneamientos']").checked = true;
@@ -15548,17 +14811,11 @@ resetCopyBtn.addEventListener("click", () => {
   showToast("Textos restaurados.");
 });
 
-statusOptionForm?.addEventListener("submit", (event) => {
+statusOptionForm.addEventListener("submit", (event) => {
   event.preventDefault();
   addStatusOption(Object.fromEntries(new FormData(statusOptionForm).entries()));
   statusOptionForm.reset();
   statusOptionForm.elements.color.value = "#8d8d92";
-});
-
-trackingStepForm?.addEventListener("submit", (event) => {
-  event.preventDefault();
-  addTrackingStep(Object.fromEntries(new FormData(trackingStepForm).entries()));
-  trackingStepForm.reset();
 });
 
 [adminLegalFilter, adminCommercialFilter, adminAgencyFilter, adminStatusFilter, adminDateFrom, adminDateTo].forEach((control) => {
