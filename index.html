@@ -884,11 +884,11 @@
         <div class="panel-title-row">
           <div>
             <p class="eyebrow">Tracking operativo</p>
-            <h2>Tracking de saneamientos</h2>
-            <span class="commercial-section-note">Busca, filtra y revisa tus saneamientos sin mezclarlo con los formularios.</span>
+            <h2>Tracking por proceso</h2>
+            <span class="commercial-section-note">Compra, venta y CUV se muestran en kanban separados para evitar cruces de gestion.</span>
           </div>
         </div>
-        <section id="commercialTrackingBoard" class="commercial-tracking-board" aria-label="Tracking de saneamientos"></section>
+        <section id="commercialTrackingBoard" class="commercial-tracking-board" aria-label="Tracking operativo por proceso"></section>
       </section>
 
       <section class="commercial-requests-panel panel" data-commercial-area-section="requests" hidden>
@@ -1132,7 +1132,7 @@
           <span>Filtros rapidos</span>
           <button class="is-active" type="button" data-legal-sidebar-filter="todos">&#128193; Todos</button>
           <button type="button" data-legal-sidebar-filter="contratos" data-mailbox-filter="contratos">&#128663; Contratos</button>
-          <button type="button" data-legal-sidebar-filter="firmas">&#9997; Firmas</button>
+          <button type="button" data-legal-sidebar-filter="firmas" data-mailbox-filter="firmas">&#9997; Firmas</button>
           <button type="button" data-legal-sidebar-filter="cuv" data-mailbox-filter="cuv">CUV</button>
           <button type="button" data-legal-sidebar-filter="por asignar">&#128230; Por asignar</button>
           <button type="button" data-legal-sidebar-filter="pendiente">&#9203; Pendiente</button>
@@ -2002,7 +2002,7 @@
       }
     }, true);
   </script>
-  <script src="app.js?v=20260803-process-admin-tracking"></script>
+  <script src="app.js?v=20260803-process-kanban-separation"></script>
 </body>
 </html>
 

@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260803-legal-repository-redesign";
+const APP_BUILD_VERSION = "20260803-process-kanban-separation";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -5319,8 +5319,8 @@ function getVisibleTasks() {
       if (activeFilter === "firmas") return isSignatureTask(task);
       if (activeFilter === "cuv") return isCuvTask(task);
       if (activeFilter === "contratos") return getTaskMailbox(task) === "contratos";
-      if (activeFilter === "todos") return !isSignatureTask(task) && !isCuvTask(task);
-      return !isSignatureTask(task) && !isCuvTask(task) && task.status === activeFilter;
+      if (activeFilter === "todos") return getLegalDefaultMailboxScope(task);
+      return !isSignatureTask(task) && !isCuvTask(task) && getTaskMailbox(task) !== "contratos" && task.status === activeFilter;
     })
     .filter((task) => isInsideDateRange(task.createdAt, taskDateFrom, taskDateTo))
     .filter((task) => {
@@ -5381,7 +5381,9 @@ function renderTasks() {
   const visiblePool = state.tasks.filter((task) => canLegalUserSeeTask(task)).filter((task) => {
     if (activeFilter === "firmas") return isSignatureTask(task);
     if (activeFilter === "cuv") return isCuvTask(task);
-    return !isSignatureTask(task) && !isCuvTask(task);
+    if (activeFilter === "contratos") return getTaskMailbox(task) === "contratos";
+    if (activeFilter === "todos") return getLegalDefaultMailboxScope(task);
+    return !isSignatureTask(task) && !isCuvTask(task) && getTaskMailbox(task) !== "contratos";
   });
   const pendingTasks = visiblePool.filter((task) => !isClosedStatus(task.status, getTaskProcess(task)));
   if (queueCount) queueCount.textContent = pendingTasks.length;
@@ -5480,6 +5482,15 @@ function syncLegalSidebarFilters() {
     }
     button.classList.toggle("is-active", button.dataset.legalSidebarFilter === activeFilter);
   });
+}
+
+function getLegalDefaultMailboxScope(task = {}) {
+  if (session.role === "admin") return true;
+  const user = currentLegalUser();
+  if (!user) return false;
+  const mailboxes = normalizeLegalMailboxes(user.mailboxes);
+  if (mailboxes.length === 1) return getTaskMailbox(task) === mailboxes[0];
+  return true;
 }
 
 function renderLegalTaskFullDetails(task) {
@@ -5750,7 +5761,7 @@ async function saveCuvLegalTask(formElement) {
       task.cuvPdfName = file.name || `${task.placa || "CUV"}.pdf`;
       task.cuvPdfUploadedAt = now;
       task.cuvStatus = "ENVIADO ASESOR";
-      task.status = "saneamiento realizado y subido a pilot";
+      task.status = "enviado asesor";
       task.completedAt = now;
       task.statusLockedAt = now;
       task.statusLockedBy = session.userId || "";
@@ -5758,7 +5769,7 @@ async function saveCuvLegalTask(formElement) {
     } else if (!task.takenAt) {
       task.takenAt = now;
     }
-    if (!pdfDataUrl && task.status === "por asignar") task.status = "tomado";
+    if (!pdfDataUrl && task.status === "por asignar") task.status = "en proceso";
     task.updatedAt = now;
     task.syncStatus = "pending";
     task.syncAction = pdfDataUrl ? "cuv-pdf-enviado" : "cuv-actualizado";
@@ -5827,7 +5838,7 @@ function takeTask(id) {
     return;
   }
 
-  assignTaskToLegalUser(task, { id: session.userId, name: session.name }, "tomado");
+  assignTaskToLegalUser(task, { id: session.userId, name: session.name }, getLegalTakenStatusForTask(task));
   if (task.legalUserId !== session.userId) {
     showToast("Ya tienes un saneamiento activo. Finalizalo antes de tomar una nueva tarea.");
     renderTasks();
@@ -5840,10 +5851,10 @@ function takeTask(id) {
   task.syncStatus = "pending";
   saveState();
   renderAll();
-  showToast("Lead tomado. Temporizador legal iniciado.");
+  showToast("Tarea tomada. Temporizador iniciado.");
   guardarTareaSupabase(task, "tomar").then((ok) => {
     saveState();
-    if (!ok) showToast("Lead tomado localmente. Pendiente de sincronizar.");
+    if (!ok) showToast("Tarea tomada localmente. Pendiente de sincronizar.");
   });
 }
 
@@ -6101,7 +6112,7 @@ function canLegalUserSeeTask(task = {}, user = currentLegalUser()) {
   if (session.role === "admin") return true;
   if (!user) return false;
   const mailbox = getTaskMailbox(task);
-  if (mailbox === "firmas") return !task.legalUserId || task.legalUserId === user.id;
+  if (mailbox === "firmas") return userHasMailbox(user, "firmas") && (!task.legalUserId || task.legalUserId === user.id);
   if (!userHasMailbox(user, mailbox)) return false;
   if (!legalUserHandlesContractAgency(user, task)) return false;
   if (mailbox === "saneamientos" && !task.legalUserId && user.legalAvailable === false) return false;
@@ -6161,7 +6172,7 @@ function renderRelatedCuvBadge(task = {}) {
 function getEligibleLegalUsersForTask(task = {}) {
   const mailbox = getTaskMailbox(task);
   if (mailbox === "firmas") {
-    return normalizeLegalUsers(state.legalUsers || []).filter((user) => user.legalAvailable !== false);
+    return normalizeLegalUsers(state.legalUsers || []).filter((user) => userHasMailbox(user, "firmas") && user.legalAvailable !== false);
   }
   return normalizeLegalUsers(state.legalUsers || []).filter((user) =>
     userHasMailbox(user, mailbox) &&
@@ -6296,6 +6307,14 @@ function canLegalUserTakeTask(task = {}, user = currentLegalUser()) {
   if (task.legalUserId || isClosedStatus(task.status, getTaskProcess(task))) return false;
   if (!canLegalUserSeeTask(task, user)) return false;
   return canLegalUserReceiveNewTask(user, task);
+}
+
+function getLegalTakenStatusForTask(task = {}) {
+  const processKey = getTaskProcess(task);
+  if (processKey === "cuv") return "en proceso";
+  if (processKey === "venta") return "pendiente / por confirmar";
+  if (processKey === "firma") return "en proceso";
+  return "tomado";
 }
 
 function assignTaskToLegalUser(task, user, status = "tomado") {
@@ -7361,12 +7380,67 @@ function handleCommercialProfileAction(action) {
   }
 }
 
+function getCommercialTrackingProcessDefinitions() {
+  return [
+    { key: "compra", title: "Compra | Saneamientos", subtitle: "Solicitudes de toma y saneamiento", icon: "&#128196;", accent: "#ef233c" },
+    { key: "venta", title: "Venta | Contratos", subtitle: "Tracking de contratos de compraventa", icon: "&#128663;", accent: "#2563eb" },
+    { key: "cuv", title: "CUV", subtitle: "Certificado unico vehicular", icon: "&#128203;", accent: "#7c3aed" }
+  ];
+}
+
+function renderCommercialProcessTrackingKanban(processInfo, visibleTasks = [], allTasks = [], columns = []) {
+  const processVisible = visibleTasks.filter((task) => getTaskProcess(task) === processInfo.key);
+  const processAll = allTasks.filter((task) => getTaskProcess(task) === processInfo.key);
+  const uniquePlates = new Set(processVisible.map((task) => normalizePlate(task.placa)).filter(Boolean)).size;
+  const columnCounts = columns.reduce((map, column) => {
+    map[column.key] = processVisible.filter((task) => getCommercialTrackingColumnKey(task) === column.key).length;
+    return map;
+  }, {});
+  return `
+    <section class="commercial-process-kanban" data-tracking-process="${escapeHtml(processInfo.key)}" style="--process-accent:${escapeHtml(processInfo.accent)}">
+      <header class="commercial-process-kanban-head">
+        <span class="process-kanban-icon" aria-hidden="true">${processInfo.icon}</span>
+        <div>
+          <p class="eyebrow">Kanban operativo</p>
+          <h3>${escapeHtml(processInfo.title)}</h3>
+          <span>${escapeHtml(processInfo.subtitle)}</span>
+        </div>
+        <div class="process-kanban-stats">
+          <strong>${processVisible.length}</strong><span>visibles</span>
+          <strong>${processAll.length}</strong><span>total</span>
+          <strong>${uniquePlates}</strong><span>placas</span>
+        </div>
+      </header>
+      <div class="commercial-kanban-board commercial-tracking-grid is-process-board">
+        ${columns.map((column) => {
+          const columnTasks = processVisible.filter((task) => getCommercialTrackingColumnKey(task) === column.key);
+          const hasProcessColumnTasks = processAll.some((task) => getCommercialTrackingColumnKey(task) === column.key);
+          return `
+            <section class="commercial-kanban-column tracking-column ${commercialTrackingMobileStatus === column.key ? "is-mobile-selected" : ""}" data-status="${escapeHtml(column.key)}" style="--column-color:${column.color}; --column-soft:${column.soft}">
+              <header class="commercial-kanban-column-head">
+                <span class="kanban-icon" aria-hidden="true">${column.icon}</span>
+                <div>
+                  <strong>${escapeHtml(column.label)} (${columnCounts[column.key] || 0})</strong>
+                  <small>${escapeHtml(column.hint)}</small>
+                </div>
+              </header>
+              <div class="commercial-kanban-cards commercial-tracking-list">
+                ${columnTasks.map(renderCommercialTrackingCard).join("") || `<div class="empty compact-empty">Sin registros.</div>`}
+              </div>
+              ${hasProcessColumnTasks ? `<button class="kanban-view-all tracking-column-view-all" type="button" data-commercial-tracking-filter="${escapeHtml(column.key)}">Ver todas <span aria-hidden="true">&#8964;</span></button>` : ""}
+            </section>
+          `;
+        }).join("")}
+      </div>
+    </section>
+  `;
+}
+
 function renderCommercialTrackingBoard(tasks = []) {
   const container = document.querySelector("#commercialTrackingBoard");
   if (!container) return;
   const processTasks = getCommercialOperationalTasks(tasks);
   const visibleTasks = getCommercialTrackingTasks(processTasks);
-  const visibleKanbanRequests = visibleTasks;
   const columns = getCommercialTrackingColumns();
   if (!columns.some((column) => column.key === commercialTrackingMobileStatus)) {
     commercialTrackingMobileStatus = columns[0]?.key || "pendiente";
@@ -7377,7 +7451,7 @@ function renderCommercialTrackingBoard(tasks = []) {
     map[key] = (map[key] || 0) + 1;
     return map;
   }, {});
-  const kanbanCounts = visibleKanbanRequests.reduce((map, task) => {
+  const kanbanCounts = visibleTasks.reduce((map, task) => {
     const key = getCommercialTrackingColumnKey(task);
     map[key] = (map[key] || 0) + 1;
     return map;
@@ -7391,22 +7465,17 @@ function renderCommercialTrackingBoard(tasks = []) {
     venta: processTasks.filter((task) => getTaskProcess(task) === "venta").length,
     cuv: processTasks.filter((task) => getTaskProcess(task) === "cuv").length
   };
-  const visibleByColumn = columns.reduce((map, column) => {
-    map[column.key] = visibleKanbanRequests.filter((task) => getCommercialTrackingColumnKey(task) === column.key);
-    return map;
-  }, {});
-  const allByColumn = columns.reduce((map, column) => {
-    map[column.key] = visibleTasks.filter((task) => getCommercialTrackingColumnKey(task) === column.key);
-    return map;
-  }, {});
-  const totalVisible = visibleKanbanRequests.length;
-  const uniquePlates = new Set(visibleKanbanRequests.map((task) => normalizePlate(task.placa)).filter(Boolean)).size;
+  const totalVisible = visibleTasks.length;
+  const uniquePlates = new Set(visibleTasks.map((task) => normalizePlate(task.placa)).filter(Boolean)).size;
+  const processBoards = getCommercialTrackingProcessDefinitions()
+    .map((processInfo) => renderCommercialProcessTrackingKanban(processInfo, visibleTasks, processTasks, columns))
+    .join("");
   container.innerHTML = `
     <div class="commercial-tracking-header">
       <div class="commercial-tracking-heading">
         <p class="eyebrow">Tracking operativo</p>
-        <h2>Tracking comercial</h2>
-        <p>Saneamientos, contratos y CUV separados del formulario para seguimiento operativo.</p>
+        <h2>Tracking por proceso</h2>
+        <p>Compra, venta y CUV se muestran en kanban separados para evitar cruces de gestion.</p>
         <div class="tracking-process-summary">
           <span>Saneamientos: <b>${processCounts.compra}</b></span>
           <span>Contratos: <b>${processCounts.venta}</b></span>
@@ -7444,27 +7513,7 @@ function renderCommercialTrackingBoard(tasks = []) {
         </select>
       </label>
     </div>
-    <div class="commercial-kanban-board commercial-tracking-grid">
-      ${columns.map((column) => {
-        const columnTasks = visibleByColumn[column.key] || [];
-        const allColumnTasks = allByColumn[column.key] || [];
-        return `
-          <section class="commercial-kanban-column tracking-column ${commercialTrackingMobileStatus === column.key ? "is-mobile-selected" : ""}" data-status="${escapeHtml(column.key)}" style="--column-color:${column.color}; --column-soft:${column.soft}">
-            <header class="commercial-kanban-column-head">
-              <span class="kanban-icon" aria-hidden="true">${column.icon}</span>
-              <div>
-                <strong>${escapeHtml(column.label)} (${columnTasks.length})</strong>
-                <small>${escapeHtml(column.hint)}</small>
-              </div>
-            </header>
-            <div class="commercial-kanban-cards commercial-tracking-list">
-              ${columnTasks.map(renderCommercialTrackingCard).join("") || `<div class="empty compact-empty">Sin registros activos.</div>`}
-            </div>
-            ${allColumnTasks.length ? `<button class="kanban-view-all tracking-column-view-all" type="button" data-commercial-tracking-filter="${escapeHtml(column.key)}">Ver todas <span aria-hidden="true">&#8964;</span></button>` : ""}
-          </section>
-        `;
-      }).join("")}
-    </div>
+    <div class="commercial-process-kanban-stack">${processBoards}</div>
     ${commercialTrackingFilter !== "todos" ? renderCommercialTrackingExpandedList(visibleTasks, columnsByKey) : ""}
     <div class="commercial-tracking-summary">
       <article><strong>${totalVisible}</strong><span>Total solicitudes</span></article>
@@ -7993,7 +8042,7 @@ function openLegalTaskModal(taskId) {
   const canTake = canLegalUserTakeTask(task);
   const lockedForLegal = isTaskStatusLockedForLegal(task);
   const canEdit = session.role === "admin" || (task.legalUserId === session.userId && !lockedForLegal);
-  const canEditStatus = canEdit && !isSignatureTask(task);
+  const canEditStatus = canEdit && !isSignatureTask(task) && !isCuvTask(task);
   const sourceTask = isInfoRequestTask(task) ? state.tasks.find((item) => item.id === task.sourceTaskId) : null;
   if (legalTaskModalTitle) legalTaskModalTitle.textContent = `${task.placa || "Sin placa"} | ${isInfoRequestTask(task) ? "Solicitud de informacion" : getCommercialProcessLabel(getTaskProcess(task))}`;
   legalTaskModalContent.innerHTML = `
