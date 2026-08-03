@@ -2568,7 +2568,7 @@ button.kpi-card {
 }
 
 .file-search-main::after {
-  content: "âŒ•";
+  content: "⌕";
   position: absolute;
   left: 14px;
   bottom: 10px;
@@ -3776,7 +3776,7 @@ button.kpi-card {
 }
 
 .check-filter-toggle::after {
-  content: "âŒ„";
+  content: "⌄";
   position: absolute;
   right: 12px;
   top: 50%;
