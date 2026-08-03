@@ -3219,7 +3219,9 @@ function openCommercialLeadFicha(taskId) {
     ["Tipo de compra", task.tipoCompra],
     ["Tipo de saneamiento", task.tipoSaneamiento],
     ...(relatedCuvInfo ? [
-      ["CUV relacionado", `${relatedCuvInfo.label} | ${relatedCuvInfo.detail} | Solicitado ${formatDateTime(relatedCuvInfo.task.createdAt)}`]
+      ["CUV relacionado", relatedCuvInfo.task
+        ? `${relatedCuvInfo.label} | ${relatedCuvInfo.detail} | Solicitado ${formatDateTime(relatedCuvInfo.task.createdAt)}`
+        : relatedCuvInfo.label]
     ] : []),
     ["Estatus", task.status],
     ["Firma / Pilot", getSignatureDisplayStatus(task)],
@@ -5824,8 +5826,16 @@ function getRelatedCuvTask(task = {}) {
 }
 
 function getRelatedCuvInfo(task = {}) {
+  if (getTaskProcess(task) !== "compra") return null;
   const cuvTask = getRelatedCuvTask(task);
-  if (!cuvTask) return null;
+  if (!cuvTask) {
+    return {
+      task: null,
+      state: "none",
+      label: "SIN CUV",
+      detail: "No existe solicitud CUV relacionada"
+    };
+  }
   const cuvStatus = normalizeLooseText(cuvTask.cuvStatus || cuvTask.status || "");
   const isFound = Boolean(
     cuvTask.cuvPdfDataUrl ||
@@ -5845,9 +5855,10 @@ function getRelatedCuvInfo(task = {}) {
 function renderRelatedCuvBadge(task = {}) {
   const cuvInfo = getRelatedCuvInfo(task);
   if (!cuvInfo) return "";
+  const badgePrefix = cuvInfo.state === "found" ? "OK " : cuvInfo.state === "process" ? "... " : "";
   return `
     <span class="tracking-cuv-badge is-${escapeHtml(cuvInfo.state)}" title="${escapeHtml(cuvInfo.detail)}">
-      ${cuvInfo.state === "found" ? "OK" : "..."} ${escapeHtml(cuvInfo.label)}
+      ${badgePrefix}${escapeHtml(cuvInfo.label)}
     </span>
   `;
 }
