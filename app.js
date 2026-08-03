@@ -1,5 +1,5 @@
 ﻿const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260803-process-admin-tracking";
+const APP_BUILD_VERSION = "20260803-legal-repository-redesign";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -4186,13 +4186,23 @@ function renderTrackingStepsAdmin(processKey = getSelectedProcessSettingsKey()) 
 }
 
 function renderStatusFilters() {
-  statusFilterButtons.innerHTML = `<button class="chip ${activeFilter === "todos" ? "is-active" : ""}" data-filter="todos">Todos</button>`;
+  const getFilterIcon = (value = "") => {
+    const normalized = normalizeStatusValue(value);
+    if (value === "todos") return "▦";
+    if (normalized.includes("asignar")) return "👥";
+    if (normalized.includes("pendiente")) return "◷";
+    if (normalized.includes("tomado")) return "👤";
+    if (normalized.includes("rechaz")) return "✕";
+    if (normalized.includes("realizado") || normalized.includes("subido")) return "✓";
+    return "⋮";
+  };
+  statusFilterButtons.innerHTML = `<button class="chip legal-filter-tab ${activeFilter === "todos" ? "is-active" : ""}" data-filter="todos"><span class="legal-tab-icon">${getFilterIcon("todos")}</span><span>Todos</span></button>`;
   state.statusOptions.forEach((status) => {
     const button = document.createElement("button");
-    button.className = `chip ${activeFilter === status.value ? "is-active" : ""}`;
+    button.className = `chip legal-filter-tab ${activeFilter === status.value ? "is-active" : ""}`;
     button.dataset.filter = status.value;
     button.type = "button";
-    button.textContent = status.label;
+    button.innerHTML = `<span class="legal-tab-icon">${getFilterIcon(status.value)}</span><span>${escapeHtml(status.label)}</span>`;
     statusFilterButtons.appendChild(button);
   });
 
@@ -8172,12 +8182,12 @@ function renderControlDashboard() {
   }
   const kpis = getKpis(tasks);
   renderKpiCards("#controlKpis", [
-    ["Firmas pendientes", pendingSignatureSends, "Por enviar a firma"],
-    ["Saneamientos por asignar", pendingSaneamientoAssignment, "Sin asesor legal"],
-    ["Disponibles", kpis.unassigned, "Sin tomar"],
-    [" Tomados", kpis.inProgress, "En mesa"],
-    ["Cerrados", kpis.completed, "Finalizados"],
-    [" Placas unicas", kpis.uniquePlates, "Vehiculos"]
+    ["✍️ Firmas pendientes", pendingSignatureSends, "Por enviar a firma"],
+    ["📂 Saneamientos por asignar", pendingSaneamientoAssignment, "Sin asesor legal"],
+    ["📥 Disponibles", kpis.unassigned, "Sin tomar"],
+    ["🧑‍💼 Tomados", kpis.inProgress, "En mesa"],
+    ["✅ Cerrados", kpis.completed, "Finalizados"],
+    ["🚗 Placas unicas", kpis.uniquePlates, "Vehiculos"]
   ]);
 }
 
@@ -14772,6 +14782,12 @@ document.addEventListener("click", (event) => {
   }
   if (event.target.closest("[data-close-legal-task]")) {
     closeLegalTaskInfoModal();
+  }
+  const legalTaskButton = event.target.closest("[data-legal-task]");
+  if (legalTaskButton) {
+    event.preventDefault();
+    openLegalTaskModal(legalTaskButton.dataset.legalTask);
+    return;
   }
   const modalTakeButton = event.target.closest("[data-modal-take-task]");
   if (modalTakeButton) {
