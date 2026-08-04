@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260722-commercial-fixes-1";
+const APP_BUILD_VERSION = "20260803-firma-ficha-click";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -7578,8 +7578,13 @@ function renderCommercialLeadList(container, tasks, options = {}) {
 }
 
 function openLegalTaskModal(taskId) {
-  const task = state.tasks.find((item) => item.id === taskId);
-  if (!task || !legalTaskModal || !legalTaskModalContent) return;
+  const normalizedTaskId = String(taskId || "");
+  const task = state.tasks.find((item) => String(item.id) === normalizedTaskId);
+  if (!legalTaskModal || !legalTaskModalContent) return;
+  if (!task) {
+    showToast("No se encontro la ficha de esta tarea. Actualiza la pantalla e intenta nuevamente.");
+    return;
+  }
   const canTake = canLegalUserTakeTask(task);
   const lockedForLegal = isTaskStatusLockedForLegal(task);
   const canEdit = session.role === "admin" || (task.legalUserId === session.userId && !lockedForLegal);
@@ -14342,34 +14347,48 @@ document.addEventListener("click", (event) => {
   const fichaButton = event.target.closest("[data-commercial-ficha]");
   if (fichaButton) {
     openCommercialLeadFicha(fichaButton.dataset.commercialFicha);
+    return;
+  }
+  const legalTaskButton = event.target.closest("[data-legal-task]");
+  if (legalTaskButton) {
+    event.preventDefault();
+    openLegalTaskModal(legalTaskButton.dataset.legalTask);
+    return;
   }
   const resendButton = event.target.closest("[data-resend-commercial-task]");
   if (resendButton) {
     resendRejectedCommercialTask(resendButton.dataset.resendCommercialTask);
+    return;
   }
   const signatureButton = event.target.closest("[data-request-signature]");
   if (signatureButton) {
     openSignatureRequestModal(signatureButton.dataset.requestSignature);
+    return;
   }
   const pilotUploadButton = event.target.closest("[data-request-pilot-upload]");
   if (pilotUploadButton) {
     requestPilotUploadFromCommercial(pilotUploadButton.dataset.requestPilotUpload);
+    return;
   }
   if (event.target.closest("[data-close-legal-task]")) {
     closeLegalTaskInfoModal();
+    return;
   }
   const modalTakeButton = event.target.closest("[data-modal-take-task]");
   if (modalTakeButton) {
     takeTask(modalTakeButton.dataset.modalTakeTask);
     openLegalTaskModal(modalTakeButton.dataset.modalTakeTask);
+    return;
   }
   const completeSignatureButton = event.target.closest("[data-complete-signature-task]");
   if (completeSignatureButton) {
     completeSignatureTask(completeSignatureButton.dataset.completeSignatureTask);
+    return;
   }
   const openCuvButton = event.target.closest("[data-open-cuv-task]");
   if (openCuvButton) {
     openLegalTaskModal(openCuvButton.dataset.openCuvTask);
+    return;
   }
 });
 
@@ -15428,4 +15447,3 @@ startSupabaseModulePolling();
 migrateIndexedDbFilesToSharedPc();
 checkForAppUpdate();
 window.setInterval(checkForAppUpdate, 5 * 60 * 1000);
-
