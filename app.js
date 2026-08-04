@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260803-firma-ficha-modal-v2";
+const APP_BUILD_VERSION = "20260803-ficha-global-v3";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -7644,72 +7644,102 @@ function openLegalTaskModal(taskId) {
   const canEditStatus = canEdit && !isSignatureTask(task);
   const sourceTask = isInfoRequestTask(task) ? state.tasks.find((item) => String(item.id) === String(task.sourceTaskId || "")) : null;
   if (legalTaskModalTitle) legalTaskModalTitle.textContent = `${task.placa || "Sin placa"} | ${isInfoRequestTask(task) ? "Solicitud de informacion" : getCommercialProcessLabel(getTaskProcess(task))}`;
-  if (isSignatureTask(task)) {
-    legalTaskModalContent.innerHTML = renderSignatureLegalModalContent(task, { canTake, canEdit, lockedForLegal });
-    openLegalTaskInfoModal();
-    return;
-  }
   try {
-    legalTaskModalContent.innerHTML = `
-      <div class="legal-modal-summary">
-        <div>
-          <span>Cliente / registro</span>
-          <strong>${escapeHtml(task.cliente || task.vendedor || task.sourceCliente || "Sin registro")}</strong>
+    legalTaskModalContent.innerHTML = isSignatureTask(task)
+      ? renderSignatureLegalModalContent(task, { canTake, canEdit, lockedForLegal })
+      : `
+        <div class="legal-modal-summary">
+          <div>
+            <span>Cliente / registro</span>
+            <strong>${escapeHtml(task.cliente || task.vendedor || task.sourceCliente || "Sin registro")}</strong>
+          </div>
+          <div>
+            <span>Estatus</span>
+            ${renderStatusPill(task.status)}
+          </div>
+          <div>
+            <span>Asistente legal</span>
+            <strong>${escapeHtml(task.legalAdvisor || "Disponible")}</strong>
+          </div>
+          <div>
+            <span>Tiempo</span>
+            <strong>${escapeHtml(formatLeadDuration(task))}</strong>
+          </div>
         </div>
-        <div>
-          <span>Estatus</span>
-          ${renderStatusPill(task.status)}
-        </div>
-        <div>
-          <span>Asistente legal</span>
-          <strong>${escapeHtml(task.legalAdvisor || "Disponible")}</strong>
-        </div>
-        <div>
-          <span>Tiempo</span>
-          <strong>${escapeHtml(formatLeadDuration(task))}</strong>
-        </div>
-      </div>
-      ${renderLegalTaskFullDetails(task)}
-      ${isCuvTask(task) && canEdit ? renderCuvLegalForm(task) : ""}
-      ${sourceTask ? `
-        <div class="legal-modal-source">
-          <p class="eyebrow">Registro consultado</p>
-          ${renderLegalTaskFullDetails(sourceTask)}
-        </div>
-      ` : ""}
-      <div class="legal-modal-actions">
-        ${canTake ? `<button class="btn primary" type="button" data-modal-take-task="${escapeHtml(task.id)}">Tomar tarea</button>` : ""}
-        ${isSignatureTask(task) && canEdit ? `<button class="btn primary" type="button" data-complete-signature-task="${escapeHtml(task.id)}">${task.signatureStage === "subir-pilot" ? "Marcar subido a Pilot" : "Marcar enviado a firmar"}</button>` : ""}
-        ${lockedForLegal ? `<span class="locked-note">Estatus bloqueado. Solicite correccion al administrador.</span>` : ""}
-        ${canEditStatus ? `
-          <label>
-            Actualizar estatus
-            <select data-modal-status-task="${escapeHtml(task.id)}">
-              ${state.statusOptions.map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === task.status ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
-            </select>
-          </label>
+        ${renderLegalTaskFullDetails(task)}
+        ${isCuvTask(task) && canEdit ? renderCuvLegalForm(task) : ""}
+        ${sourceTask ? `
+          <div class="legal-modal-source">
+            <p class="eyebrow">Registro consultado</p>
+            ${renderLegalTaskFullDetails(sourceTask)}
+          </div>
         ` : ""}
-      </div>
-    `;
+        <div class="legal-modal-actions">
+          ${canTake ? `<button class="btn primary" type="button" data-modal-take-task="${escapeHtml(task.id)}">Tomar tarea</button>` : ""}
+          ${lockedForLegal ? `<span class="locked-note">Estatus bloqueado. Solicite correccion al administrador.</span>` : ""}
+          ${canEditStatus ? `
+            <label>
+              Actualizar estatus
+              <select data-modal-status-task="${escapeHtml(task.id)}">
+                ${state.statusOptions.map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === task.status ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
+              </select>
+            </label>
+          ` : ""}
+        </div>
+      `;
   } catch (error) {
     console.error("No se pudo renderizar la ficha legal", error);
-    legalTaskModalContent.innerHTML = renderLegalTaskFallbackDetails(task);
+    try {
+      legalTaskModalContent.innerHTML = renderLegalTaskFallbackDetails(task);
+    } catch (fallbackError) {
+      console.error("No se pudo renderizar la ficha de respaldo", fallbackError);
+      legalTaskModalContent.innerHTML = `
+        <div class="legal-modal-summary">
+          <div>
+            <span>Ficha disponible</span>
+            <strong>${escapeHtml(task.placa || "Sin placa")}</strong>
+          </div>
+          <div>
+            <span>Cliente</span>
+            <strong>${escapeHtml(task.cliente || task.vendedor || task.sourceCliente || "Sin informacion")}</strong>
+          </div>
+        </div>
+        <div class="empty compact-empty">La ficha se abrio con informacion minima. Revise el registro origen o contacte al administrador.</div>
+      `;
+    }
   }
   openLegalTaskInfoModal();
 }
 
 function renderLegalTaskFallbackDetails(task) {
   const payload = getSignaturePayloadForTask(task);
+  const sourceTask = state.tasks.find((item) => String(item.id) === String(task.sourceTaskId || "")) || {};
+  const heirs = Array.isArray(payload.herederos) ? payload.herederos : [];
   const fields = [
     ["Proceso", isSignatureTask(task) ? getSignatureTaskTitle(task) : getCommercialProcessLabel(getTaskProcess(task))],
-    ["Placa", task.placa],
-    ["Cliente", task.cliente || task.vendedor || task.sourceCliente],
-    ["Asesor comercial", task.asesor || task.commercialUserName],
+    ["Tipo de tarea", task.taskType || task.process || task.modulo],
+    ["Placa", task.placa || sourceTask.placa],
+    ["Cliente", task.cliente || task.vendedor || task.sourceCliente || sourceTask.cliente || sourceTask.vendedor],
+    ["Cedula", task.cedula || task.cedulaVendedor || sourceTask.cedula || sourceTask.cedulaVendedor],
+    ["Agencia", task.agencia || sourceTask.agencia],
+    ["Asesor comercial", task.asesor || task.commercialUserName || sourceTask.asesor || sourceTask.commercialUserName],
+    ["Asesor legal", task.legalAdvisor || "Sin asignar"],
+    ["Estado", getStatusOption(task.status)?.label || task.status],
+    ["Fecha de solicitud", formatDateTime(task.createdAt)],
+    ["Fecha de toma", formatDateTime(task.takenAt)],
+    ["Fecha de cierre", formatDateTime(task.completedAt)],
+    ["Correo", task.correo || sourceTask.correo],
+    ["Telefono", task.telefono || sourceTask.telefono],
     ["Correo titular", payload.titular?.email],
     ["WhatsApp titular", payload.titular?.whatsapp],
     ["Correo conyuge", payload.conyuge?.email],
     ["WhatsApp conyuge", payload.conyuge?.whatsapp],
-    ["Observaciones", task.observaciones || task.legalObservation]
+    ["Herederos", heirs.filter((heir) => heir?.email || heir?.whatsapp).map((heir, index) => `Heredero ${heir.index || index + 1}: ${heir.email || "Sin correo"} | ${heir.whatsapp || "Sin WhatsApp"}`).join(" / ")],
+    ["No. de orden CUV", task.cuvOrderNumber],
+    ["Estatus CUV", task.cuvStatus],
+    ["Valor CUV", task.cuvValue ? formatCurrencyValue(task.cuvValue) : ""],
+    ["Depositos CUV", task.cuvDeposits],
+    ["Observaciones", task.observaciones || task.legalObservation || task.cuvObservations || sourceTask.observaciones]
   ];
   return `
     <div class="legal-modal-summary">
@@ -7725,7 +7755,7 @@ function renderLegalTaskFallbackDetails(task) {
     ${renderSignatureRecipientCards(task)}
     <div class="legal-task-detail-grid">
       ${fields.map(([label, value]) => `
-        <div>
+        <div class="${["Herederos", "Observaciones"].includes(label) ? "is-wide" : ""}">
           <span>${escapeHtml(label)}</span>
           <strong>${escapeHtml(value || "Sin informacion")}</strong>
         </div>
@@ -14399,7 +14429,7 @@ document.addEventListener("click", (event) => {
   const legalTaskButton = event.target.closest?.("[data-legal-task]");
   if (!legalTaskButton) return;
   event.preventDefault();
-  event.stopImmediatePropagation();
+  event.stopPropagation();
   openLegalTaskModal(legalTaskButton.dataset.legalTask);
 }, true);
 
