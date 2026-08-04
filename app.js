@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260803-tracking-selector";
+const APP_BUILD_VERSION = "20260803-legal-process-filter";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -422,6 +422,7 @@ let providerDuplicateView = "pending";
 let providerDuplicatePage = 1;
 let backupRestoreChecked = false;
 let currentPurchaseDetailReport = { title: "", html: "" };
+let activeLegalProcessFilter = "saneamientos";
 let activeCommercialProcess = "compra";
 let activeCommercialTrackingProcess = "compra";
 let activeCommercialArea = "process";
@@ -488,6 +489,7 @@ const logoSlot = document.querySelector("#logoSlot");
 const legalSessionLabel = document.querySelector("#legalSessionLabel");
 const duplicateAlert = document.querySelector("#duplicateAlert");
 const taskSearch = document.querySelector("#taskSearch");
+const legalProcessFilter = document.querySelector("#legalProcessFilter");
 const taskDateFromInput = document.querySelector("#taskDateFrom");
 const taskDateToInput = document.querySelector("#taskDateTo");
 const statusLookupForm = document.querySelector("#statusLookupForm");
@@ -5094,15 +5096,47 @@ function isClosedStatus(value) {
   return Boolean(getStatusOption(value)?.closes);
 }
 
+function getLegalProcessOptions(user = currentLegalUser()) {
+  const baseOptions = [
+    { value: "saneamientos", label: "Saneamientos" },
+    { value: "cuv", label: "CUV" },
+    { value: "contratos", label: "Contratos" },
+    { value: "firmas", label: "Firmas" }
+  ];
+  if (session.role === "admin") return baseOptions;
+  const mailboxes = normalizeLegalMailboxes(user?.mailboxes);
+  return baseOptions.filter((option) => option.value === "firmas" || mailboxes.includes(option.value));
+}
+
+function syncLegalProcessFilter() {
+  if (["firmas", "cuv"].includes(activeFilter)) {
+    activeLegalProcessFilter = activeFilter;
+    activeFilter = "todos";
+  }
+  const options = getLegalProcessOptions();
+  if (!options.some((option) => option.value === activeLegalProcessFilter)) {
+    activeLegalProcessFilter = options[0]?.value || "saneamientos";
+    activeFilter = "todos";
+  }
+  if (!legalProcessFilter) return;
+  legalProcessFilter.innerHTML = options
+    .map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`)
+    .join("");
+  legalProcessFilter.value = activeLegalProcessFilter;
+}
+
+function taskMatchesLegalProcess(task = {}) {
+  return getTaskMailbox(task) === activeLegalProcessFilter;
+}
+
 function getVisibleTasks() {
   const normalizedSearch = searchTerm.trim().toLowerCase();
   return state.tasks
     .filter((task) => canLegalUserSeeTask(task))
+    .filter((task) => taskMatchesLegalProcess(task))
     .filter((task) => {
-      if (activeFilter === "firmas") return isSignatureTask(task);
-      if (activeFilter === "cuv") return isCuvTask(task);
-      if (activeFilter === "todos") return !isSignatureTask(task) && !isCuvTask(task);
-      return !isSignatureTask(task) && !isCuvTask(task) && task.status === activeFilter;
+      if (activeFilter === "todos") return true;
+      return task.status === activeFilter;
     })
     .filter((task) => isInsideDateRange(task.createdAt, taskDateFrom, taskDateTo))
     .filter((task) => {
@@ -5155,16 +5189,15 @@ function isInsideDateRange(value, from, to) {
 }
 
 function renderTasks() {
+  syncLegalProcessFilter();
   syncLegalSidebarFilters();
   if (repairMissingSignatureTasks()) {
     saveState();
     sincronizarTareasPendientesSupabase();
   }
-  const visiblePool = state.tasks.filter((task) => canLegalUserSeeTask(task)).filter((task) => {
-    if (activeFilter === "firmas") return isSignatureTask(task);
-    if (activeFilter === "cuv") return isCuvTask(task);
-    return !isSignatureTask(task) && !isCuvTask(task);
-  });
+  const visiblePool = state.tasks
+    .filter((task) => canLegalUserSeeTask(task))
+    .filter((task) => taskMatchesLegalProcess(task));
   const pendingTasks = visiblePool.filter((task) => !isClosedStatus(task.status));
   if (queueCount) queueCount.textContent = pendingTasks.length;
   const user = currentLegalUser();
@@ -5260,7 +5293,11 @@ function syncLegalSidebarFilters() {
       button.hidden = session.role !== "admin" && !userHasMailbox(user || {}, mailbox);
       if (button.hidden && activeFilter === button.dataset.legalSidebarFilter) activeFilter = "todos";
     }
-    button.classList.toggle("is-active", button.dataset.legalSidebarFilter === activeFilter);
+    const isProcessShortcut = ["firmas", "cuv"].includes(button.dataset.legalSidebarFilter);
+    button.classList.toggle("is-active",
+      button.dataset.legalSidebarFilter === activeFilter ||
+      (isProcessShortcut && activeFilter === "todos" && button.dataset.legalSidebarFilter === activeLegalProcessFilter)
+    );
   });
 }
 
@@ -14728,7 +14765,13 @@ filterButtons.forEach((button) => {
 
 legalSidebarFilterButtons.forEach((button) => {
   button.addEventListener("click", () => {
-    activeFilter = button.dataset.legalSidebarFilter;
+    const sidebarFilter = button.dataset.legalSidebarFilter;
+    if (["firmas", "cuv"].includes(sidebarFilter)) {
+      activeLegalProcessFilter = sidebarFilter;
+      activeFilter = "todos";
+    } else {
+      activeFilter = sidebarFilter;
+    }
     renderTasks();
   });
 });
@@ -14741,6 +14784,13 @@ legalSidebarNavButtons.forEach((button) => {
       target.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   });
+});
+
+legalProcessFilter?.addEventListener("change", () => {
+  activeLegalProcessFilter = legalProcessFilter.value || "saneamientos";
+  activeFilter = "todos";
+  renderTasks();
+  renderStatusFilters();
 });
 
 taskSearch?.addEventListener("input", () => {
