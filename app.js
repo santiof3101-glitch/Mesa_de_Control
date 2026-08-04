@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260803-contratos-agencias";
+const APP_BUILD_VERSION = "20260803-commercial-hotfix";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -7070,7 +7070,7 @@ function renderCommercialTrackingBoard(tasks = [], process = activeCommercialPro
     commercialTrackingMobileStatus = columns[0]?.key || "pendiente";
   }
   const columnsByKey = Object.fromEntries(columns.map((column) => [column.key, column]));
-  const counts = purchaseTasks.reduce((map, task) => {
+  const counts = processTasks.reduce((map, task) => {
     const key = getCommercialTrackingColumnKey(task);
     map[key] = (map[key] || 0) + 1;
     return map;
@@ -14688,7 +14688,7 @@ processingTabButtons.forEach((button) => {
   });
 });
 
-agenciaSelect.addEventListener("change", () => {
+agenciaSelect?.addEventListener("change", () => {
   renderAdvisorSelect();
   updateDuplicatePreview();
 });
@@ -14699,7 +14699,7 @@ form?.addEventListener("change", (event) => {
   updateDuplicatePreview();
 });
 
-logoutBtn.addEventListener("click", () => {
+logoutBtn?.addEventListener("click", () => {
   resetCommercialTopbarChrome();
   setSession(getPublicSession());
   persistView("acceso");
@@ -14732,26 +14732,26 @@ legalSidebarNavButtons.forEach((button) => {
   });
 });
 
-taskSearch.addEventListener("input", () => {
+taskSearch?.addEventListener("input", () => {
   searchTerm = taskSearch.value;
   renderTasks();
 });
 
-taskDateFromInput.addEventListener("change", () => {
+taskDateFromInput?.addEventListener("change", () => {
   taskDateFrom = taskDateFromInput.value;
   renderTasks();
 });
 
-taskDateToInput.addEventListener("change", () => {
+taskDateToInput?.addEventListener("change", () => {
   taskDateTo = taskDateToInput.value;
   renderTasks();
 });
 
-statusLookupForm.addEventListener("submit", (event) => {
+statusLookupForm?.addEventListener("submit", (event) => {
   event.preventDefault();
   if (!canOpenCommercialTools()) {
     showToast("Ingrese como asesor comercial para consultar placas.");
-    commercialLoginForm.scrollIntoView({ behavior: "smooth", block: "center" });
+    commercialLoginForm?.scrollIntoView({ behavior: "smooth", block: "center" });
     return;
   }
   renderStatusLookup();
@@ -14774,30 +14774,30 @@ function guardedStatusLookup() {
   if (canOpenCommercialTools()) renderStatusLookup();
 }
 
-statusSearch.addEventListener("input", guardedStatusLookup);
-statusDateFrom.addEventListener("change", guardedStatusLookup);
-statusDateTo.addEventListener("change", guardedStatusLookup);
-statusAdvisorFilter.addEventListener("change", guardedStatusLookup);
-statusAgencyFilter.addEventListener("change", guardedStatusLookup);
-statusStateFilter.addEventListener("change", guardedStatusLookup);
+statusSearch?.addEventListener("input", guardedStatusLookup);
+statusDateFrom?.addEventListener("change", guardedStatusLookup);
+statusDateTo?.addEventListener("change", guardedStatusLookup);
+statusAdvisorFilter?.addEventListener("change", guardedStatusLookup);
+statusAgencyFilter?.addEventListener("change", guardedStatusLookup);
+statusStateFilter?.addEventListener("change", guardedStatusLookup);
 
-heroSearchForm.addEventListener("submit", (event) => {
+heroSearchForm?.addEventListener("submit", (event) => {
   event.preventDefault();
   if (!canOpenCommercialTools()) {
     showToast("Ingrese como asesor comercial para consultar placas.");
-    commercialLoginForm.scrollIntoView({ behavior: "smooth", block: "center" });
+    commercialLoginForm?.scrollIntoView({ behavior: "smooth", block: "center" });
     return;
   }
-  const query = heroSearchInput.value.trim();
+  const query = heroSearchInput?.value.trim() || "";
   if (!query) return;
-  statusSearch.value = query;
+  if (statusSearch) statusSearch.value = query;
   renderStatusLookup();
-  document.querySelector("#statusLookupForm").scrollIntoView({ behavior: "smooth", block: "start" });
+  document.querySelector("#statusLookupForm")?.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
-form.addEventListener("input", updateDuplicatePreview);
+form?.addEventListener("input", updateDuplicatePreview);
 
-form.addEventListener("submit", async (event) => {
+form?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = Object.fromEntries(new FormData(form).entries());
   const submitButton = form.querySelector("button[type='submit']");
@@ -14830,7 +14830,7 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-saleContractForm.addEventListener("submit", async (event) => {
+saleContractForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = Object.fromEntries(new FormData(saleContractForm).entries());
   const submitButton = saleContractForm.querySelector("button[type='submit']");
