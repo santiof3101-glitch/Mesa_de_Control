@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260803-firma-ficha-robust";
+const APP_BUILD_VERSION = "20260803-firma-ficha-modal-v2";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -3329,6 +3329,58 @@ function renderSignatureRecipientCards(task = {}) {
       <p class="eyebrow">Datos para firma</p>
       <div class="signature-recipient-grid">${cards.join("")}</div>
     </section>
+  `;
+}
+
+function renderSignatureLegalModalContent(task, options = {}) {
+  const payload = getSignaturePayloadForTask(task);
+  const sourceTask = state.tasks.find((item) => String(item.id) === String(task.sourceTaskId || "")) || {};
+  const heirs = Array.isArray(payload.herederos) ? payload.herederos : [];
+  const canTake = Boolean(options.canTake);
+  const canEdit = Boolean(options.canEdit);
+  const lockedForLegal = Boolean(options.lockedForLegal);
+  const fields = [
+    ["Proceso", getSignatureTaskTitle(task)],
+    ["Placa", task.placa || sourceTask.placa],
+    ["Cliente", task.cliente || task.vendedor || sourceTask.cliente || sourceTask.vendedor],
+    ["Cedula", task.cedula || sourceTask.cedula || sourceTask.cedulaVendedor],
+    ["Agencia", task.agencia || sourceTask.agencia],
+    ["Asesor comercial", task.asesor || task.commercialUserName || sourceTask.asesor || sourceTask.commercialUserName],
+    ["Solicitado por", task.commercialUserName || task.asesor || sourceTask.commercialUserName],
+    ["Fecha de solicitud", formatDateTime(task.createdAt)],
+    ["Correo titular", payload.titular?.email],
+    ["WhatsApp titular", payload.titular?.whatsapp],
+    ["Correo conyuge", payload.conyuge?.email],
+    ["WhatsApp conyuge", payload.conyuge?.whatsapp],
+    ["Herederos", heirs.filter((heir) => heir?.email || heir?.whatsapp).map((heir, index) => `Heredero ${heir.index || index + 1}: ${heir.email || "Sin correo"} | ${heir.whatsapp || "Sin WhatsApp"}`).join(" / ")],
+    ["Observaciones", task.observaciones || sourceTask.observaciones || task.legalObservation]
+  ];
+  return `
+    <section class="signature-ficha-hero">
+      <div>
+        <p class="eyebrow">Ficha para Mesa de Control</p>
+        <h3>${escapeHtml(getSignatureTaskTitle(task))}</h3>
+        <p>Copie aqui los datos de contacto para enviar documentos a firma o confirmar la subida de contratos firmados a Pilot.</p>
+      </div>
+      <div class="signature-ficha-status">
+        ${renderStatusPill(task.status)}
+        <span>${escapeHtml(task.signatureStage === "subir-pilot" ? "Subir firmados a Pilot" : "Enviar a firmar")}</span>
+      </div>
+    </section>
+    ${renderSignatureRecipientCards(task)}
+    <div class="legal-task-detail-grid signature-ficha-details">
+      ${fields.map(([label, value]) => `
+        <div class="${label === "Herederos" || label === "Observaciones" ? "is-wide" : ""}">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value || "Sin informacion")}</strong>
+        </div>
+      `).join("")}
+    </div>
+    <div class="legal-modal-actions">
+      ${canTake ? `<button class="btn primary" type="button" data-modal-take-task="${escapeHtml(task.id)}">Tomar tarea</button>` : ""}
+      ${canEdit ? `<button class="btn primary" type="button" data-complete-signature-task="${escapeHtml(task.id)}">${task.signatureStage === "subir-pilot" ? "Marcar subido a Pilot" : "Marcar enviado a firmar"}</button>` : ""}
+      ${lockedForLegal ? `<span class="locked-note">Estatus bloqueado. Solicite correccion al administrador.</span>` : ""}
+    </div>
   `;
 }
 
@@ -7592,6 +7644,11 @@ function openLegalTaskModal(taskId) {
   const canEditStatus = canEdit && !isSignatureTask(task);
   const sourceTask = isInfoRequestTask(task) ? state.tasks.find((item) => String(item.id) === String(task.sourceTaskId || "")) : null;
   if (legalTaskModalTitle) legalTaskModalTitle.textContent = `${task.placa || "Sin placa"} | ${isInfoRequestTask(task) ? "Solicitud de informacion" : getCommercialProcessLabel(getTaskProcess(task))}`;
+  if (isSignatureTask(task)) {
+    legalTaskModalContent.innerHTML = renderSignatureLegalModalContent(task, { canTake, canEdit, lockedForLegal });
+    openLegalTaskInfoModal();
+    return;
+  }
   try {
     legalTaskModalContent.innerHTML = `
       <div class="legal-modal-summary">
@@ -14337,6 +14394,14 @@ document.addEventListener("keydown", (event) => {
   const blockingModalOpen = (commercialPilotModal && !commercialPilotModal.hidden) || (commercialDuplicateModal && !commercialDuplicateModal.hidden);
   if (!blockingModalOpen) closeCommercialModals();
 });
+
+document.addEventListener("click", (event) => {
+  const legalTaskButton = event.target.closest?.("[data-legal-task]");
+  if (!legalTaskButton) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  openLegalTaskModal(legalTaskButton.dataset.legalTask);
+}, true);
 
 document.addEventListener("click", (event) => {
   const profileToggle = event.target.closest("[data-commercial-profile-toggle]");
