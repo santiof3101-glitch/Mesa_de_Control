@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260803-commercial-hotfix";
+const APP_BUILD_VERSION = "20260803-tracking-selector";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -423,6 +423,7 @@ let providerDuplicatePage = 1;
 let backupRestoreChecked = false;
 let currentPurchaseDetailReport = { title: "", html: "" };
 let activeCommercialProcess = "compra";
+let activeCommercialTrackingProcess = "compra";
 let activeCommercialArea = "process";
 let activeCommercialRequestFilter = "todos";
 let commercialTrackingFilter = "todos";
@@ -6734,12 +6735,7 @@ function renderCommercialDashboard() {
     leadList.innerHTML = "";
   }
   renderCommercialCuvList();
-  const trackingTasks = activeCommercialProcess === "venta"
-    ? saleTasks
-    : activeCommercialProcess === "cuv"
-      ? cuvTasks
-      : purchaseTasks;
-  renderCommercialTrackingBoard(trackingTasks, activeCommercialProcess);
+  renderCommercialTrackingBoard(dashboardTasks, activeCommercialTrackingProcess);
   if (generalKpiContainer && generalChartContainer) renderCommercialGeneralDashboard();
 }
 
@@ -7107,6 +7103,14 @@ function renderCommercialTrackingBoard(tasks = [], process = activeCommercialPro
         <h2>${escapeHtml(processTitle)}</h2>
         <p>${escapeHtml(processDescription)}</p>
       </div>
+      <label class="commercial-tracking-process-picker">
+        <span>Tipo de tracking</span>
+        <select data-commercial-tracking-process>
+          <option value="compra" ${process === "compra" ? "selected" : ""}>Tracking de saneamientos</option>
+          <option value="cuv" ${process === "cuv" ? "selected" : ""}>Tracking de CUV</option>
+          <option value="venta" ${process === "venta" ? "selected" : ""}>Tracking de contratos</option>
+        </select>
+      </label>
     </div>
     <div class="commercial-tracking-searchbar">
       <label class="tracking-filter-field tracking-filter-search">
@@ -14598,6 +14602,13 @@ document.addEventListener("change", (event) => {
   }
   if (event.target.matches("[data-commercial-tracking-status]")) {
     commercialTrackingFilter = event.target.value || "todos";
+    commercialTrackingPage = 1;
+    renderCommercialDashboard();
+  }
+  if (event.target.matches("[data-commercial-tracking-process]")) {
+    activeCommercialTrackingProcess = event.target.value || "compra";
+    commercialTrackingFilter = "todos";
+    commercialTrackingMobileStatus = "pendiente";
     commercialTrackingPage = 1;
     renderCommercialDashboard();
   }
