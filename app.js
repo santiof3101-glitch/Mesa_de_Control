@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260803-firma-ficha-click";
+const APP_BUILD_VERSION = "20260803-firma-ficha-robust";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -3162,7 +3162,7 @@ function confirmDuplicateConflict(data) {
 }
 
 function openCommercialLeadFicha(taskId) {
-  const task = state.tasks.find((item) => item.id === taskId);
+  const task = state.tasks.find((item) => String(item.id) === String(taskId));
   if (!task || !commercialLeadFichaContent) return;
   const latestLegalObservation = getLatestLegalObservation(task);
   const isCuv = isCuvTask(task);
@@ -3297,7 +3297,8 @@ function renderSignatureRecipientCard(title, recipient = {}, type = "titular") {
 
 function getSignaturePayloadForTask(task = {}) {
   if (!isSignatureTask(task)) return {};
-  const sourceTask = state.tasks.find((item) => item.id === task.sourceTaskId) || {};
+  const sourceTaskId = String(task.sourceTaskId || "");
+  const sourceTask = state.tasks.find((item) => String(item.id) === sourceTaskId) || {};
   const payload = task.signaturePayload || sourceTask.signaturePayload || {};
   return {
     titular: payload.titular || null,
@@ -5211,7 +5212,7 @@ function renderLegalTaskFullDetails(task) {
     `;
   }
   if (isSignatureTask(task)) {
-    const sourceTask = state.tasks.find((item) => item.id === task.sourceTaskId) || {};
+    const sourceTask = state.tasks.find((item) => String(item.id) === String(task.sourceTaskId || "")) || {};
     const payload = getSignaturePayloadForTask(task);
     const heirs = payload.herederos;
     const fields = [
@@ -5311,7 +5312,7 @@ function renderInfoRequestTaskCard(task, index) {
   const assignedToAnother = task.legalUserId && task.legalUserId !== session.userId && session.role !== "admin";
   const canTake = canLegalUserTakeTask(task);
   const canAuthorize = session.role === "admin" || session.role === "legal" && (!task.legalUserId || task.legalUserId === session.userId);
-  const sourceTask = state.tasks.find((item) => item.id === task.sourceTaskId);
+  const sourceTask = state.tasks.find((item) => String(item.id) === String(task.sourceTaskId || ""));
   const card = document.createElement("article");
   card.className = "task-card task-row-card info-request-card";
   card.innerHTML = `
@@ -5421,7 +5422,7 @@ function readSmallPdfAsDataUrl(file) {
 
 async function saveCuvLegalTask(formElement) {
   const taskId = formElement?.dataset?.cuvLegalForm;
-  const task = state.tasks.find((item) => item.id === taskId);
+  const task = state.tasks.find((item) => String(item.id) === String(taskId));
   if (!task || !isCuvTask(task)) return;
   if (session.role === "legal" && task.legalUserId && task.legalUserId !== session.userId) {
     showToast("Solo puede gestionar el CUV asignado a su usuario.");
@@ -6089,7 +6090,7 @@ function buildSignatureActionButtons(task = {}) {
 }
 
 function openSignatureRequestModal(taskId) {
-  const task = state.tasks.find((item) => item.id === taskId);
+  const task = state.tasks.find((item) => String(item.id) === String(taskId));
   if (!task || !commercialSignatureModal || !commercialSignatureForm || !signatureTaskIdInput) return;
   if (!canCommercialRequestSignature(task)) {
     showToast("Esta opcion solo aplica para saneamientos realizados y subidos a Pilot.");
@@ -6355,7 +6356,7 @@ function repairMissingSignatureTasks() {
 }
 
 async function completeSignatureTask(taskId) {
-  const task = state.tasks.find((item) => item.id === taskId);
+  const task = state.tasks.find((item) => String(item.id) === String(taskId));
   if (!task || !isSignatureTask(task)) return;
   if (session.role === "legal" && task.legalUserId && task.legalUserId !== session.userId) {
     showToast("Solo puede cerrar la solicitud que tomo.");
@@ -6367,7 +6368,7 @@ async function completeSignatureTask(taskId) {
     task.legalAdvisor = session.name;
     task.takenAt = now;
   }
-  const source = state.tasks.find((item) => item.id === task.sourceTaskId);
+  const source = state.tasks.find((item) => String(item.id) === String(task.sourceTaskId || ""));
   task.status = "saneamiento realizado y subido a pilot";
   task.completedAt = now;
   task.updatedAt = now;
@@ -7589,50 +7590,91 @@ function openLegalTaskModal(taskId) {
   const lockedForLegal = isTaskStatusLockedForLegal(task);
   const canEdit = session.role === "admin" || (task.legalUserId === session.userId && !lockedForLegal);
   const canEditStatus = canEdit && !isSignatureTask(task);
-  const sourceTask = isInfoRequestTask(task) ? state.tasks.find((item) => item.id === task.sourceTaskId) : null;
+  const sourceTask = isInfoRequestTask(task) ? state.tasks.find((item) => String(item.id) === String(task.sourceTaskId || "")) : null;
   if (legalTaskModalTitle) legalTaskModalTitle.textContent = `${task.placa || "Sin placa"} | ${isInfoRequestTask(task) ? "Solicitud de informacion" : getCommercialProcessLabel(getTaskProcess(task))}`;
-  legalTaskModalContent.innerHTML = `
+  try {
+    legalTaskModalContent.innerHTML = `
+      <div class="legal-modal-summary">
+        <div>
+          <span>Cliente / registro</span>
+          <strong>${escapeHtml(task.cliente || task.vendedor || task.sourceCliente || "Sin registro")}</strong>
+        </div>
+        <div>
+          <span>Estatus</span>
+          ${renderStatusPill(task.status)}
+        </div>
+        <div>
+          <span>Asistente legal</span>
+          <strong>${escapeHtml(task.legalAdvisor || "Disponible")}</strong>
+        </div>
+        <div>
+          <span>Tiempo</span>
+          <strong>${escapeHtml(formatLeadDuration(task))}</strong>
+        </div>
+      </div>
+      ${renderLegalTaskFullDetails(task)}
+      ${isCuvTask(task) && canEdit ? renderCuvLegalForm(task) : ""}
+      ${sourceTask ? `
+        <div class="legal-modal-source">
+          <p class="eyebrow">Registro consultado</p>
+          ${renderLegalTaskFullDetails(sourceTask)}
+        </div>
+      ` : ""}
+      <div class="legal-modal-actions">
+        ${canTake ? `<button class="btn primary" type="button" data-modal-take-task="${escapeHtml(task.id)}">Tomar tarea</button>` : ""}
+        ${isSignatureTask(task) && canEdit ? `<button class="btn primary" type="button" data-complete-signature-task="${escapeHtml(task.id)}">${task.signatureStage === "subir-pilot" ? "Marcar subido a Pilot" : "Marcar enviado a firmar"}</button>` : ""}
+        ${lockedForLegal ? `<span class="locked-note">Estatus bloqueado. Solicite correccion al administrador.</span>` : ""}
+        ${canEditStatus ? `
+          <label>
+            Actualizar estatus
+            <select data-modal-status-task="${escapeHtml(task.id)}">
+              ${state.statusOptions.map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === task.status ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
+            </select>
+          </label>
+        ` : ""}
+      </div>
+    `;
+  } catch (error) {
+    console.error("No se pudo renderizar la ficha legal", error);
+    legalTaskModalContent.innerHTML = renderLegalTaskFallbackDetails(task);
+  }
+  openLegalTaskInfoModal();
+}
+
+function renderLegalTaskFallbackDetails(task) {
+  const payload = getSignaturePayloadForTask(task);
+  const fields = [
+    ["Proceso", isSignatureTask(task) ? getSignatureTaskTitle(task) : getCommercialProcessLabel(getTaskProcess(task))],
+    ["Placa", task.placa],
+    ["Cliente", task.cliente || task.vendedor || task.sourceCliente],
+    ["Asesor comercial", task.asesor || task.commercialUserName],
+    ["Correo titular", payload.titular?.email],
+    ["WhatsApp titular", payload.titular?.whatsapp],
+    ["Correo conyuge", payload.conyuge?.email],
+    ["WhatsApp conyuge", payload.conyuge?.whatsapp],
+    ["Observaciones", task.observaciones || task.legalObservation]
+  ];
+  return `
     <div class="legal-modal-summary">
       <div>
-        <span>Cliente / registro</span>
-        <strong>${escapeHtml(task.cliente || task.vendedor || task.sourceCliente || "Sin registro")}</strong>
+        <span>Ficha de respaldo</span>
+        <strong>${escapeHtml(task.placa || "Sin placa")}</strong>
       </div>
       <div>
         <span>Estatus</span>
         ${renderStatusPill(task.status)}
       </div>
-      <div>
-        <span>Asistente legal</span>
-        <strong>${escapeHtml(task.legalAdvisor || "Disponible")}</strong>
-      </div>
-      <div>
-        <span>Tiempo</span>
-        <strong>${escapeHtml(formatLeadDuration(task))}</strong>
-      </div>
     </div>
-    ${renderLegalTaskFullDetails(task)}
-    ${isCuvTask(task) && canEdit ? renderCuvLegalForm(task) : ""}
-    ${sourceTask ? `
-      <div class="legal-modal-source">
-        <p class="eyebrow">Registro consultado</p>
-        ${renderLegalTaskFullDetails(sourceTask)}
-      </div>
-    ` : ""}
-    <div class="legal-modal-actions">
-      ${canTake ? `<button class="btn primary" type="button" data-modal-take-task="${escapeHtml(task.id)}">Tomar tarea</button>` : ""}
-      ${isSignatureTask(task) && canEdit ? `<button class="btn primary" type="button" data-complete-signature-task="${escapeHtml(task.id)}">${task.signatureStage === "subir-pilot" ? "Marcar subido a Pilot" : "Marcar enviado a firmar"}</button>` : ""}
-      ${lockedForLegal ? `<span class="locked-note">Estatus bloqueado. Solicite correccion al administrador.</span>` : ""}
-      ${canEditStatus ? `
-        <label>
-          Actualizar estatus
-          <select data-modal-status-task="${escapeHtml(task.id)}">
-            ${state.statusOptions.map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === task.status ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
-          </select>
-        </label>
-      ` : ""}
+    ${renderSignatureRecipientCards(task)}
+    <div class="legal-task-detail-grid">
+      ${fields.map(([label, value]) => `
+        <div>
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value || "Sin informacion")}</strong>
+        </div>
+      `).join("")}
     </div>
   `;
-  openLegalTaskInfoModal();
 }
 
 function openLegalTaskInfoModal() {
@@ -13345,7 +13387,7 @@ function openOrDownloadDataUrl(dataUrl = "", filename = "archivo.pdf") {
 }
 
 function downloadCuvPdf(taskId = "") {
-  const task = (state.tasks || []).find((item) => item.id === taskId);
+  const task = (state.tasks || []).find((item) => String(item.id) === String(taskId));
   if (!task?.cuvPdfDataUrl) {
     showToast("Este CUV aun no tiene PDF disponible.");
     return;
