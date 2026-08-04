@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260803-ficha-global-v3";
+const APP_BUILD_VERSION = "20260803-ficha-global-v4";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -3283,6 +3283,7 @@ function appendLegalStatusObservation(task, status, note) {
 }
 
 function renderSignatureRecipientCard(title, recipient = {}, type = "titular") {
+  recipient = recipient && typeof recipient === "object" ? recipient : {};
   const email = recipient.email || "";
   const whatsapp = recipient.whatsapp || "";
   if (!email && !whatsapp) return "";
@@ -3299,10 +3300,11 @@ function getSignaturePayloadForTask(task = {}) {
   if (!isSignatureTask(task)) return {};
   const sourceTaskId = String(task.sourceTaskId || "");
   const sourceTask = state.tasks.find((item) => String(item.id) === sourceTaskId) || {};
-  const payload = task.signaturePayload || sourceTask.signaturePayload || {};
+  const payloadSource = task.signaturePayload || sourceTask.signaturePayload || {};
+  const payload = payloadSource && typeof payloadSource === "object" ? payloadSource : {};
   return {
-    titular: payload.titular || null,
-    conyuge: payload.conyuge || null,
+    titular: payload.titular && typeof payload.titular === "object" ? payload.titular : null,
+    conyuge: payload.conyuge && typeof payload.conyuge === "object" ? payload.conyuge : null,
     herederos: Array.isArray(payload.herederos) ? payload.herederos : []
   };
 }
