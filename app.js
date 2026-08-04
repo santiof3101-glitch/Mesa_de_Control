@@ -3295,16 +3295,34 @@ function renderSignatureRecipientCard(title, recipient = {}, type = "titular") {
   `;
 }
 
+function getSignaturePayloadForTask(task = {}) {
+  if (!isSignatureTask(task)) return {};
+  const sourceTask = state.tasks.find((item) => item.id === task.sourceTaskId) || {};
+  const payload = task.signaturePayload || sourceTask.signaturePayload || {};
+  return {
+    titular: payload.titular || null,
+    conyuge: payload.conyuge || null,
+    herederos: Array.isArray(payload.herederos) ? payload.herederos : []
+  };
+}
+
 function renderSignatureRecipientCards(task = {}) {
   if (!isSignatureTask(task)) return "";
-  const payload = task.signaturePayload || {};
-  const heirs = Array.isArray(payload.herederos) ? payload.herederos.filter((item) => item?.email || item?.whatsapp) : [];
+  const payload = getSignaturePayloadForTask(task);
+  const heirs = payload.herederos.filter((item) => item?.email || item?.whatsapp);
   const cards = [
     renderSignatureRecipientCard("Titular", payload.titular, "titular"),
     renderSignatureRecipientCard("Conyuge", payload.conyuge, "conyuge"),
     ...heirs.map((heir, index) => renderSignatureRecipientCard(`Heredero ${heir.index || index + 1}`, heir, "heredero"))
   ].filter(Boolean);
-  if (!cards.length) return "";
+  if (!cards.length) {
+    return `
+      <section class="signature-recipient-panel is-empty">
+        <p class="eyebrow">Datos para firma</p>
+        <div class="empty compact-empty">No se encontraron correo o WhatsApp guardados para esta solicitud. Revise el lead origen o solicite nuevamente los datos al asesor comercial.</div>
+      </section>
+    `;
+  }
   return `
     <section class="signature-recipient-panel">
       <p class="eyebrow">Datos para firma</p>
@@ -5193,9 +5211,9 @@ function renderLegalTaskFullDetails(task) {
     `;
   }
   if (isSignatureTask(task)) {
-    const payload = task.signaturePayload || {};
-    const heirs = Array.isArray(payload.herederos) ? payload.herederos : [];
     const sourceTask = state.tasks.find((item) => item.id === task.sourceTaskId) || {};
+    const payload = getSignaturePayloadForTask(task);
+    const heirs = payload.herederos;
     const fields = [
       ["Proceso", getSignatureTaskTitle(task)],
       ["Placa", task.placa || sourceTask.placa],
@@ -15410,6 +15428,4 @@ startSupabaseModulePolling();
 migrateIndexedDbFilesToSharedPc();
 checkForAppUpdate();
 window.setInterval(checkForAppUpdate, 5 * 60 * 1000);
-
-
 
