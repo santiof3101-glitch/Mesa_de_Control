@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260803-modular-phase1";
+const APP_BUILD_VERSION = "20260803-contratos-agencias";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -314,8 +314,8 @@ const defaultState = {
     { id: "comercial-3", name: "Asesor comercial 3", agency: "Sucursal Sur", username: "comercial3", password: "Comercial123" }
   ],
   legalUsers: [
-    { id: "legal-1", name: "Asistente legal 1", username: "legal1", password: "Legal123", mailboxes: ["saneamientos"], legalAvailable: true },
-    { id: "legal-2", name: "Asistente legal 2", username: "legal2", password: "Legal123", mailboxes: ["saneamientos", "contratos"], legalAvailable: true }
+    { id: "legal-1", name: "Asistente legal 1", username: "legal1", password: "Legal123", mailboxes: ["saneamientos"], contractAgencies: [], legalAvailable: true },
+    { id: "legal-2", name: "Asistente legal 2", username: "legal2", password: "Legal123", mailboxes: ["saneamientos", "contratos"], contractAgencies: [], legalAvailable: true }
   ],
   managerUsers: [
     { id: "gerente-1", name: "Gerente general", username: "gerente1", password: "Gerente123" }
@@ -1931,6 +1931,17 @@ function normalizeLegalMailboxes(mailboxes = []) {
   return normalized.length ? [...new Set(normalized)] : ["saneamientos"];
 }
 
+function normalizeContractAgencies(value = []) {
+  const items = Array.isArray(value) ? value : String(value || "").split(/[,;\n]+/);
+  return [...new Set(items.map((item) => normalizeLooseText(item)).filter(Boolean))];
+}
+
+function legalUserHandlesContractAgency(user = {}, agency = "") {
+  const agencies = normalizeContractAgencies(user.contractAgencies || user.contractAgency || user.agenciasContratos);
+  if (!agencies.length) return true;
+  return agencies.includes(normalizeLooseText(agency));
+}
+
 function normalizeLegalUsers(users = []) {
   return users.map((user, index) => {
     if (typeof user === "string") {
@@ -1940,6 +1951,7 @@ function normalizeLegalUsers(users = []) {
         username: `legal${index + 1}`,
         password: "Legal123",
         mailboxes: ["saneamientos"],
+        contractAgencies: [],
         legalAvailable: true
       };
     }
@@ -1949,6 +1961,7 @@ function normalizeLegalUsers(users = []) {
       username: user.username || `legal${index + 1}`,
       password: user.password || "Legal123",
       mailboxes: normalizeLegalMailboxes(user.mailboxes || user.profiles || user.buzones || user.profile),
+      contractAgencies: normalizeContractAgencies(user.contractAgencies || user.contractAgency || user.agenciasContratos),
       legalAvailable: user.legalAvailable !== false
     };
   }).filter((user) => user.name && user.username);
@@ -4359,6 +4372,7 @@ function createUser(data) {
   const username = data.username.trim();
   const password = cleanPasswordValue(data.password);
   const mailboxes = normalizeLegalMailboxes(data.mailboxes);
+  const contractAgencies = normalizeContractAgencies(data.contractAgencies);
   const exists = state.legalUsers.some((user) => user.username.toLowerCase() === username.toLowerCase());
   if (exists) {
     showToast("Ese usuario ya existe.");
@@ -4371,6 +4385,7 @@ function createUser(data) {
     username,
     password,
     mailboxes,
+    contractAgencies,
     legalAvailable: true
   });
   saveState();
@@ -4416,6 +4431,7 @@ function renderUsers() {
   state.legalUsers = normalizeLegalUsers(state.legalUsers || []);
   state.legalUsers.forEach((user) => {
     const mailboxes = normalizeLegalMailboxes(user.mailboxes);
+    const contractAgencies = normalizeContractAgencies(user.contractAgencies);
     const item = document.createElement("article");
     item.className = "user-row";
     item.innerHTML = `
@@ -4423,6 +4439,7 @@ function renderUsers() {
         <strong>${escapeHtml(user.name)}</strong>
         <span>Usuario: ${escapeHtml(user.username)}</span>
         <small>Buzones: ${mailboxes.map((mailbox) => LEGAL_MAILBOXES.find((entry) => entry.id === mailbox)?.label || mailbox).join(", ")}</small>
+        <small>Agencias contratos: ${contractAgencies.length ? contractAgencies.join(", ") : "Todas"}</small>
         <small class="availability-badge ${user.legalAvailable === false ? "is-off" : "is-on"}">${user.legalAvailable === false ? "No disponible para nuevas tareas" : "Disponible para nuevas tareas"}</small>
       </div>
       <div class="row-actions">
@@ -4434,6 +4451,7 @@ function renderUsers() {
             </label>
           `).join("")}
         </div>
+        <input class="contract-agencies-input" type="text" value="${escapeHtml(contractAgencies.join(", "))}" placeholder="Agencias contratos: Shyris, Prensa">
         <button class="btn secondary save-mailboxes" type="button">Guardar buzones</button>
         <button class="btn secondary toggle-legal-availability" type="button">${user.legalAvailable === false ? "Poner disponible" : "Marcar no disponible"}</button>
         <input type="password" placeholder="Nueva contrasena">
@@ -4449,7 +4467,8 @@ function renderUsers() {
     });
     item.querySelector(".save-mailboxes").addEventListener("click", () => {
       const selected = [...item.querySelectorAll(".mailbox-picker input:checked")].map((input) => input.value);
-      updateLegalUserMailboxes(user.id, selected);
+      const agenciesInput = item.querySelector(".contract-agencies-input");
+      updateLegalUserAccess(user.id, selected, agenciesInput?.value || "");
     });
     item.querySelector(".toggle-legal-availability").addEventListener("click", () => {
       setLegalUserAvailability(user.id, user.legalAvailable === false);
@@ -4475,12 +4494,21 @@ function setLegalUserAvailability(id, available) {
 }
 
 function updateLegalUserMailboxes(id, mailboxes) {
+  updateLegalUserAccess(id, mailboxes);
+}
+
+function updateLegalUserAccess(id, mailboxes, contractAgencies = null) {
   const user = state.legalUsers.find((item) => item.id === id);
   if (!user) return;
   const nextMailboxes = normalizeLegalMailboxes(mailboxes);
   user.mailboxes = nextMailboxes;
+  if (contractAgencies !== null) user.contractAgencies = normalizeContractAgencies(contractAgencies);
   state.tasks = (state.tasks || []).map((task) => {
-    if (task.legalUserId !== id || isClosedStatus(task.status) || nextMailboxes.includes(getTaskMailbox(task))) return task;
+    if (task.legalUserId !== id || isClosedStatus(task.status)) return task;
+    const mailbox = getTaskMailbox(task);
+    const stillAllowed = nextMailboxes.includes(mailbox) &&
+      (mailbox !== "contratos" || legalUserHandlesContractAgency(user, task.agencia || task.commercialAgency));
+    if (stillAllowed) return task;
     return {
       ...task,
       legalUserId: "",
@@ -4497,7 +4525,7 @@ function updateLegalUserMailboxes(id, mailboxes) {
   sincronizarTareasPendientesSupabase();
   guardarUsuariosSupabaseAhora();
   renderAll();
-  showToast("Buzones del asistente actualizados.");
+  showToast("Accesos del asistente actualizados.");
 }
 
 function normalizeLegalChatMessages(messages = []) {
@@ -5848,6 +5876,10 @@ function canLegalUserSeeTask(task = {}, user = currentLegalUser()) {
   const mailbox = getTaskMailbox(task);
   if (mailbox === "firmas") return !task.legalUserId || task.legalUserId === user.id;
   if (!userHasMailbox(user, mailbox)) return false;
+  if (mailbox === "contratos") {
+    if (task.legalUserId) return task.legalUserId === user.id;
+    return legalUserHandlesContractAgency(user, task.agencia || task.commercialAgency);
+  }
   if (mailbox === "saneamientos" && !task.legalUserId && user.legalAvailable === false) return false;
   return !task.legalUserId || task.legalUserId === user.id;
 }
@@ -5976,6 +6008,7 @@ function canLegalUserReceiveNewTask(user = {}, task = {}) {
   const mailbox = getTaskMailbox(task);
   if (mailbox === "firmas") return user.legalAvailable !== false;
   if (!userHasMailbox(user, mailbox)) return false;
+  if (mailbox === "contratos") return legalUserHandlesContractAgency(user, task.agencia || task.commercialAgency);
   if (mailbox !== "saneamientos") return true;
   if (user.legalAvailable === false) return false;
   return task.legalUserId === user.id || isLegalAdvisorAvailable(user.id, state.tasks);
@@ -6701,7 +6734,12 @@ function renderCommercialDashboard() {
     leadList.innerHTML = "";
   }
   renderCommercialCuvList();
-  renderCommercialTrackingBoard(purchaseTasks);
+  const trackingTasks = activeCommercialProcess === "venta"
+    ? saleTasks
+    : activeCommercialProcess === "cuv"
+      ? cuvTasks
+      : purchaseTasks;
+  renderCommercialTrackingBoard(trackingTasks, activeCommercialProcess);
   if (generalKpiContainer && generalChartContainer) renderCommercialGeneralDashboard();
 }
 
@@ -6852,7 +6890,6 @@ function renderCommercialTrackingStageItem(item = {}) {
 function getCommercialTrackingTasks(tasks = []) {
   const query = commercialTrackingSearch.trim().toLowerCase();
   return tasks
-    .filter((task) => getTaskProcess(task) === "compra")
     .filter((task) => commercialTrackingFilter === "todos" || getCommercialTrackingColumnKey(task) === commercialTrackingFilter)
     .filter((task) => isInsideDateRange(task.createdAt, commercialTrackingDateFrom, commercialTrackingDateTo))
     .filter((task) => {
@@ -7022,11 +7059,11 @@ function handleCommercialProfileAction(action) {
   }
 }
 
-function renderCommercialTrackingBoard(tasks = []) {
+function renderCommercialTrackingBoard(tasks = [], process = activeCommercialProcess) {
   const container = document.querySelector("#commercialTrackingBoard");
   if (!container) return;
-  const purchaseTasks = tasks.filter((task) => getTaskProcess(task) === "compra");
-  const visibleTasks = getCommercialTrackingTasks(purchaseTasks);
+  const processTasks = tasks.filter((task) => getTaskProcess(task) === process);
+  const visibleTasks = getCommercialTrackingTasks(processTasks);
   const visibleKanbanRequests = visibleTasks;
   const columns = getCommercialTrackingColumns();
   if (!columns.some((column) => column.key === commercialTrackingMobileStatus)) {
@@ -7044,7 +7081,7 @@ function renderCommercialTrackingBoard(tasks = []) {
     return map;
   }, {});
   const filters = [
-    ["todos", "Todos", purchaseTasks.length],
+    ["todos", "Todos", processTasks.length],
     ...columns.map((column) => [column.key, column.label, counts[column.key] || 0])
   ];
   const visibleByColumn = columns.reduce((map, column) => {
@@ -7057,12 +7094,18 @@ function renderCommercialTrackingBoard(tasks = []) {
   }, {});
   const totalVisible = visibleKanbanRequests.length;
   const uniquePlates = new Set(visibleKanbanRequests.map((task) => normalizePlate(task.placa)).filter(Boolean)).size;
+  const processTitle = process === "venta" ? "Tracking de contratos" : process === "cuv" ? "Tracking de CUV" : "Tracking de saneamientos";
+  const processDescription = process === "venta"
+    ? "Busca, filtra y revisa tus contratos de compraventa sin mezclarlo con saneamientos."
+    : process === "cuv"
+      ? "Busca, filtra y revisa tus solicitudes CUV en un tablero independiente."
+      : "Busca, filtra y revisa tus saneamientos sin mezclarlo con los formularios.";
   container.innerHTML = `
     <div class="commercial-tracking-header">
       <div class="commercial-tracking-heading">
         <p class="eyebrow">Tracking operativo</p>
-        <h2>Tracking de saneamientos</h2>
-        <p>Busca, filtra y revisa tus saneamientos sin mezclarlo con los formularios.</p>
+        <h2>${escapeHtml(processTitle)}</h2>
+        <p>${escapeHtml(processDescription)}</p>
       </div>
     </div>
     <div class="commercial-tracking-searchbar">
@@ -14895,7 +14938,8 @@ userForm.addEventListener("submit", (event) => {
   const formData = new FormData(userForm);
   createUser({
     ...Object.fromEntries(formData.entries()),
-    mailboxes: formData.getAll("mailboxes")
+    mailboxes: formData.getAll("mailboxes"),
+    contractAgencies: formData.get("contractAgencies") || ""
   });
   userForm.reset();
   userForm.querySelector("[name='mailboxes'][value='saneamientos']").checked = true;

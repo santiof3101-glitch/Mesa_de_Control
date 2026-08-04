@@ -938,7 +938,7 @@
             <p>Cada solicitud quedara separada por proceso y sincronizada con mesa de control.</p>
             <div class="commercial-start-actions">
               <button class="btn primary" type="button" data-commercial-start="commercial-purchase-process">&#128722; Compra</button>
-              <button class="btn secondary light-btn is-disabled" type="button" data-coming-soon="venta" aria-disabled="true">&#128663; Venta</button>
+              <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-sale-process">&#128663; Venta</button>
               <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-cuv-process">&#128196; CUV</button>
             </div>
           </div>
@@ -956,7 +956,7 @@
               <strong>Compra</strong>
               <span>Solicitud de toma y saneamiento.</span>
             </button>
-            <button class="commercial-process-card is-disabled" type="button" data-coming-soon="venta" aria-disabled="true">
+            <button class="commercial-process-card" type="button" data-commercial-process="commercial-sale-process" aria-pressed="false">
               <strong>Venta</strong>
               <span>Tracking de contratos de compraventa.</span>
             </button>
@@ -1570,6 +1570,7 @@
               <label><input type="checkbox" name="mailboxes" value="contratos"> Contratos</label>
               <label><input type="checkbox" name="mailboxes" value="cuv"> CUV</label>
             </div>
+            <input name="contractAgencies" placeholder="Agencias contratos: Shyris, Prensa, Cumbaya">
             <button class="btn primary" type="submit">Crear usuario</button>
           </form>
           <div id="usersList" class="users-list"></div>
@@ -1967,6 +1968,6 @@
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20260803-modular-phase1"></script>
+  <script src="app.js?v=20260803-contratos-agencias"></script>
 </body>
 </html>
