@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260806-legal-contract-output";
+const APP_BUILD_VERSION = "20260806-legal-contract-format-fix";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -4011,7 +4011,7 @@ function collectLegalContractData(formElement) {
     kilometraje: data.kilometraje || "",
     chasis: cleanUpper(data.chasis),
     motor: cleanUpper(data.motor),
-    precioCompra: price ? formatCurrency(price) : "",
+    precioCompra: price ? formatCurrencyValue(price) : "",
     propietario: cleanDisplayName(data.propietario),
     nacionalidadPropietario: cleanDisplayName(data.nacionalidadPropietario || "Ecuatoriana"),
     cedulaPropietario: data.cedulaPropietario || "",
