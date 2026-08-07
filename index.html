@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260803-legal-process-filter">
+  <link rel="stylesheet" href="styles.css?v=20260806-legal-contract-generator">
   <link rel="stylesheet" href="layout-fix.css?v=20260727-ui-sanity-provider-fix">
 </head>
 <body>
@@ -1122,6 +1122,7 @@
           <button class="is-active" type="button" data-legal-scroll="tasks-title">&#128203; Repositorio</button>
           <button type="button" data-legal-scroll="legalControlSummary">&#128200; Resumen operativo</button>
           <button type="button" data-legal-scroll="legalPasswordForm">&#128273; Cambiar clave</button>
+          <button type="button" data-legal-scroll="legalContractGenerator">&#128196; Contratos legales</button>
           <button type="button" data-legal-scroll="taskList">&#128269; Bandeja de tareas</button>
           <button type="button" data-legal-scroll="legalAvailabilityBlock">&#128994; Disponibilidad</button>
         </nav>
@@ -1172,6 +1173,96 @@
             <button id="legalAvailabilityToggle" class="btn secondary" type="button">Cambiar disponibilidad</button>
           </div>
           <div id="controlKpis" class="kpi-grid compact-kpis"></div>
+        </section>
+
+        <section id="legalContractGenerator" class="panel legal-contract-generator">
+          <div class="panel-title-row">
+            <div>
+              <p class="eyebrow">Contratos legales</p>
+              <h2>Generador de contratos y encargos</h2>
+              <p class="helper-text">Ingresa los datos una sola vez y genera el documento con la plantilla administrada desde el panel de administrador.</p>
+            </div>
+            <span class="soft-badge">Revision previa antes de PDF</span>
+          </div>
+          <form id="legalContractForm" class="legal-contract-form">
+            <label>
+              Tipo de operacion
+              <select name="operationType" required>
+                <option value="compra-directa">Compra directa</option>
+                <option value="consignacion">Consignacion</option>
+              </select>
+            </label>
+            <label>
+              Documento a generar
+              <select name="documentType" required>
+                <option value="prestacion-servicios">Contrato de prestacion de servicios</option>
+                <option value="encargo-fiduciario">Encargo fiduciario</option>
+              </select>
+            </label>
+            <label>
+              Ciudad
+              <input name="ciudad" placeholder="Ej. Guayaquil">
+            </label>
+            <label>
+              Fecha
+              <input name="fecha" type="date">
+            </label>
+
+            <div class="legal-contract-group span-4">
+              <strong>Datos del vehiculo</strong>
+              <div class="legal-contract-grid">
+                <label>Placa del auto<input name="placa" required></label>
+                <label>Marca del auto<input name="marca" required></label>
+                <label>Modelo del auto<input name="modelo" required></label>
+                <label>Anio de fabricacion<input name="anio" type="number" min="1900" max="2100" required></label>
+                <label>Color<input name="color"></label>
+                <label>Kilometraje<input name="kilometraje" type="number" min="0"></label>
+                <label>No. de chasis<input name="chasis"></label>
+                <label>No. de motor<input name="motor"></label>
+                <label>Precio de compra<input name="precioCompra" type="number" min="0" step="0.01" required></label>
+              </div>
+            </div>
+
+            <div class="legal-contract-group span-4">
+              <strong>Datos del propietario</strong>
+              <div class="legal-contract-grid">
+                <label>Nombres completos del propietario<input name="propietario" required></label>
+                <label>Nacionalidad<input name="nacionalidadPropietario" value="Ecuatoriana"></label>
+                <label>Cedula del propietario<input name="cedulaPropietario" required></label>
+                <label>Codigo dactilar<input name="codigoDactilar"></label>
+                <label>No. de celular<input name="celular"></label>
+                <label>Correo electronico<input name="correo" type="email"></label>
+                <label class="span-2">Direccion de domicilio<input name="direccion"></label>
+                <label>
+                  Estado civil
+                  <select name="estadoCivil">
+                    <option value="Soltero/a">Soltero/a</option>
+                    <option value="Casado/a">Casado/a</option>
+                    <option value="Union de hecho">Union de hecho</option>
+                    <option value="Divorciado/a">Divorciado/a</option>
+                    <option value="Viudo/a">Viudo/a</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div class="legal-contract-group span-4">
+              <strong>Datos del conyuge si aplica</strong>
+              <div class="legal-contract-grid">
+                <label>Nombres completos del conyuge<input name="conyuge"></label>
+                <label>Nacionalidad<input name="nacionalidadConyuge" value="Ecuatoriana"></label>
+                <label>Cedula del conyuge<input name="cedulaConyuge"></label>
+                <label>Codigo dactilar conyuge<input name="codigoDactilarConyuge"></label>
+                <label>No. celular conyuge<input name="celularConyuge"></label>
+                <label>Correo electronico conyuge<input name="correoConyuge" type="email"></label>
+              </div>
+            </div>
+
+            <div class="form-actions span-4">
+              <button class="btn secondary" type="reset">Limpiar datos</button>
+              <button class="btn primary" type="submit">Generar contrato</button>
+            </div>
+          </form>
         </section>
 
         <div class="task-toolbar panel">
@@ -1265,6 +1356,10 @@
         <button class="admin-module-card" type="button" data-admin-module="admin-forms-module">
           <strong>Formularios</strong>
           <span>Campos de compra y venta</span>
+        </button>
+        <button class="admin-module-card" type="button" data-admin-module="admin-contract-templates-module">
+          <strong>Contratos legales</strong>
+          <span>Textos y plantillas</span>
         </button>
         <button class="admin-module-card" type="button" data-admin-module="admin-design-module">
           <strong>Diseno</strong>
@@ -1534,6 +1629,42 @@
             <input name="options" placeholder="Opciones separadas por coma">
             <label class="check-row"><input name="required" type="checkbox"> Obligatorio</label>
             <button class="btn primary" type="submit">Agregar campo</button>
+          </form>
+        </section>
+
+        <section id="admin-contract-templates-module" class="panel span-admin admin-module-section" data-admin-section="admin-contract-templates-module">
+          <div class="panel-title-row">
+            <div>
+              <p class="eyebrow">Documentos legales</p>
+              <h2>Plantillas de contratos y encargos fiduciarios</h2>
+            </div>
+            <button id="resetLegalContractTemplatesBtn" class="btn secondary" type="button">Restaurar textos base</button>
+          </div>
+          <p class="helper-text">Puedes editar estos textos cuando cambie el formato legal. Usa variables entre llaves dobles, por ejemplo {{placa}}, {{propietario}}, {{precioCompra}}, {{conyuge}}.</p>
+          <form id="legalContractTemplateForm" class="contract-template-form">
+            <label>
+              Compra directa - prestacion de servicios
+              <textarea name="directPrestacion" rows="8"></textarea>
+            </label>
+            <label>
+              Consignacion - prestacion de servicios
+              <textarea name="consignacionPrestacion" rows="8"></textarea>
+            </label>
+            <label>
+              Compra directa - encargo fiduciario
+              <textarea name="directFiduciario" rows="8"></textarea>
+            </label>
+            <label>
+              Consignacion - encargo fiduciario
+              <textarea name="consignacionFiduciario" rows="8"></textarea>
+            </label>
+            <div class="contract-template-vars span-admin">
+              <strong>Variables disponibles</strong>
+              <span>{{placa}}</span><span>{{marca}}</span><span>{{modelo}}</span><span>{{anio}}</span><span>{{color}}</span><span>{{kilometraje}}</span><span>{{chasis}}</span><span>{{motor}}</span><span>{{precioCompra}}</span><span>{{propietario}}</span><span>{{cedulaPropietario}}</span><span>{{codigoDactilar}}</span><span>{{celular}}</span><span>{{correo}}</span><span>{{direccion}}</span><span>{{estadoCivil}}</span><span>{{conyuge}}</span><span>{{cedulaConyuge}}</span><span>{{correoConyuge}}</span>
+            </div>
+            <div class="form-actions span-admin">
+              <button class="btn primary" type="submit">Guardar plantillas</button>
+            </div>
           </form>
         </section>
 
@@ -1977,6 +2108,6 @@
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20260803-legal-process-filter"></script>
+  <script src="app.js?v=20260806-legal-contract-generator"></script>
 </body>
 </html>

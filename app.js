@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260803-legal-process-filter";
+const APP_BUILD_VERSION = "20260806-legal-contract-generator";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -262,6 +262,65 @@ const BASE_FORM_FIELD_TYPE_RULES = {
   }
 };
 
+const LEGAL_CONTRACT_TEMPLATE_KEYS = [
+  "directPrestacion",
+  "consignacionPrestacion",
+  "directFiduciario",
+  "consignacionFiduciario"
+];
+
+const LEGAL_CONTRACT_TEMPLATE_LABELS = {
+  directPrestacion: "Compra directa - contrato de prestacion de servicios",
+  consignacionPrestacion: "Consignacion - contrato de prestacion de servicios",
+  directFiduciario: "Compra directa - encargo fiduciario",
+  consignacionFiduciario: "Consignacion - encargo fiduciario"
+};
+
+const DEFAULT_LEGAL_CONTRACT_TEMPLATES = {
+  directPrestacion: [
+    "CONTRATO DE PRESTACION DE SERVICIOS - COMPRA DIRECTA",
+    "",
+    "En la ciudad de {{ciudad}}, a {{fecha}}, comparece {{propietario}}, con cedula {{cedulaPropietario}}, propietario del vehiculo placa {{placa}}, marca {{marca}}, modelo {{modelo}}, anio {{anio}}, color {{color}}, kilometraje {{kilometraje}}, chasis {{chasis}} y motor {{motor}}.",
+    "",
+    "El precio de compra acordado es {{precioCompra}}. Las partes dejan constancia de que la informacion registrada servira para la gestion documental y legal correspondiente.",
+    "",
+    "Estado civil: {{estadoCivil}}. Conyuge: {{conyuge}}.",
+    "",
+    "Direccion: {{direccion}}. Celular: {{celular}}. Correo: {{correo}}."
+  ].join("\n"),
+  consignacionPrestacion: [
+    "CONTRATO DE PRESTACION DE SERVICIOS - CONSIGNACION",
+    "",
+    "En la ciudad de {{ciudad}}, a {{fecha}}, comparece {{propietario}}, con cedula {{cedulaPropietario}}, propietario del vehiculo placa {{placa}}, marca {{marca}}, modelo {{modelo}}, anio {{anio}}, color {{color}}, kilometraje {{kilometraje}}, chasis {{chasis}} y motor {{motor}}.",
+    "",
+    "El propietario entrega el vehiculo en consignacion para la gestion comercial y documental. Precio referencial de compra: {{precioCompra}}.",
+    "",
+    "Estado civil: {{estadoCivil}}. Conyuge: {{conyuge}}.",
+    "",
+    "Direccion: {{direccion}}. Celular: {{celular}}. Correo: {{correo}}."
+  ].join("\n"),
+  directFiduciario: [
+    "ENCARGO FIDUCIARIO - COMPRA DIRECTA",
+    "",
+    "Comparece {{propietario}}, de nacionalidad {{nacionalidadPropietario}}, cedula {{cedulaPropietario}}, codigo dactilar {{codigoDactilar}}, para autorizar la gestion fiduciaria relacionada con el vehiculo placa {{placa}}, marca {{marca}}, modelo {{modelo}}, anio {{anio}}.",
+    "",
+    "Precio de compra: {{precioCompra}}. Datos de contacto: {{celular}} / {{correo}}.",
+    "",
+    "Datos del conyuge si aplica: {{conyuge}}, cedula {{cedulaConyuge}}, codigo dactilar {{codigoDactilarConyuge}}, celular {{celularConyuge}}, correo {{correoConyuge}}."
+  ].join("\n"),
+  consignacionFiduciario: [
+    "ENCARGO FIDUCIARIO - CONSIGNACION",
+    "",
+    "Comparece {{propietario}}, de nacionalidad {{nacionalidadPropietario}}, cedula {{cedulaPropietario}}, codigo dactilar {{codigoDactilar}}, para encargar la gestion fiduciaria y documental del vehiculo entregado en consignacion.",
+    "",
+    "Vehiculo: placa {{placa}}, marca {{marca}}, modelo {{modelo}}, anio {{anio}}, color {{color}}, chasis {{chasis}}, motor {{motor}}.",
+    "",
+    "Precio referencial: {{precioCompra}}. Direccion: {{direccion}}. Contacto: {{celular}} / {{correo}}.",
+    "",
+    "Datos del conyuge si aplica: {{conyuge}}, cedula {{cedulaConyuge}}, codigo dactilar {{codigoDactilarConyuge}}, celular {{celularConyuge}}, correo {{correoConyuge}}."
+  ].join("\n")
+};
+
 const defaultState = {
   schemaVersion: STATE_SCHEMA_VERSION,
   logoDataUrl: "",
@@ -307,6 +366,7 @@ const defaultState = {
     { id: "status-pilot", label: "Saneamiento realizado y subido a Pilot", value: "saneamiento realizado y subido a pilot", color: "#23865d", closes: true, isDefault: false }
   ],
   formConfig: structuredClone(DEFAULT_FORM_CONFIG),
+  legalContractTemplates: structuredClone(DEFAULT_LEGAL_CONTRACT_TEMPLATES),
   agencies: ["Matriz Guayaquil", "Sucursal Norte", "Sucursal Sur", "Via Daule", "Samborondon", "Duran", "Quito", "Cuenca", "Manta"],
   commercialAdvisors: [
     { id: "comercial-1", name: "Asesor comercial 1", agency: "Matriz Guayaquil", username: "comercial1", password: "Comercial123" },
@@ -468,6 +528,9 @@ const processingLoginForm = document.querySelector("#processingLoginForm");
 const commercialPasswordForm = document.querySelector("#commercialPasswordForm");
 const commercialPasswordModal = document.querySelector("#commercialPasswordModal");
 const legalPasswordForm = document.querySelector("#legalPasswordForm");
+const legalContractForm = document.querySelector("#legalContractForm");
+const legalContractTemplateForm = document.querySelector("#legalContractTemplateForm");
+const resetLegalContractTemplatesBtn = document.querySelector("#resetLegalContractTemplatesBtn");
 const legalAvailabilityToggle = document.querySelector("#legalAvailabilityToggle");
 const legalAvailabilityStatus = document.querySelector("#legalAvailabilityStatus");
 const legalChatForm = document.querySelector("#legalChatForm");
@@ -756,6 +819,7 @@ function loadState() {
     merged.legalChatMessages = normalizeLegalChatMessages(merged.legalChatMessages || []);
     merged.theme = { ...structuredClone(defaultState.theme), ...(merged.theme || {}) };
     merged.copy = { ...structuredClone(defaultState.copy), ...(merged.copy || {}) };
+    merged.legalContractTemplates = normalizeLegalContractTemplates(merged.legalContractTemplates);
     sanitizeStateVisuals(merged);
     migrateVisualDefaults(merged, parsed);
     merged.dataProcessing = { ...structuredClone(defaultState.dataProcessing), ...(merged.dataProcessing || {}) };
@@ -3767,6 +3831,7 @@ function renderOptions() {
   renderStatusOptions();
   renderStatusFilters();
   renderFormAdministration();
+  renderLegalContractTemplateAdmin();
   applyFormConfiguration();
 }
 
@@ -3888,6 +3953,186 @@ function renderFormAdministration() {
       ${field.isBase ? `<button class="btn danger" type="button" data-hide-base-field>Ocultar</button>` : `<button class="btn danger" type="button" data-delete-form-field>Eliminar</button>`}
     </article>
   `).join("");
+}
+
+function normalizeLegalContractTemplates(templates = {}) {
+  const normalized = { ...structuredClone(DEFAULT_LEGAL_CONTRACT_TEMPLATES), ...(templates || {}) };
+  LEGAL_CONTRACT_TEMPLATE_KEYS.forEach((key) => {
+    if (typeof normalized[key] !== "string" || !normalized[key].trim()) {
+      normalized[key] = DEFAULT_LEGAL_CONTRACT_TEMPLATES[key];
+    }
+  });
+  return normalized;
+}
+
+function getLegalContractTemplates() {
+  state.legalContractTemplates = normalizeLegalContractTemplates(state.legalContractTemplates);
+  return state.legalContractTemplates;
+}
+
+function renderLegalContractTemplateAdmin() {
+  if (!legalContractTemplateForm) return;
+  const templates = getLegalContractTemplates();
+  LEGAL_CONTRACT_TEMPLATE_KEYS.forEach((key) => {
+    if (legalContractTemplateForm.elements[key]) {
+      legalContractTemplateForm.elements[key].value = templates[key] || "";
+    }
+  });
+}
+
+function getLegalContractTemplateKey(operationType, documentType) {
+  if (operationType === "consignacion" && documentType === "encargo-fiduciario") return "consignacionFiduciario";
+  if (operationType === "consignacion") return "consignacionPrestacion";
+  if (documentType === "encargo-fiduciario") return "directFiduciario";
+  return "directPrestacion";
+}
+
+function collectLegalContractData(formElement) {
+  const data = Object.fromEntries(new FormData(formElement).entries());
+  const today = new Date().toISOString().slice(0, 10);
+  const city = data.ciudad?.trim() || "Guayaquil";
+  const price = Number(data.precioCompra || 0);
+  return {
+    operationType: data.operationType || "compra-directa",
+    documentType: data.documentType || "prestacion-servicios",
+    tipoOperacion: data.operationType === "consignacion" ? "Consignacion" : "Compra directa",
+    tipoDocumento: data.documentType === "encargo-fiduciario" ? "Encargo fiduciario" : "Contrato de prestacion de servicios",
+    ciudad: city,
+    fecha: data.fecha || today,
+    placa: cleanUpper(data.placa),
+    marca: cleanUpper(data.marca),
+    modelo: cleanUpper(data.modelo),
+    anio: data.anio || "",
+    color: cleanUpper(data.color),
+    kilometraje: data.kilometraje || "",
+    chasis: cleanUpper(data.chasis),
+    motor: cleanUpper(data.motor),
+    precioCompra: price ? formatCurrency(price) : "",
+    propietario: cleanDisplayName(data.propietario),
+    nacionalidadPropietario: cleanDisplayName(data.nacionalidadPropietario || "Ecuatoriana"),
+    cedulaPropietario: data.cedulaPropietario || "",
+    codigoDactilar: cleanUpper(data.codigoDactilar),
+    celular: data.celular || "",
+    correo: (data.correo || "").trim(),
+    direccion: cleanUpper(data.direccion),
+    estadoCivil: data.estadoCivil || "",
+    conyuge: cleanDisplayName(data.conyuge) || "No aplica",
+    nacionalidadConyuge: cleanDisplayName(data.nacionalidadConyuge || ""),
+    cedulaConyuge: data.cedulaConyuge || "",
+    codigoDactilarConyuge: cleanUpper(data.codigoDactilarConyuge),
+    celularConyuge: data.celularConyuge || "",
+    correoConyuge: (data.correoConyuge || "").trim()
+  };
+}
+
+function cleanUpper(value = "") {
+  return String(value || "").trim().replace(/\s+/g, " ").toUpperCase();
+}
+
+function cleanDisplayName(value = "") {
+  return String(value || "").trim().replace(/\s+/g, " ").toLowerCase().replace(/\b\p{L}/gu, (letter) => letter.toUpperCase());
+}
+
+function replaceContractPlaceholders(template, data) {
+  let result = template || "";
+  Object.entries(data).forEach(([key, value]) => {
+    const pattern = new RegExp(`{{\\s*${key}\\s*}}`, "gi");
+    result = result.replace(pattern, value || "");
+  });
+  return result;
+}
+
+function buildLegalContractPrintHtml(data, contractText) {
+  const title = `${data.tipoDocumento} - ${data.placa || "SIN PLACA"}`;
+  const details = [
+    ["Operacion", data.tipoOperacion],
+    ["Documento", data.tipoDocumento],
+    ["Placa", data.placa],
+    ["Propietario", data.propietario],
+    ["Cedula", data.cedulaPropietario],
+    ["Precio", data.precioCompra]
+  ];
+  return `<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(title)}</title>
+  <style>
+    @page { size: A4; margin: 18mm; }
+    body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #1f2937; background: #f5f6f8; }
+    .sheet { max-width: 820px; margin: 24px auto; background: #fff; border: 1px solid #dde3ec; border-radius: 18px; box-shadow: 0 20px 50px rgba(15,23,42,.10); overflow: hidden; }
+    .head { display: flex; justify-content: space-between; gap: 24px; padding: 26px 30px; border-bottom: 4px solid #ef3d35; background: linear-gradient(135deg,#fff,#f8fafc); }
+    .brand { font-size: 13px; text-transform: uppercase; color: #ef3d35; font-weight: 800; letter-spacing: .08em; }
+    h1 { margin: 8px 0 0; font-size: 24px; color: #111827; }
+    .actions { display: flex; gap: 10px; align-items: flex-start; }
+    button { border: 0; border-radius: 12px; padding: 11px 18px; font-weight: 700; cursor: pointer; }
+    .print { background: #ef3d35; color: #fff; }
+    .close { background: #eef2f7; color: #1f2937; }
+    .meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 20px 30px; }
+    .meta div { border: 1px solid #e5eaf1; border-radius: 12px; padding: 10px 12px; }
+    .meta span { display:block; color:#667085; font-size:11px; text-transform:uppercase; font-weight:700; }
+    .meta strong { display:block; margin-top:5px; font-size:14px; }
+    .content { padding: 6px 30px 34px; white-space: pre-wrap; line-height: 1.62; font-size: 14px; }
+    @media print { body { background:#fff; } .sheet { margin:0; border:0; box-shadow:none; border-radius:0; } .actions { display:none; } }
+  </style>
+</head>
+<body>
+  <article class="sheet">
+    <header class="head">
+      <div>
+        <div class="brand">Autocor | Mesa de control legal</div>
+        <h1>${escapeHtml(title)}</h1>
+      </div>
+      <div class="actions">
+        <button class="print" onclick="window.print()">Imprimir / guardar PDF</button>
+        <button class="close" onclick="window.close()">Cerrar</button>
+      </div>
+    </header>
+    <section class="meta">
+      ${details.map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || "-")}</strong></div>`).join("")}
+    </section>
+    <section class="content">${escapeHtml(contractText)}</section>
+  </article>
+</body>
+</html>`;
+}
+
+function generateLegalContract(event) {
+  event.preventDefault();
+  const data = collectLegalContractData(legalContractForm);
+  const templateKey = getLegalContractTemplateKey(data.operationType, data.documentType);
+  const template = getLegalContractTemplates()[templateKey];
+  const contractText = replaceContractPlaceholders(template, data);
+  const reportWindow = window.open("", "_blank", "width=980,height=900");
+  if (!reportWindow) {
+    showToast("El navegador bloqueo la ventana. Permite ventanas emergentes para generar el contrato.");
+    return;
+  }
+  reportWindow.document.write(buildLegalContractPrintHtml(data, contractText));
+  reportWindow.document.close();
+  showToast("Contrato generado. Revisa la vista previa antes de guardar el PDF.");
+}
+
+function saveLegalContractTemplates(event) {
+  event.preventDefault();
+  const nextTemplates = {};
+  LEGAL_CONTRACT_TEMPLATE_KEYS.forEach((key) => {
+    nextTemplates[key] = legalContractTemplateForm.elements[key]?.value.trim() || DEFAULT_LEGAL_CONTRACT_TEMPLATES[key];
+  });
+  state.legalContractTemplates = normalizeLegalContractTemplates(nextTemplates);
+  saveState();
+  renderLegalContractTemplateAdmin();
+  showToast("Plantillas de contratos guardadas.");
+}
+
+function resetLegalContractTemplates() {
+  const confirmed = window.confirm("Desea restaurar los textos base de contratos legales?");
+  if (!confirmed) return;
+  state.legalContractTemplates = structuredClone(DEFAULT_LEGAL_CONTRACT_TEMPLATES);
+  saveState();
+  renderLegalContractTemplateAdmin();
+  showToast("Textos base restaurados.");
 }
 
 function saveFormFieldConfiguration(row) {
@@ -14969,6 +15214,21 @@ legalPasswordForm.addEventListener("submit", (event) => {
   changeOwnPassword("legalUsers", new FormData(legalPasswordForm).get("password"));
   legalPasswordForm.reset();
 });
+
+legalContractForm?.addEventListener("submit", generateLegalContract);
+legalContractForm?.addEventListener("reset", () => {
+  window.setTimeout(() => {
+    if (legalContractForm?.elements.fecha) {
+      legalContractForm.elements.fecha.value = new Date().toISOString().slice(0, 10);
+    }
+  }, 0);
+});
+if (legalContractForm?.elements.fecha && !legalContractForm.elements.fecha.value) {
+  legalContractForm.elements.fecha.value = new Date().toISOString().slice(0, 10);
+}
+
+legalContractTemplateForm?.addEventListener("submit", saveLegalContractTemplates);
+resetLegalContractTemplatesBtn?.addEventListener("click", resetLegalContractTemplates);
 
 legalAvailabilityToggle?.addEventListener("click", () => {
   toggleLegalAvailability();
