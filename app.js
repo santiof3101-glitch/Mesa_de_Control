@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260806-legal-contract-format-fix";
+const APP_BUILD_VERSION = "20260807-task-filter-select";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -4426,22 +4426,32 @@ function renderStatusOptions() {
 }
 
 function renderStatusFilters() {
-  statusFilterButtons.innerHTML = `<button class="chip ${activeFilter === "todos" ? "is-active" : ""}" data-filter="todos">Todos</button>`;
-  state.statusOptions.forEach((status) => {
-    const button = document.createElement("button");
-    button.className = `chip ${activeFilter === status.value ? "is-active" : ""}`;
-    button.dataset.filter = status.value;
-    button.type = "button";
-    button.textContent = status.label;
-    statusFilterButtons.appendChild(button);
-  });
-
-  statusFilterButtons.querySelectorAll("[data-filter]").forEach((button) => {
-    button.addEventListener("click", () => {
-      activeFilter = button.dataset.filter;
-      renderTasks();
-      renderStatusFilters();
-    });
+  if (!statusFilterButtons) return;
+  const options = [
+    { value: "todos", label: "Todos los estados" },
+    ...state.statusOptions.map((status) => ({
+      value: status.value,
+      label: status.label
+    }))
+  ];
+  const activeLabel = options.find((option) => option.value === activeFilter)?.label || "Todos los estados";
+  statusFilterButtons.innerHTML = `
+    <label class="task-status-select">
+      <span>Filtro del tablero</span>
+      <select id="taskStatusFilterSelect" aria-label="Filtro de estado de tareas">
+        ${options.map((option) => `
+          <option value="${escapeHtml(option.value)}" ${activeFilter === option.value ? "selected" : ""}>
+            ${escapeHtml(option.label)}
+          </option>
+        `).join("")}
+      </select>
+      <small>${escapeHtml(activeLabel)}</small>
+    </label>
+  `;
+  statusFilterButtons.querySelector("#taskStatusFilterSelect")?.addEventListener("change", (event) => {
+    activeFilter = event.target.value || "todos";
+    renderTasks();
+    renderStatusFilters();
   });
 }
 

@@ -9555,6 +9555,58 @@ button.purchase-mini-kpi:hover {
   background: #fff !important;
 }
 
+#tareas #statusFilterButtons.filters {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  min-width: min(360px, 100%) !important;
+}
+
+#tareas .task-status-select {
+  width: min(340px, 100%) !important;
+  display: grid !important;
+  gap: 6px !important;
+  padding: 12px 14px !important;
+  border: 1px solid rgba(226, 232, 240, 0.96) !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.075) !important;
+}
+
+#tareas .task-status-select span {
+  display: block !important;
+  color: #f2182d !important;
+  font-size: 0.66rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.08em !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+}
+
+#tareas .task-status-select select {
+  width: 100% !important;
+  min-height: 40px !important;
+  padding: 0 38px 0 12px !important;
+  border: 1px solid #dbe3ef !important;
+  border-radius: 12px !important;
+  background: #fbfcff !important;
+  color: #111827 !important;
+  font-size: 0.9rem !important;
+  font-weight: 750 !important;
+  cursor: pointer !important;
+}
+
+#tareas .task-status-select small {
+  display: block !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  color: #667085 !important;
+  font-size: 0.72rem !important;
+  line-height: 1.2 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
 #tareas .control-dashboard {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) minmax(360px, 0.72fr) !important;
