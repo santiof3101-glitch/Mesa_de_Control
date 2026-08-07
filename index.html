@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260807-control-dashboard-compact">
+  <link rel="stylesheet" href="styles.css?v=20260807-contract-prestacion-4v">
   <link rel="stylesheet" href="layout-fix.css?v=20260727-ui-sanity-provider-fix">
 </head>
 <body>
@@ -1182,7 +1182,7 @@
           <div class="panel-title-row">
             <div>
               <p class="eyebrow">Contratos legales</p>
-              <h2>Generador de contratos y encargos</h2>
+              <h2>Generador de contratos de prestacion de servicios</h2>
               <p class="helper-text">Ingresa los datos una sola vez y genera el documento con la plantilla administrada desde el panel de administrador.</p>
             </div>
             <div class="modal-actions">
@@ -1194,15 +1194,14 @@
             <label>
               Tipo de operacion
               <select name="operationType" required>
-                <option value="compra-directa">Compra directa</option>
-                <option value="consignacion">Consignacion</option>
+                <option value="compra-directa">Pago directo</option>
+                <option value="consignacion">A consignacion / comision</option>
               </select>
             </label>
             <label>
               Documento a generar
               <select name="documentType" required>
                 <option value="prestacion-servicios">Contrato de prestacion de servicios</option>
-                <option value="encargo-fiduciario">Encargo fiduciario</option>
               </select>
             </label>
             <label>
@@ -1643,31 +1642,31 @@
           <div class="panel-title-row">
             <div>
               <p class="eyebrow">Documentos legales</p>
-              <h2>Plantillas de contratos y encargos fiduciarios</h2>
+              <h2>Plantillas de contratos de prestacion de servicios</h2>
             </div>
             <button id="resetLegalContractTemplatesBtn" class="btn secondary" type="button">Restaurar textos base</button>
           </div>
-          <p class="helper-text">Puedes editar estos textos cuando cambie el formato legal. Usa variables entre llaves dobles, por ejemplo {{placa}}, {{propietario}}, {{precioCompra}}, {{conyuge}}.</p>
+          <p class="helper-text">Puedes editar estos textos cuando cambie el formato legal. Usa variables entre llaves dobles, por ejemplo {{placa}}, {{propietario}}, {{precioCompra}}, {{comparecientesCliente}}, {{estadoCivilContrato}} o {{conyuge}}.</p>
           <form id="legalContractTemplateForm" class="contract-template-form">
             <label>
-              Compra directa - prestacion de servicios
-              <textarea name="directPrestacion" rows="8"></textarea>
+              Pago directo - soltero
+              <textarea name="directSinglePrestacion" rows="8"></textarea>
             </label>
             <label>
-              Consignacion - prestacion de servicios
-              <textarea name="consignacionPrestacion" rows="8"></textarea>
+              Pago directo - casado
+              <textarea name="directMarriedPrestacion" rows="8"></textarea>
             </label>
             <label>
-              Compra directa - encargo fiduciario
-              <textarea name="directFiduciario" rows="8"></textarea>
+              A consignacion / comision - soltero
+              <textarea name="consignmentSinglePrestacion" rows="8"></textarea>
             </label>
             <label>
-              Consignacion - encargo fiduciario
-              <textarea name="consignacionFiduciario" rows="8"></textarea>
+              A consignacion / comision - casado
+              <textarea name="consignmentMarriedPrestacion" rows="8"></textarea>
             </label>
             <div class="contract-template-vars span-admin">
               <strong>Variables disponibles</strong>
-              <span>{{placa}}</span><span>{{marca}}</span><span>{{modelo}}</span><span>{{anio}}</span><span>{{color}}</span><span>{{kilometraje}}</span><span>{{chasis}}</span><span>{{motor}}</span><span>{{precioCompra}}</span><span>{{propietario}}</span><span>{{cedulaPropietario}}</span><span>{{codigoDactilar}}</span><span>{{celular}}</span><span>{{correo}}</span><span>{{direccion}}</span><span>{{estadoCivil}}</span><span>{{conyuge}}</span><span>{{cedulaConyuge}}</span><span>{{correoConyuge}}</span>
+              <span>{{placa}}</span><span>{{marca}}</span><span>{{modelo}}</span><span>{{anio}}</span><span>{{color}}</span><span>{{kilometraje}}</span><span>{{chasis}}</span><span>{{motor}}</span><span>{{precioCompra}}</span><span>{{propietario}}</span><span>{{comparecientesCliente}}</span><span>{{cedulaPropietario}}</span><span>{{codigoDactilar}}</span><span>{{celular}}</span><span>{{correo}}</span><span>{{direccion}}</span><span>{{estadoCivil}}</span><span>{{estadoCivilContrato}}</span><span>{{conyuge}}</span><span>{{cedulaConyuge}}</span><span>{{correoConyuge}}</span>
             </div>
             <div class="form-actions span-admin">
               <button class="btn primary" type="submit">Guardar plantillas</button>
@@ -2115,6 +2114,6 @@
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20260807-control-dashboard-compact"></script>
+  <script src="app.js?v=20260807-contract-prestacion-4v"></script>
 </body>
 </html>

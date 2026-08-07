@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260807-control-dashboard-compact";
+const APP_BUILD_VERSION = "20260807-contract-prestacion-4v";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -263,62 +263,77 @@ const BASE_FORM_FIELD_TYPE_RULES = {
 };
 
 const LEGAL_CONTRACT_TEMPLATE_KEYS = [
-  "directPrestacion",
-  "consignacionPrestacion",
-  "directFiduciario",
-  "consignacionFiduciario"
+  "directSinglePrestacion",
+  "directMarriedPrestacion",
+  "consignmentSinglePrestacion",
+  "consignmentMarriedPrestacion"
 ];
 
 const LEGAL_CONTRACT_TEMPLATE_LABELS = {
-  directPrestacion: "Compra directa - contrato de prestacion de servicios",
-  consignacionPrestacion: "Consignacion - contrato de prestacion de servicios",
-  directFiduciario: "Compra directa - encargo fiduciario",
-  consignacionFiduciario: "Consignacion - encargo fiduciario"
+  directSinglePrestacion: "Pago directo - soltero",
+  directMarriedPrestacion: "Pago directo - casado",
+  consignmentSinglePrestacion: "A consignacion / comision - soltero",
+  consignmentMarriedPrestacion: "A consignacion / comision - casado"
 };
 
+function buildPrestacionTemplate(operationType, maritalType) {
+  const isConsignment = operationType === "consignacion";
+  const isMarried = maritalType === "casado";
+  const title = isConsignment
+    ? "CONTRATO DE PRESTACION DE SERVICIOS DE INTERMEDIACION Y GESTION DE VEHICULOS USADOS POR COMISION Y/O CONSIGNACION"
+    : "CONTRATO DE PRESTACION DE SERVICIOS DE INTERMEDIACION Y GESTION DE VEHICULOS USADOS - PAGO DIRECTO";
+  const priceClause = isConsignment
+    ? "CUARTA: PRECIO.- Acorde al estado mecanico y estetico del VEHICULO, las partes de mutuo acuerdo senalan que este tendra un valor de venta estimado en DOLARES DE LOS ESTADOS UNIDOS DE AMERICA (USD {{precioCompra}}). EL CLIENTE autoriza que se publique el VEHICULO minimo en este valor y acepta que se aplique al mismo la tabla de descuentos promocionales por el rango del valor del VEHICULO. EL INTERMEDIARIO podra recibir ofertas, negociarlas y comunicarlas a EL CLIENTE por llamada telefonica, mensaje de datos, WhatsApp u otro medio de comunicacion."
+    : "TERCERA: PRECIO.- Conforme al estado mecanico y estetico del VEHICULO, las partes acuerdan que EL INTERMEDIARIO cancelara, una vez realizadas las validaciones legales y documentales correspondientes, el valor de DOLARES DE LOS ESTADOS UNIDOS DE AMERICA (USD {{precioCompra}}), mediante cheque o transferencia a la cuenta indicada por EL CLIENTE. Este valor corresponde al acuerdo comercial de pago directo registrado para la operacion.";
+  const billingClause = isConsignment
+    ? "QUINTA: FACTURACION.- La comision por los servicios prestados de intermediacion sera del TRES POR CIENTO (3%) mas IVA del valor de venta final del VEHICULO, pero nunca podra ser inferior a CUATROCIENTOS CINCUENTA DOLARES DE LOS ESTADOS UNIDOS DE AMERICA mas IVA, valor que sera descontado del monto a pagar a EL CLIENTE, previa la correspondiente liquidacion."
+    : "QUINTA: FACTURACION.- EL INTERMEDIARIO emitira la factura correspondiente por servicios de intermediacion directa a nombre de EL CLIENTE, incluido el IVA, deduciendo los gastos en los cuales haya incurrido para la gestion documental, comercial o legal del VEHICULO, una vez concluidos los actos determinados en este contrato.";
+  const spouseClause = isMarried
+    ? "DATOS DEL CONYUGE.- Comparece tambien {{conyuge}}, de nacionalidad {{nacionalidadConyuge}}, con cedula {{cedulaConyuge}}, codigo dactilar {{codigoDactilarConyuge}}, celular {{celularConyuge}} y correo {{correoConyuge}}, quien declara conocer y aceptar las condiciones del presente contrato conforme corresponda a la sociedad conyugal."
+    : "ESTADO CIVIL.- EL CLIENTE declara comparecer en calidad de {{estadoCivilContrato}}, por sus propios y personales derechos, sin intervencion de conyuge para los efectos del presente instrumento.";
+
+  return [
+    title,
+    "",
+    "En el Distrito Metropolitano de {{ciudad}}, a {{fecha}}, comparecen a la celebracion del presente contrato {{comparecientesCliente}}; y, por otra parte, la compania AUTOCOR AUTOEVOLUCION S.A.S., debidamente representada por su delegada, a quien en adelante se denominara EL INTERMEDIARIO. Los comparecientes son de nacionalidad ecuatoriana, mayores de edad, domiciliados en la ciudad de {{ciudad}}, habiles para ejercer derechos y contraer obligaciones.",
+    "",
+    spouseClause,
+    "",
+    "PRIMERA: ANTECEDENTES.- EL CLIENTE es propietario del VEHICULO descrito en el cuadro superior del documento y declara que la informacion proporcionada es real, completa y suficiente para iniciar la gestion de intermediacion, validacion documental y proceso comercial correspondiente.",
+    "",
+    "1.1.- EL INTERMEDIARIO cuenta con experiencia, conocimiento, infraestructura fisica y logistica necesaria para realizar actividades de intermediacion de vehiculos usados. 1.2.- EL CLIENTE tiene la intencion de vender el VEHICULO descrito anteriormente. 1.3.- El presente contrato cumple con los requerimientos aplicables para otorgar certeza juridica a las transacciones de automotores usados.",
+    "",
+    "SEGUNDA: OBJETO.- Con los antecedentes expuestos, EL CLIENTE contrata los servicios de EL INTERMEDIARIO para promocionar, exhibir, revisar, preparar, negociar y gestionar la venta del VEHICULO, asi como para realizar las gestiones documentales, comerciales y legales necesarias hasta la conclusion de la operacion.",
+    "",
+    priceClause,
+    "",
+    "CUARTA: PLAZO.- Debido a la naturaleza de los servicios y considerando que estos dependen de diferentes circunstancias, el plazo para la prestacion de los servicios de intermediacion sera indefinido o hasta el momento en que el VEHICULO sea vendido a un comprador final, salvo terminacion anticipada comunicada por escrito.",
+    "",
+    billingClause,
+    "",
+    "SEXTA: GASTOS.- Todos los gastos mecanicos, alistamiento, repuestos, accesorios, multas, matriculacion, tasas, tributos, SPPAT u otros valores vinculados al VEHICULO seran asumidos por EL CLIENTE o descontados en la liquidacion correspondiente, segun corresponda a la operacion y a los valores previamente informados.",
+    "",
+    "SEPTIMA: AUTORIZACION DE RODAJE.- EL CLIENTE autoriza a EL INTERMEDIARIO a movilizar y desplazar el VEHICULO a nivel nacional para exhibirlo, probarlo, revisarlo mecanicamente, trasladarlo a patios, talleres, centros de revision o lugares requeridos para la gestion comercial. Tambien autoriza la toma y publicacion de fotografias del VEHICULO en medios digitales o comerciales.",
+    "",
+    "OCTAVA: DECLARACIONES.- EL CLIENTE declara que el VEHICULO es de su propiedad, que no fue obtenido de manera ilegal, que no oculta informacion relevante para la negociacion, que no mantiene gravamen, prohibicion o antecedente que impida su transferencia, salvo aquellos expresamente informados a EL INTERMEDIARIO. Si existiere informacion omitida, EL CLIENTE asumira las consecuencias civiles, penales, administrativas y economicas que correspondan.",
+    "",
+    "NOVENA: CONFIDENCIALIDAD.- Las partes declaran que la informacion comercial, legal, documental y operativa derivada del presente contrato sera tratada de manera confidencial y no podra ser divulgada a terceros sin autorizacion expresa, salvo requerimiento de autoridad competente o necesidad propia de la operacion.",
+    "",
+    "DECIMA: AUTORIZACIONES Y TRATAMIENTO DE DATOS PERSONALES.- EL CLIENTE autoriza el tratamiento, recoleccion, transferencia, almacenamiento, gestion, analisis y uso de sus datos personales para fines propios del proceso comercial, documental, legal, promocional y de servicio de EL INTERMEDIARIO, conforme la normativa vigente.",
+    "",
+    "DECIMA PRIMERA: NOTIFICACIONES.- Las partes acuerdan que cualquier citacion, comunicacion o notificacion sera recibida por EL INTERMEDIARIO en los canales corporativos de AUTOCOR y por EL CLIENTE en la direccion {{direccion}}, correo {{correo}} y celular {{celular}}. Las comunicaciones remitidas a estos canales se entenderan validas y efectivamente realizadas.",
+    "",
+    "DECIMA SEGUNDA: CONTROVERSIAS.- En caso de controversias derivadas del presente instrumento, las partes buscaran solucionarlas de buena fe. De no ser posible, EL CLIENTE renuncia fuero y domicilio y las partes se someteran al tramite que seleccione EL INTERMEDIARIO ante los jueces competentes.",
+    "",
+    "Las partes se someten a la totalidad de las clausulas que preceden, expresando su aceptacion con sus firmas habituales en tres ejemplares de identico valor y tenor."
+  ].join("\n");
+}
+
 const DEFAULT_LEGAL_CONTRACT_TEMPLATES = {
-  directPrestacion: [
-    "CONTRATO DE PRESTACION DE SERVICIOS - COMPRA DIRECTA",
-    "",
-    "En la ciudad de {{ciudad}}, a {{fecha}}, comparece {{propietario}}, con cedula {{cedulaPropietario}}, propietario del vehiculo placa {{placa}}, marca {{marca}}, modelo {{modelo}}, anio {{anio}}, color {{color}}, kilometraje {{kilometraje}}, chasis {{chasis}} y motor {{motor}}.",
-    "",
-    "El precio de compra acordado es {{precioCompra}}. Las partes dejan constancia de que la informacion registrada servira para la gestion documental y legal correspondiente.",
-    "",
-    "Estado civil: {{estadoCivil}}. Conyuge: {{conyuge}}.",
-    "",
-    "Direccion: {{direccion}}. Celular: {{celular}}. Correo: {{correo}}."
-  ].join("\n"),
-  consignacionPrestacion: [
-    "CONTRATO DE PRESTACION DE SERVICIOS - CONSIGNACION",
-    "",
-    "En la ciudad de {{ciudad}}, a {{fecha}}, comparece {{propietario}}, con cedula {{cedulaPropietario}}, propietario del vehiculo placa {{placa}}, marca {{marca}}, modelo {{modelo}}, anio {{anio}}, color {{color}}, kilometraje {{kilometraje}}, chasis {{chasis}} y motor {{motor}}.",
-    "",
-    "El propietario entrega el vehiculo en consignacion para la gestion comercial y documental. Precio referencial de compra: {{precioCompra}}.",
-    "",
-    "Estado civil: {{estadoCivil}}. Conyuge: {{conyuge}}.",
-    "",
-    "Direccion: {{direccion}}. Celular: {{celular}}. Correo: {{correo}}."
-  ].join("\n"),
-  directFiduciario: [
-    "ENCARGO FIDUCIARIO - COMPRA DIRECTA",
-    "",
-    "Comparece {{propietario}}, de nacionalidad {{nacionalidadPropietario}}, cedula {{cedulaPropietario}}, codigo dactilar {{codigoDactilar}}, para autorizar la gestion fiduciaria relacionada con el vehiculo placa {{placa}}, marca {{marca}}, modelo {{modelo}}, anio {{anio}}.",
-    "",
-    "Precio de compra: {{precioCompra}}. Datos de contacto: {{celular}} / {{correo}}.",
-    "",
-    "Datos del conyuge si aplica: {{conyuge}}, cedula {{cedulaConyuge}}, codigo dactilar {{codigoDactilarConyuge}}, celular {{celularConyuge}}, correo {{correoConyuge}}."
-  ].join("\n"),
-  consignacionFiduciario: [
-    "ENCARGO FIDUCIARIO - CONSIGNACION",
-    "",
-    "Comparece {{propietario}}, de nacionalidad {{nacionalidadPropietario}}, cedula {{cedulaPropietario}}, codigo dactilar {{codigoDactilar}}, para encargar la gestion fiduciaria y documental del vehiculo entregado en consignacion.",
-    "",
-    "Vehiculo: placa {{placa}}, marca {{marca}}, modelo {{modelo}}, anio {{anio}}, color {{color}}, chasis {{chasis}}, motor {{motor}}.",
-    "",
-    "Precio referencial: {{precioCompra}}. Direccion: {{direccion}}. Contacto: {{celular}} / {{correo}}.",
-    "",
-    "Datos del conyuge si aplica: {{conyuge}}, cedula {{cedulaConyuge}}, codigo dactilar {{codigoDactilarConyuge}}, celular {{celularConyuge}}, correo {{correoConyuge}}."
-  ].join("\n")
+  directSinglePrestacion: buildPrestacionTemplate("directo", "soltero"),
+  directMarriedPrestacion: buildPrestacionTemplate("directo", "casado"),
+  consignmentSinglePrestacion: buildPrestacionTemplate("consignacion", "soltero"),
+  consignmentMarriedPrestacion: buildPrestacionTemplate("consignacion", "casado")
 };
 
 const defaultState = {
@@ -3960,7 +3975,14 @@ function renderFormAdministration() {
 }
 
 function normalizeLegalContractTemplates(templates = {}) {
-  const normalized = { ...structuredClone(DEFAULT_LEGAL_CONTRACT_TEMPLATES), ...(templates || {}) };
+  const source = templates || {};
+  const migrated = {
+    directSinglePrestacion: source.directSinglePrestacion || source.directPrestacion,
+    directMarriedPrestacion: source.directMarriedPrestacion || source.directPrestacion,
+    consignmentSinglePrestacion: source.consignmentSinglePrestacion || source.consignacionPrestacion,
+    consignmentMarriedPrestacion: source.consignmentMarriedPrestacion || source.consignacionPrestacion
+  };
+  const normalized = { ...structuredClone(DEFAULT_LEGAL_CONTRACT_TEMPLATES), ...migrated, ...source };
   LEGAL_CONTRACT_TEMPLATE_KEYS.forEach((key) => {
     if (typeof normalized[key] !== "string" || !normalized[key].trim()) {
       normalized[key] = DEFAULT_LEGAL_CONTRACT_TEMPLATES[key];
@@ -3984,11 +4006,17 @@ function renderLegalContractTemplateAdmin() {
   });
 }
 
-function getLegalContractTemplateKey(operationType, documentType) {
-  if (operationType === "consignacion" && documentType === "encargo-fiduciario") return "consignacionFiduciario";
-  if (operationType === "consignacion") return "consignacionPrestacion";
-  if (documentType === "encargo-fiduciario") return "directFiduciario";
-  return "directPrestacion";
+function isMarriedLegalStatus(status = "") {
+  return /casad|union/i.test(String(status || ""));
+}
+
+function getLegalContractTemplateKey(operationType, documentType, estadoCivil) {
+  const isConsignment = operationType === "consignacion";
+  const isMarried = isMarriedLegalStatus(estadoCivil);
+  if (isConsignment && isMarried) return "consignmentMarriedPrestacion";
+  if (isConsignment) return "consignmentSinglePrestacion";
+  if (isMarried) return "directMarriedPrestacion";
+  return "directSinglePrestacion";
 }
 
 function collectLegalContractData(formElement) {
@@ -3996,11 +4024,18 @@ function collectLegalContractData(formElement) {
   const today = new Date().toISOString().slice(0, 10);
   const city = data.ciudad?.trim() || "Guayaquil";
   const price = Number(data.precioCompra || 0);
+  const propietario = cleanDisplayName(data.propietario);
+  const estadoCivil = data.estadoCivil || "Soltero/a";
+  const married = isMarriedLegalStatus(estadoCivil);
+  const conyuge = cleanDisplayName(data.conyuge);
+  const comparecientesCliente = married
+    ? `el senor(a) ${propietario || "__________________"} y su conyuge ${conyuge || "__________________"}, por sus propios y personales derechos y en representacion de la sociedad conyugal conforme aplique, a quien para los efectos del presente instrumento se le denominara EL CLIENTE`
+    : `el senor(a) ${propietario || "__________________"}, de estado civil ${estadoCivil}, por sus propios y personales derechos, a quien para los efectos del presente instrumento se le denominara EL CLIENTE`;
   return {
     operationType: data.operationType || "compra-directa",
-    documentType: data.documentType || "prestacion-servicios",
-    tipoOperacion: data.operationType === "consignacion" ? "Consignacion" : "Compra directa",
-    tipoDocumento: data.documentType === "encargo-fiduciario" ? "Encargo fiduciario" : "Contrato de prestacion de servicios",
+    documentType: "prestacion-servicios",
+    tipoOperacion: data.operationType === "consignacion" ? "A consignacion / comision" : "Pago directo",
+    tipoDocumento: "Contrato de prestacion de servicios",
     ciudad: city,
     fecha: data.fecha || today,
     placa: cleanUpper(data.placa),
@@ -4012,15 +4047,17 @@ function collectLegalContractData(formElement) {
     chasis: cleanUpper(data.chasis),
     motor: cleanUpper(data.motor),
     precioCompra: price ? formatCurrencyValue(price) : "",
-    propietario: cleanDisplayName(data.propietario),
+    propietario,
     nacionalidadPropietario: cleanDisplayName(data.nacionalidadPropietario || "Ecuatoriana"),
     cedulaPropietario: data.cedulaPropietario || "",
     codigoDactilar: cleanUpper(data.codigoDactilar),
     celular: data.celular || "",
     correo: (data.correo || "").trim(),
     direccion: cleanUpper(data.direccion),
-    estadoCivil: data.estadoCivil || "",
-    conyuge: cleanDisplayName(data.conyuge) || "No aplica",
+    estadoCivil,
+    estadoCivilContrato: married ? "casado(a)" : String(estadoCivil || "soltero(a)").toLowerCase(),
+    comparecientesCliente,
+    conyuge: conyuge || "No aplica",
     nacionalidadConyuge: cleanDisplayName(data.nacionalidadConyuge || ""),
     cedulaConyuge: data.cedulaConyuge || "",
     codigoDactilarConyuge: cleanUpper(data.codigoDactilarConyuge),
@@ -4047,13 +4084,10 @@ function replaceContractPlaceholders(template, data) {
 }
 
 function getLegalContractPrintTitle(data = {}) {
-  if (data.documentType === "prestacion-servicios") {
+  if (data.operationType === "consignacion") {
     return "CONTRATO DE PRESTACION DE SERVICIOS DE INTERMEDIACION Y GESTION DE VEHICULOS USADOS POR COMISION Y/O CONSIGNACION";
   }
-  if (data.documentType === "encargo-fiduciario") {
-    return "ENCARGO FIDUCIARIO PARA GESTION DOCUMENTAL DE VEHICULO";
-  }
-  return data.tipoDocumento || "CONTRATO LEGAL";
+  return "CONTRATO DE PRESTACION DE SERVICIOS DE INTERMEDIACION Y GESTION DE VEHICULOS USADOS - PAGO DIRECTO";
 }
 
 function renderLegalContractBody(contractText = "") {
@@ -4281,7 +4315,7 @@ function generateLegalContract(event) {
   }
   try {
     const data = collectLegalContractData(legalContractForm);
-    const templateKey = getLegalContractTemplateKey(data.operationType, data.documentType);
+    const templateKey = getLegalContractTemplateKey(data.operationType, data.documentType, data.estadoCivil);
     const template = getLegalContractTemplates()[templateKey] || DEFAULT_LEGAL_CONTRACT_TEMPLATES[templateKey] || "";
     if (!template.trim()) {
       showToast("No existe una plantilla configurada para este tipo de contrato.");
