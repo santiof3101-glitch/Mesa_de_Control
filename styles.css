@@ -15510,6 +15510,80 @@ button {
   text-transform: uppercase;
 }
 
+.legal-contract-preview {
+  display: grid;
+  gap: 14px;
+  border: 1px solid rgba(16, 158, 111, 0.28);
+  background: linear-gradient(135deg, rgba(16, 158, 111, 0.08), #fff);
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.legal-contract-preview[hidden] {
+  display: none !important;
+}
+
+.legal-contract-preview-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.legal-contract-preview-head h3,
+.legal-contract-preview-head p {
+  margin: 0;
+}
+
+.legal-contract-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.legal-contract-preview-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.legal-contract-preview-summary span {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #e4ebf4;
+  background: rgba(255, 255, 255, 0.76);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.legal-contract-preview-summary small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.legal-contract-preview-summary strong {
+  color: var(--ink);
+  font-size: 0.86rem;
+}
+
+.legal-contract-preview pre {
+  max-height: 280px;
+  overflow: auto;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid #dbe3ef;
+  border-radius: 14px;
+  background: #fff;
+  color: #1f2937;
+  font-family: inherit;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
 .legal-contract-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -15586,6 +15660,16 @@ button {
 
   #tareas .legal-contract-form .form-actions .btn {
     width: 100%;
+  }
+
+  .legal-contract-preview-head,
+  .legal-contract-preview-actions {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .legal-contract-preview-summary {
+    grid-template-columns: 1fr;
   }
 }
 

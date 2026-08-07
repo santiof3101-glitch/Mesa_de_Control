@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260806-legal-contract-modal-hide";
+const APP_BUILD_VERSION = "20260806-legal-contract-output";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -482,6 +482,7 @@ let providerDuplicateView = "pending";
 let providerDuplicatePage = 1;
 let backupRestoreChecked = false;
 let currentPurchaseDetailReport = { title: "", html: "" };
+let currentLegalContractDocument = { html: "", data: null, text: "" };
 let activeLegalProcessFilter = "saneamientos";
 let activeCommercialProcess = "compra";
 let activeCommercialTrackingProcess = "compra";
@@ -529,6 +530,7 @@ const commercialPasswordForm = document.querySelector("#commercialPasswordForm")
 const commercialPasswordModal = document.querySelector("#commercialPasswordModal");
 const legalPasswordForm = document.querySelector("#legalPasswordForm");
 const legalContractForm = document.querySelector("#legalContractForm");
+const legalContractPreview = document.querySelector("#legalContractPreview");
 const legalContractTemplateForm = document.querySelector("#legalContractTemplateForm");
 const resetLegalContractTemplatesBtn = document.querySelector("#resetLegalContractTemplatesBtn");
 const openLegalContractModalBtns = document.querySelectorAll("[data-open-legal-contract-modal]");
@@ -4102,11 +4104,61 @@ function buildLegalContractPrintHtml(data, contractText) {
 
 function generateLegalContract(event) {
   event.preventDefault();
-  const data = collectLegalContractData(legalContractForm);
-  const templateKey = getLegalContractTemplateKey(data.operationType, data.documentType);
-  const template = getLegalContractTemplates()[templateKey];
-  const contractText = replaceContractPlaceholders(template, data);
-  openLegalContractPreview(buildLegalContractPrintHtml(data, contractText), data);
+  if (!legalContractForm) return;
+  if (!legalContractForm.checkValidity()) {
+    legalContractForm.reportValidity();
+    showToast("Complete los campos obligatorios antes de generar el contrato.");
+    return;
+  }
+  try {
+    const data = collectLegalContractData(legalContractForm);
+    const templateKey = getLegalContractTemplateKey(data.operationType, data.documentType);
+    const template = getLegalContractTemplates()[templateKey] || DEFAULT_LEGAL_CONTRACT_TEMPLATES[templateKey] || "";
+    if (!template.trim()) {
+      showToast("No existe una plantilla configurada para este tipo de contrato.");
+      return;
+    }
+    const contractText = replaceContractPlaceholders(template, data);
+    const html = buildLegalContractPrintHtml(data, contractText);
+    currentLegalContractDocument = { html, data, text: contractText };
+    renderLegalContractPreviewPanel(data, contractText);
+    openLegalContractPreview(html, data, { silentFallback: true });
+  } catch (error) {
+    console.error("Error generando contrato legal", error);
+    showToast("No se pudo generar el contrato. Revise los datos y vuelva a intentar.");
+  }
+}
+
+function renderLegalContractPreviewPanel(data, contractText) {
+  if (!legalContractPreview) return;
+  const summary = [
+    ["Documento", data.tipoDocumento],
+    ["Operacion", data.tipoOperacion],
+    ["Placa", data.placa || "-"],
+    ["Propietario", data.propietario || "-"],
+    ["Cedula", data.cedulaPropietario || "-"],
+    ["Precio", data.precioCompra || "-"]
+  ];
+  legalContractPreview.hidden = false;
+  legalContractPreview.innerHTML = `
+    <div class="legal-contract-preview-head">
+      <div>
+        <p class="eyebrow">Contrato generado</p>
+        <h3>${escapeHtml(data.tipoDocumento)} - ${escapeHtml(data.placa || "Sin placa")}</h3>
+        <p>Revise la vista previa antes de imprimir o guardar como PDF.</p>
+      </div>
+      <div class="legal-contract-preview-actions">
+        <button class="btn secondary" type="button" data-legal-contract-action="open">Abrir vista previa</button>
+        <button class="btn secondary" type="button" data-legal-contract-action="download">Descargar archivo</button>
+        <button class="btn primary" type="button" data-legal-contract-action="print">Imprimir / guardar PDF</button>
+      </div>
+    </div>
+    <div class="legal-contract-preview-summary">
+      ${summary.map(([label, value]) => `<span><small>${escapeHtml(label)}</small><strong>${escapeHtml(value)}</strong></span>`).join("")}
+    </div>
+    <pre>${escapeHtml(contractText)}</pre>
+  `;
+  legalContractPreview.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function saveLegalContractTemplates(event) {
@@ -4164,7 +4216,7 @@ function downloadLegalContractHtml(html, data) {
   window.setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
 
-function openLegalContractPreview(html, data) {
+function openLegalContractPreview(html, data, options = {}) {
   const reportWindow = window.open("about:blank", "_blank", "width=980,height=900");
   if (reportWindow) {
     reportWindow.document.open();
@@ -4174,8 +4226,43 @@ function openLegalContractPreview(html, data) {
     showToast("Contrato generado. Usa Imprimir / guardar PDF en la vista previa.");
     return;
   }
-  downloadLegalContractHtml(html, data);
-  showToast("El navegador bloqueo la vista previa. Descargue el archivo generado y guardelo como PDF.");
+  if (!options.silentFallback) {
+    downloadLegalContractHtml(html, data);
+    showToast("El navegador bloqueo la vista previa. Descargue el archivo generado y guardelo como PDF.");
+    return;
+  }
+  showToast("Contrato generado. Use los botones de la vista previa dentro de la ventana.");
+}
+
+function printLegalContractHtml(html) {
+  if (!html) {
+    showToast("Primero genere un contrato.");
+    return;
+  }
+  const frame = document.createElement("iframe");
+  frame.style.position = "fixed";
+  frame.style.right = "0";
+  frame.style.bottom = "0";
+  frame.style.width = "0";
+  frame.style.height = "0";
+  frame.style.border = "0";
+  frame.setAttribute("aria-hidden", "true");
+  document.body.appendChild(frame);
+  const frameDocument = frame.contentWindow?.document;
+  if (!frameDocument) {
+    frame.remove();
+    downloadLegalContractHtml(html, currentLegalContractDocument.data || {});
+    showToast("No se pudo abrir impresion directa. Se descargo el archivo.");
+    return;
+  }
+  frameDocument.open();
+  frameDocument.write(html);
+  frameDocument.close();
+  window.setTimeout(() => {
+    frame.contentWindow?.focus();
+    frame.contentWindow?.print();
+    window.setTimeout(() => frame.remove(), 1000);
+  }, 250);
 }
 
 function saveFormFieldConfiguration(row) {
@@ -15269,7 +15356,31 @@ legalContractForm?.addEventListener("reset", () => {
     if (legalContractForm?.elements.fecha) {
       legalContractForm.elements.fecha.value = new Date().toISOString().slice(0, 10);
     }
+    if (legalContractPreview) {
+      legalContractPreview.hidden = true;
+      legalContractPreview.innerHTML = "";
+    }
+    currentLegalContractDocument = { html: "", data: null, text: "" };
   }, 0);
+});
+
+legalContractPreview?.addEventListener("click", (event) => {
+  const actionButton = event.target.closest("[data-legal-contract-action]");
+  if (!actionButton) return;
+  const { html, data } = currentLegalContractDocument;
+  if (!html || !data) {
+    showToast("Primero genere un contrato.");
+    return;
+  }
+  const action = actionButton.dataset.legalContractAction;
+  if (action === "open") {
+    openLegalContractPreview(html, data);
+  } else if (action === "download") {
+    downloadLegalContractHtml(html, data);
+    showToast("Archivo de contrato descargado.");
+  } else if (action === "print") {
+    printLegalContractHtml(html);
+  }
 });
 if (legalContractForm?.elements.fecha && !legalContractForm.elements.fecha.value) {
   legalContractForm.elements.fecha.value = new Date().toISOString().slice(0, 10);
