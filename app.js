@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260807-task-filter-select";
+const APP_BUILD_VERSION = "20260807-contract-print-layout";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -4046,16 +4046,36 @@ function replaceContractPlaceholders(template, data) {
   return result;
 }
 
+function getLegalContractPrintTitle(data = {}) {
+  if (data.documentType === "prestacion-servicios") {
+    return "CONTRATO DE PRESTACION DE SERVICIOS DE INTERMEDIACION Y GESTION DE VEHICULOS USADOS POR COMISION Y/O CONSIGNACION";
+  }
+  if (data.documentType === "encargo-fiduciario") {
+    return "ENCARGO FIDUCIARIO PARA GESTION DOCUMENTAL DE VEHICULO";
+  }
+  return data.tipoDocumento || "CONTRATO LEGAL";
+}
+
+function renderLegalContractBody(contractText = "") {
+  const blocks = String(contractText || "")
+    .replace(/\r\n/g, "\n")
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+
+  return blocks.map((block, index) => {
+    if (index === 0 && /^(CONTRATO|ENCARGO)\b/i.test(block)) return "";
+    const normalized = block.replace(/\s+/g, " ").trim();
+    const isClauseTitle = /^[A-ZÁÉÍÓÚÜÑ0-9 .,:;"'()\/%-]+$/.test(normalized) && normalized.length <= 150;
+    const className = isClauseTitle ? "contract-clause-title" : "contract-paragraph";
+    return `<p class="${className}">${escapeHtml(block).replace(/\n/g, "<br>")}</p>`;
+  }).join("");
+}
+
 function buildLegalContractPrintHtml(data, contractText) {
-  const title = `${data.tipoDocumento} - ${data.placa || "SIN PLACA"}`;
-  const details = [
-    ["Operacion", data.tipoOperacion],
-    ["Documento", data.tipoDocumento],
-    ["Placa", data.placa],
-    ["Propietario", data.propietario],
-    ["Cedula", data.cedulaPropietario],
-    ["Precio", data.precioCompra]
-  ];
+  const title = getLegalContractPrintTitle(data);
+  const logoSrc = state.logoDataUrl || new URL(CORPORATE_LOGO_SRC, window.location.href).href;
+  const bodyHtml = renderLegalContractBody(contractText);
   return `<!doctype html>
 <html lang="es">
 <head>
@@ -4063,40 +4083,189 @@ function buildLegalContractPrintHtml(data, contractText) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(title)}</title>
   <style>
-    @page { size: A4; margin: 18mm; }
-    body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #1f2937; background: #f5f6f8; }
-    .sheet { max-width: 820px; margin: 24px auto; background: #fff; border: 1px solid #dde3ec; border-radius: 18px; box-shadow: 0 20px 50px rgba(15,23,42,.10); overflow: hidden; }
-    .head { display: flex; justify-content: space-between; gap: 24px; padding: 26px 30px; border-bottom: 4px solid #ef3d35; background: linear-gradient(135deg,#fff,#f8fafc); }
-    .brand { font-size: 13px; text-transform: uppercase; color: #ef3d35; font-weight: 800; letter-spacing: .08em; }
-    h1 { margin: 8px 0 0; font-size: 24px; color: #111827; }
-    .actions { display: flex; gap: 10px; align-items: flex-start; }
-    button { border: 0; border-radius: 12px; padding: 11px 18px; font-weight: 700; cursor: pointer; }
-    .print { background: #ef3d35; color: #fff; }
-    .close { background: #eef2f7; color: #1f2937; }
-    .meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 20px 30px; }
-    .meta div { border: 1px solid #e5eaf1; border-radius: 12px; padding: 10px 12px; }
-    .meta span { display:block; color:#667085; font-size:11px; text-transform:uppercase; font-weight:700; }
-    .meta strong { display:block; margin-top:5px; font-size:14px; }
-    .content { padding: 6px 30px 34px; white-space: pre-wrap; line-height: 1.62; font-size: 14px; }
-    @media print { body { background:#fff; } .sheet { margin:0; border:0; box-shadow:none; border-radius:0; } .actions { display:none; } }
+    @import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;500;600;700;800;900&display=swap');
+    @page { size: A4; margin: 14mm 17mm 16mm; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: #eef1f5; color: #111; }
+    body {
+      font-family: 'Roboto Condensed', 'Arial Narrow', Arial, sans-serif;
+      font-size: 10pt;
+      line-height: 1.24;
+    }
+    .print-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px;
+      background: rgba(238, 241, 245, .92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #d8dce5;
+    }
+    .print-toolbar button {
+      border: 1px solid #d8dce5;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-family: inherit;
+      font-size: 10pt;
+      font-weight: 800;
+      cursor: pointer;
+      background: #fff;
+      color: #111;
+    }
+    .print-toolbar .primary {
+      border-color: #ef3d35;
+      background: #ef3d35;
+      color: #fff;
+    }
+    .sheet {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 18px auto;
+      padding: 17mm 17mm 16mm;
+      background: #fff;
+      box-shadow: 0 22px 58px rgba(15, 23, 42, .12);
+    }
+    .contract-logo {
+      display: block;
+      width: 118px;
+      max-height: 42px;
+      object-fit: contain;
+      margin: 0 auto 18mm;
+    }
+    .contract-title {
+      max-width: 150mm;
+      margin: 0 auto 8mm;
+      text-align: center;
+      text-transform: uppercase;
+      font-size: 11pt;
+      line-height: 1.22;
+      font-weight: 900;
+      letter-spacing: .01em;
+    }
+    .contract-body {
+      font-size: 10pt;
+      line-height: 1.25;
+      color: #111;
+      text-align: justify;
+      text-justify: inter-word;
+      hyphens: auto;
+    }
+    .contract-body p {
+      margin: 0 0 5.2mm;
+      text-align: justify;
+      text-justify: inter-word;
+    }
+    .contract-body strong,
+    .contract-clause-title {
+      font-weight: 900;
+    }
+    .vehicle-table {
+      width: 75%;
+      margin: 7mm auto 8mm;
+      border-collapse: collapse;
+      font-size: 10pt;
+      line-height: 1.08;
+    }
+    .vehicle-table td {
+      border: .8px solid #111;
+      padding: 2px 8px;
+      vertical-align: middle;
+    }
+    .vehicle-table .label {
+      width: 18%;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    .vehicle-table .value {
+      width: 32%;
+    }
+    .signature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 34mm;
+      margin-top: 24mm;
+      align-items: end;
+      page-break-inside: avoid;
+    }
+    .signature-box {
+      text-align: center;
+      font-size: 10pt;
+      line-height: 1.3;
+    }
+    .signature-line {
+      border-top: 1px solid #111;
+      margin-bottom: 4mm;
+      height: 1px;
+    }
+    .signature-role {
+      font-weight: 500;
+      text-transform: uppercase;
+      margin-bottom: 6mm;
+    }
+    .signature-name {
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    @media print {
+      html, body { background: #fff; }
+      .print-toolbar { display: none; }
+      .sheet {
+        width: auto;
+        min-height: auto;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+      }
+      .contract-logo { margin-top: 0; }
+    }
   </style>
 </head>
 <body>
+  <div class="print-toolbar">
+    <button class="primary" onclick="window.print()">Imprimir / guardar PDF</button>
+    <button onclick="window.close()">Cerrar</button>
+  </div>
   <article class="sheet">
-    <header class="head">
-      <div>
-        <div class="brand">Autocor | Mesa de control legal</div>
-        <h1>${escapeHtml(title)}</h1>
-      </div>
-      <div class="actions">
-        <button class="print" onclick="window.print()">Imprimir / guardar PDF</button>
-        <button class="close" onclick="window.close()">Cerrar</button>
-      </div>
-    </header>
-    <section class="meta">
-      ${details.map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || "-")}</strong></div>`).join("")}
+    <img class="contract-logo" src="${escapeHtml(logoSrc)}" alt="Autocor">
+    <h1 class="contract-title">${escapeHtml(title)}</h1>
+    <section class="contract-body">
+      <table class="vehicle-table" aria-label="Datos del vehiculo">
+        <tbody>
+          <tr>
+            <td class="label">Placa</td><td class="value">${escapeHtml(data.placa || "")}</td>
+            <td class="label">Color</td><td class="value">${escapeHtml(data.color || "")}</td>
+          </tr>
+          <tr>
+            <td class="label">Marca</td><td class="value">${escapeHtml(data.marca || "")}</td>
+            <td class="label">Año</td><td class="value">${escapeHtml(data.anio || "")}</td>
+          </tr>
+          <tr>
+            <td class="label">Modelo</td><td class="value">${escapeHtml(data.modelo || "")}</td>
+            <td class="label">Chasis</td><td class="value">${escapeHtml(data.chasis || "")}</td>
+          </tr>
+          <tr>
+            <td class="label">Motor</td><td class="value">${escapeHtml(data.motor || "")}</td>
+            <td class="label">KM</td><td class="value">${escapeHtml(data.kilometraje || "")}</td>
+          </tr>
+        </tbody>
+      </table>
+      ${bodyHtml}
+      <section class="signature-grid">
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <div class="signature-role">El cliente</div>
+          <div class="signature-name">${escapeHtml(data.propietario || "")}</div>
+        </div>
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <div class="signature-role">El intermediario</div>
+          <div class="signature-name">Autocor Autoevolucion S.A.S</div>
+        </div>
+      </section>
     </section>
-    <section class="content">${escapeHtml(contractText)}</section>
   </article>
 </body>
 </html>`;
