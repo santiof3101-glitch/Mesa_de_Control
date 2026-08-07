@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260807-contract-docs-ficha";
+const APP_BUILD_VERSION = "20260807-contract-data-ficha";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -4082,6 +4082,7 @@ function setLegalContractField(name, value, options = {}) {
 
 function prefillLegalContractFormFromTask(task = {}) {
   if (!legalContractForm || !task) return;
+  const savedData = task.legalContractData && typeof task.legalContractData === "object" ? task.legalContractData : {};
   const customValues = Object.values(task.customFields || {}).reduce((acc, field) => {
     const key = normalizeLooseText(field.label || field.name || "");
     acc[key] = field.value || "";
@@ -4089,22 +4090,31 @@ function prefillLegalContractFormFromTask(task = {}) {
   }, {});
   const pickCustom = (...labels) => labels.map((label) => customValues[normalizeLooseText(label)]).find(Boolean) || "";
   const cliente = task.cliente || task.vendedor || task.sourceCliente || "";
-  setLegalContractField("placa", task.placa, { force: true });
-  setLegalContractField("marca", task.marca || pickCustom("marca", "marca del auto"), { force: true });
-  setLegalContractField("modelo", task.modelo || pickCustom("modelo", "modelo del auto"), { force: true });
-  setLegalContractField("anio", task.anio || task.anioFabricacion || task.year || pickCustom("anio", "ano", "anio de fabricacion", "ano de fabricacion"), { force: true });
-  setLegalContractField("color", task.color || pickCustom("color"), { force: true });
-  setLegalContractField("kilometraje", task.kilometraje || pickCustom("kilometraje", "km"), { force: true });
-  setLegalContractField("chasis", task.chasis || task.numeroChasis || pickCustom("chasis", "no de chasis", "numero de chasis"), { force: true });
-  setLegalContractField("motor", task.motor || task.numeroMotor || pickCustom("motor", "no de motor", "numero de motor"), { force: true });
-  setLegalContractField("precioCompra", task.precioContrato || task.valorToma || task.precioCompra || pickCustom("precio de compra", "valor de toma"), { force: true });
-  setLegalContractField("propietario", cliente, { force: true });
-  setLegalContractField("cedulaPropietario", task.cedula || task.cedulaVendedor || pickCustom("cedula", "cedula del titular", "cedula del propietario"), { force: true });
-  setLegalContractField("celular", task.telefono || task.celular || pickCustom("telefono", "celular"), { force: true });
-  setLegalContractField("correo", task.correo || pickCustom("correo", "correo electronico"), { force: true });
-  setLegalContractField("direccion", task.direccion || pickCustom("direccion", "direccion de domicilio"), { force: true });
-  setLegalContractField("ciudad", task.ciudad || task.agencia || pickCustom("ciudad"), { force: true });
-  setLegalContractField("estadoCivil", task.estadoCivil || pickCustom("estado civil"));
+  setLegalContractField("operationType", savedData.operationType || task.operationType || "compra-directa", { force: true });
+  setLegalContractField("placa", savedData.placa || task.placa, { force: true });
+  setLegalContractField("marca", savedData.marca || task.marca || pickCustom("marca", "marca del auto"), { force: true });
+  setLegalContractField("modelo", savedData.modelo || task.modelo || pickCustom("modelo", "modelo del auto"), { force: true });
+  setLegalContractField("anio", savedData.anio || task.anio || task.anioFabricacion || task.year || pickCustom("anio", "ano", "anio de fabricacion", "ano de fabricacion"), { force: true });
+  setLegalContractField("color", savedData.color || task.color || pickCustom("color"), { force: true });
+  setLegalContractField("kilometraje", savedData.kilometraje || task.kilometraje || pickCustom("kilometraje", "km"), { force: true });
+  setLegalContractField("chasis", savedData.chasis || task.chasis || task.numeroChasis || pickCustom("chasis", "no de chasis", "numero de chasis"), { force: true });
+  setLegalContractField("motor", savedData.motor || task.motor || task.numeroMotor || pickCustom("motor", "no de motor", "numero de motor"), { force: true });
+  setLegalContractField("precioCompra", savedData.precioCompra || task.precioContrato || task.valorToma || task.precioCompra || pickCustom("precio de compra", "valor de toma"), { force: true });
+  setLegalContractField("propietario", savedData.propietario || cliente, { force: true });
+  setLegalContractField("nacionalidadPropietario", savedData.nacionalidadPropietario || task.nacionalidadPropietario || pickCustom("nacionalidad"), { force: true });
+  setLegalContractField("cedulaPropietario", savedData.cedulaPropietario || task.cedula || task.cedulaVendedor || pickCustom("cedula", "cedula del titular", "cedula del propietario"), { force: true });
+  setLegalContractField("codigoDactilar", savedData.codigoDactilar || task.codigoDactilar || pickCustom("codigo dactilar"), { force: true });
+  setLegalContractField("celular", savedData.celular || task.telefono || task.celular || pickCustom("telefono", "celular"), { force: true });
+  setLegalContractField("correo", savedData.correo || task.correo || pickCustom("correo", "correo electronico"), { force: true });
+  setLegalContractField("direccion", savedData.direccion || task.direccion || pickCustom("direccion", "direccion de domicilio"), { force: true });
+  setLegalContractField("ciudad", savedData.ciudad || task.ciudad || task.agencia || pickCustom("ciudad"), { force: true });
+  setLegalContractField("estadoCivil", savedData.estadoCivil || task.estadoCivil || pickCustom("estado civil"), { force: true });
+  setLegalContractField("conyuge", savedData.conyuge === "No aplica" ? "" : savedData.conyuge || task.conyuge || pickCustom("conyuge", "nombres completos del conyuge"), { force: true });
+  setLegalContractField("nacionalidadConyuge", savedData.nacionalidadConyuge || task.nacionalidadConyuge || pickCustom("nacionalidad conyuge"), { force: true });
+  setLegalContractField("cedulaConyuge", savedData.cedulaConyuge || task.cedulaConyuge || pickCustom("cedula conyuge"), { force: true });
+  setLegalContractField("codigoDactilarConyuge", savedData.codigoDactilarConyuge || task.codigoDactilarConyuge || pickCustom("codigo dactilar conyuge"), { force: true });
+  setLegalContractField("celularConyuge", savedData.celularConyuge || task.celularConyuge || pickCustom("celular conyuge"), { force: true });
+  setLegalContractField("correoConyuge", savedData.correoConyuge || task.correoConyuge || pickCustom("correo conyuge"), { force: true });
 }
 
 function getLegalContractDocuments(task = {}) {
@@ -4116,6 +4126,11 @@ function saveLegalContractDocumentToTask(taskId, document = {}) {
   if (!task || !document.html) return false;
   const docs = getLegalContractDocuments(task);
   const data = document.data || {};
+  task.legalContractData = {
+    ...(task.legalContractData || {}),
+    ...data,
+    updatedAt: new Date().toISOString()
+  };
   task.legalContractDocuments = [
     {
       id: crypto.randomUUID(),
