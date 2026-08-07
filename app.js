@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260807-contract-prestacion-4v";
+const APP_BUILD_VERSION = "20260807-contract-docs-ficha";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -498,6 +498,7 @@ let providerDuplicatePage = 1;
 let backupRestoreChecked = false;
 let currentPurchaseDetailReport = { title: "", html: "" };
 let currentLegalContractDocument = { html: "", data: null, text: "" };
+let activeLegalContractTaskId = "";
 let activeLegalProcessFilter = "saneamientos";
 let activeCommercialProcess = "compra";
 let activeCommercialTrackingProcess = "compra";
@@ -4066,6 +4067,132 @@ function collectLegalContractData(formElement) {
   };
 }
 
+function findTaskById(taskId) {
+  const normalizedTaskId = String(taskId || "");
+  return state.tasks.find((item) => String(item.id) === normalizedTaskId) || null;
+}
+
+function setLegalContractField(name, value, options = {}) {
+  const field = legalContractForm?.elements?.[name];
+  if (!field) return;
+  const nextValue = value == null ? "" : String(value);
+  if (!options.force && field.value) return;
+  field.value = nextValue;
+}
+
+function prefillLegalContractFormFromTask(task = {}) {
+  if (!legalContractForm || !task) return;
+  const customValues = Object.values(task.customFields || {}).reduce((acc, field) => {
+    const key = normalizeLooseText(field.label || field.name || "");
+    acc[key] = field.value || "";
+    return acc;
+  }, {});
+  const pickCustom = (...labels) => labels.map((label) => customValues[normalizeLooseText(label)]).find(Boolean) || "";
+  const cliente = task.cliente || task.vendedor || task.sourceCliente || "";
+  setLegalContractField("placa", task.placa, { force: true });
+  setLegalContractField("marca", task.marca || pickCustom("marca", "marca del auto"), { force: true });
+  setLegalContractField("modelo", task.modelo || pickCustom("modelo", "modelo del auto"), { force: true });
+  setLegalContractField("anio", task.anio || task.anioFabricacion || task.year || pickCustom("anio", "ano", "anio de fabricacion", "ano de fabricacion"), { force: true });
+  setLegalContractField("color", task.color || pickCustom("color"), { force: true });
+  setLegalContractField("kilometraje", task.kilometraje || pickCustom("kilometraje", "km"), { force: true });
+  setLegalContractField("chasis", task.chasis || task.numeroChasis || pickCustom("chasis", "no de chasis", "numero de chasis"), { force: true });
+  setLegalContractField("motor", task.motor || task.numeroMotor || pickCustom("motor", "no de motor", "numero de motor"), { force: true });
+  setLegalContractField("precioCompra", task.precioContrato || task.valorToma || task.precioCompra || pickCustom("precio de compra", "valor de toma"), { force: true });
+  setLegalContractField("propietario", cliente, { force: true });
+  setLegalContractField("cedulaPropietario", task.cedula || task.cedulaVendedor || pickCustom("cedula", "cedula del titular", "cedula del propietario"), { force: true });
+  setLegalContractField("celular", task.telefono || task.celular || pickCustom("telefono", "celular"), { force: true });
+  setLegalContractField("correo", task.correo || pickCustom("correo", "correo electronico"), { force: true });
+  setLegalContractField("direccion", task.direccion || pickCustom("direccion", "direccion de domicilio"), { force: true });
+  setLegalContractField("ciudad", task.ciudad || task.agencia || pickCustom("ciudad"), { force: true });
+  setLegalContractField("estadoCivil", task.estadoCivil || pickCustom("estado civil"));
+}
+
+function getLegalContractDocuments(task = {}) {
+  return Array.isArray(task.legalContractDocuments) ? task.legalContractDocuments : [];
+}
+
+function saveLegalContractDocumentToTask(taskId, document = {}) {
+  const task = findTaskById(taskId);
+  if (!task || !document.html) return false;
+  const docs = getLegalContractDocuments(task);
+  const data = document.data || {};
+  task.legalContractDocuments = [
+    {
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+      title: `${data.tipoDocumento || "Contrato legal"} - ${data.placa || task.placa || "Sin placa"}`,
+      placa: data.placa || task.placa || "",
+      documentType: data.documentType || "prestacion-servicios",
+      operationType: data.operationType || "",
+      html: document.html,
+      text: document.text || "",
+      data
+    },
+    ...docs
+  ].slice(0, 12);
+  task.updatedAt = new Date().toISOString();
+  saveState();
+  renderTasks();
+  showToast("Contrato guardado en la ficha del auto.");
+  return true;
+}
+
+function renderLegalContractDocumentsSection(task = {}) {
+  const docs = getLegalContractDocuments(task);
+  return `
+    <section class="legal-documents-section">
+      <div class="legal-documents-head">
+        <div>
+          <p class="eyebrow">Contratos generados</p>
+          <h3>Documentos guardados en esta ficha</h3>
+          <span>Corrige los datos del auto y genera una nueva version cuando sea necesario.</span>
+        </div>
+        <button class="btn primary tiny" type="button" data-generate-contract-for-task="${escapeHtml(task.id)}">Generar desde esta ficha</button>
+      </div>
+      ${docs.length ? `
+        <div class="legal-documents-list">
+          ${docs.map((doc, index) => `
+            <article class="legal-document-item">
+              <div>
+                <strong>${escapeHtml(doc.title || `Contrato ${index + 1}`)}</strong>
+                <span>${escapeHtml(formatDateTime(doc.createdAt))}</span>
+              </div>
+              <div class="legal-document-actions">
+                <button class="btn secondary tiny" type="button" data-open-saved-contract-doc="${escapeHtml(task.id)}" data-doc-id="${escapeHtml(doc.id)}">Ver</button>
+                <button class="btn secondary tiny" type="button" data-download-saved-contract-doc="${escapeHtml(task.id)}" data-doc-id="${escapeHtml(doc.id)}">Descargar</button>
+              </div>
+            </article>
+          `).join("")}
+        </div>
+      ` : `<div class="empty compact-empty">Aun no hay contratos guardados para esta ficha.</div>`}
+    </section>
+  `;
+}
+
+function findLegalContractDocument(taskId, docId) {
+  const task = findTaskById(taskId);
+  if (!task) return null;
+  return getLegalContractDocuments(task).find((doc) => String(doc.id) === String(docId)) || null;
+}
+
+function openSavedLegalContractDocument(taskId, docId) {
+  const doc = findLegalContractDocument(taskId, docId);
+  if (!doc?.html) {
+    showToast("No se encontro el contrato guardado.");
+    return;
+  }
+  openLegalContractPreview(doc.html, doc.data || {}, { silentFallback: false });
+}
+
+function downloadSavedLegalContractDocument(taskId, docId) {
+  const doc = findLegalContractDocument(taskId, docId);
+  if (!doc?.html) {
+    showToast("No se encontro el contrato guardado.");
+    return;
+  }
+  downloadLegalContractHtml(doc.html, doc.data || {});
+}
+
 function cleanUpper(value = "") {
   return String(value || "").trim().replace(/\s+/g, " ").toUpperCase();
 }
@@ -4324,6 +4451,9 @@ function generateLegalContract(event) {
     const contractText = replaceContractPlaceholders(template, data);
     const html = buildLegalContractPrintHtml(data, contractText);
     currentLegalContractDocument = { html, data, text: contractText };
+    if (activeLegalContractTaskId) {
+      saveLegalContractDocumentToTask(activeLegalContractTaskId, currentLegalContractDocument);
+    }
     renderLegalContractPreviewPanel(data, contractText);
     openLegalContractPreview(html, data, { silentFallback: true });
   } catch (error) {
@@ -4385,13 +4515,18 @@ function resetLegalContractTemplates() {
   showToast("Textos base restaurados.");
 }
 
-function openLegalContractModal() {
+function openLegalContractModal(taskId = "") {
   if (!legalContractForm) return;
   const panel = document.querySelector("#legalContractGenerator");
   if (!panel) return;
+  activeLegalContractTaskId = String(taskId || "");
   panel.hidden = false;
   panel.classList.add("is-open");
   document.body.classList.add("legal-contract-modal-open");
+  if (activeLegalContractTaskId) {
+    const task = findTaskById(activeLegalContractTaskId);
+    prefillLegalContractFormFromTask(task);
+  }
   if (legalContractForm.elements.fecha && !legalContractForm.elements.fecha.value) {
     legalContractForm.elements.fecha.value = new Date().toISOString().slice(0, 10);
   }
@@ -4404,6 +4539,7 @@ function closeLegalContractModal() {
   panel.hidden = true;
   panel.classList.remove("is-open");
   document.body.classList.remove("legal-contract-modal-open");
+  activeLegalContractTaskId = "";
 }
 
 function downloadLegalContractHtml(html, data) {
@@ -8341,6 +8477,7 @@ function openLegalTaskModal(taskId) {
           </div>
         </div>
         ${renderLegalTaskFullDetails(task)}
+        ${!isCuvTask(task) ? renderLegalContractDocumentsSection(task) : ""}
         ${isCuvTask(task) && canEdit ? renderCuvLegalForm(task) : ""}
         ${sourceTask ? `
           <div class="legal-modal-source">
@@ -15206,6 +15343,25 @@ document.addEventListener("click", (event) => {
     openLegalTaskModal(openCuvButton.dataset.openCuvTask);
     return;
   }
+  const generateContractButton = event.target.closest("[data-generate-contract-for-task]");
+  if (generateContractButton) {
+    event.preventDefault();
+    closeLegalTaskInfoModal();
+    openLegalContractModal(generateContractButton.dataset.generateContractForTask);
+    return;
+  }
+  const openSavedContractButton = event.target.closest("[data-open-saved-contract-doc]");
+  if (openSavedContractButton) {
+    event.preventDefault();
+    openSavedLegalContractDocument(openSavedContractButton.dataset.openSavedContractDoc, openSavedContractButton.dataset.docId);
+    return;
+  }
+  const downloadSavedContractButton = event.target.closest("[data-download-saved-contract-doc]");
+  if (downloadSavedContractButton) {
+    event.preventDefault();
+    downloadSavedLegalContractDocument(downloadSavedContractButton.dataset.downloadSavedContractDoc, downloadSavedContractButton.dataset.docId);
+    return;
+  }
 });
 
 document.addEventListener("input", (event) => {
@@ -15603,7 +15759,7 @@ legalContractTemplateForm?.addEventListener("submit", saveLegalContractTemplates
 resetLegalContractTemplatesBtn?.addEventListener("click", resetLegalContractTemplates);
 
 openLegalContractModalBtns.forEach((button) => {
-  button.addEventListener("click", openLegalContractModal);
+  button.addEventListener("click", () => openLegalContractModal());
 });
 
 closeLegalContractModalBtns.forEach((button) => {
