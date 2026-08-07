@@ -15427,9 +15427,13 @@ button {
 
 /* Mesa de control: generador de contratos legales */
 #tareas .legal-contract-generator {
-  display: grid;
+  display: none;
   gap: 16px;
   scroll-margin-top: 120px;
+}
+
+#tareas .legal-contract-generator[hidden] {
+  display: none !important;
 }
 
 #tareas .legal-contract-generator .section-head {
@@ -15606,6 +15610,7 @@ body.legal-contract-modal-open::before {
 
 #tareas .legal-contract-generator.is-open {
   position: fixed;
+  display: grid;
   inset: 22px;
   z-index: 10000;
   width: min(1180px, calc(100vw - 44px));
