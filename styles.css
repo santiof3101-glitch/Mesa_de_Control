@@ -15794,3 +15794,162 @@ body.legal-contract-modal-open::before {
     display: grid;
   }
 }
+
+/* Compactacion final del resumen operativo de Mesa de Control.
+   Mantiene la funcionalidad actual, pero reduce altura y espacio muerto del panel. */
+#tareas .control-dashboard {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.42fr) !important;
+  align-items: stretch !important;
+  gap: 10px !important;
+  padding: 12px !important;
+  margin-bottom: 12px !important;
+  border-radius: 18px !important;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.065) !important;
+}
+
+#tareas .control-dashboard > div:first-child {
+  min-height: 48px !important;
+  padding: 10px 12px !important;
+  border: 1px solid #e3e9f2 !important;
+  border-radius: 14px !important;
+  background: #fff !important;
+}
+
+#tareas .control-dashboard > div:first-child .eyebrow {
+  margin: 0 0 3px !important;
+  font-size: 0.62rem !important;
+  line-height: 1 !important;
+}
+
+#tareas .control-dashboard > div:first-child h2 {
+  margin: 0 !important;
+  font-size: 0.95rem !important;
+  line-height: 1.15 !important;
+}
+
+#tareas .password-form {
+  grid-template-columns: minmax(0, 1fr) 132px !important;
+  gap: 8px !important;
+  align-content: center !important;
+}
+
+#tareas .password-form input,
+#tareas .password-form button {
+  min-height: 36px !important;
+  height: 36px !important;
+  padding: 0 12px !important;
+  border-radius: 12px !important;
+  font-size: 0.74rem !important;
+}
+
+#tareas .availability-panel {
+  min-height: 44px !important;
+  padding: 8px 12px !important;
+  border-radius: 14px !important;
+}
+
+#tareas .availability-panel span {
+  display: block !important;
+  margin-bottom: 2px !important;
+  font-size: 0.62rem !important;
+  line-height: 1 !important;
+}
+
+#tareas .availability-panel strong {
+  display: block !important;
+  font-size: 0.86rem !important;
+  line-height: 1.15 !important;
+}
+
+#tareas .availability-panel .btn,
+#tareas #legalAvailabilityToggle {
+  min-height: 34px !important;
+  height: 34px !important;
+  padding: 0 12px !important;
+  border-radius: 12px !important;
+  font-size: 0.72rem !important;
+}
+
+#tareas #controlKpis {
+  grid-template-columns: repeat(6, minmax(120px, 1fr)) !important;
+  gap: 9px !important;
+}
+
+#tareas #controlKpis .kpi-card,
+#tareas .compact-kpis .kpi-card {
+  min-height: 74px !important;
+  padding: 10px 12px !important;
+  border-radius: 14px !important;
+  box-shadow: 0 9px 20px rgba(15, 23, 42, 0.045) !important;
+}
+
+#tareas #controlKpis .kpi-card span,
+#tareas .compact-kpis .kpi-card span {
+  font-size: 0.7rem !important;
+  line-height: 1.12 !important;
+}
+
+#tareas #controlKpis .kpi-card strong,
+#tareas .compact-kpis .kpi-card strong {
+  font-size: 1.35rem !important;
+  line-height: 1 !important;
+}
+
+#tareas #controlKpis .kpi-card small,
+#tareas .compact-kpis .kpi-card small {
+  font-size: 0.62rem !important;
+  line-height: 1.1 !important;
+}
+
+#tareas .legal-contract-quick-actions {
+  grid-column: 1 / -1 !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  margin-top: 0 !important;
+}
+
+#tareas .legal-contract-quick-actions .btn {
+  min-height: 36px !important;
+  height: 36px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  font-size: 0.76rem !important;
+}
+
+@media (max-width: 1280px) {
+  #tareas #controlKpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 860px) {
+  #tareas .control-dashboard {
+    grid-template-columns: 1fr !important;
+  }
+
+  #tareas #controlKpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 560px) {
+  #tareas .control-dashboard {
+    padding: 10px !important;
+  }
+
+  #tareas .password-form,
+  #tareas #controlKpis {
+    grid-template-columns: 1fr !important;
+  }
+
+  #tareas .availability-panel,
+  #tareas .legal-contract-quick-actions {
+    display: grid !important;
+    justify-content: stretch !important;
+  }
+
+  #tareas .availability-panel .btn,
+  #tareas .legal-contract-quick-actions .btn {
+    width: 100% !important;
+  }
+}
