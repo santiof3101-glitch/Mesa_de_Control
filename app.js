@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260807-contract-data-ficha";
+const APP_BUILD_VERSION = "20260807-mobile-sync";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -438,6 +438,7 @@ const supabaseIntentionalSmallerPublishes = {};
 let supabaseTaskCursor = localStorage.getItem(TASK_SYNC_CURSOR_KEY) || "";
 let supabaseTaskDeleteCursor = localStorage.getItem(TASK_DELETE_CURSOR_KEY) || "";
 let supabaseLastRefreshAt = 0;
+let initialRemoteSyncInFlight = false;
 const state = loadState();
 hydrateCommercialOwners();
 persistAccessUsers(state);
@@ -1260,6 +1261,48 @@ async function reconcileAdminLeadsFromSupabase() {
   } finally {
     reconcileAdminLeadsBtn.disabled = false;
     reconcileAdminLeadsBtn.textContent = previousText;
+  }
+}
+
+async function runInitialRemoteSyncAfterLogin(reason = "login") {
+  if (!SUPABASE_MODULE_SYNC || !navigator.onLine || !canSyncCurrentView() || initialRemoteSyncInFlight) return;
+  initialRemoteSyncInFlight = true;
+  try {
+    await restoreModulesFromSupabaseIfNeeded();
+    const [remoteHistory, remoteDeletions] = await Promise.all([
+      leerTareasSupabase(true),
+      leerEliminacionesTareasSupabase(true)
+    ]);
+    if (remoteHistory.length || remoteDeletions.length) {
+      const remoteTasks = collapseTaskHistoryByLifecycle(remoteHistory);
+      const before = JSON.stringify({
+        tasks: (state.tasks || []).map((task) => [task.id, task.updatedAt, task.status, task.legalUserId, task.completedAt, task.deleted]),
+        deletions: (state.taskDeletions || []).map((item) => [item.id, item.deletedAt, item.updatedAt])
+      });
+      const mergedChanges = mergeTaskChanges(
+        state.tasks || [],
+        [...remoteTasks, ...remoteDeletions],
+        state.taskDeletions || []
+      );
+      state.tasks = mergedChanges.tasks;
+      state.taskDeletions = mergedChanges.deletions;
+      const after = JSON.stringify({
+        tasks: (state.tasks || []).map((task) => [task.id, task.updatedAt, task.status, task.legalUserId, task.completedAt, task.deleted]),
+        deletions: (state.taskDeletions || []).map((item) => [item.id, item.deletedAt, item.updatedAt])
+      });
+      if (before !== after) {
+        hydrateCommercialOwners();
+        autoAssignOpenSaneamientos();
+        saveState();
+        safeRenderAll();
+      }
+    }
+    await sincronizarTareasPendientesSupabase();
+    supabaseLastRefreshAt = Date.now();
+  } catch (error) {
+    console.warn(`No se pudo completar la sincronizacion inicial (${reason}):`, error);
+  } finally {
+    initialRemoteSyncInFlight = false;
   }
 }
 
@@ -6518,6 +6561,7 @@ async function loginLegal(data) {
   setSession({ role: "legal", userId: user.id, name: user.name });
   legalLoginForm.reset();
   setView("tareas");
+  runInitialRemoteSyncAfterLogin("login-legal");
   showToast(`Bienvenido, ${user.name}.`);
 }
 
@@ -6545,6 +6589,7 @@ async function loginCommercial(data) {
   setView("formulario");
   setCommercialArea("process", { scroll: false });
   applyCommercialSessionToForm();
+  runInitialRemoteSyncAfterLogin("login-comercial");
   showToast(`Bienvenido, ${user.name}.`);
 }
 
@@ -6558,6 +6603,7 @@ function loginAdmin(data) {
   setSession({ role: "admin", userId: "admin", name: "Administrador" });
   adminLoginForm.reset();
   setView("admin");
+  runInitialRemoteSyncAfterLogin("login-admin");
   showToast("Administrador activo.");
 }
 
@@ -6583,6 +6629,7 @@ async function loginManager(data) {
   setSession({ role: "manager", userId: user.id, name: user.name, agency: "" });
   managerLoginForm.reset();
   setView("gerencial");
+  runInitialRemoteSyncAfterLogin("login-gerencial");
   showToast(`Bienvenido, ${user.name}.`);
 }
 
@@ -6608,6 +6655,7 @@ async function loginProcessing(data) {
   setSession({ role: "processing", userId: user.id, name: user.name, agency: "" });
   processingLoginForm.reset();
   setView("procesamiento");
+  runInitialRemoteSyncAfterLogin("login-procesamiento");
   showToast(`Bienvenido, ${user.name}.`);
 }
 
@@ -16498,6 +16546,7 @@ restoreStateFromSupabaseIfNeeded();
 restoreBrandingFromSupabaseIfNeeded();
 if (canSyncCurrentView()) restoreModulesFromSupabaseIfNeeded();
 if (session.role !== "public") reconcileTasksForCurrentBuild();
+if (session.role !== "public") runInitialRemoteSyncAfterLogin("sesion-restaurada");
 startSupabaseModulePolling();
 migrateIndexedDbFilesToSharedPc();
 checkForAppUpdate();
