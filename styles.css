@@ -15584,3 +15584,72 @@ button {
     width: 100%;
   }
 }
+
+body.legal-contract-modal-open {
+  overflow: hidden;
+}
+
+body.legal-contract-modal-open::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(8px);
+}
+
+#tareas .legal-contract-quick-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+#tareas .legal-contract-generator.is-open {
+  position: fixed;
+  inset: 22px;
+  z-index: 10000;
+  width: min(1180px, calc(100vw - 44px));
+  max-height: calc(100vh - 44px);
+  margin: auto;
+  overflow: auto;
+  border-radius: 22px;
+  box-shadow: 0 34px 90px rgba(15, 23, 42, 0.34);
+}
+
+#tareas .legal-contract-generator.is-open .panel-title-row {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-bottom: 12px;
+  background: linear-gradient(180deg, #fff 80%, rgba(255, 255, 255, 0.88));
+  border-bottom: 1px solid #eef2f7;
+}
+
+#tareas .legal-contract-generator.is-open .modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  #tareas .legal-contract-quick-actions {
+    display: grid;
+  }
+
+  #tareas .legal-contract-quick-actions .btn {
+    width: 100%;
+  }
+
+  #tareas .legal-contract-generator.is-open {
+    inset: 10px;
+    width: calc(100vw - 20px);
+    max-height: calc(100vh - 20px);
+    border-radius: 18px;
+  }
+
+  #tareas .legal-contract-generator.is-open .panel-title-row {
+    display: grid;
+  }
+}

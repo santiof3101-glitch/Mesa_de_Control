@@ -1122,7 +1122,7 @@
           <button class="is-active" type="button" data-legal-scroll="tasks-title">&#128203; Repositorio</button>
           <button type="button" data-legal-scroll="legalControlSummary">&#128200; Resumen operativo</button>
           <button type="button" data-legal-scroll="legalPasswordForm">&#128273; Cambiar clave</button>
-          <button type="button" data-legal-scroll="legalContractGenerator">&#128196; Contratos legales</button>
+          <button type="button" data-open-legal-contract-modal>&#128196; Contratos legales</button>
           <button type="button" data-legal-scroll="taskList">&#128269; Bandeja de tareas</button>
           <button type="button" data-legal-scroll="legalAvailabilityBlock">&#128994; Disponibilidad</button>
         </nav>
@@ -1173,16 +1173,22 @@
             <button id="legalAvailabilityToggle" class="btn secondary" type="button">Cambiar disponibilidad</button>
           </div>
           <div id="controlKpis" class="kpi-grid compact-kpis"></div>
+          <div class="legal-contract-quick-actions">
+            <button class="btn primary" type="button" data-open-legal-contract-modal>Generar contratos legales</button>
+          </div>
         </section>
 
-        <section id="legalContractGenerator" class="panel legal-contract-generator">
+        <section id="legalContractGenerator" class="panel legal-contract-generator" hidden>
           <div class="panel-title-row">
             <div>
               <p class="eyebrow">Contratos legales</p>
               <h2>Generador de contratos y encargos</h2>
               <p class="helper-text">Ingresa los datos una sola vez y genera el documento con la plantilla administrada desde el panel de administrador.</p>
             </div>
-            <span class="soft-badge">Revision previa antes de PDF</span>
+            <div class="modal-actions">
+              <span class="soft-badge">Revision previa antes de PDF</span>
+              <button class="btn secondary" type="button" data-close-legal-contract-modal>Cerrar</button>
+            </div>
           </div>
           <form id="legalContractForm" class="legal-contract-form">
             <label>

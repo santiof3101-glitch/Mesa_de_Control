@@ -531,6 +531,8 @@ const legalPasswordForm = document.querySelector("#legalPasswordForm");
 const legalContractForm = document.querySelector("#legalContractForm");
 const legalContractTemplateForm = document.querySelector("#legalContractTemplateForm");
 const resetLegalContractTemplatesBtn = document.querySelector("#resetLegalContractTemplatesBtn");
+const openLegalContractModalBtns = document.querySelectorAll("[data-open-legal-contract-modal]");
+const closeLegalContractModalBtns = document.querySelectorAll("[data-close-legal-contract-modal]");
 const legalAvailabilityToggle = document.querySelector("#legalAvailabilityToggle");
 const legalAvailabilityStatus = document.querySelector("#legalAvailabilityStatus");
 const legalChatForm = document.querySelector("#legalChatForm");
@@ -4104,14 +4106,7 @@ function generateLegalContract(event) {
   const templateKey = getLegalContractTemplateKey(data.operationType, data.documentType);
   const template = getLegalContractTemplates()[templateKey];
   const contractText = replaceContractPlaceholders(template, data);
-  const reportWindow = window.open("", "_blank", "width=980,height=900");
-  if (!reportWindow) {
-    showToast("El navegador bloqueo la ventana. Permite ventanas emergentes para generar el contrato.");
-    return;
-  }
-  reportWindow.document.write(buildLegalContractPrintHtml(data, contractText));
-  reportWindow.document.close();
-  showToast("Contrato generado. Revisa la vista previa antes de guardar el PDF.");
+  openLegalContractPreview(buildLegalContractPrintHtml(data, contractText), data);
 }
 
 function saveLegalContractTemplates(event) {
@@ -4133,6 +4128,54 @@ function resetLegalContractTemplates() {
   saveState();
   renderLegalContractTemplateAdmin();
   showToast("Textos base restaurados.");
+}
+
+function openLegalContractModal() {
+  if (!legalContractForm) return;
+  const panel = document.querySelector("#legalContractGenerator");
+  if (!panel) return;
+  panel.hidden = false;
+  panel.classList.add("is-open");
+  document.body.classList.add("legal-contract-modal-open");
+  if (legalContractForm.elements.fecha && !legalContractForm.elements.fecha.value) {
+    legalContractForm.elements.fecha.value = new Date().toISOString().slice(0, 10);
+  }
+  window.setTimeout(() => legalContractForm.querySelector("input, select")?.focus(), 0);
+}
+
+function closeLegalContractModal() {
+  const panel = document.querySelector("#legalContractGenerator");
+  if (!panel) return;
+  panel.hidden = true;
+  panel.classList.remove("is-open");
+  document.body.classList.remove("legal-contract-modal-open");
+}
+
+function downloadLegalContractHtml(html, data) {
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const plate = data.placa || "SIN-PLACA";
+  link.href = url;
+  link.download = `${plate}-${data.documentType || "contrato"}.html`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
+function openLegalContractPreview(html, data) {
+  const reportWindow = window.open("about:blank", "_blank", "width=980,height=900");
+  if (reportWindow) {
+    reportWindow.document.open();
+    reportWindow.document.write(html);
+    reportWindow.document.close();
+    reportWindow.focus();
+    showToast("Contrato generado. Usa Imprimir / guardar PDF en la vista previa.");
+    return;
+  }
+  downloadLegalContractHtml(html, data);
+  showToast("El navegador bloqueo la vista previa. Descargue el archivo generado y guardelo como PDF.");
 }
 
 function saveFormFieldConfiguration(row) {
@@ -14752,6 +14795,11 @@ document.addEventListener("keydown", (event) => {
     setLegalChatOpen(false);
     return;
   }
+  const legalContractPanel = document.querySelector("#legalContractGenerator");
+  if (legalContractPanel && !legalContractPanel.hidden) {
+    closeLegalContractModal();
+    return;
+  }
   const blockingModalOpen = (commercialPilotModal && !commercialPilotModal.hidden) || (commercialDuplicateModal && !commercialDuplicateModal.hidden);
   if (!blockingModalOpen) closeCommercialModals();
 });
@@ -15229,6 +15277,14 @@ if (legalContractForm?.elements.fecha && !legalContractForm.elements.fecha.value
 
 legalContractTemplateForm?.addEventListener("submit", saveLegalContractTemplates);
 resetLegalContractTemplatesBtn?.addEventListener("click", resetLegalContractTemplates);
+
+openLegalContractModalBtns.forEach((button) => {
+  button.addEventListener("click", openLegalContractModal);
+});
+
+closeLegalContractModalBtns.forEach((button) => {
+  button.addEventListener("click", closeLegalContractModal);
+});
 
 legalAvailabilityToggle?.addEventListener("click", () => {
   toggleLegalAvailability();
