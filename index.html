@@ -1953,90 +1953,93 @@
           <div class="uafe-section-title">
             <span>1</span>
             <div>
-              <strong>Datos del cliente</strong>
-              <small>Informacion principal para debida diligencia.</small>
+              <strong>Informacion del cliente</strong>
+              <small>Identificacion, nacimiento, domicilio y referencia personal.</small>
             </div>
           </div>
           <div class="uafe-grid">
-            <label>
-              Tipo de cliente
+            <label>Tipo de cliente
               <select name="cliente_tipo" required>
                 <option value="Natural">Natural</option>
                 <option value="Juridica">Juridica</option>
               </select>
             </label>
-            <label>
-              Nombres / razon social
+            <label>Nombres y apellidos completos
               <input name="cliente_nombres" required>
             </label>
-            <label>
-              Tipo de identificacion
+            <label>Tipo de identificacion
               <select name="cliente_tipo_identificacion" required>
                 <option value="Cedula">Cedula</option>
-                <option value="RUC">RUC</option>
                 <option value="Pasaporte">Pasaporte</option>
+                <option value="RUC">RUC</option>
               </select>
             </label>
-            <label>
-              Identificacion
+            <label>Numero de identificacion
               <input name="cliente_identificacion" required>
             </label>
-            <label>
-              Nacionalidad
+            <label>Nacionalidad
               <input name="cliente_nacionalidad" value="Ecuatoriana">
             </label>
-            <label>
-              Estado civil
+            <label>Fecha de nacimiento
+              <input name="cliente_fecha_nacimiento" type="date">
+            </label>
+            <label>Pais de nacimiento
+              <input name="cliente_pais_nacimiento" value="Ecuador">
+            </label>
+            <label>Ciudad de nacimiento
+              <input name="cliente_ciudad_nacimiento">
+            </label>
+            <label>Estado civil
               <select name="cliente_estado_civil">
                 <option value="">Seleccione una opcion</option>
                 <option>Soltero/a</option>
                 <option>Casado/a</option>
-                <option>Divorciado/a</option>
+                <option>Union libre</option>
                 <option>Viudo/a</option>
-                <option>Union de hecho</option>
+                <option>Divorciado/a</option>
               </select>
             </label>
-            <label class="span-2">
-              Direccion
-              <input name="cliente_direccion">
+            <label>Pais domicilio
+              <input name="domicilio_pais" value="Ecuador">
             </label>
-            <label>
-              WhatsApp / telefono
+            <label>Provincia
+              <input name="domicilio_provincia">
+            </label>
+            <label>Canton
+              <input name="domicilio_canton">
+            </label>
+            <label>Ciudad
+              <input name="domicilio_ciudad">
+            </label>
+            <label>Sector
+              <input name="domicilio_sector">
+            </label>
+            <label>Calle principal
+              <input name="domicilio_calle_principal">
+            </label>
+            <label>Numero
+              <input name="domicilio_numero">
+            </label>
+            <label>Calle transversal
+              <input name="domicilio_calle_transversal">
+            </label>
+            <label>Telefono domicilio
+              <input name="domicilio_telefono" inputmode="tel">
+            </label>
+            <label>Numero celular
               <input name="cliente_celular" inputmode="tel">
             </label>
-            <label>
-              Correo electronico
+            <label>Correo personal
               <input name="cliente_correo" type="email">
             </label>
-            <label>
-              Ocupacion / actividad economica
-              <input name="cliente_actividad">
+            <label>Referencia personal - Nombre
+              <input name="referencia_nombre">
             </label>
-            <label>
-              Origen de fondos
-              <select name="fondos_origen">
-                <option value="">Seleccione una opcion</option>
-                <option>Ahorros</option>
-                <option>Venta de bien</option>
-                <option>Credito</option>
-                <option>Actividad comercial</option>
-                <option>Relacion de dependencia</option>
-                <option>Otros</option>
-              </select>
+            <label>Parentesco
+              <input name="referencia_parentesco">
             </label>
-            <label>
-              Persona expuesta politicamente
-              <select name="pep">
-                <option>No</option>
-                <option>Si</option>
-              </select>
-            </label>
-            <label>
-              Persona obligada
-              <select name="persona_obligada">
-                <option>No</option>
-                <option>Si</option>
-              </select>
+            <label>Celular referencia
+              <input name="referencia_celular" inputmode="tel">
             </label>
           </div>
         </section>
@@ -2045,26 +2048,381 @@
           <div class="uafe-section-title">
             <span>2</span>
             <div>
+              <strong>Datos adicionales si utiliza pasaporte</strong>
+              <small>Solo llenar cuando el documento sea pasaporte.</small>
+            </div>
+          </div>
+          <div class="uafe-grid">
+            <label>Numero de pasaporte
+              <input name="pasaporte_numero">
+            </label>
+            <label>Fecha de expedicion
+              <input name="pasaporte_expedicion" type="date">
+            </label>
+            <label>Fecha de caducidad
+              <input name="pasaporte_caducidad" type="date">
+            </label>
+            <label>Estado migratorio o codigo VISA
+              <input name="pasaporte_estado_migratorio">
+            </label>
+            <label>Fecha de ingreso al pais
+              <input name="pasaporte_fecha_ingreso" type="date">
+            </label>
+          </div>
+        </section>
+
+        <section class="uafe-section">
+          <div class="uafe-section-title">
+            <span>3</span>
+            <div>
+              <strong>Conyuge, conviviente o representante legal</strong>
+              <small>Aplica para casados, union libre o personas juridicas.</small>
+            </div>
+          </div>
+          <div class="uafe-grid">
+            <label>Nombres completos
+              <input name="conyuge_nombres">
+            </label>
+            <label>Tipo de identificacion
+              <select name="conyuge_tipo_identificacion">
+                <option value="">Seleccione una opcion</option>
+                <option>Cedula</option>
+                <option>Pasaporte</option>
+              </select>
+            </label>
+            <label>Numero de identificacion
+              <input name="conyuge_identificacion">
+            </label>
+            <label>Genero
+              <select name="conyuge_genero">
+                <option value="">Seleccione una opcion</option>
+                <option>Masculino</option>
+                <option>Femenino</option>
+                <option>Otro</option>
+              </select>
+            </label>
+            <label>Actividad economica
+              <input name="conyuge_actividad">
+            </label>
+            <label>Ingresos promedio mensuales
+              <input name="conyuge_ingresos" inputmode="decimal">
+            </label>
+          </div>
+        </section>
+
+        <section class="uafe-section">
+          <div class="uafe-section-title">
+            <span>4</span>
+            <div>
+              <strong>Actividad economica / ocupacion</strong>
+              <small>Informacion laboral o del negocio.</small>
+            </div>
+          </div>
+          <div class="uafe-grid">
+            <label>Nombre de la empresa
+              <input name="empresa_nombre">
+            </label>
+            <label>Actividad de la empresa o negocio
+              <input name="empresa_actividad">
+            </label>
+            <label>Cargo
+              <input name="empresa_cargo">
+            </label>
+            <label>Pais trabajo
+              <input name="trabajo_pais" value="Ecuador">
+            </label>
+            <label>Provincia
+              <input name="trabajo_provincia">
+            </label>
+            <label>Canton
+              <input name="trabajo_canton">
+            </label>
+            <label>Ciudad
+              <input name="trabajo_ciudad">
+            </label>
+            <label>Sector
+              <input name="trabajo_sector">
+            </label>
+            <label>Calle principal
+              <input name="trabajo_calle_principal">
+            </label>
+            <label>Numero
+              <input name="trabajo_numero">
+            </label>
+            <label>Transversal
+              <input name="trabajo_transversal">
+            </label>
+            <label>Telefono empresa
+              <input name="empresa_telefono" inputmode="tel">
+            </label>
+            <label>Correo empresa
+              <input name="empresa_correo" type="email">
+            </label>
+          </div>
+        </section>
+
+        <section class="uafe-section">
+          <div class="uafe-section-title">
+            <span>5</span>
+            <div>
+              <strong>Nivel de ingresos y situacion patrimonial</strong>
+              <small>Declaracion economica del cliente.</small>
+            </div>
+          </div>
+          <div class="uafe-grid">
+            <label>Ingresos mensuales
+              <input name="ingresos_mensuales" inputmode="decimal">
+            </label>
+            <label>Total egresos mensuales
+              <input name="egresos_mensuales" inputmode="decimal">
+            </label>
+            <label>Total activos
+              <input name="total_activos" inputmode="decimal">
+            </label>
+            <label>Total pasivos
+              <input name="total_pasivos" inputmode="decimal">
+            </label>
+            <label>Posee ingresos diferentes
+              <select name="otros_ingresos">
+                <option>No</option>
+                <option>Si</option>
+              </select>
+            </label>
+            <label>Procedencia de otros ingresos
+              <input name="otros_ingresos_procedencia">
+            </label>
+            <label>Valor de otros ingresos
+              <input name="otros_ingresos_valor" inputmode="decimal">
+            </label>
+          </div>
+        </section>
+
+        <section class="uafe-section">
+          <div class="uafe-section-title">
+            <span>6</span>
+            <div>
+              <strong>Terceros que realizan pagos</strong>
+              <small>Registrar ejecutantes distintos al comprador si aplica.</small>
+            </div>
+          </div>
+          <div class="uafe-grid">
+            <label>Tercero 1 - Nombres o razon social
+              <input name="tercero1_nombres">
+            </label>
+            <label>Tipo identificacion
+              <select name="tercero1_tipo_identificacion">
+                <option value="">Seleccione</option>
+                <option>Cedula</option>
+                <option>RUC</option>
+              </select>
+            </label>
+            <label>Identificacion
+              <input name="tercero1_identificacion">
+            </label>
+            <label>Nacionalidad
+              <input name="tercero1_nacionalidad">
+            </label>
+            <label>Provincia
+              <input name="tercero1_provincia">
+            </label>
+            <label>Celular
+              <input name="tercero1_celular" inputmode="tel">
+            </label>
+            <label>Direccion empresa
+              <input name="tercero1_direccion_empresa">
+            </label>
+            <label>Correo
+              <input name="tercero1_correo" type="email">
+            </label>
+            <label>Telefono domicilio/empresa
+              <input name="tercero1_telefono" inputmode="tel">
+            </label>
+            <label>Relacion con el cliente
+              <input name="tercero1_relacion">
+            </label>
+            <label>Actividad economica
+              <input name="tercero1_actividad">
+            </label>
+            <label>Total ingresos mensuales
+              <input name="tercero1_ingresos" inputmode="decimal">
+            </label>
+            <label>Valor pagado
+              <input name="tercero1_valor_pagado" inputmode="decimal">
+            </label>
+            <label>Tercero 2 - Nombres o razon social
+              <input name="tercero2_nombres">
+            </label>
+            <label>Tipo identificacion
+              <select name="tercero2_tipo_identificacion">
+                <option value="">Seleccione</option>
+                <option>Cedula</option>
+                <option>RUC</option>
+              </select>
+            </label>
+            <label>Identificacion
+              <input name="tercero2_identificacion">
+            </label>
+            <label>Nacionalidad
+              <input name="tercero2_nacionalidad">
+            </label>
+            <label>Provincia o canton
+              <input name="tercero2_provincia_canton">
+            </label>
+            <label>Correo
+              <input name="tercero2_correo" type="email">
+            </label>
+            <label>Telefono domicilio/empresa
+              <input name="tercero2_telefono" inputmode="tel">
+            </label>
+            <label>Relacion con el cliente
+              <input name="tercero2_relacion">
+            </label>
+            <label>Actividad economica
+              <input name="tercero2_actividad">
+            </label>
+            <label>Total ingresos
+              <input name="tercero2_ingresos" inputmode="decimal">
+            </label>
+            <label>Valor pagado
+              <input name="tercero2_valor_pagado" inputmode="decimal">
+            </label>
+          </div>
+        </section>
+
+        <section class="uafe-section">
+          <div class="uafe-section-title">
+            <span>J</span>
+            <div>
+              <strong>Datos para persona juridica</strong>
+              <small>Completar cuando el tipo de cliente sea juridica.</small>
+            </div>
+          </div>
+          <div class="uafe-grid">
+            <label>Razon social
+              <input name="juridico_razon_social">
+            </label>
+            <label>RUC
+              <input name="juridico_ruc">
+            </label>
+            <label>Representante legal
+              <input name="juridico_representante">
+            </label>
+            <label>Cargo representante
+              <input name="juridico_cargo_representante">
+            </label>
+            <label>Actividad economica
+              <input name="juridico_actividad">
+            </label>
+            <label>Telefono
+              <input name="juridico_telefono" inputmode="tel">
+            </label>
+            <label>Correo
+              <input name="juridico_correo" type="email">
+            </label>
+            <label class="span-2">Direccion
+              <input name="juridico_direccion">
+            </label>
+            <label>Total activos
+              <input name="juridico_total_activos" inputmode="decimal">
+            </label>
+            <label>Total pasivos
+              <input name="juridico_total_pasivos" inputmode="decimal">
+            </label>
+            <label>Patrimonio neto
+              <input name="juridico_patrimonio" inputmode="decimal">
+            </label>
+            <label>Total ingresos
+              <input name="juridico_total_ingresos" inputmode="decimal">
+            </label>
+            <label>Total gastos
+              <input name="juridico_total_gastos" inputmode="decimal">
+            </label>
+            <label>Beneficiario final
+              <input name="beneficiario_final_nombre">
+            </label>
+            <label>Identificacion beneficiario final
+              <input name="beneficiario_final_identificacion">
+            </label>
+            <label>Nacionalidad beneficiario
+              <input name="beneficiario_final_nacionalidad">
+            </label>
+            <label>Parentesco / relacion
+              <input name="beneficiario_final_relacion">
+            </label>
+          </div>
+        </section>
+
+        <section class="uafe-section">
+          <div class="uafe-section-title">
+            <span>8</span>
+            <div>
+              <strong>Declaracion de origen licito de fondos</strong>
+              <small>Origen, destino y entrega de fondos.</small>
+            </div>
+          </div>
+          <div class="uafe-grid">
+            <label>Los fondos provienen de
+              <input name="fondos_origen">
+            </label>
+            <label>Los fondos seran utilizados para
+              <input name="fondos_destino">
+            </label>
+            <label>Entrega de fondos
+              <input name="fondos_entrega">
+            </label>
+            <label>Lugar de nacimiento
+              <input name="fondos_lugar_nacimiento">
+            </label>
+            <label>Fecha de nacimiento
+              <input name="fondos_fecha_nacimiento" type="date">
+            </label>
+          </div>
+        </section>
+
+        <section class="uafe-section">
+          <div class="uafe-section-title">
+            <span>O</span>
+            <div>
               <strong>Operacion vinculada</strong>
               <small>Datos tomados del contrato de compraventa.</small>
             </div>
           </div>
           <div class="uafe-grid">
-            <label>
-              Placa
+            <label>Placa
               <input name="operacion_placa" readonly>
             </label>
-            <label>
-              Agencia
+            <label>Agencia
               <input name="operacion_agencia" readonly>
             </label>
-            <label>
-              Valor de contrato
+            <label>Valor de contrato
               <input name="operacion_valor" readonly>
             </label>
-            <label>
-              Vendedor
+            <label>Vendedor
               <input name="operacion_vendedor" readonly>
+            </label>
+          </div>
+        </section>
+
+        <section class="uafe-section">
+          <div class="uafe-section-title">
+            <span>11</span>
+            <div>
+              <strong>Firma del cliente</strong>
+              <small>Datos para constancia de aceptacion.</small>
+            </div>
+          </div>
+          <div class="uafe-grid">
+            <label>Nombre para firma
+              <input name="firma_cliente_nombre">
+            </label>
+            <label>Documento de identificacion
+              <input name="firma_cliente_documento">
+            </label>
+            <label>Ciudad
+              <input name="firma_cliente_ciudad">
+            </label>
+            <label>Fecha
+              <input name="firma_cliente_fecha" type="date">
             </label>
           </div>
         </section>
@@ -2078,26 +2436,72 @@
             </div>
           </div>
           <div class="uafe-grid">
-            <label>
-              Nombres del responsable
+            <label>Nombres completos
               <input name="receptor_nombres" readonly>
             </label>
-            <label>
-              Cargo
+            <label>Cargo
               <input name="receptor_cargo" value="Asesor comercial">
             </label>
-            <label>
-              Identificacion
+            <label>Identificacion
               <input name="receptor_identificacion">
             </label>
-            <label>
-              Ciudad
+            <label>Ciudad
               <input name="receptor_ciudad">
             </label>
-            <label>
-              Fecha
+            <label>Fecha
               <input name="receptor_fecha" type="date">
             </label>
+          </div>
+        </section>
+
+        <section class="uafe-section">
+          <div class="uafe-section-title">
+            <span>13</span>
+            <div>
+              <strong>Documentacion adjunta</strong>
+              <small>Checklist documental requerido por el formulario.</small>
+            </div>
+          </div>
+          <div class="uafe-checkbox-grid">
+            <label><input type="checkbox" name="doc_identificacion_cliente"> Copia documento de identificacion del cliente</label>
+            <label><input type="checkbox" name="doc_identificacion_conyuge"> Copia documento de identificacion del conyuge</label>
+            <label><input type="checkbox" name="doc_servicio_agua"> Servicio basico agua</label>
+            <label><input type="checkbox" name="doc_servicio_luz"> Servicio basico luz</label>
+            <label><input type="checkbox" name="doc_servicio_telefono"> Servicio basico telefono</label>
+            <label><input type="checkbox" name="doc_servicio_vigente"> Servicio basico maximo 3 meses y direccion visible</label>
+          </div>
+        </section>
+
+        <section class="uafe-section">
+          <div class="uafe-section-title">
+            <span>14</span>
+            <div>
+              <strong>Uso exclusivo de Autocor</strong>
+              <small>Verificacion interna y oficial de cumplimiento.</small>
+            </div>
+          </div>
+          <div class="uafe-grid">
+            <label>Responsable que verifica
+              <input name="verificador_nombre">
+            </label>
+            <label>Identificacion responsable
+              <input name="verificador_identificacion">
+            </label>
+            <label>Fecha de verificacion
+              <input name="verificador_fecha" type="date">
+            </label>
+            <label>Revision Oficial de Cumplimiento
+              <input name="oficial_cumplimiento">
+            </label>
+          </div>
+          <div class="uafe-checkbox-grid">
+            <label><input type="checkbox" name="verificacion_registro_civil"> Registro Civil</label>
+            <label><input type="checkbox" name="verificacion_sri"> SRI</label>
+            <label><input type="checkbox" name="verificacion_uafe"> UAFE</label>
+            <label><input type="checkbox" name="verificacion_funcion_judicial"> Funcion Judicial</label>
+            <label><input type="checkbox" name="verificacion_onu"> ONU</label>
+            <label><input type="checkbox" name="verificacion_ofac"> OFAC</label>
+            <label><input type="checkbox" name="verificacion_otras"> Otras listas</label>
           </div>
         </section>
 

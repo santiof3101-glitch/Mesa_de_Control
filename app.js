@@ -5804,23 +5804,133 @@ function getUafeDefaultData(contractData = {}, task = null) {
     cliente_tipo_identificacion: "Cedula",
     cliente_identificacion: normalizeId(contractData.cedulaVendedor || task?.cedulaVendedor || task?.cedula || ""),
     cliente_nacionalidad: "Ecuatoriana",
+    cliente_fecha_nacimiento: "",
+    cliente_pais_nacimiento: "Ecuador",
+    cliente_ciudad_nacimiento: "",
     cliente_estado_civil: "",
-    cliente_direccion: normalizeLooseText(contractData.direccion || task?.direccion || ""),
+    domicilio_pais: "Ecuador",
+    domicilio_provincia: "",
+    domicilio_canton: "",
+    domicilio_ciudad: contractData.agencia || task?.agencia || "",
+    domicilio_sector: "",
+    domicilio_calle_principal: normalizeLooseText(contractData.direccion || task?.direccion || ""),
+    domicilio_numero: "",
+    domicilio_calle_transversal: "",
+    domicilio_telefono: "",
     cliente_celular: String(contractData.telefono || task?.telefono || "").trim(),
     cliente_correo: String(contractData.correo || task?.correo || "").trim().toLowerCase(),
-    cliente_actividad: "",
+    referencia_nombre: "",
+    referencia_parentesco: "",
+    referencia_celular: "",
+    pasaporte_numero: "",
+    pasaporte_expedicion: "",
+    pasaporte_caducidad: "",
+    pasaporte_estado_migratorio: "",
+    pasaporte_fecha_ingreso: "",
+    conyuge_nombres: "",
+    conyuge_tipo_identificacion: "",
+    conyuge_identificacion: "",
+    conyuge_genero: "",
+    conyuge_actividad: "",
+    conyuge_ingresos: "",
+    empresa_nombre: "",
+    empresa_actividad: "",
+    empresa_cargo: "",
+    trabajo_pais: "Ecuador",
+    trabajo_provincia: "",
+    trabajo_canton: "",
+    trabajo_ciudad: "",
+    trabajo_sector: "",
+    trabajo_calle_principal: "",
+    trabajo_numero: "",
+    trabajo_transversal: "",
+    empresa_telefono: "",
+    empresa_correo: "",
+    ingresos_mensuales: "",
+    egresos_mensuales: "",
+    total_activos: "",
+    total_pasivos: "",
+    otros_ingresos: "No",
+    otros_ingresos_procedencia: "",
+    otros_ingresos_valor: "",
+    tercero1_nombres: "",
+    tercero1_tipo_identificacion: "",
+    tercero1_identificacion: "",
+    tercero1_nacionalidad: "",
+    tercero1_provincia: "",
+    tercero1_celular: "",
+    tercero1_direccion_empresa: "",
+    tercero1_correo: "",
+    tercero1_telefono: "",
+    tercero1_relacion: "",
+    tercero1_actividad: "",
+    tercero1_ingresos: "",
+    tercero1_valor_pagado: "",
+    tercero2_nombres: "",
+    tercero2_tipo_identificacion: "",
+    tercero2_identificacion: "",
+    tercero2_nacionalidad: "",
+    tercero2_provincia_canton: "",
+    tercero2_correo: "",
+    tercero2_telefono: "",
+    tercero2_relacion: "",
+    tercero2_actividad: "",
+    tercero2_ingresos: "",
+    tercero2_valor_pagado: "",
+    juridico_razon_social: "",
+    juridico_ruc: "",
+    juridico_representante: "",
+    juridico_cargo_representante: "",
+    juridico_actividad: "",
+    juridico_telefono: "",
+    juridico_correo: "",
+    juridico_direccion: "",
+    juridico_total_activos: "",
+    juridico_total_pasivos: "",
+    juridico_patrimonio: "",
+    juridico_total_ingresos: "",
+    juridico_total_gastos: "",
+    beneficiario_final_nombre: "",
+    beneficiario_final_identificacion: "",
+    beneficiario_final_nacionalidad: "",
+    beneficiario_final_relacion: "",
     fondos_origen: "",
+    fondos_destino: "Compra de vehiculo",
+    fondos_entrega: "",
+    fondos_lugar_nacimiento: "",
+    fondos_fecha_nacimiento: "",
     pep: "No",
     persona_obligada: "No",
     operacion_placa: normalizePlate(contractData.placa || task?.placa || ""),
     operacion_agencia: contractData.agencia || task?.agencia || "",
     operacion_valor: String(contractData.precioContrato || task?.precioContrato || task?.valorToma || "").trim(),
     operacion_vendedor: normalizeLooseText(contractData.vendedor || task?.vendedor || task?.cliente || ""),
+    firma_cliente_nombre: normalizeLooseText(contractData.vendedor || task?.vendedor || task?.cliente || ""),
+    firma_cliente_documento: normalizeId(contractData.cedulaVendedor || task?.cedulaVendedor || task?.cedula || ""),
+    firma_cliente_ciudad: contractData.agencia || session.agency || task?.agencia || "",
+    firma_cliente_fecha: getTodayInputValue(),
     receptor_nombres: session.name || task?.commercialUserName || task?.asesor || "",
     receptor_cargo: "Asesor comercial",
     receptor_identificacion: "",
     receptor_ciudad: contractData.agencia || session.agency || task?.agencia || "",
     receptor_fecha: getTodayInputValue(),
+    doc_identificacion_cliente: "No",
+    doc_identificacion_conyuge: "No",
+    doc_servicio_agua: "No",
+    doc_servicio_luz: "No",
+    doc_servicio_telefono: "No",
+    doc_servicio_vigente: "No",
+    verificador_nombre: "",
+    verificador_identificacion: "",
+    verificador_fecha: "",
+    oficial_cumplimiento: "",
+    verificacion_registro_civil: "No",
+    verificacion_sri: "No",
+    verificacion_uafe: "No",
+    verificacion_funcion_judicial: "No",
+    verificacion_onu: "No",
+    verificacion_ofac: "No",
+    verificacion_otras: "No",
     ...(task?.uafe?.data || {}),
     ...storedData
   };
@@ -5837,13 +5947,22 @@ function fillCommercialUafeForm(data = {}) {
   if (!commercialUafeForm) return;
   Object.entries(data).forEach(([key, value]) => {
     const field = commercialUafeForm.elements[key];
-    if (field) field.value = value ?? "";
+    if (!field) return;
+    if (field.type === "checkbox") {
+      field.checked = String(value || "").toLowerCase() === "si" || value === true;
+    } else {
+      field.value = value ?? "";
+    }
   });
 }
 
 function getCommercialUafeFormData() {
   if (!commercialUafeForm) return {};
-  return Object.fromEntries(new FormData(commercialUafeForm).entries());
+  const data = Object.fromEntries(new FormData(commercialUafeForm).entries());
+  commercialUafeForm.querySelectorAll("input[type='checkbox'][name]").forEach((field) => {
+    data[field.name] = field.checked ? "Si" : "No";
+  });
+  return data;
 }
 
 function saveCommercialUafeDraft(showMessage = false) {
@@ -5864,6 +5983,7 @@ function saveCommercialUafeDraft(showMessage = false) {
 
 function buildUafePdfHtml(uafeData = {}, contractData = {}) {
   const row = (label, value) => `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value || "Sin registro")}</td></tr>`;
+  const section = (title, rows) => `<h2>${escapeHtml(title)}</h2><table>${rows.map(([label, key]) => row(label, uafeData[key])).join("")}</table>`;
   return `<!doctype html>
 <html lang="es">
 <head>
@@ -5892,38 +6012,79 @@ function buildUafePdfHtml(uafeData = {}, contractData = {}) {
     <img src="autocor-logo.svg.webp" alt="Autocor">
     <h1>Formulario Conozca a su Cliente</h1>
   </header>
-  <p>Formulario de debida diligencia generado para la operacion vinculada al contrato de compraventa registrado en Autocor.</p>
-  <h2>Datos del cliente</h2>
-  <table>
-    ${row("Tipo de cliente", uafeData.cliente_tipo)}
-    ${row("Nombres / razon social", uafeData.cliente_nombres)}
-    ${row("Tipo de identificacion", uafeData.cliente_tipo_identificacion)}
-    ${row("Identificacion", uafeData.cliente_identificacion)}
-    ${row("Nacionalidad", uafeData.cliente_nacionalidad)}
-    ${row("Estado civil", uafeData.cliente_estado_civil)}
-    ${row("Direccion", uafeData.cliente_direccion)}
-    ${row("WhatsApp / telefono", uafeData.cliente_celular)}
-    ${row("Correo electronico", uafeData.cliente_correo)}
-    ${row("Actividad economica", uafeData.cliente_actividad)}
-    ${row("Origen de fondos", uafeData.fondos_origen)}
-    ${row("PEP", uafeData.pep)}
-    ${row("Persona obligada", uafeData.persona_obligada)}
-  </table>
-  <h2>Operacion</h2>
-  <table>
-    ${row("Placa", uafeData.operacion_placa || contractData.placa)}
-    ${row("Agencia", uafeData.operacion_agencia || contractData.agencia)}
-    ${row("Valor de contrato", uafeData.operacion_valor || contractData.precioContrato)}
-    ${row("Vendedor", uafeData.operacion_vendedor || contractData.vendedor)}
-  </table>
-  <h2>12. Responsable que recepta la informacion</h2>
-  <table>
-    ${row("Nombres", uafeData.receptor_nombres)}
-    ${row("Cargo", uafeData.receptor_cargo)}
-    ${row("Identificacion", uafeData.receptor_identificacion)}
-    ${row("Ciudad", uafeData.receptor_ciudad)}
-    ${row("Fecha", uafeData.receptor_fecha)}
-  </table>
+  <p>Formulario de debida diligencia generado para la operacion vinculada al contrato de compraventa registrado en Autocor. La informacion declarada se conserva en la ficha de la solicitud y puede ser editada por el asesor comercial antes de enviar o reenviar a Mesa de Control.</p>
+  ${section("1. Informacion del cliente", [
+    ["Tipo de cliente", "cliente_tipo"], ["Nombres y apellidos completos", "cliente_nombres"], ["Tipo de identificacion", "cliente_tipo_identificacion"],
+    ["Numero de identificacion", "cliente_identificacion"], ["Nacionalidad", "cliente_nacionalidad"], ["Fecha de nacimiento", "cliente_fecha_nacimiento"],
+    ["Pais de nacimiento", "cliente_pais_nacimiento"], ["Ciudad de nacimiento", "cliente_ciudad_nacimiento"], ["Estado civil", "cliente_estado_civil"],
+    ["Pais domicilio", "domicilio_pais"], ["Provincia", "domicilio_provincia"], ["Canton", "domicilio_canton"],
+    ["Ciudad", "domicilio_ciudad"], ["Sector", "domicilio_sector"], ["Calle principal", "domicilio_calle_principal"],
+    ["Numero", "domicilio_numero"], ["Calle transversal", "domicilio_calle_transversal"], ["Telefono domicilio", "domicilio_telefono"],
+    ["Numero celular", "cliente_celular"], ["Correo personal", "cliente_correo"], ["Referencia personal", "referencia_nombre"],
+    ["Parentesco", "referencia_parentesco"], ["Celular referencia", "referencia_celular"]
+  ])}
+  ${section("2. Informacion adicional por pasaporte", [
+    ["Numero de pasaporte", "pasaporte_numero"], ["Fecha de expedicion", "pasaporte_expedicion"], ["Fecha de caducidad", "pasaporte_caducidad"],
+    ["Estado migratorio o VISA", "pasaporte_estado_migratorio"], ["Fecha de ingreso al pais", "pasaporte_fecha_ingreso"]
+  ])}
+  ${section("3. Conyuge, conviviente o representante legal", [
+    ["Nombres completos", "conyuge_nombres"], ["Tipo de identificacion", "conyuge_tipo_identificacion"], ["Numero de identificacion", "conyuge_identificacion"],
+    ["Genero", "conyuge_genero"], ["Actividad economica", "conyuge_actividad"], ["Ingresos promedio mensuales", "conyuge_ingresos"]
+  ])}
+  ${section("4. Actividad economica / ocupacion", [
+    ["Nombre de la empresa", "empresa_nombre"], ["Actividad economica", "empresa_actividad"], ["Cargo", "empresa_cargo"],
+    ["Pais trabajo", "trabajo_pais"], ["Provincia", "trabajo_provincia"], ["Canton", "trabajo_canton"],
+    ["Ciudad", "trabajo_ciudad"], ["Sector", "trabajo_sector"], ["Calle principal", "trabajo_calle_principal"],
+    ["Numero", "trabajo_numero"], ["Transversal", "trabajo_transversal"], ["Telefono empresa", "empresa_telefono"],
+    ["Correo empresa", "empresa_correo"]
+  ])}
+  ${section("5. Nivel de ingresos y situacion patrimonial", [
+    ["Ingresos mensuales", "ingresos_mensuales"], ["Egresos mensuales", "egresos_mensuales"], ["Total activos", "total_activos"],
+    ["Total pasivos", "total_pasivos"], ["Posee otros ingresos", "otros_ingresos"], ["Procedencia otros ingresos", "otros_ingresos_procedencia"],
+    ["Valor otros ingresos", "otros_ingresos_valor"]
+  ])}
+  ${section("6. Datos de terceros que realizan pagos", [
+    ["Tercero 1", "tercero1_nombres"], ["Tipo ID tercero 1", "tercero1_tipo_identificacion"], ["Identificacion tercero 1", "tercero1_identificacion"],
+    ["Nacionalidad tercero 1", "tercero1_nacionalidad"], ["Provincia tercero 1", "tercero1_provincia"], ["Celular tercero 1", "tercero1_celular"],
+    ["Direccion empresa tercero 1", "tercero1_direccion_empresa"], ["Correo tercero 1", "tercero1_correo"], ["Telefono tercero 1", "tercero1_telefono"],
+    ["Relacion tercero 1", "tercero1_relacion"], ["Actividad tercero 1", "tercero1_actividad"], ["Ingresos tercero 1", "tercero1_ingresos"],
+    ["Valor pagado tercero 1", "tercero1_valor_pagado"], ["Tercero 2", "tercero2_nombres"], ["Tipo ID tercero 2", "tercero2_tipo_identificacion"],
+    ["Identificacion tercero 2", "tercero2_identificacion"], ["Nacionalidad tercero 2", "tercero2_nacionalidad"], ["Provincia/Canton tercero 2", "tercero2_provincia_canton"],
+    ["Correo tercero 2", "tercero2_correo"], ["Telefono tercero 2", "tercero2_telefono"], ["Relacion tercero 2", "tercero2_relacion"],
+    ["Actividad tercero 2", "tercero2_actividad"], ["Ingresos tercero 2", "tercero2_ingresos"], ["Valor pagado tercero 2", "tercero2_valor_pagado"]
+  ])}
+  ${section("Persona juridica", [
+    ["Razon social", "juridico_razon_social"], ["RUC", "juridico_ruc"], ["Representante legal", "juridico_representante"],
+    ["Cargo representante", "juridico_cargo_representante"], ["Actividad economica", "juridico_actividad"], ["Telefono", "juridico_telefono"],
+    ["Correo", "juridico_correo"], ["Direccion", "juridico_direccion"], ["Total activos", "juridico_total_activos"],
+    ["Total pasivos", "juridico_total_pasivos"], ["Patrimonio", "juridico_patrimonio"], ["Total ingresos", "juridico_total_ingresos"],
+    ["Total gastos", "juridico_total_gastos"], ["Beneficiario final", "beneficiario_final_nombre"], ["ID beneficiario", "beneficiario_final_identificacion"],
+    ["Nacionalidad beneficiario", "beneficiario_final_nacionalidad"], ["Relacion beneficiario", "beneficiario_final_relacion"]
+  ])}
+  ${section("8. Declaracion de origen licito de fondos", [
+    ["Origen de fondos", "fondos_origen"], ["Destino de fondos", "fondos_destino"], ["Entrega de fondos", "fondos_entrega"],
+    ["Lugar de nacimiento", "fondos_lugar_nacimiento"], ["Fecha de nacimiento", "fondos_fecha_nacimiento"]
+  ])}
+  <p>Declaro que la informacion contenida en este formulario es verdadera, completa y actualizada. Autorizo a AUTOCOR a realizar las verificaciones necesarias sobre licitud de fondos, informacion publica o privada, riesgos crediticios y listas de control aplicables.</p>
+  ${section("Operacion vinculada", [
+    ["Placa", "operacion_placa"], ["Agencia", "operacion_agencia"], ["Valor de contrato", "operacion_valor"], ["Vendedor", "operacion_vendedor"]
+  ])}
+  ${section("11. Firma del cliente", [
+    ["Nombre", "firma_cliente_nombre"], ["Documento de identificacion", "firma_cliente_documento"], ["Ciudad", "firma_cliente_ciudad"], ["Fecha", "firma_cliente_fecha"]
+  ])}
+  ${section("12. Responsable que recepta la informacion", [
+    ["Nombres", "receptor_nombres"], ["Cargo", "receptor_cargo"], ["Identificacion", "receptor_identificacion"], ["Ciudad", "receptor_ciudad"], ["Fecha", "receptor_fecha"]
+  ])}
+  ${section("13. Documentacion adjunta", [
+    ["Documento cliente", "doc_identificacion_cliente"], ["Documento conyuge", "doc_identificacion_conyuge"], ["Servicio agua", "doc_servicio_agua"],
+    ["Servicio luz", "doc_servicio_luz"], ["Servicio telefono", "doc_servicio_telefono"], ["Servicio vigente", "doc_servicio_vigente"]
+  ])}
+  ${section("14. Uso exclusivo de Autocor", [
+    ["Responsable verificador", "verificador_nombre"], ["Identificacion", "verificador_identificacion"], ["Fecha verificacion", "verificador_fecha"],
+    ["Registro Civil", "verificacion_registro_civil"], ["SRI", "verificacion_sri"], ["UAFE", "verificacion_uafe"],
+    ["Funcion Judicial", "verificacion_funcion_judicial"], ["ONU", "verificacion_onu"], ["OFAC", "verificacion_ofac"],
+    ["Otras", "verificacion_otras"], ["Oficial de Cumplimiento", "oficial_cumplimiento"]
+  ])}
   <div class="signature">
     <div class="line">Cliente</div>
     <div class="line">Responsable Autocor</div>
