@@ -5982,8 +5982,23 @@ function saveCommercialUafeDraft(showMessage = false) {
 }
 
 function buildUafePdfHtml(uafeData = {}, contractData = {}) {
-  const row = (label, value) => `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value || "Sin registro")}</td></tr>`;
-  const section = (title, rows) => `<h2>${escapeHtml(title)}</h2><table>${rows.map(([label, key]) => row(label, uafeData[key])).join("")}</table>`;
+  const pick = (key, fallback = "") => {
+    const value = uafeData[key] ?? contractData[key] ?? fallback;
+    return escapeHtml(value || "Sin registro");
+  };
+  const isChecked = (key) => String(uafeData[key] || "").toLowerCase() === "si";
+  const box = (label, key, options = {}) => {
+    const classes = ["pdf-field", options.span ? `span-${options.span}` : ""].filter(Boolean).join(" ");
+    return `<div class="${classes}"><span>${escapeHtml(label)}</span><strong>${pick(key, options.fallback)}</strong></div>`;
+  };
+  const check = (label, active = false) => `<span class="pdf-check ${active ? "active" : ""}">${active ? "X" : ""}</span><span>${escapeHtml(label)}</span>`;
+  const checkLine = (items) => `<div class="pdf-checkline">${items.join("")}</div>`;
+  const grid = (items) => `<div class="pdf-grid">${items.join("")}</div>`;
+  const section = (number, title, content) => `
+    <section class="pdf-section">
+      <h2>${escapeHtml(number)}. ${escapeHtml(title)}</h2>
+      ${content}
+    </section>`;
   return `<!doctype html>
 <html lang="es">
 <head>
@@ -5993,102 +6008,413 @@ function buildUafePdfHtml(uafeData = {}, contractData = {}) {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: "Roboto Condensed", Arial, sans-serif; margin: 38px; color: #111827; font-size: 10pt; }
-    header { display:flex; align-items:center; justify-content:space-between; border-bottom: 2px solid #e43d30; padding-bottom: 12px; margin-bottom: 22px; }
-    img { max-width: 150px; height: auto; }
-    h1 { font-size: 15pt; margin: 0; text-align:right; text-transform: uppercase; }
-    h2 { font-size: 11pt; margin: 18px 0 8px; color: #e43d30; text-transform: uppercase; }
-    table { width:100%; border-collapse: collapse; margin-bottom: 10px; }
-    th, td { border: 1px solid #cbd5e1; padding: 7px 8px; vertical-align: top; text-align: left; }
-    th { width: 28%; background: #f8fafc; text-transform: uppercase; }
-    p { text-align: justify; line-height: 1.45; }
-    .signature { margin-top: 42px; display:grid; grid-template-columns: 1fr 1fr; gap: 64px; text-align:center; }
-    .line { border-top: 1px solid #111827; padding-top: 8px; }
-    @media print { body { margin: 24mm 18mm; } }
+    @page { size: A4; margin: 14mm 13mm 16mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Roboto Condensed", Arial, sans-serif;
+      margin: 0;
+      color: #111827;
+      font-size: 10pt;
+      line-height: 1.34;
+      background: #fff;
+    }
+    .pdf-page { max-width: 186mm; margin: 0 auto; }
+    .pdf-header {
+      display: grid;
+      grid-template-columns: 42mm 1fr 42mm;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8mm;
+    }
+    .pdf-logo { width: 34mm; height: auto; }
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-size: 13.8pt;
+      line-height: 1.15;
+      text-transform: uppercase;
+      letter-spacing: .02em;
+    }
+    .pdf-code {
+      border: 1px solid #111827;
+      padding: 6px;
+      text-align: center;
+      font-size: 8.5pt;
+      text-transform: uppercase;
+    }
+    .pdf-intro,
+    .pdf-legal {
+      margin: 7px 0 9px;
+      text-align: justify;
+    }
+    .pdf-section {
+      margin: 9px 0 11px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    h2 {
+      margin: 0 0 4px;
+      font-size: 10.5pt;
+      line-height: 1.15;
+      text-transform: uppercase;
+      color: #111827;
+    }
+    .pdf-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-top: 1px solid #111827;
+      border-left: 1px solid #111827;
+      width: 100%;
+    }
+    .pdf-field {
+      min-height: 31px;
+      padding: 4px 6px;
+      border-right: 1px solid #111827;
+      border-bottom: 1px solid #111827;
+      overflow-wrap: anywhere;
+    }
+    .pdf-field span {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 7.4pt;
+      font-weight: 700;
+      line-height: 1.1;
+      text-transform: uppercase;
+    }
+    .pdf-field strong {
+      display: block;
+      font-size: 9.2pt;
+      font-weight: 400;
+      line-height: 1.18;
+    }
+    .span-2 { grid-column: span 2; }
+    .span-3 { grid-column: span 3; }
+    .span-4 { grid-column: span 4; }
+    .pdf-checkline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      align-items: center;
+      border: 1px solid #111827;
+      border-top: 0;
+      padding: 5px 6px;
+    }
+    .pdf-checkline span:not(.pdf-check) { font-weight: 700; text-transform: uppercase; }
+    .pdf-check {
+      display: inline-flex;
+      width: 13px;
+      height: 13px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #111827;
+      font-size: 8pt;
+      font-weight: 700;
+      margin-right: -10px;
+    }
+    .pdf-check.active { background: #111827; color: #fff; }
+    .pdf-note {
+      border: 1px solid #111827;
+      padding: 7px 8px;
+      text-align: justify;
+    }
+    .pdf-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4px;
+    }
+    .pdf-table th,
+    .pdf-table td {
+      border: 1px solid #111827;
+      padding: 5px 6px;
+      vertical-align: top;
+      text-align: left;
+    }
+    .pdf-table th {
+      font-size: 8pt;
+      text-transform: uppercase;
+      background: #f3f4f6;
+    }
+    .signature {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22mm;
+      margin-top: 18mm;
+      text-align: center;
+      break-inside: avoid;
+    }
+    .line {
+      border-top: 1px solid #111827;
+      padding-top: 6px;
+      min-height: 24mm;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .line small { display:block; margin-top: 4px; font-weight: 400; text-transform: none; }
+    .page-break { break-before: page; page-break-before: always; }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .pdf-page { max-width: none; }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <img src="autocor-logo.svg.webp" alt="Autocor">
-    <h1>Formulario Conozca a su Cliente</h1>
-  </header>
-  <p>Formulario de debida diligencia generado para la operacion vinculada al contrato de compraventa registrado en Autocor. La informacion declarada se conserva en la ficha de la solicitud y puede ser editada por el asesor comercial antes de enviar o reenviar a Mesa de Control.</p>
-  ${section("1. Informacion del cliente", [
-    ["Tipo de cliente", "cliente_tipo"], ["Nombres y apellidos completos", "cliente_nombres"], ["Tipo de identificacion", "cliente_tipo_identificacion"],
-    ["Numero de identificacion", "cliente_identificacion"], ["Nacionalidad", "cliente_nacionalidad"], ["Fecha de nacimiento", "cliente_fecha_nacimiento"],
-    ["Pais de nacimiento", "cliente_pais_nacimiento"], ["Ciudad de nacimiento", "cliente_ciudad_nacimiento"], ["Estado civil", "cliente_estado_civil"],
-    ["Pais domicilio", "domicilio_pais"], ["Provincia", "domicilio_provincia"], ["Canton", "domicilio_canton"],
-    ["Ciudad", "domicilio_ciudad"], ["Sector", "domicilio_sector"], ["Calle principal", "domicilio_calle_principal"],
-    ["Numero", "domicilio_numero"], ["Calle transversal", "domicilio_calle_transversal"], ["Telefono domicilio", "domicilio_telefono"],
-    ["Numero celular", "cliente_celular"], ["Correo personal", "cliente_correo"], ["Referencia personal", "referencia_nombre"],
-    ["Parentesco", "referencia_parentesco"], ["Celular referencia", "referencia_celular"]
-  ])}
-  ${section("2. Informacion adicional por pasaporte", [
-    ["Numero de pasaporte", "pasaporte_numero"], ["Fecha de expedicion", "pasaporte_expedicion"], ["Fecha de caducidad", "pasaporte_caducidad"],
-    ["Estado migratorio o VISA", "pasaporte_estado_migratorio"], ["Fecha de ingreso al pais", "pasaporte_fecha_ingreso"]
-  ])}
-  ${section("3. Conyuge, conviviente o representante legal", [
-    ["Nombres completos", "conyuge_nombres"], ["Tipo de identificacion", "conyuge_tipo_identificacion"], ["Numero de identificacion", "conyuge_identificacion"],
-    ["Genero", "conyuge_genero"], ["Actividad economica", "conyuge_actividad"], ["Ingresos promedio mensuales", "conyuge_ingresos"]
-  ])}
-  ${section("4. Actividad economica / ocupacion", [
-    ["Nombre de la empresa", "empresa_nombre"], ["Actividad economica", "empresa_actividad"], ["Cargo", "empresa_cargo"],
-    ["Pais trabajo", "trabajo_pais"], ["Provincia", "trabajo_provincia"], ["Canton", "trabajo_canton"],
-    ["Ciudad", "trabajo_ciudad"], ["Sector", "trabajo_sector"], ["Calle principal", "trabajo_calle_principal"],
-    ["Numero", "trabajo_numero"], ["Transversal", "trabajo_transversal"], ["Telefono empresa", "empresa_telefono"],
-    ["Correo empresa", "empresa_correo"]
-  ])}
-  ${section("5. Nivel de ingresos y situacion patrimonial", [
-    ["Ingresos mensuales", "ingresos_mensuales"], ["Egresos mensuales", "egresos_mensuales"], ["Total activos", "total_activos"],
-    ["Total pasivos", "total_pasivos"], ["Posee otros ingresos", "otros_ingresos"], ["Procedencia otros ingresos", "otros_ingresos_procedencia"],
-    ["Valor otros ingresos", "otros_ingresos_valor"]
-  ])}
-  ${section("6. Datos de terceros que realizan pagos", [
-    ["Tercero 1", "tercero1_nombres"], ["Tipo ID tercero 1", "tercero1_tipo_identificacion"], ["Identificacion tercero 1", "tercero1_identificacion"],
-    ["Nacionalidad tercero 1", "tercero1_nacionalidad"], ["Provincia tercero 1", "tercero1_provincia"], ["Celular tercero 1", "tercero1_celular"],
-    ["Direccion empresa tercero 1", "tercero1_direccion_empresa"], ["Correo tercero 1", "tercero1_correo"], ["Telefono tercero 1", "tercero1_telefono"],
-    ["Relacion tercero 1", "tercero1_relacion"], ["Actividad tercero 1", "tercero1_actividad"], ["Ingresos tercero 1", "tercero1_ingresos"],
-    ["Valor pagado tercero 1", "tercero1_valor_pagado"], ["Tercero 2", "tercero2_nombres"], ["Tipo ID tercero 2", "tercero2_tipo_identificacion"],
-    ["Identificacion tercero 2", "tercero2_identificacion"], ["Nacionalidad tercero 2", "tercero2_nacionalidad"], ["Provincia/Canton tercero 2", "tercero2_provincia_canton"],
-    ["Correo tercero 2", "tercero2_correo"], ["Telefono tercero 2", "tercero2_telefono"], ["Relacion tercero 2", "tercero2_relacion"],
-    ["Actividad tercero 2", "tercero2_actividad"], ["Ingresos tercero 2", "tercero2_ingresos"], ["Valor pagado tercero 2", "tercero2_valor_pagado"]
-  ])}
-  ${section("Persona juridica", [
-    ["Razon social", "juridico_razon_social"], ["RUC", "juridico_ruc"], ["Representante legal", "juridico_representante"],
-    ["Cargo representante", "juridico_cargo_representante"], ["Actividad economica", "juridico_actividad"], ["Telefono", "juridico_telefono"],
-    ["Correo", "juridico_correo"], ["Direccion", "juridico_direccion"], ["Total activos", "juridico_total_activos"],
-    ["Total pasivos", "juridico_total_pasivos"], ["Patrimonio", "juridico_patrimonio"], ["Total ingresos", "juridico_total_ingresos"],
-    ["Total gastos", "juridico_total_gastos"], ["Beneficiario final", "beneficiario_final_nombre"], ["ID beneficiario", "beneficiario_final_identificacion"],
-    ["Nacionalidad beneficiario", "beneficiario_final_nacionalidad"], ["Relacion beneficiario", "beneficiario_final_relacion"]
-  ])}
-  ${section("8. Declaracion de origen licito de fondos", [
-    ["Origen de fondos", "fondos_origen"], ["Destino de fondos", "fondos_destino"], ["Entrega de fondos", "fondos_entrega"],
-    ["Lugar de nacimiento", "fondos_lugar_nacimiento"], ["Fecha de nacimiento", "fondos_fecha_nacimiento"]
-  ])}
-  <p>Declaro que la informacion contenida en este formulario es verdadera, completa y actualizada. Autorizo a AUTOCOR a realizar las verificaciones necesarias sobre licitud de fondos, informacion publica o privada, riesgos crediticios y listas de control aplicables.</p>
-  ${section("Operacion vinculada", [
-    ["Placa", "operacion_placa"], ["Agencia", "operacion_agencia"], ["Valor de contrato", "operacion_valor"], ["Vendedor", "operacion_vendedor"]
-  ])}
-  ${section("11. Firma del cliente", [
-    ["Nombre", "firma_cliente_nombre"], ["Documento de identificacion", "firma_cliente_documento"], ["Ciudad", "firma_cliente_ciudad"], ["Fecha", "firma_cliente_fecha"]
-  ])}
-  ${section("12. Responsable que recepta la informacion", [
-    ["Nombres", "receptor_nombres"], ["Cargo", "receptor_cargo"], ["Identificacion", "receptor_identificacion"], ["Ciudad", "receptor_ciudad"], ["Fecha", "receptor_fecha"]
-  ])}
-  ${section("13. Documentacion adjunta", [
-    ["Documento cliente", "doc_identificacion_cliente"], ["Documento conyuge", "doc_identificacion_conyuge"], ["Servicio agua", "doc_servicio_agua"],
-    ["Servicio luz", "doc_servicio_luz"], ["Servicio telefono", "doc_servicio_telefono"], ["Servicio vigente", "doc_servicio_vigente"]
-  ])}
-  ${section("14. Uso exclusivo de Autocor", [
-    ["Responsable verificador", "verificador_nombre"], ["Identificacion", "verificador_identificacion"], ["Fecha verificacion", "verificador_fecha"],
-    ["Registro Civil", "verificacion_registro_civil"], ["SRI", "verificacion_sri"], ["UAFE", "verificacion_uafe"],
-    ["Funcion Judicial", "verificacion_funcion_judicial"], ["ONU", "verificacion_onu"], ["OFAC", "verificacion_ofac"],
-    ["Otras", "verificacion_otras"], ["Oficial de Cumplimiento", "oficial_cumplimiento"]
-  ])}
-  <div class="signature">
-    <div class="line">Cliente</div>
-    <div class="line">Responsable Autocor</div>
-  </div>
+  <main class="pdf-page">
+    <header class="pdf-header">
+      <img class="pdf-logo" src="autocor-logo.svg.webp" alt="Autocor">
+      <h1>Formulario Conozca a su Cliente<br>Persona Natural / Juridica</h1>
+      <div class="pdf-code">Debida diligencia<br>Autocor</div>
+    </header>
+
+    <p class="pdf-intro">
+      Este formulario forma parte del proceso de conocimiento del cliente y prevencion de lavado de activos,
+      financiamiento de delitos y otros riesgos asociados a la operacion comercial registrada en AUTOCOR.
+      La informacion declarada sera conservada en la ficha de la solicitud y podra ser actualizada por el
+      asesor comercial responsable cuando corresponda.
+    </p>
+
+    ${section("1", "Informacion del cliente", `
+      ${grid([
+        box("Tipo de cliente", "cliente_tipo"),
+        box("Nombres y apellidos completos", "cliente_nombres", { span: 2 }),
+        box("Estado civil", "cliente_estado_civil"),
+        box("Tipo de identificacion", "cliente_tipo_identificacion"),
+        box("Numero de identificacion", "cliente_identificacion"),
+        box("Nacionalidad", "cliente_nacionalidad"),
+        box("Fecha de nacimiento", "cliente_fecha_nacimiento"),
+        box("Pais de nacimiento", "cliente_pais_nacimiento"),
+        box("Ciudad de nacimiento", "cliente_ciudad_nacimiento"),
+        box("Celular", "cliente_celular"),
+        box("Correo electronico personal", "cliente_correo")
+      ])}
+      ${checkLine([
+        check("Cedula", uafeData.cliente_tipo_identificacion === "Cedula"),
+        check("Pasaporte", uafeData.cliente_tipo_identificacion === "Pasaporte"),
+        check("RUC", uafeData.cliente_tipo_identificacion === "RUC"),
+        check("Soltero", uafeData.cliente_estado_civil === "Soltero"),
+        check("Casado", uafeData.cliente_estado_civil === "Casado"),
+        check("Union libre", uafeData.cliente_estado_civil === "Union libre"),
+        check("Viudo", uafeData.cliente_estado_civil === "Viudo")
+      ])}
+    `)}
+
+    ${section("1.1", "Domicilio", grid([
+      box("Pais", "domicilio_pais"),
+      box("Provincia", "domicilio_provincia"),
+      box("Canton", "domicilio_canton"),
+      box("Ciudad", "domicilio_ciudad"),
+      box("Sector", "domicilio_sector"),
+      box("Calle principal", "domicilio_calle_principal"),
+      box("Numero", "domicilio_numero"),
+      box("Calle transversal", "domicilio_calle_transversal"),
+      box("Telefono domicilio", "domicilio_telefono"),
+      box("Referencia personal", "referencia_nombre"),
+      box("Parentesco", "referencia_parentesco"),
+      box("Celular referencia", "referencia_celular")
+    ]))}
+
+    ${section("2", "Informacion adicional si utiliza pasaporte", grid([
+      box("Numero de pasaporte", "pasaporte_numero"),
+      box("Fecha de expedicion", "pasaporte_expedicion"),
+      box("Fecha de caducidad", "pasaporte_caducidad"),
+      box("Estado migratorio / Codigo VISA", "pasaporte_estado_migratorio"),
+      box("Fecha de ingreso al pais", "pasaporte_fecha_ingreso", { span: 2 }),
+      box("Observacion", "pasaporte_observacion", { span: 2 })
+    ]))}
+
+    ${section("3", "Conyuge, conviviente o representante legal", grid([
+      box("Nombres y apellidos completos", "conyuge_nombres", { span: 2 }),
+      box("Tipo de identificacion", "conyuge_tipo_identificacion"),
+      box("Numero de identificacion", "conyuge_identificacion"),
+      box("Genero", "conyuge_genero"),
+      box("Actividad economica", "conyuge_actividad", { span: 2 }),
+      box("Ingresos promedio mensuales", "conyuge_ingresos")
+    ]))}
+
+    ${section("4", "Actividad economica / ocupacion", grid([
+      box("Nombre de la empresa", "empresa_nombre", { span: 2 }),
+      box("Actividad economica", "empresa_actividad", { span: 2 }),
+      box("Cargo", "empresa_cargo"),
+      box("Pais", "trabajo_pais"),
+      box("Provincia", "trabajo_provincia"),
+      box("Canton", "trabajo_canton"),
+      box("Ciudad", "trabajo_ciudad"),
+      box("Sector", "trabajo_sector"),
+      box("Calle principal", "trabajo_calle_principal"),
+      box("Numero", "trabajo_numero"),
+      box("Transversal", "trabajo_transversal"),
+      box("Telefono empresa", "empresa_telefono"),
+      box("Correo electronico empresa", "empresa_correo", { span: 2 })
+    ]))}
+
+    ${section("5", "Nivel de ingresos y situacion patrimonial", `
+      ${grid([
+        box("Ingresos mensuales", "ingresos_mensuales"),
+        box("Total egresos mensuales", "egresos_mensuales"),
+        box("Total activos", "total_activos"),
+        box("Total pasivos", "total_pasivos"),
+        box("Procedencia de otros ingresos", "otros_ingresos_procedencia", { span: 2 }),
+        box("Valor de otros ingresos", "otros_ingresos_valor"),
+        box("Otros ingresos", "otros_ingresos")
+      ])}
+      ${checkLine([
+        check("Posee ingresos diferentes a la actividad principal", isChecked("otros_ingresos")),
+        check("No posee ingresos diferentes", !isChecked("otros_ingresos"))
+      ])}
+    `)}
+
+    ${section("6", "Datos de terceros que realizan pagos", `
+      <table class="pdf-table">
+        <thead>
+          <tr><th>Dato</th><th>Tercero / Ejecutante 1</th><th>Tercero / Ejecutante 2</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Nombres completos o razon social</td><td>${pick("tercero1_nombres")}</td><td>${pick("tercero2_nombres")}</td></tr>
+          <tr><td>Tipo y numero de identificacion</td><td>${pick("tercero1_tipo_identificacion")} - ${pick("tercero1_identificacion")}</td><td>${pick("tercero2_tipo_identificacion")} - ${pick("tercero2_identificacion")}</td></tr>
+          <tr><td>Nacionalidad / Provincia</td><td>${pick("tercero1_nacionalidad")} - ${pick("tercero1_provincia")}</td><td>${pick("tercero2_nacionalidad")} - ${pick("tercero2_provincia_canton")}</td></tr>
+          <tr><td>Contacto</td><td>${pick("tercero1_celular")} - ${pick("tercero1_correo")} - ${pick("tercero1_telefono")}</td><td>${pick("tercero2_correo")} - ${pick("tercero2_telefono")}</td></tr>
+          <tr><td>Direccion / Relacion</td><td>${pick("tercero1_direccion_empresa")} - ${pick("tercero1_relacion")}</td><td>${pick("tercero2_relacion")}</td></tr>
+          <tr><td>Actividad / Ingresos / Valor pagado</td><td>${pick("tercero1_actividad")} - ${pick("tercero1_ingresos")} - ${pick("tercero1_valor_pagado")}</td><td>${pick("tercero2_actividad")} - ${pick("tercero2_ingresos")} - ${pick("tercero2_valor_pagado")}</td></tr>
+        </tbody>
+      </table>
+    `)}
+
+    ${section("7", "Declaracion de informacion", `
+      <p class="pdf-legal">
+        Declaro expresamente que la informacion entregada a AUTOCOR es verdadera, completa, actualizada y
+        verificable. Me obligo a comunicar de forma inmediata cualquier cambio relevante en mis datos personales,
+        actividad economica, domicilio, patrimonio, origen de fondos, beneficiarios finales o terceros ejecutantes.
+        Reconozco que AUTOCOR podra solicitar aclaraciones, soportes y actualizaciones documentales durante la
+        relacion comercial y antes, durante o despues de la operacion.
+      </p>
+    `)}
+
+    <div class="page-break"></div>
+
+    ${section("8", "Declaracion de origen licito de fondos", `
+      ${grid([
+        box("Los fondos provienen de", "fondos_origen", { span: 2 }),
+        box("Los fondos seran utilizados para", "fondos_destino", { span: 2 }),
+        box("Entrega de fondos", "fondos_entrega"),
+        box("Lugar de nacimiento", "fondos_lugar_nacimiento"),
+        box("Fecha de nacimiento", "fondos_fecha_nacimiento"),
+        box("Operacion / placa", "operacion_placa")
+      ])}
+      <p class="pdf-legal">
+        Conocedor de las penas de perjurio, declaro bajo juramento que los recursos utilizados en esta operacion
+        tienen origen licito y no provienen de actividades relacionadas con lavado de activos, financiamiento de
+        delitos, terrorismo, narcotrafico, corrupcion, contrabando, defraudacion tributaria u otras actividades
+        prohibidas por la legislacion vigente. Autorizo a AUTOCOR a verificar la informacion aqui declarada y a
+        requerir documentos de respaldo cuando lo considere necesario.
+      </p>
+    `)}
+
+    ${section("9", "Persona juridica / beneficiario final", grid([
+      box("Razon social", "juridico_razon_social", { span: 2 }),
+      box("RUC", "juridico_ruc"),
+      box("Representante legal", "juridico_representante"),
+      box("Cargo representante", "juridico_cargo_representante"),
+      box("Actividad economica", "juridico_actividad", { span: 2 }),
+      box("Telefono", "juridico_telefono"),
+      box("Correo", "juridico_correo"),
+      box("Direccion", "juridico_direccion", { span: 2 }),
+      box("Total activos", "juridico_total_activos"),
+      box("Total pasivos", "juridico_total_pasivos"),
+      box("Patrimonio", "juridico_patrimonio"),
+      box("Total ingresos", "juridico_total_ingresos"),
+      box("Total gastos", "juridico_total_gastos"),
+      box("Beneficiario final", "beneficiario_final_nombre"),
+      box("ID beneficiario", "beneficiario_final_identificacion"),
+      box("Nacionalidad beneficiario", "beneficiario_final_nacionalidad"),
+      box("Relacion beneficiario", "beneficiario_final_relacion")
+    ]))}
+
+    ${section("10", "Autorizacion", `
+      <p class="pdf-legal">
+        Autorizo expresa, libre, voluntaria e irrevocablemente a AUTOCOR AUTOEVOLUCION S.A.S. para que realice
+        verificaciones de identidad, antecedentes, licitud de fondos, informacion patrimonial, informacion
+        comercial, informacion publica o privada, riesgos crediticios y listas nacionales o internacionales de
+        control. Esta autorizacion incluye consultas ante instituciones publicas, privadas, centrales de riesgo,
+        proveedores de informacion, organismos de control y fuentes abiertas, cuando corresponda al proceso de
+        debida diligencia.
+      </p>
+      <p class="pdf-legal">
+        Asimismo, autorizo el tratamiento de mis datos personales conforme a la normativa vigente de proteccion de
+        datos personales para fines de identificacion, validacion, control, gestion contractual, prevencion de
+        riesgos, cumplimiento normativo, archivo, auditoria, cobranza, promocion, comunicacion y trazabilidad de
+        la relacion comercial con AUTOCOR.
+      </p>
+    `)}
+
+    ${section("11", "Firma del cliente", grid([
+      box("Nombre del cliente", "firma_cliente_nombre", { span: 2, fallback: uafeData.cliente_nombres }),
+      box("Documento de identificacion", "firma_cliente_documento", { fallback: uafeData.cliente_identificacion }),
+      box("Ciudad", "firma_cliente_ciudad"),
+      box("Fecha", "firma_cliente_fecha")
+    ]))}
+    <p class="pdf-note">
+      La firma del cliente debe coincidir con la registrada en su documento de identificacion. La suscripcion de
+      este formulario confirma la lectura, aceptacion y veracidad de la informacion declarada.
+    </p>
+
+    ${section("12", "Responsable que recibe la informacion", grid([
+      box("Nombres completos", "receptor_nombres"),
+      box("Cargo", "receptor_cargo"),
+      box("Documento de identificacion", "receptor_identificacion"),
+      box("Ciudad", "receptor_ciudad"),
+      box("Fecha", "receptor_fecha", { span: 2 }),
+      box("Firma", "receptor_firma", { span: 2 })
+    ]))}
+
+    ${section("13", "Documentacion que debe adjuntarse", `
+      ${checkLine([
+        check("Copia documento cliente", isChecked("doc_identificacion_cliente")),
+        check("Copia documento conyuge", isChecked("doc_identificacion_conyuge")),
+        check("Servicio de agua", isChecked("doc_servicio_agua")),
+        check("Servicio de luz", isChecked("doc_servicio_luz")),
+        check("Servicio de telefono", isChecked("doc_servicio_telefono")),
+        check("Servicio basico maximo 3 meses", isChecked("doc_servicio_vigente"))
+      ])}
+      <p class="pdf-note">
+        El servicio basico debe tener maximo 3 meses de antiguedad y debe constar la direccion del domicilio
+        declarado por el cliente.
+      </p>
+    `)}
+
+    ${section("14", "Uso exclusivo de AUTOCOR", `
+      ${grid([
+        box("Responsable verificador", "verificador_nombre"),
+        box("Identificacion", "verificador_identificacion"),
+        box("Fecha de verificacion", "verificador_fecha"),
+        box("Oficial de cumplimiento", "oficial_cumplimiento")
+      ])}
+      ${checkLine([
+        check("Registro Civil", isChecked("verificacion_registro_civil")),
+        check("SRI", isChecked("verificacion_sri")),
+        check("UAFE", isChecked("verificacion_uafe")),
+        check("Funcion Judicial", isChecked("verificacion_funcion_judicial")),
+        check("ONU", isChecked("verificacion_onu")),
+        check("OFAC", isChecked("verificacion_ofac")),
+        check("Otras fuentes", isChecked("verificacion_otras"))
+      ])}
+      <p class="pdf-note">
+        Uso interno: el responsable certifica haber revisado la informacion y deja constancia de las fuentes
+        consultadas para fines de control, cumplimiento y trazabilidad operativa.
+      </p>
+    `)}
+
+    ${section("Operacion vinculada", grid([
+      box("Placa", "operacion_placa", { fallback: contractData.placa }),
+      box("Agencia", "operacion_agencia", { fallback: contractData.agencia }),
+      box("Valor de contrato", "operacion_valor", { fallback: contractData.precioContrato }),
+      box("Vendedor", "operacion_vendedor", { fallback: contractData.vendedor })
+    ]))}
+
+    <div class="signature">
+      <div class="line">El cliente<small>${pick("cliente_nombres")}</small></div>
+      <div class="line">Responsable Autocor<small>${pick("receptor_nombres")}</small></div>
+      <div class="line">Oficial / Verificador<small>${pick("oficial_cumplimiento")}</small></div>
+    </div>
+  </main>
 </body>
 </html>`;
 }
