@@ -6201,6 +6201,61 @@ function focusCommercialUafeField(name = "") {
   field.scrollIntoView?.({ behavior: "smooth", block: "center" });
 }
 
+function focusSaleContractField(name = "") {
+  const field = saleContractForm?.elements?.[name];
+  if (!field) return;
+  field.focus?.();
+  field.scrollIntoView?.({ behavior: "smooth", block: "center" });
+}
+
+function validateSaleContractData(data = {}) {
+  const missing = [];
+  const valueOf = (key) => String(data?.[key] ?? "").trim();
+  const fields = getFormFields("venta").filter((field) => field.visible !== false);
+
+  fields.forEach((field) => {
+    const key = field.isBase ? field.name : `custom__${field.id}`;
+    if (field.required && !valueOf(key)) {
+      missing.push({ key, label: field.label || key });
+    }
+  });
+
+  if (missing.length) {
+    return {
+      ok: false,
+      key: missing[0].key,
+      message: `Complete los campos obligatorios del contrato: ${missing.slice(0, 5).map((item) => item.label).join(", ")}${missing.length > 5 ? "..." : ""}.`
+    };
+  }
+
+  const plate = normalizePlate(data.placa || "");
+  if (fields.some((field) => field.name === "placa" && field.visible !== false) && plate.length < 5) {
+    return { ok: false, key: "placa", message: "Ingrese una placa valida para el contrato." };
+  }
+
+  const amountRaw = valueOf("precioContrato");
+  if (amountRaw && Number(amountRaw) <= 0) {
+    return { ok: false, key: "precioContrato", message: "El precio de contrato debe ser mayor a cero." };
+  }
+
+  const sellerId = normalizeId(data.cedulaVendedor || "");
+  if (valueOf("cedulaVendedor") && ![10, 13].includes(sellerId.length)) {
+    return { ok: false, key: "cedulaVendedor", message: "La cedula/RUC del vendedor debe tener 10 o 13 digitos." };
+  }
+
+  const phoneDigits = normalizeId(data.telefono || "");
+  if (valueOf("telefono") && phoneDigits.length < 7) {
+    return { ok: false, key: "telefono", message: "Ingrese un telefono valido para el vendedor." };
+  }
+
+  const email = valueOf("correo");
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, key: "correo", message: "Ingrese un correo valido para el vendedor." };
+  }
+
+  return { ok: true };
+}
+
 function validateCommercialUafeData(data = {}) {
   const missing = [];
   const valueOf = (key) => String(data[key] || "").trim();
@@ -6807,6 +6862,17 @@ async function submitCommercialUafeForm(event) {
     setCommercialUafeStatus("Primero complete el formulario de contrato.", true);
     return;
   }
+  if (!task && !activeUafeClientMode) {
+    const contractValidation = validateSaleContractData(contractData);
+    if (!contractValidation.ok) {
+      setCommercialUafeStatus(contractValidation.message, true);
+      showToast(contractValidation.message, "error");
+      closeCommercialModals();
+      setCommercialProcessFromTarget("commercial-sale-process");
+      window.setTimeout(() => focusSaleContractField(contractValidation.key), 120);
+      return;
+    }
+  }
   const validation = validateCommercialUafeData(uafeData);
   if (!validation.ok) {
     setCommercialUafeStatus(validation.message, true);
@@ -6859,8 +6925,9 @@ async function submitCommercialUafeForm(event) {
       showToast("Formulario UAFE actualizado.");
     } else {
       const createdTask = await createSaleContractTask(contractData, payload);
+      if (!createdTask) return;
       const request = clientRequest || getUafeClientRequestByDraft(payload.draftId);
-      if (request && createdTask) {
+      if (request) {
         request.uafe = payload;
         request.status = "enviado_mesa";
         request.taskId = createdTask.id;
@@ -6966,6 +7033,12 @@ async function openUafeClientRequestFromUrl() {
 }
 
 async function createSaleContractTask(data, uafePayload = null) {
+  const validation = validateSaleContractData(data);
+  if (!validation.ok) {
+    showToast(validation.message, "error");
+    focusSaleContractField(validation.key);
+    return null;
+  }
   const createdAt = new Date().toISOString();
   const commercialOwner = session.role === "commercial"
     ? { id: session.userId, name: session.name, agency: session.agency }
@@ -16958,6 +17031,12 @@ function openSaleContractUafeFromForm() {
   if (!saleContractForm) return false;
   if (saleContractForm.reportValidity && !saleContractForm.reportValidity()) return false;
   const data = Object.fromEntries(new FormData(saleContractForm).entries());
+  const validation = validateSaleContractData(data);
+  if (!validation.ok) {
+    showToast(validation.message, "error");
+    focusSaleContractField(validation.key);
+    return false;
+  }
   const submitButton = saleContractForm.querySelector("button[type='submit']");
   if (submitButton) {
     submitButton.disabled = true;
