@@ -419,6 +419,7 @@ const defaultState = {
   },
   taskDeletions: [],
   legalChatMessages: [],
+  uafeClientRequests: [],
   tasks: []
 };
 
@@ -841,6 +842,7 @@ function loadState() {
     applyAnnouncementDeletions(merged);
     merged.forceLogoutRequests = (merged.forceLogoutRequests || []).map(normalizeForceLogoutRequest);
     merged.legalChatMessages = normalizeLegalChatMessages(merged.legalChatMessages || []);
+    merged.uafeClientRequests = (merged.uafeClientRequests || []).map(normalizeUafeClientRequest);
     merged.theme = { ...structuredClone(defaultState.theme), ...(merged.theme || {}) };
     merged.copy = { ...structuredClone(defaultState.copy), ...(merged.copy || {}) };
     merged.legalContractTemplates = normalizeLegalContractTemplates(merged.legalContractTemplates);
@@ -1850,6 +1852,7 @@ function mergePcStates(baseState, extraState) {
   applyAnnouncementDeletions(merged);
   merged.forceLogoutRequests = mergeByKey(merged.forceLogoutRequests || [], extraState.forceLogoutRequests || [], "id").map(normalizeForceLogoutRequest);
   merged.legalChatMessages = mergeLegalChatMessages(merged.legalChatMessages || [], extraState.legalChatMessages || []);
+  merged.uafeClientRequests = mergeByKey(merged.uafeClientRequests || [], extraState.uafeClientRequests || [], "id").map(normalizeUafeClientRequest);
   merged.commercialAdvisors = mergeByKey(merged.commercialAdvisors || [], extraState.commercialAdvisors || [], "id");
   merged.legalUsers = normalizeLegalUsers(mergeByKey(merged.legalUsers || [], extraState.legalUsers || [], "id"));
   merged.managerUsers = mergeByKey(merged.managerUsers || [], extraState.managerUsers || [], "id");
@@ -2887,11 +2890,13 @@ function normalizeImportedState(importedState) {
   importedState.dataProcessing = parseMaybeJson(importedState.dataProcessing) || importedState.dataProcessing;
   importedState.statusOptions = parseMaybeJson(importedState.statusOptions) || importedState.statusOptions;
   importedState.tasks = parseMaybeJson(importedState.tasks) || importedState.tasks;
+  importedState.uafeClientRequests = parseMaybeJson(importedState.uafeClientRequests) || importedState.uafeClientRequests;
   if (!isPlainObject(importedState.copy)) importedState.copy = {};
   if (!isPlainObject(importedState.theme)) importedState.theme = {};
   if (!isPlainObject(importedState.dataProcessing)) importedState.dataProcessing = {};
   if (!Array.isArray(importedState.statusOptions)) importedState.statusOptions = [];
   if (!Array.isArray(importedState.tasks)) importedState.tasks = [];
+  if (!Array.isArray(importedState.uafeClientRequests)) importedState.uafeClientRequests = [];
   const merged = { ...structuredClone(defaultState), ...importedState };
   merged.commercialAdvisors = normalizeCommercialAdvisors(merged.commercialAdvisors || []);
   merged.legalUsers = normalizeLegalUsers(merged.legalUsers || []);
@@ -2902,6 +2907,7 @@ function normalizeImportedState(importedState) {
   applyAnnouncementDeletions(merged);
   merged.forceLogoutRequests = (merged.forceLogoutRequests || []).map(normalizeForceLogoutRequest);
   merged.legalChatMessages = normalizeLegalChatMessages(merged.legalChatMessages || []);
+  merged.uafeClientRequests = (merged.uafeClientRequests || []).map(normalizeUafeClientRequest);
   merged.theme = { ...structuredClone(defaultState.theme), ...(merged.theme || {}) };
   merged.copy = { ...structuredClone(defaultState.copy), ...(merged.copy || {}) };
   sanitizeStateVisuals(merged);
@@ -2996,6 +3002,28 @@ function parseMaybeJson(value) {
 
 function isPlainObject(value) {
   return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function normalizeUafeClientRequest(item = {}) {
+  const rawToken = String(item.token || item.id || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`));
+  const token = rawToken.replace(/[^a-zA-Z0-9_-]/g, "") || String(Date.now());
+  const id = item.id || `uafe-client-${token}`;
+  const contractData = isPlainObject(item.contractData) ? item.contractData : {};
+  const uafe = isPlainObject(item.uafe) ? item.uafe : null;
+  return {
+    id,
+    token,
+    status: item.status || (uafe ? "completo" : "pendiente"),
+    createdAt: item.createdAt || new Date().toISOString(),
+    updatedAt: item.updatedAt || item.createdAt || new Date().toISOString(),
+    completedAt: item.completedAt || "",
+    advisorId: item.advisorId || item.commercialUserId || "",
+    advisorName: normalizeLooseText(item.advisorName || item.commercialUserName || ""),
+    advisorAgency: normalizeLooseText(item.advisorAgency || item.commercialAgency || ""),
+    contractData,
+    uafe,
+    taskId: item.taskId || ""
+  };
 }
 
 function replaceState(nextState) {
@@ -5761,13 +5789,19 @@ async function createTask(data) {
 }
 
 let pendingSaleContractData = null;
+let activeUafeClientRequestId = "";
+let activeUafeClientMode = false;
 
 function getUafeDraftKey(draftId = "") {
   return `autocor-uafe-draft-${draftId || "actual"}`;
 }
 
 function getSaleContractDraftId(data = {}) {
-  return data.draftId || `uafe-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+  if (data.draftId) return data.draftId;
+  const plate = normalizePlate(data.placa || "");
+  const id = normalizeId(data.cedulaVendedor || data.cedula || "");
+  if (plate || id) return `uafe-${plate || "sinplaca"}-${id || "sinid"}`;
+  return `uafe-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
 function getTodayInputValue() {
@@ -5788,6 +5822,64 @@ function getSaleContractDataFromTask(task = {}) {
   };
 }
 
+function getUafeClientRequestByToken(token = "") {
+  const cleanToken = String(token || "").trim();
+  return (state.uafeClientRequests || []).find((item) => item.token === cleanToken) || null;
+}
+
+function getUafeClientRequestByDraft(draftId = "") {
+  const cleanDraft = String(draftId || "").trim();
+  if (!cleanDraft) return null;
+  return (state.uafeClientRequests || []).find((item) =>
+    String(item.contractData?.draftId || item.uafe?.draftId || "") === cleanDraft
+  ) || null;
+}
+
+function buildUafeClientUrl(token = "") {
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.hash = "";
+  url.searchParams.set("uafe", token);
+  return url.toString();
+}
+
+async function saveFullStateNow(user = "") {
+  const snapshot = structuredClone(state);
+  snapshot.schemaVersion = STATE_SCHEMA_VERSION;
+  persistAccessUsers(snapshot);
+  return guardarRegistroSupabase("sistema", "estado_completo", snapshot, user || session?.name || session?.role || "sistema");
+}
+
+function createOrUpdateUafeClientRequest(contractData = {}) {
+  const draftId = contractData.draftId || getSaleContractDraftId(contractData);
+  const existing = getUafeClientRequestByDraft(draftId);
+  const now = new Date().toISOString();
+  const token = existing?.token || (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, "") : `${Date.now()}${Math.random().toString(36).slice(2)}`);
+  const request = normalizeUafeClientRequest({
+    ...(existing || {}),
+    id: existing?.id || `uafe-client-${token}`,
+    token,
+    status: existing?.status || "pendiente",
+    createdAt: existing?.createdAt || now,
+    updatedAt: now,
+    advisorId: session.userId || existing?.advisorId || "",
+    advisorName: session.name || existing?.advisorName || "",
+    advisorAgency: session.agency || contractData.agencia || existing?.advisorAgency || "",
+    contractData: { ...contractData, draftId },
+    uafe: existing?.uafe || null,
+    taskId: existing?.taskId || ""
+  });
+  if (!Array.isArray(state.uafeClientRequests)) state.uafeClientRequests = [];
+  const index = state.uafeClientRequests.findIndex((item) => item.id === request.id);
+  if (index >= 0) {
+    state.uafeClientRequests[index] = request;
+  } else {
+    state.uafeClientRequests.push(request);
+  }
+  saveState();
+  return request;
+}
+
 function getUafeDefaultData(contractData = {}, task = null) {
   const storedDraftId = contractData.draftId || task?.uafe?.draftId || "";
   let storedData = {};
@@ -5797,6 +5889,10 @@ function getUafeDefaultData(contractData = {}, task = null) {
     }
   } catch (error) {
     storedData = {};
+  }
+  const clientRequest = getUafeClientRequestByDraft(storedDraftId);
+  if (clientRequest?.uafe?.data) {
+    storedData = { ...storedData, ...clientRequest.uafe.data };
   }
   return {
     cliente_tipo: "Natural",
@@ -5941,6 +6037,13 @@ function setCommercialUafeStatus(message = "", isError = false) {
   commercialUafeStatus.hidden = !message;
   commercialUafeStatus.textContent = message;
   commercialUafeStatus.classList.toggle("is-error", Boolean(isError));
+}
+
+function setUafeClientFormLocked(locked = false) {
+  if (!commercialUafeForm) return;
+  commercialUafeForm.querySelectorAll("input, select, textarea, button[type='submit']").forEach((field) => {
+    field.disabled = Boolean(locked);
+  });
 }
 
 function fillCommercialUafeForm(data = {}) {
@@ -6622,19 +6725,27 @@ function openCommercialUafeModal(contractData = null, taskId = "") {
     showToast("No se encontro la pantalla UAFE. Actualice la pagina con Ctrl+F5 e intente nuevamente.", "error");
     return false;
   }
+  activeUafeClientMode = false;
+  activeUafeClientRequestId = "";
+  setUafeClientFormLocked(false);
   const task = taskId ? state.tasks.find((item) => String(item.id) === String(taskId)) : null;
   const baseContractData = task ? getSaleContractDataFromTask(task) : { ...contractData, draftId: getSaleContractDraftId(contractData || {}) };
+  const clientRequest = getUafeClientRequestByDraft(baseContractData.draftId);
   pendingSaleContractData = baseContractData;
   commercialUafeForm.reset();
   const defaults = getUafeDefaultData(baseContractData, task);
   fillCommercialUafeForm({
     ...defaults,
     taskId: task?.id || "",
-    draftId: baseContractData.draftId
+    draftId: baseContractData.draftId,
+    clientRequestId: clientRequest?.id || ""
   });
   const submitButton = commercialUafeForm.querySelector("button[type='submit']");
   if (submitButton) submitButton.textContent = task ? "Guardar cambios UAFE" : "Enviar solicitud a mesa";
-  setCommercialUafeStatus(task ? "Formulario UAFE listo para editar por el asesor comercial." : "Complete el formulario UAFE antes de enviar el contrato a Mesa de Control.");
+  const statusMessage = clientRequest?.uafe?.data
+    ? "El cliente ya completo el formulario UAFE. Revise, edite si hace falta y envie la solicitud a Mesa de Control."
+    : (task ? "Formulario UAFE listo para editar por el asesor comercial." : "Complete el formulario UAFE antes de enviar el contrato a Mesa de Control.");
+  setCommercialUafeStatus(statusMessage);
   openCommercialModal(commercialUafeModal);
   return true;
 }
@@ -6644,8 +6755,12 @@ async function submitCommercialUafeForm(event) {
   if (!commercialUafeForm) return;
   const uafeData = getCommercialUafeFormData();
   const taskId = uafeData.taskId || "";
+  const clientRequestId = uafeData.clientRequestId || activeUafeClientRequestId || "";
   const task = taskId ? state.tasks.find((item) => String(item.id) === String(taskId)) : null;
-  const contractData = task ? getSaleContractDataFromTask(task) : pendingSaleContractData;
+  const clientRequest = clientRequestId
+    ? (state.uafeClientRequests || []).find((item) => item.id === clientRequestId)
+    : getUafeClientRequestByDraft(uafeData.draftId || "");
+  const contractData = task ? getSaleContractDataFromTask(task) : (pendingSaleContractData || clientRequest?.contractData);
   if (!contractData) {
     setCommercialUafeStatus("Primero complete el formulario de contrato.", true);
     return;
@@ -6660,44 +6775,141 @@ async function submitCommercialUafeForm(event) {
   const submitButton = commercialUafeForm.querySelector("button[type='submit']");
   if (submitButton) {
     submitButton.disabled = true;
-    submitButton.textContent = task ? "Guardando..." : "Enviando...";
+    submitButton.textContent = activeUafeClientMode ? "Enviando..." : (task ? "Guardando..." : "Enviando...");
   }
+  let clientSubmissionCompleted = false;
   try {
-    const payload = buildUafePayload(uafeData, contractData, task?.uafe || null);
-    if (task) {
+    const payload = buildUafePayload(uafeData, contractData, task?.uafe || clientRequest?.uafe || null);
+    if (activeUafeClientMode) {
+      const request = clientRequest || getUafeClientRequestByDraft(payload.draftId);
+      if (!request) {
+        setCommercialUafeStatus("No se encontro la solicitud UAFE. Pida al asesor que genere un nuevo enlace.", true);
+        return;
+      }
+      request.uafe = payload;
+      request.status = "completo";
+      request.completedAt = request.completedAt || new Date().toISOString();
+      request.updatedAt = new Date().toISOString();
+      saveState();
+      await saveFullStateNow("cliente-uafe");
+      setCommercialUafeStatus("Formulario enviado correctamente. Ya puede cerrar esta ventana.");
+      setUafeClientFormLocked(true);
+      clientSubmissionCompleted = true;
+      showToast("Formulario UAFE recibido.");
+    } else if (task) {
       task.uafe = payload;
       task.uafeStatus = "completo";
       task.updatedAt = new Date().toISOString();
       task.syncStatus = "pending";
+      const request = getUafeClientRequestByDraft(payload.draftId);
+      if (request) {
+        request.uafe = payload;
+        request.status = "enviado_mesa";
+        request.taskId = task.id;
+        request.updatedAt = new Date().toISOString();
+      }
       saveState();
       renderAll();
       await guardarTareaSupabase(task, "editar-uafe-venta");
+      await saveFullStateNow("editar-uafe-venta");
       saveState();
       renderAll();
       showToast("Formulario UAFE actualizado.");
     } else {
-      await createSaleContractTask(contractData, payload);
+      const createdTask = await createSaleContractTask(contractData, payload);
+      const request = clientRequest || getUafeClientRequestByDraft(payload.draftId);
+      if (request && createdTask) {
+        request.uafe = payload;
+        request.status = "enviado_mesa";
+        request.taskId = createdTask.id;
+        request.updatedAt = new Date().toISOString();
+        saveState();
+        await saveFullStateNow("venta-uafe-enviada");
+      }
       saleContractForm?.reset();
       setCommercialArea("tracking", { keepTrackingFilters: true });
     }
     try {
       localStorage.removeItem(getUafeDraftKey(payload.draftId));
     } catch (error) {}
-    closeCommercialModals();
+    if (!activeUafeClientMode) closeCommercialModals();
   } finally {
     if (submitButton) {
-      submitButton.disabled = false;
-      submitButton.textContent = task ? "Guardar cambios UAFE" : "Enviar solicitud a mesa";
+      submitButton.disabled = Boolean(activeUafeClientMode && clientSubmissionCompleted);
+      submitButton.textContent = activeUafeClientMode ? "Enviar formulario a Autocor" : (task ? "Guardar cambios UAFE" : "Enviar solicitud a mesa");
     }
   }
 }
 
-function copyUafeWhatsappMessage() {
+async function copyUafeWhatsappMessage() {
   const data = getCommercialUafeFormData();
-  const message = `Hola ${data.cliente_nombres || pendingSaleContractData?.vendedor || ""}, por favor complete el Formulario Conozca a su Cliente UAFE para la placa ${data.operacion_placa || pendingSaleContractData?.placa || ""}. Cuando lo tenga listo, responda este mensaje para que el asesor lo registre en la plataforma.`;
+  if (!pendingSaleContractData) {
+    setCommercialUafeStatus("Primero abra el formulario desde el contrato de venta.", true);
+    return;
+  }
+  const request = createOrUpdateUafeClientRequest(pendingSaleContractData);
+  try {
+    await saveFullStateNow("enlace-uafe-cliente");
+  } catch (error) {
+    console.warn("No se pudo guardar el enlace UAFE del cliente:", error);
+    setCommercialUafeStatus("No se pudo guardar el enlace en linea. Revise la conexion e intente nuevamente.", true);
+    return;
+  }
+  const link = buildUafeClientUrl(request.token);
+  const message = `Hola ${data.cliente_nombres || pendingSaleContractData?.vendedor || ""}, por favor complete el Formulario Conozca a su Cliente UAFE para la placa ${data.operacion_placa || pendingSaleContractData?.placa || ""} en este enlace: ${link}`;
   navigator.clipboard?.writeText(message)
-    .then(() => setCommercialUafeStatus("Mensaje para WhatsApp copiado. El asesor podra enviarlo al cliente."))
+    .then(() => setCommercialUafeStatus("Enlace para WhatsApp copiado. Cuando el cliente lo complete, aqui apareceran sus datos para revisar y enviar a Mesa de Control."))
     .catch(() => setCommercialUafeStatus("No se pudo copiar automaticamente. Copie el mensaje manualmente.", true));
+}
+
+async function openUafeClientRequestFromUrl() {
+  const token = new URLSearchParams(window.location.search).get("uafe");
+  if (!token || !commercialUafeModal || !commercialUafeForm) return false;
+  activeUafeClientMode = true;
+  document.body.classList.add("uafe-client-mode");
+  setCommercialUafeStatus("Cargando formulario UAFE...");
+  try {
+    const remoteState = await leerUltimoEstadoSupabase();
+    if (remoteState) {
+      const normalizedRemote = normalizeImportedState(remoteState);
+      const merged = mergePcStates(normalizedRemote, state);
+      Object.assign(state, merged);
+      saveState();
+    }
+  } catch (error) {
+    console.warn("No se pudo refrescar el formulario UAFE del cliente:", error);
+  }
+  const request = getUafeClientRequestByToken(token);
+  if (!request) {
+    commercialUafeForm.reset();
+    setUafeClientFormLocked(true);
+    setCommercialUafeStatus("No se encontro este formulario UAFE. Solicite un nuevo enlace al asesor comercial.", true);
+    openCommercialModal(commercialUafeModal);
+    return false;
+  }
+  activeUafeClientRequestId = request.id;
+  pendingSaleContractData = request.contractData || {};
+  commercialUafeForm.reset();
+  const defaults = getUafeDefaultData(request.contractData || {});
+  fillCommercialUafeForm({
+    ...defaults,
+    ...(request.uafe?.data || {}),
+    taskId: "",
+    draftId: request.contractData?.draftId || request.uafe?.draftId || request.id,
+    clientRequestId: request.id
+  });
+  const alreadyCompleted = request.status === "completo" || Boolean(request.uafe?.data);
+  const submitButton = commercialUafeForm.querySelector("button[type='submit']");
+  if (submitButton) {
+    submitButton.disabled = alreadyCompleted;
+    submitButton.textContent = "Enviar formulario a Autocor";
+  }
+  setUafeClientFormLocked(alreadyCompleted);
+  setCommercialUafeStatus(alreadyCompleted
+    ? "Este formulario ya fue enviado. Si necesita corregir informacion, contacte a su asesor comercial."
+    : "Complete el formulario. Sus datos quedaran conectados con el asesor comercial.");
+  openCommercialModal(commercialUafeModal);
+  return true;
 }
 
 async function createSaleContractTask(data, uafePayload = null) {
@@ -6754,6 +6966,7 @@ async function createSaleContractTask(data, uafePayload = null) {
     ? "Contrato enviado a mesa de control con estatus Por asignar."
     : "Contrato guardado en este equipo. Quedo pendiente de sincronizar con Supabase."
   );
+  return task;
 }
 
 function getDuplicateWarnings(data, excludeId = "") {
@@ -17550,6 +17763,7 @@ restoreStateFromInternalBackupIfNeeded();
 restoreStateFromSupabaseIfNeeded();
 restoreBrandingFromSupabaseIfNeeded();
 if (canSyncCurrentView()) restoreModulesFromSupabaseIfNeeded();
+openUafeClientRequestFromUrl();
 if (session.role !== "public") reconcileTasksForCurrentBuild();
 if (session.role !== "public") runInitialRemoteSyncAfterLogin("sesion-restaurada");
 startSupabaseModulePolling();
