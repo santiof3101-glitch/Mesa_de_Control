@@ -1934,6 +1934,184 @@
     </section>
   </div>
 
+  <div id="commercialUafeModal" class="commercial-modal" hidden>
+    <div class="commercial-modal-backdrop" data-close-commercial-modal></div>
+    <section class="commercial-modal-card commercial-uafe-card" role="dialog" aria-modal="true" aria-labelledby="commercialUafeTitle">
+      <div class="modal-title-row">
+        <div>
+          <p class="eyebrow">Formulario UAFE</p>
+          <h2 id="commercialUafeTitle">Formulario Conozca a su Cliente</h2>
+          <span class="commercial-modal-subtitle">Completa la debida diligencia del contrato antes de enviar la solicitud a Mesa de Control.</span>
+        </div>
+        <button class="commercial-modal-close" type="button" data-close-commercial-modal aria-label="Cerrar">x</button>
+      </div>
+      <form id="commercialUafeForm" class="commercial-uafe-form">
+        <input type="hidden" name="taskId">
+        <input type="hidden" name="draftId">
+
+        <section class="uafe-section">
+          <div class="uafe-section-title">
+            <span>1</span>
+            <div>
+              <strong>Datos del cliente</strong>
+              <small>Informacion principal para debida diligencia.</small>
+            </div>
+          </div>
+          <div class="uafe-grid">
+            <label>
+              Tipo de cliente
+              <select name="cliente_tipo" required>
+                <option value="Natural">Natural</option>
+                <option value="Juridica">Juridica</option>
+              </select>
+            </label>
+            <label>
+              Nombres / razon social
+              <input name="cliente_nombres" required>
+            </label>
+            <label>
+              Tipo de identificacion
+              <select name="cliente_tipo_identificacion" required>
+                <option value="Cedula">Cedula</option>
+                <option value="RUC">RUC</option>
+                <option value="Pasaporte">Pasaporte</option>
+              </select>
+            </label>
+            <label>
+              Identificacion
+              <input name="cliente_identificacion" required>
+            </label>
+            <label>
+              Nacionalidad
+              <input name="cliente_nacionalidad" value="Ecuatoriana">
+            </label>
+            <label>
+              Estado civil
+              <select name="cliente_estado_civil">
+                <option value="">Seleccione una opcion</option>
+                <option>Soltero/a</option>
+                <option>Casado/a</option>
+                <option>Divorciado/a</option>
+                <option>Viudo/a</option>
+                <option>Union de hecho</option>
+              </select>
+            </label>
+            <label class="span-2">
+              Direccion
+              <input name="cliente_direccion">
+            </label>
+            <label>
+              WhatsApp / telefono
+              <input name="cliente_celular" inputmode="tel">
+            </label>
+            <label>
+              Correo electronico
+              <input name="cliente_correo" type="email">
+            </label>
+            <label>
+              Ocupacion / actividad economica
+              <input name="cliente_actividad">
+            </label>
+            <label>
+              Origen de fondos
+              <select name="fondos_origen">
+                <option value="">Seleccione una opcion</option>
+                <option>Ahorros</option>
+                <option>Venta de bien</option>
+                <option>Credito</option>
+                <option>Actividad comercial</option>
+                <option>Relacion de dependencia</option>
+                <option>Otros</option>
+              </select>
+            </label>
+            <label>
+              Persona expuesta politicamente
+              <select name="pep">
+                <option>No</option>
+                <option>Si</option>
+              </select>
+            </label>
+            <label>
+              Persona obligada
+              <select name="persona_obligada">
+                <option>No</option>
+                <option>Si</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="uafe-section">
+          <div class="uafe-section-title">
+            <span>2</span>
+            <div>
+              <strong>Operacion vinculada</strong>
+              <small>Datos tomados del contrato de compraventa.</small>
+            </div>
+          </div>
+          <div class="uafe-grid">
+            <label>
+              Placa
+              <input name="operacion_placa" readonly>
+            </label>
+            <label>
+              Agencia
+              <input name="operacion_agencia" readonly>
+            </label>
+            <label>
+              Valor de contrato
+              <input name="operacion_valor" readonly>
+            </label>
+            <label>
+              Vendedor
+              <input name="operacion_vendedor" readonly>
+            </label>
+          </div>
+        </section>
+
+        <section class="uafe-section">
+          <div class="uafe-section-title">
+            <span>12</span>
+            <div>
+              <strong>Responsable que recepta la informacion</strong>
+              <small>El asesor comercial se carga automaticamente desde el perfil.</small>
+            </div>
+          </div>
+          <div class="uafe-grid">
+            <label>
+              Nombres del responsable
+              <input name="receptor_nombres" readonly>
+            </label>
+            <label>
+              Cargo
+              <input name="receptor_cargo" value="Asesor comercial">
+            </label>
+            <label>
+              Identificacion
+              <input name="receptor_identificacion">
+            </label>
+            <label>
+              Ciudad
+              <input name="receptor_ciudad">
+            </label>
+            <label>
+              Fecha
+              <input name="receptor_fecha" type="date">
+            </label>
+          </div>
+        </section>
+
+        <div id="commercialUafeStatus" class="uafe-status" hidden></div>
+        <div class="commercial-modal-actions">
+          <button class="btn secondary" type="button" data-uafe-whatsapp>Copiar mensaje WhatsApp</button>
+          <button class="btn secondary" type="button" data-uafe-pdf-preview>Vista PDF</button>
+          <button class="btn secondary" type="button" data-close-commercial-modal>Cancelar</button>
+          <button class="btn primary" type="submit">Enviar solicitud a mesa</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
   <div id="commercialNotificationsModal" class="commercial-modal" hidden>
     <div class="commercial-modal-backdrop" data-close-commercial-modal></div>
     <section class="commercial-modal-card commercial-notifications-card" role="dialog" aria-modal="true" aria-labelledby="commercialNotificationsTitle">

@@ -652,6 +652,9 @@ const supportWhatsappLink = document.querySelector("#supportWhatsappLink");
 const commercialConstructionModal = document.querySelector("#commercialConstructionModal");
 const commercialLeadModal = document.querySelector("#commercialLeadModal");
 const commercialLeadFichaContent = document.querySelector("#commercialLeadFichaContent");
+const commercialUafeModal = document.querySelector("#commercialUafeModal");
+const commercialUafeForm = document.querySelector("#commercialUafeForm");
+const commercialUafeStatus = document.querySelector("#commercialUafeStatus");
 const commercialNotificationsModal = document.querySelector("#commercialNotificationsModal");
 const commercialNotificationsContent = document.querySelector("#commercialNotificationsContent");
 const commercialSidebarModal = document.querySelector("#commercialSidebarModal");
@@ -2264,6 +2267,8 @@ function normalizeTask(task) {
     signatureRequestTaskId: task.signatureRequestTaskId || "",
     signaturePilotTaskId: task.signaturePilotTaskId || "",
     signaturePayload: task.signaturePayload || null,
+    uafe: task.uafe || null,
+    uafeStatus: task.uafeStatus || (task.uafe ? "completo" : ""),
     fechaSolicitud: task.fechaSolicitud || "",
     cuvOrderNumber: task.cuvOrderNumber || "",
     cuvStatus: task.cuvStatus || (processType === "cuv" ? "SOLICITADO" : ""),
@@ -3208,7 +3213,7 @@ function openCommercialModal(modal) {
 }
 
 function closeCommercialModals() {
-  [commercialConstructionModal, commercialLeadModal, commercialNotificationsModal, commercialSidebarModal, commercialPilotModal, commercialDuplicateModal, commercialSignatureModal, commercialPasswordModal].forEach((modal) => {
+  [commercialConstructionModal, commercialLeadModal, commercialUafeModal, commercialNotificationsModal, commercialSidebarModal, commercialPilotModal, commercialDuplicateModal, commercialSignatureModal, commercialPasswordModal].forEach((modal) => {
     if (modal) modal.hidden = true;
   });
   document.querySelector("#commercialNotificationBell")?.setAttribute("aria-expanded", "false");
@@ -3333,6 +3338,10 @@ function openCommercialLeadFicha(taskId) {
     ["Kilometraje", task.kilometraje],
     ["Tipo de compra", task.tipoCompra],
     ["Tipo de saneamiento", task.tipoSaneamiento],
+    ...(task.processType === "venta" ? [
+      ["Formulario UAFE", task.uafe ? "Completo" : "Pendiente"],
+      ["Responsable UAFE", task.uafe?.data?.receptor_nombres || ""]
+    ] : []),
     ["Estatus", task.status],
     ["Firma / Pilot", getSignatureDisplayStatus(task)],
     ["Asesor legal", task.legalAdvisor],
@@ -3370,6 +3379,8 @@ function openCommercialLeadFicha(taskId) {
     ${renderLegalObservationList(task)}
     <div class="lead-ficha-actions span-2">
       ${isCuv && task.cuvPdfDataUrl ? `<button class="btn primary" type="button" data-pdf-download="${escapeHtml(task.id)}">Descargar PDF CUV</button>` : ""}
+      ${task.processType === "venta" && task.commercialUserId === session.userId ? `<button class="btn secondary" type="button" data-edit-uafe-task="${escapeHtml(task.id)}">${task.uafe ? "Editar UAFE" : "Crear UAFE"}</button>` : ""}
+      ${task.processType === "venta" && task.uafe?.pdfHtml ? `<button class="btn primary" type="button" data-uafe-pdf="${escapeHtml(task.id)}">Ver PDF UAFE</button>` : ""}
       ${buildSignatureActionButtons(task)}
     </div>
   `;
@@ -5749,7 +5760,291 @@ async function createTask(data) {
   );
 }
 
-async function createSaleContractTask(data) {
+let pendingSaleContractData = null;
+
+function getUafeDraftKey(draftId = "") {
+  return `autocor-uafe-draft-${draftId || "actual"}`;
+}
+
+function getSaleContractDraftId(data = {}) {
+  return data.draftId || `uafe-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+}
+
+function getTodayInputValue() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getSaleContractDataFromTask(task = {}) {
+  return {
+    draftId: task.uafe?.draftId || task.id || getSaleContractDraftId(),
+    placa: task.placa || "",
+    agencia: task.agencia || task.commercialAgency || "",
+    vendedor: task.vendedor || task.cliente || "",
+    precioContrato: task.precioContrato || task.valorToma || "",
+    cedulaVendedor: task.cedulaVendedor || task.cedula || "",
+    telefono: task.telefono || "",
+    direccion: task.direccion || "",
+    correo: task.correo || ""
+  };
+}
+
+function getUafeDefaultData(contractData = {}, task = null) {
+  const storedDraftId = contractData.draftId || task?.uafe?.draftId || "";
+  let storedData = {};
+  try {
+    if (storedDraftId) {
+      storedData = JSON.parse(localStorage.getItem(getUafeDraftKey(storedDraftId)) || "{}")?.uafeData || {};
+    }
+  } catch (error) {
+    storedData = {};
+  }
+  return {
+    cliente_tipo: "Natural",
+    cliente_nombres: normalizeLooseText(contractData.vendedor || task?.vendedor || task?.cliente || ""),
+    cliente_tipo_identificacion: "Cedula",
+    cliente_identificacion: normalizeId(contractData.cedulaVendedor || task?.cedulaVendedor || task?.cedula || ""),
+    cliente_nacionalidad: "Ecuatoriana",
+    cliente_estado_civil: "",
+    cliente_direccion: normalizeLooseText(contractData.direccion || task?.direccion || ""),
+    cliente_celular: String(contractData.telefono || task?.telefono || "").trim(),
+    cliente_correo: String(contractData.correo || task?.correo || "").trim().toLowerCase(),
+    cliente_actividad: "",
+    fondos_origen: "",
+    pep: "No",
+    persona_obligada: "No",
+    operacion_placa: normalizePlate(contractData.placa || task?.placa || ""),
+    operacion_agencia: contractData.agencia || task?.agencia || "",
+    operacion_valor: String(contractData.precioContrato || task?.precioContrato || task?.valorToma || "").trim(),
+    operacion_vendedor: normalizeLooseText(contractData.vendedor || task?.vendedor || task?.cliente || ""),
+    receptor_nombres: session.name || task?.commercialUserName || task?.asesor || "",
+    receptor_cargo: "Asesor comercial",
+    receptor_identificacion: "",
+    receptor_ciudad: contractData.agencia || session.agency || task?.agencia || "",
+    receptor_fecha: getTodayInputValue(),
+    ...(task?.uafe?.data || {}),
+    ...storedData
+  };
+}
+
+function setCommercialUafeStatus(message = "", isError = false) {
+  if (!commercialUafeStatus) return;
+  commercialUafeStatus.hidden = !message;
+  commercialUafeStatus.textContent = message;
+  commercialUafeStatus.classList.toggle("is-error", Boolean(isError));
+}
+
+function fillCommercialUafeForm(data = {}) {
+  if (!commercialUafeForm) return;
+  Object.entries(data).forEach(([key, value]) => {
+    const field = commercialUafeForm.elements[key];
+    if (field) field.value = value ?? "";
+  });
+}
+
+function getCommercialUafeFormData() {
+  if (!commercialUafeForm) return {};
+  return Object.fromEntries(new FormData(commercialUafeForm).entries());
+}
+
+function saveCommercialUafeDraft(showMessage = false) {
+  if (!commercialUafeForm) return;
+  const data = getCommercialUafeFormData();
+  const draftId = data.draftId || getSaleContractDraftId();
+  try {
+    localStorage.setItem(getUafeDraftKey(draftId), JSON.stringify({
+      contractData: pendingSaleContractData,
+      uafeData: data,
+      updatedAt: new Date().toISOString()
+    }));
+    if (showMessage) setCommercialUafeStatus("Borrador UAFE guardado en este equipo.");
+  } catch (error) {
+    if (showMessage) setCommercialUafeStatus("No se pudo guardar el borrador local.", true);
+  }
+}
+
+function buildUafePdfHtml(uafeData = {}, contractData = {}) {
+  const row = (label, value) => `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value || "Sin registro")}</td></tr>`;
+  return `<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Formulario Conozca a su Cliente - ${escapeHtml(uafeData.operacion_placa || contractData.placa || "Autocor")}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: "Roboto Condensed", Arial, sans-serif; margin: 38px; color: #111827; font-size: 10pt; }
+    header { display:flex; align-items:center; justify-content:space-between; border-bottom: 2px solid #e43d30; padding-bottom: 12px; margin-bottom: 22px; }
+    img { max-width: 150px; height: auto; }
+    h1 { font-size: 15pt; margin: 0; text-align:right; text-transform: uppercase; }
+    h2 { font-size: 11pt; margin: 18px 0 8px; color: #e43d30; text-transform: uppercase; }
+    table { width:100%; border-collapse: collapse; margin-bottom: 10px; }
+    th, td { border: 1px solid #cbd5e1; padding: 7px 8px; vertical-align: top; text-align: left; }
+    th { width: 28%; background: #f8fafc; text-transform: uppercase; }
+    p { text-align: justify; line-height: 1.45; }
+    .signature { margin-top: 42px; display:grid; grid-template-columns: 1fr 1fr; gap: 64px; text-align:center; }
+    .line { border-top: 1px solid #111827; padding-top: 8px; }
+    @media print { body { margin: 24mm 18mm; } }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="autocor-logo.svg.webp" alt="Autocor">
+    <h1>Formulario Conozca a su Cliente</h1>
+  </header>
+  <p>Formulario de debida diligencia generado para la operacion vinculada al contrato de compraventa registrado en Autocor.</p>
+  <h2>Datos del cliente</h2>
+  <table>
+    ${row("Tipo de cliente", uafeData.cliente_tipo)}
+    ${row("Nombres / razon social", uafeData.cliente_nombres)}
+    ${row("Tipo de identificacion", uafeData.cliente_tipo_identificacion)}
+    ${row("Identificacion", uafeData.cliente_identificacion)}
+    ${row("Nacionalidad", uafeData.cliente_nacionalidad)}
+    ${row("Estado civil", uafeData.cliente_estado_civil)}
+    ${row("Direccion", uafeData.cliente_direccion)}
+    ${row("WhatsApp / telefono", uafeData.cliente_celular)}
+    ${row("Correo electronico", uafeData.cliente_correo)}
+    ${row("Actividad economica", uafeData.cliente_actividad)}
+    ${row("Origen de fondos", uafeData.fondos_origen)}
+    ${row("PEP", uafeData.pep)}
+    ${row("Persona obligada", uafeData.persona_obligada)}
+  </table>
+  <h2>Operacion</h2>
+  <table>
+    ${row("Placa", uafeData.operacion_placa || contractData.placa)}
+    ${row("Agencia", uafeData.operacion_agencia || contractData.agencia)}
+    ${row("Valor de contrato", uafeData.operacion_valor || contractData.precioContrato)}
+    ${row("Vendedor", uafeData.operacion_vendedor || contractData.vendedor)}
+  </table>
+  <h2>12. Responsable que recepta la informacion</h2>
+  <table>
+    ${row("Nombres", uafeData.receptor_nombres)}
+    ${row("Cargo", uafeData.receptor_cargo)}
+    ${row("Identificacion", uafeData.receptor_identificacion)}
+    ${row("Ciudad", uafeData.receptor_ciudad)}
+    ${row("Fecha", uafeData.receptor_fecha)}
+  </table>
+  <div class="signature">
+    <div class="line">Cliente</div>
+    <div class="line">Responsable Autocor</div>
+  </div>
+</body>
+</html>`;
+}
+
+function buildUafePayload(uafeData = {}, contractData = {}, existing = null) {
+  const draftId = uafeData.draftId || contractData.draftId || existing?.draftId || getSaleContractDraftId();
+  const cleanData = { ...uafeData, draftId };
+  return {
+    id: existing?.id || crypto.randomUUID(),
+    draftId,
+    data: cleanData,
+    contractData: { ...contractData, draftId },
+    pdfHtml: buildUafePdfHtml(cleanData, contractData),
+    completedAt: existing?.completedAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    editedBy: session.name || "",
+    lockedForClient: true
+  };
+}
+
+function openUafePdfHtml(html = "") {
+  if (!html) {
+    showToast("El formulario UAFE aun no tiene PDF disponible.");
+    return;
+  }
+  const win = window.open("", "_blank");
+  if (!win) {
+    showToast("El navegador bloqueo la ventana emergente del PDF.");
+    return;
+  }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+}
+
+function openUafePdfForTask(taskId = "") {
+  const task = state.tasks.find((item) => String(item.id) === String(taskId));
+  openUafePdfHtml(task?.uafe?.pdfHtml || "");
+}
+
+function openCommercialUafeModal(contractData = null, taskId = "") {
+  if (!commercialUafeModal || !commercialUafeForm) {
+    showToast("No se encontro la pantalla UAFE. Actualice la pagina con Ctrl+F5 e intente nuevamente.", "error");
+    return false;
+  }
+  const task = taskId ? state.tasks.find((item) => String(item.id) === String(taskId)) : null;
+  const baseContractData = task ? getSaleContractDataFromTask(task) : { ...contractData, draftId: getSaleContractDraftId(contractData || {}) };
+  pendingSaleContractData = baseContractData;
+  commercialUafeForm.reset();
+  const defaults = getUafeDefaultData(baseContractData, task);
+  fillCommercialUafeForm({
+    ...defaults,
+    taskId: task?.id || "",
+    draftId: baseContractData.draftId
+  });
+  const submitButton = commercialUafeForm.querySelector("button[type='submit']");
+  if (submitButton) submitButton.textContent = task ? "Guardar cambios UAFE" : "Enviar solicitud a mesa";
+  setCommercialUafeStatus(task ? "Formulario UAFE listo para editar por el asesor comercial." : "Complete el formulario UAFE antes de enviar el contrato a Mesa de Control.");
+  openCommercialModal(commercialUafeModal);
+  return true;
+}
+
+async function submitCommercialUafeForm(event) {
+  event.preventDefault();
+  if (!commercialUafeForm) return;
+  const uafeData = getCommercialUafeFormData();
+  const taskId = uafeData.taskId || "";
+  const task = taskId ? state.tasks.find((item) => String(item.id) === String(taskId)) : null;
+  const contractData = task ? getSaleContractDataFromTask(task) : pendingSaleContractData;
+  if (!contractData) {
+    setCommercialUafeStatus("Primero complete el formulario de contrato.", true);
+    return;
+  }
+  const submitButton = commercialUafeForm.querySelector("button[type='submit']");
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = task ? "Guardando..." : "Enviando...";
+  }
+  try {
+    const payload = buildUafePayload(uafeData, contractData, task?.uafe || null);
+    if (task) {
+      task.uafe = payload;
+      task.uafeStatus = "completo";
+      task.updatedAt = new Date().toISOString();
+      task.syncStatus = "pending";
+      saveState();
+      renderAll();
+      await guardarTareaSupabase(task, "editar-uafe-venta");
+      saveState();
+      renderAll();
+      showToast("Formulario UAFE actualizado.");
+    } else {
+      await createSaleContractTask(contractData, payload);
+      saleContractForm?.reset();
+      setCommercialArea("tracking", { keepTrackingFilters: true });
+    }
+    try {
+      localStorage.removeItem(getUafeDraftKey(payload.draftId));
+    } catch (error) {}
+    closeCommercialModals();
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = task ? "Guardar cambios UAFE" : "Enviar solicitud a mesa";
+    }
+  }
+}
+
+function copyUafeWhatsappMessage() {
+  const data = getCommercialUafeFormData();
+  const message = `Hola ${data.cliente_nombres || pendingSaleContractData?.vendedor || ""}, por favor complete el Formulario Conozca a su Cliente UAFE para la placa ${data.operacion_placa || pendingSaleContractData?.placa || ""}. Cuando lo tenga listo, responda este mensaje para que el asesor lo registre en la plataforma.`;
+  navigator.clipboard?.writeText(message)
+    .then(() => setCommercialUafeStatus("Mensaje para WhatsApp copiado. El asesor podra enviarlo al cliente."))
+    .catch(() => setCommercialUafeStatus("No se pudo copiar automaticamente. Copie el mensaje manualmente.", true));
+}
+
+async function createSaleContractTask(data, uafePayload = null) {
   const createdAt = new Date().toISOString();
   const commercialOwner = session.role === "commercial"
     ? { id: session.userId, name: session.name, agency: session.agency }
@@ -5777,6 +6072,8 @@ async function createSaleContractTask(data) {
     direccion: normalizeLooseText(data.direccion),
     telefono: String(data.telefono || "").trim(),
     correo: String(data.correo || "").trim().toLowerCase(),
+    uafe: uafePayload,
+    uafeStatus: uafePayload ? "completo" : "pendiente",
     ciudad: "",
     valorToma: data.precioContrato,
     customFields: extractCustomFields(data, "venta"),
@@ -15338,6 +15635,31 @@ document.addEventListener("click", (event) => {
     downloadCuvPdf(pdfButton.dataset.pdfDownload);
     return;
   }
+  const editUafeButton = event.target.closest("[data-edit-uafe-task]");
+  if (editUafeButton) {
+    event.preventDefault();
+    openCommercialUafeModal(null, editUafeButton.dataset.editUafeTask);
+    return;
+  }
+  const uafePdfButton = event.target.closest("[data-uafe-pdf]");
+  if (uafePdfButton) {
+    event.preventDefault();
+    openUafePdfForTask(uafePdfButton.dataset.uafePdf);
+    return;
+  }
+  const uafePreviewButton = event.target.closest("[data-uafe-pdf-preview]");
+  if (uafePreviewButton) {
+    event.preventDefault();
+    const data = getCommercialUafeFormData();
+    openUafePdfHtml(buildUafePdfHtml(data, pendingSaleContractData || {}));
+    return;
+  }
+  const uafeWhatsappButton = event.target.closest("[data-uafe-whatsapp]");
+  if (uafeWhatsappButton) {
+    event.preventDefault();
+    copyUafeWhatsappMessage();
+    return;
+  }
   const trackingFilterButton = event.target.closest("[data-commercial-tracking-filter]");
   if (trackingFilterButton) {
     commercialTrackingFilter = trackingFilterButton.dataset.commercialTrackingFilter || "todos";
@@ -15703,22 +16025,36 @@ form?.addEventListener("submit", async (event) => {
   }
 });
 
-saleContractForm?.addEventListener("submit", async (event) => {
-  event.preventDefault();
+function openSaleContractUafeFromForm() {
+  if (!saleContractForm) return false;
+  if (saleContractForm.reportValidity && !saleContractForm.reportValidity()) return false;
   const data = Object.fromEntries(new FormData(saleContractForm).entries());
   const submitButton = saleContractForm.querySelector("button[type='submit']");
   if (submitButton) {
     submitButton.disabled = true;
-    submitButton.textContent = "Guardando...";
+    submitButton.textContent = "Abriendo UAFE...";
   }
-  await createSaleContractTask(data);
-  saleContractForm.reset();
+  const opened = openCommercialUafeModal(data);
   if (submitButton) {
     submitButton.disabled = false;
     submitButton.textContent = "Enviar contrato a mesa";
   }
-  setView("formulario");
+  return opened;
+}
+
+saleContractForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  openSaleContractUafeFromForm();
 });
+
+saleContractForm?.querySelector("button[type='submit']")?.addEventListener("click", (event) => {
+  event.preventDefault();
+  openSaleContractUafeFromForm();
+});
+
+commercialUafeForm?.addEventListener("submit", submitCommercialUafeForm);
+commercialUafeForm?.addEventListener("input", () => saveCommercialUafeDraft(false));
+commercialUafeForm?.addEventListener("change", () => saveCommercialUafeDraft(false));
 
 cuvRequestForm?.addEventListener("reset", () => {
   window.setTimeout(setDefaultCuvRequestDate, 0);
