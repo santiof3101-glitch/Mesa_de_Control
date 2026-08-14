@@ -1303,6 +1303,7 @@ async function runInitialRemoteSyncAfterLogin(reason = "login") {
       }
     }
     await sincronizarTareasPendientesSupabase();
+    await syncUafeClientRequestsFromSupabase(true);
     supabaseLastRefreshAt = Date.now();
   } catch (error) {
     console.warn(`No se pudo completar la sincronizacion inicial (${reason}):`, error);
@@ -1668,6 +1669,7 @@ function startSupabaseModulePolling() {
     if (!document.hidden && navigator.onLine && canSyncCurrentView()) {
       await restoreModulesFromSupabaseIfNeeded();
       await sincronizarTareasPendientesSupabase();
+      await syncUafeClientRequestsFromSupabase(true);
     }
     startSupabaseModulePolling();
   }, interval);
@@ -1852,7 +1854,7 @@ function mergePcStates(baseState, extraState) {
   applyAnnouncementDeletions(merged);
   merged.forceLogoutRequests = mergeByKey(merged.forceLogoutRequests || [], extraState.forceLogoutRequests || [], "id").map(normalizeForceLogoutRequest);
   merged.legalChatMessages = mergeLegalChatMessages(merged.legalChatMessages || [], extraState.legalChatMessages || []);
-  merged.uafeClientRequests = mergeByKey(merged.uafeClientRequests || [], extraState.uafeClientRequests || [], "id").map(normalizeUafeClientRequest);
+  merged.uafeClientRequests = mergeUafeClientRequestsByFreshness(merged.uafeClientRequests || [], extraState.uafeClientRequests || []);
   merged.commercialAdvisors = mergeByKey(merged.commercialAdvisors || [], extraState.commercialAdvisors || [], "id");
   merged.legalUsers = normalizeLegalUsers(mergeByKey(merged.legalUsers || [], extraState.legalUsers || [], "id"));
   merged.managerUsers = mergeByKey(merged.managerUsers || [], extraState.managerUsers || [], "id");
@@ -1894,6 +1896,35 @@ function mergeByKey(baseItems = [], extraItems = [], key = "id") {
     map.set(itemKey, { ...(map.get(itemKey) || {}), ...item });
   });
   return [...map.values()];
+}
+
+function getUafeClientRequestFreshness(item = {}) {
+  return new Date(item.updatedAt || item.completedAt || item.createdAt || 0).getTime() || 0;
+}
+
+function getUafeClientRequestMergeKey(item = {}) {
+  return String(
+    item.id ||
+    item.token ||
+    item.contractData?.draftId ||
+    item.uafe?.draftId ||
+    item.draftId ||
+    JSON.stringify(item)
+  );
+}
+
+function mergeUafeClientRequestsByFreshness(baseItems = [], extraItems = []) {
+  const map = new Map();
+  [...baseItems, ...extraItems].forEach((item) => {
+    if (!item) return;
+    const normalized = normalizeUafeClientRequest(item);
+    const itemKey = getUafeClientRequestMergeKey(normalized);
+    const current = map.get(itemKey);
+    if (!current || getUafeClientRequestFreshness(normalized) >= getUafeClientRequestFreshness(current)) {
+      map.set(itemKey, { ...(current || {}), ...normalized });
+    }
+  });
+  return [...map.values()].map(normalizeUafeClientRequest);
 }
 
 function getTaskFreshness(task = {}) {
@@ -5843,7 +5874,45 @@ function buildUafeClientUrl(token = "") {
   return url.toString();
 }
 
+async function syncUafeClientRequestsFromSupabase(renderAfterSync = false) {
+  if (!SUPABASE_URL || !SUPABASE_KEY || !navigator.onLine) return false;
+  try {
+    const remoteState = await leerUltimoEstadoSupabase();
+    if (!remoteState) return false;
+    const normalizedRemote = normalizeImportedState(remoteState);
+    const before = JSON.stringify((state.uafeClientRequests || []).map((item) => [
+      item.id,
+      item.status,
+      item.updatedAt,
+      item.completedAt,
+      Boolean(item.uafe?.data)
+    ]));
+    state.uafeClientRequests = mergeUafeClientRequestsByFreshness(
+      state.uafeClientRequests || [],
+      normalizedRemote.uafeClientRequests || []
+    );
+    const after = JSON.stringify((state.uafeClientRequests || []).map((item) => [
+      item.id,
+      item.status,
+      item.updatedAt,
+      item.completedAt,
+      Boolean(item.uafe?.data)
+    ]));
+    if (before !== after) {
+      saveState();
+      if (renderAfterSync) safeRenderAll();
+      return true;
+    }
+  } catch (error) {
+    console.warn("No se pudieron sincronizar formularios UAFE del cliente:", error);
+  }
+  return false;
+}
+
 async function saveFullStateNow(user = "") {
+  if (!activeUafeClientMode) {
+    await syncUafeClientRequestsFromSupabase(false);
+  }
   const snapshot = structuredClone(state);
   snapshot.schemaVersion = STATE_SCHEMA_VERSION;
   persistAccessUsers(snapshot);
@@ -6817,11 +6886,12 @@ function openUafePdfForTask(taskId = "") {
   openUafePdfHtml(task?.uafe?.pdfHtml || "");
 }
 
-function openCommercialUafeModal(contractData = null, taskId = "") {
+async function openCommercialUafeModal(contractData = null, taskId = "") {
   if (!commercialUafeModal || !commercialUafeForm) {
     showToast("No se encontro la pantalla UAFE. Actualice la pagina con Ctrl+F5 e intente nuevamente.", "error");
     return false;
   }
+  await syncUafeClientRequestsFromSupabase(false);
   activeUafeClientMode = false;
   activeUafeClientRequestId = "";
   setUafeClientFormLocked(false);
@@ -16596,7 +16666,7 @@ document.addEventListener("keydown", (event) => {
   if (!blockingModalOpen) closeCommercialModals();
 });
 
-document.addEventListener("click", (event) => {
+document.addEventListener("click", async (event) => {
   const legalTaskButton = event.target.closest?.("[data-legal-task]");
   if (!legalTaskButton) return;
   event.preventDefault();
@@ -16604,7 +16674,7 @@ document.addEventListener("click", (event) => {
   openLegalTaskModal(legalTaskButton.dataset.legalTask);
 }, true);
 
-document.addEventListener("click", (event) => {
+document.addEventListener("click", async (event) => {
   const profileToggle = event.target.closest("[data-commercial-profile-toggle]");
   if (profileToggle) {
     event.preventDefault();
@@ -16633,7 +16703,7 @@ document.addEventListener("click", (event) => {
   const editUafeButton = event.target.closest("[data-edit-uafe-task]");
   if (editUafeButton) {
     event.preventDefault();
-    openCommercialUafeModal(null, editUafeButton.dataset.editUafeTask);
+    await openCommercialUafeModal(null, editUafeButton.dataset.editUafeTask);
     return;
   }
   const uafePdfButton = event.target.closest("[data-uafe-pdf]");
@@ -17027,7 +17097,7 @@ form?.addEventListener("submit", async (event) => {
   }
 });
 
-function openSaleContractUafeFromForm() {
+async function openSaleContractUafeFromForm() {
   if (!saleContractForm) return false;
   if (saleContractForm.reportValidity && !saleContractForm.reportValidity()) return false;
   const data = Object.fromEntries(new FormData(saleContractForm).entries());
@@ -17042,7 +17112,7 @@ function openSaleContractUafeFromForm() {
     submitButton.disabled = true;
     submitButton.textContent = "Abriendo UAFE...";
   }
-  const opened = openCommercialUafeModal(data);
+  const opened = await openCommercialUafeModal(data);
   if (submitButton) {
     submitButton.disabled = false;
     submitButton.textContent = "Enviar contrato a mesa";
@@ -17881,12 +17951,14 @@ document.addEventListener("visibilitychange", () => {
   if (Date.now() - supabaseLastRefreshAt < SUPABASE_FOCUS_REFRESH_MIN_MS) return;
   restoreModulesFromSupabaseIfNeeded();
   sincronizarTareasPendientesSupabase();
+  syncUafeClientRequestsFromSupabase(true);
 });
 
 window.addEventListener("online", () => {
   if (!canSyncCurrentView()) return;
   restoreModulesFromSupabaseIfNeeded();
   sincronizarTareasPendientesSupabase();
+  syncUafeClientRequestsFromSupabase(true);
 });
 
 safeRenderAll();
