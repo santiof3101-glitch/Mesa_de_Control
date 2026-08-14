@@ -5855,6 +5855,22 @@ function createOrUpdateUafeClientRequest(contractData = {}) {
   const existing = getUafeClientRequestByDraft(draftId);
   const now = new Date().toISOString();
   const token = existing?.token || (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, "") : `${Date.now()}${Math.random().toString(36).slice(2)}`);
+  const advisorId = session.userId || existing?.advisorId || contractData.commercialUserId || "";
+  const advisorName = session.name || existing?.advisorName || contractData.commercialUserName || contractData.asesor || "";
+  const advisorAgency = session.agency || contractData.agencia || existing?.advisorAgency || contractData.commercialAgency || "";
+  const enrichedContractData = {
+    ...contractData,
+    draftId,
+    commercialUserId: advisorId,
+    commercialUserName: advisorName,
+    commercialAgency: advisorAgency,
+    asesor: contractData.asesor || advisorName,
+    agencia: contractData.agencia || advisorAgency,
+    receptor_nombres: contractData.receptor_nombres || advisorName,
+    receptor_cargo: contractData.receptor_cargo || "Asesor comercial",
+    receptor_identificacion: contractData.receptor_identificacion || advisorId || "AUTOCOR",
+    receptor_ciudad: contractData.receptor_ciudad || contractData.agencia || advisorAgency
+  };
   const request = normalizeUafeClientRequest({
     ...(existing || {}),
     id: existing?.id || `uafe-client-${token}`,
@@ -5862,10 +5878,10 @@ function createOrUpdateUafeClientRequest(contractData = {}) {
     status: existing?.status || "pendiente",
     createdAt: existing?.createdAt || now,
     updatedAt: now,
-    advisorId: session.userId || existing?.advisorId || "",
-    advisorName: session.name || existing?.advisorName || "",
-    advisorAgency: session.agency || contractData.agencia || existing?.advisorAgency || "",
-    contractData: { ...contractData, draftId },
+    advisorId,
+    advisorName,
+    advisorAgency,
+    contractData: enrichedContractData,
     uafe: existing?.uafe || null,
     taskId: existing?.taskId || ""
   });
@@ -5894,6 +5910,32 @@ function getUafeDefaultData(contractData = {}, task = null) {
   if (clientRequest?.uafe?.data) {
     storedData = { ...storedData, ...clientRequest.uafe.data };
   }
+  const receptorName = normalizeLooseText(
+    contractData.receptor_nombres ||
+    contractData.commercialUserName ||
+    clientRequest?.advisorName ||
+    session.name ||
+    task?.commercialUserName ||
+    task?.asesor ||
+    contractData.asesor ||
+    ""
+  );
+  const receptorAgency = normalizeLooseText(
+    contractData.receptor_ciudad ||
+    contractData.commercialAgency ||
+    clientRequest?.advisorAgency ||
+    contractData.agencia ||
+    session.agency ||
+    task?.agencia ||
+    ""
+  );
+  const receptorId = String(
+    contractData.receptor_identificacion ||
+    contractData.commercialUserId ||
+    clientRequest?.advisorId ||
+    session.userId ||
+    ""
+  ).trim();
   return {
     cliente_tipo: "Natural",
     cliente_nombres: normalizeLooseText(contractData.vendedor || task?.vendedor || task?.cliente || ""),
@@ -6003,12 +6045,12 @@ function getUafeDefaultData(contractData = {}, task = null) {
     operacion_vendedor: normalizeLooseText(contractData.vendedor || task?.vendedor || task?.cliente || ""),
     firma_cliente_nombre: normalizeLooseText(contractData.vendedor || task?.vendedor || task?.cliente || ""),
     firma_cliente_documento: normalizeId(contractData.cedulaVendedor || task?.cedulaVendedor || task?.cedula || ""),
-    firma_cliente_ciudad: contractData.agencia || session.agency || task?.agencia || "",
+    firma_cliente_ciudad: contractData.agencia || receptorAgency || task?.agencia || "",
     firma_cliente_fecha: getTodayInputValue(),
-    receptor_nombres: session.name || task?.commercialUserName || task?.asesor || "",
+    receptor_nombres: receptorName || "Asesor comercial Autocor",
     receptor_cargo: "Asesor comercial",
-    receptor_identificacion: "",
-    receptor_ciudad: contractData.agencia || session.agency || task?.agencia || "",
+    receptor_identificacion: receptorId || "AUTOCOR",
+    receptor_ciudad: receptorAgency || "Ecuador",
     receptor_fecha: getTodayInputValue(),
     doc_identificacion_cliente: "No",
     doc_identificacion_conyuge: "No",
@@ -6888,14 +6930,25 @@ async function openUafeClientRequestFromUrl() {
     return false;
   }
   activeUafeClientRequestId = request.id;
-  pendingSaleContractData = request.contractData || {};
+  const clientContractData = {
+    ...(request.contractData || {}),
+    commercialUserId: request.contractData?.commercialUserId || request.advisorId || "",
+    commercialUserName: request.contractData?.commercialUserName || request.advisorName || request.contractData?.asesor || "Asesor comercial Autocor",
+    commercialAgency: request.contractData?.commercialAgency || request.advisorAgency || request.contractData?.agencia || "",
+    asesor: request.contractData?.asesor || request.advisorName || "Asesor comercial Autocor",
+    receptor_nombres: request.contractData?.receptor_nombres || request.advisorName || request.contractData?.asesor || "Asesor comercial Autocor",
+    receptor_cargo: request.contractData?.receptor_cargo || "Asesor comercial",
+    receptor_identificacion: request.contractData?.receptor_identificacion || request.advisorId || "AUTOCOR",
+    receptor_ciudad: request.contractData?.receptor_ciudad || request.advisorAgency || request.contractData?.agencia || "Ecuador"
+  };
+  pendingSaleContractData = clientContractData;
   commercialUafeForm.reset();
-  const defaults = getUafeDefaultData(request.contractData || {});
+  const defaults = getUafeDefaultData(clientContractData);
   fillCommercialUafeForm({
     ...defaults,
     ...(request.uafe?.data || {}),
     taskId: "",
-    draftId: request.contractData?.draftId || request.uafe?.draftId || request.id,
+    draftId: clientContractData.draftId || request.uafe?.draftId || request.id,
     clientRequestId: request.id
   });
   const alreadyCompleted = request.status === "completo" || Boolean(request.uafe?.data);
