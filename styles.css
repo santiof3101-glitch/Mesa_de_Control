@@ -1930,6 +1930,22 @@ button.kpi-card {
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
 }
 
+.uafe-section[hidden],
+.uafe-section.is-uafe-hidden {
+  display: none;
+}
+
+.uafe-section.is-uafe-locked {
+  opacity: 0.58;
+}
+
+.uafe-section.is-uafe-locked input,
+.uafe-section.is-uafe-locked select,
+.uafe-section.is-uafe-locked textarea {
+  cursor: not-allowed;
+  background: #f3f4f6;
+}
+
 .uafe-section-title {
   display: flex;
   align-items: center;

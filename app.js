@@ -5954,6 +5954,7 @@ function fillCommercialUafeForm(data = {}) {
       field.value = value ?? "";
     }
   });
+  syncCommercialUafeConditionalFields();
 }
 
 function getCommercialUafeFormData() {
@@ -5963,6 +5964,36 @@ function getCommercialUafeFormData() {
     data[field.name] = field.checked ? "Si" : "No";
   });
   return data;
+}
+
+function getCommercialUafeSelectValue(name = "") {
+  const field = commercialUafeForm?.elements?.[name];
+  return normalizeLooseText(field?.value || "").toLowerCase();
+}
+
+function setCommercialUafeSectionState(sectionName = "", enabled = true) {
+  const section = commercialUafeForm?.querySelector(`[data-uafe-section="${sectionName}"]`);
+  if (!section) return;
+  section.hidden = !enabled;
+  section.classList.toggle("is-uafe-hidden", !enabled);
+  section.classList.toggle("is-uafe-locked", !enabled);
+  section.querySelectorAll("input, select, textarea").forEach((field) => {
+    field.disabled = !enabled;
+  });
+}
+
+function syncCommercialUafeConditionalFields() {
+  if (!commercialUafeForm) return;
+  const clientType = getCommercialUafeSelectValue("cliente_tipo");
+  const identificationType = getCommercialUafeSelectValue("cliente_tipo_identificacion");
+  const civilStatus = getCommercialUafeSelectValue("cliente_estado_civil");
+  const isLegalEntity = clientType === "juridica";
+  const usesPassport = identificationType === "pasaporte";
+  const needsSpouseOrRepresentative = isLegalEntity || civilStatus.includes("casado") || civilStatus.includes("union libre");
+
+  setCommercialUafeSectionState("legal-entity", isLegalEntity);
+  setCommercialUafeSectionState("passport", usesPassport);
+  setCommercialUafeSectionState("spouse", needsSpouseOrRepresentative);
 }
 
 const COMMERCIAL_UAFE_REQUIRED_FIELDS = [
@@ -6034,7 +6065,13 @@ function validateCommercialUafeData(data = {}) {
 
   COMMERCIAL_UAFE_REQUIRED_FIELDS.forEach(([key, label]) => addRequired(key, label));
 
-  if (String(data.cliente_tipo_identificacion || "").toLowerCase() === "pasaporte") {
+  const identificationType = normalizeLooseText(data.cliente_tipo_identificacion || "").toLowerCase();
+  const clientType = normalizeLooseText(data.cliente_tipo || "").toLowerCase();
+  const isLegalEntity = clientType === "juridica";
+  const civil = normalizeLooseText(data.cliente_estado_civil || "").toLowerCase();
+  const needsSpouseOrRepresentative = isLegalEntity || civil.includes("casado") || civil.includes("union libre");
+
+  if (identificationType === "pasaporte") {
     [
       ["pasaporte_numero", "Numero de pasaporte"],
       ["pasaporte_expedicion", "Fecha de expedicion del pasaporte"],
@@ -6044,19 +6081,18 @@ function validateCommercialUafeData(data = {}) {
     ].forEach(([key, label]) => addRequired(key, label));
   }
 
-  const civil = normalizeLooseText(data.cliente_estado_civil || "").toLowerCase();
-  if (civil.includes("casado") || civil.includes("union libre")) {
+  if (needsSpouseOrRepresentative) {
     [
-      ["conyuge_nombres", "Nombres del conyuge"],
-      ["conyuge_tipo_identificacion", "Tipo de identificacion del conyuge"],
-      ["conyuge_identificacion", "Identificacion del conyuge"],
-      ["conyuge_genero", "Genero del conyuge"],
-      ["conyuge_actividad", "Actividad economica del conyuge"],
-      ["conyuge_ingresos", "Ingresos del conyuge"]
+      ["conyuge_nombres", isLegalEntity ? "Nombres del representante legal" : "Nombres del conyuge"],
+      ["conyuge_tipo_identificacion", isLegalEntity ? "Tipo de identificacion del representante legal" : "Tipo de identificacion del conyuge"],
+      ["conyuge_identificacion", isLegalEntity ? "Identificacion del representante legal" : "Identificacion del conyuge"],
+      ["conyuge_genero", isLegalEntity ? "Genero del representante legal" : "Genero del conyuge"],
+      ["conyuge_actividad", isLegalEntity ? "Actividad economica del representante legal" : "Actividad economica del conyuge"],
+      ["conyuge_ingresos", isLegalEntity ? "Ingresos del representante legal" : "Ingresos del conyuge"]
     ].forEach(([key, label]) => addRequired(key, label));
   }
 
-  if (String(data.cliente_tipo || "").toLowerCase() === "juridica") {
+  if (isLegalEntity) {
     [
       ["juridico_razon_social", "Razon social"],
       ["juridico_ruc", "RUC"],
@@ -6126,6 +6162,12 @@ function buildUafePdfHtml(uafeData = {}, contractData = {}) {
       <h2>${escapeHtml(number)}. ${escapeHtml(title)}</h2>
       ${content}
     </section>`;
+  const clientType = normalizeLooseText(uafeData.cliente_tipo || "").toLowerCase();
+  const identificationType = normalizeLooseText(uafeData.cliente_tipo_identificacion || "").toLowerCase();
+  const civilStatus = normalizeLooseText(uafeData.cliente_estado_civil || "").toLowerCase();
+  const isLegalEntity = clientType === "juridica";
+  const usesPassport = identificationType === "pasaporte";
+  const needsSpouseOrRepresentative = isLegalEntity || civilStatus.includes("casado") || civilStatus.includes("union libre");
   return `<!doctype html>
 <html lang="es">
 <head>
@@ -6334,23 +6376,23 @@ function buildUafePdfHtml(uafeData = {}, contractData = {}) {
       box("Celular referencia", "referencia_celular")
     ]))}
 
-    ${section("2", "Informacion adicional si utiliza pasaporte", grid([
+    ${usesPassport ? section("2", "Informacion adicional si utiliza pasaporte", grid([
       box("Numero de pasaporte", "pasaporte_numero"),
       box("Fecha de expedicion", "pasaporte_expedicion"),
       box("Fecha de caducidad", "pasaporte_caducidad"),
       box("Estado migratorio / Codigo VISA", "pasaporte_estado_migratorio"),
       box("Fecha de ingreso al pais", "pasaporte_fecha_ingreso", { span: 2 }),
       box("Observacion", "pasaporte_observacion", { span: 2 })
-    ]))}
+    ])) : ""}
 
-    ${section("3", "Conyuge, conviviente o representante legal", grid([
+    ${needsSpouseOrRepresentative ? section("3", isLegalEntity ? "Representante legal" : "Conyuge o conviviente", grid([
       box("Nombres y apellidos completos", "conyuge_nombres", { span: 2 }),
       box("Tipo de identificacion", "conyuge_tipo_identificacion"),
       box("Numero de identificacion", "conyuge_identificacion"),
       box("Genero", "conyuge_genero"),
       box("Actividad economica", "conyuge_actividad", { span: 2 }),
       box("Ingresos promedio mensuales", "conyuge_ingresos")
-    ]))}
+    ])) : ""}
 
     ${section("4", "Actividad economica / ocupacion", grid([
       box("Nombre de la empresa", "empresa_nombre", { span: 2 }),
@@ -6428,7 +6470,7 @@ function buildUafePdfHtml(uafeData = {}, contractData = {}) {
       </p>
     `)}
 
-    ${section("9", "Persona juridica / beneficiario final", grid([
+    ${isLegalEntity ? section("9", "Persona juridica / beneficiario final", grid([
       box("Razon social", "juridico_razon_social", { span: 2 }),
       box("RUC", "juridico_ruc"),
       box("Representante legal", "juridico_representante"),
@@ -6446,7 +6488,7 @@ function buildUafePdfHtml(uafeData = {}, contractData = {}) {
       box("ID beneficiario", "beneficiario_final_identificacion"),
       box("Nacionalidad beneficiario", "beneficiario_final_nacionalidad"),
       box("Relacion beneficiario", "beneficiario_final_relacion")
-    ]))}
+    ])) : ""}
 
     ${section("10", "Autorizacion", `
       <p class="pdf-legal">
@@ -16674,8 +16716,14 @@ saleContractForm?.querySelector("button[type='submit']")?.addEventListener("clic
 });
 
 commercialUafeForm?.addEventListener("submit", submitCommercialUafeForm);
-commercialUafeForm?.addEventListener("input", () => saveCommercialUafeDraft(false));
-commercialUafeForm?.addEventListener("change", () => saveCommercialUafeDraft(false));
+commercialUafeForm?.addEventListener("input", () => {
+  syncCommercialUafeConditionalFields();
+  saveCommercialUafeDraft(false);
+});
+commercialUafeForm?.addEventListener("change", () => {
+  syncCommercialUafeConditionalFields();
+  saveCommercialUafeDraft(false);
+});
 
 cuvRequestForm?.addEventListener("reset", () => {
   window.setTimeout(setDefaultCuvRequestDate, 0);
