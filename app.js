@@ -5965,6 +5965,133 @@ function getCommercialUafeFormData() {
   return data;
 }
 
+const COMMERCIAL_UAFE_REQUIRED_FIELDS = [
+  ["cliente_nombres", "Nombres y apellidos completos"],
+  ["cliente_tipo_identificacion", "Tipo de identificacion"],
+  ["cliente_identificacion", "Numero de identificacion"],
+  ["cliente_nacionalidad", "Nacionalidad"],
+  ["cliente_fecha_nacimiento", "Fecha de nacimiento"],
+  ["cliente_pais_nacimiento", "Pais de nacimiento"],
+  ["cliente_ciudad_nacimiento", "Ciudad de nacimiento"],
+  ["cliente_estado_civil", "Estado civil"],
+  ["domicilio_pais", "Pais de domicilio"],
+  ["domicilio_provincia", "Provincia"],
+  ["domicilio_canton", "Canton"],
+  ["domicilio_ciudad", "Ciudad"],
+  ["domicilio_sector", "Sector"],
+  ["domicilio_calle_principal", "Calle principal"],
+  ["domicilio_numero", "Numero de domicilio"],
+  ["domicilio_calle_transversal", "Calle transversal"],
+  ["cliente_celular", "Numero celular"],
+  ["cliente_correo", "Correo personal"],
+  ["referencia_nombre", "Referencia personal"],
+  ["referencia_parentesco", "Parentesco"],
+  ["referencia_celular", "Celular de referencia"],
+  ["empresa_nombre", "Nombre de la empresa"],
+  ["empresa_actividad", "Actividad economica"],
+  ["empresa_cargo", "Cargo"],
+  ["trabajo_pais", "Pais trabajo"],
+  ["trabajo_provincia", "Provincia trabajo"],
+  ["trabajo_canton", "Canton trabajo"],
+  ["trabajo_ciudad", "Ciudad trabajo"],
+  ["trabajo_sector", "Sector trabajo"],
+  ["trabajo_calle_principal", "Calle principal trabajo"],
+  ["empresa_telefono", "Telefono empresa"],
+  ["empresa_correo", "Correo empresa"],
+  ["ingresos_mensuales", "Ingresos mensuales"],
+  ["egresos_mensuales", "Egresos mensuales"],
+  ["total_activos", "Total activos"],
+  ["total_pasivos", "Total pasivos"],
+  ["fondos_origen", "Origen de fondos"],
+  ["fondos_destino", "Destino de fondos"],
+  ["fondos_entrega", "Entrega de fondos"],
+  ["fondos_lugar_nacimiento", "Lugar de nacimiento"],
+  ["fondos_fecha_nacimiento", "Fecha de nacimiento fondos"],
+  ["firma_cliente_nombre", "Nombre para firma"],
+  ["firma_cliente_documento", "Documento para firma"],
+  ["firma_cliente_ciudad", "Ciudad de firma"],
+  ["firma_cliente_fecha", "Fecha de firma"],
+  ["receptor_nombres", "Responsable que recepta"],
+  ["receptor_cargo", "Cargo del responsable"],
+  ["receptor_identificacion", "Identificacion del responsable"],
+  ["receptor_ciudad", "Ciudad del responsable"],
+  ["receptor_fecha", "Fecha del responsable"]
+];
+
+function focusCommercialUafeField(name = "") {
+  const field = commercialUafeForm?.elements?.[name];
+  if (!field) return;
+  field.focus?.();
+  field.scrollIntoView?.({ behavior: "smooth", block: "center" });
+}
+
+function validateCommercialUafeData(data = {}) {
+  const missing = [];
+  const valueOf = (key) => String(data[key] || "").trim();
+  const addRequired = (key, label) => {
+    if (!valueOf(key)) missing.push({ key, label });
+  };
+
+  COMMERCIAL_UAFE_REQUIRED_FIELDS.forEach(([key, label]) => addRequired(key, label));
+
+  if (String(data.cliente_tipo_identificacion || "").toLowerCase() === "pasaporte") {
+    [
+      ["pasaporte_numero", "Numero de pasaporte"],
+      ["pasaporte_expedicion", "Fecha de expedicion del pasaporte"],
+      ["pasaporte_caducidad", "Fecha de caducidad del pasaporte"],
+      ["pasaporte_estado_migratorio", "Estado migratorio o codigo VISA"],
+      ["pasaporte_fecha_ingreso", "Fecha de ingreso al pais"]
+    ].forEach(([key, label]) => addRequired(key, label));
+  }
+
+  const civil = normalizeLooseText(data.cliente_estado_civil || "").toLowerCase();
+  if (civil.includes("casado") || civil.includes("union libre")) {
+    [
+      ["conyuge_nombres", "Nombres del conyuge"],
+      ["conyuge_tipo_identificacion", "Tipo de identificacion del conyuge"],
+      ["conyuge_identificacion", "Identificacion del conyuge"],
+      ["conyuge_genero", "Genero del conyuge"],
+      ["conyuge_actividad", "Actividad economica del conyuge"],
+      ["conyuge_ingresos", "Ingresos del conyuge"]
+    ].forEach(([key, label]) => addRequired(key, label));
+  }
+
+  if (String(data.cliente_tipo || "").toLowerCase() === "juridica") {
+    [
+      ["juridico_razon_social", "Razon social"],
+      ["juridico_ruc", "RUC"],
+      ["juridico_representante", "Representante legal"],
+      ["juridico_cargo_representante", "Cargo representante"],
+      ["juridico_actividad", "Actividad economica juridica"],
+      ["juridico_telefono", "Telefono juridica"],
+      ["juridico_correo", "Correo juridica"],
+      ["juridico_direccion", "Direccion juridica"],
+      ["beneficiario_final_nombre", "Beneficiario final"],
+      ["beneficiario_final_identificacion", "Identificacion beneficiario final"]
+    ].forEach(([key, label]) => addRequired(key, label));
+  }
+
+  const emailFields = [
+    ["cliente_correo", "Correo personal"],
+    ["empresa_correo", "Correo empresa"],
+    ["tercero1_correo", "Correo tercero 1"],
+    ["tercero2_correo", "Correo tercero 2"],
+    ["juridico_correo", "Correo juridica"]
+  ];
+  const invalidEmail = emailFields.find(([key]) => valueOf(key) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valueOf(key)));
+  if (missing.length) {
+    return {
+      ok: false,
+      key: missing[0].key,
+      message: `Complete los campos obligatorios: ${missing.slice(0, 5).map((item) => item.label).join(", ")}${missing.length > 5 ? "..." : ""}.`
+    };
+  }
+  if (invalidEmail) {
+    return { ok: false, key: invalidEmail[0], message: `${invalidEmail[1]} no tiene un formato valido.` };
+  }
+  return { ok: true };
+}
+
 function saveCommercialUafeDraft(showMessage = false) {
   if (!commercialUafeForm) return;
   const data = getCommercialUafeFormData();
@@ -5984,7 +6111,7 @@ function saveCommercialUafeDraft(showMessage = false) {
 function buildUafePdfHtml(uafeData = {}, contractData = {}) {
   const pick = (key, fallback = "") => {
     const value = uafeData[key] ?? contractData[key] ?? fallback;
-    return escapeHtml(value || "Sin registro");
+    return escapeHtml(value || "");
   };
   const isChecked = (key) => String(uafeData[key] || "").toLowerCase() === "si";
   const box = (label, key, options = {}) => {
@@ -6047,11 +6174,7 @@ function buildUafePdfHtml(uafeData = {}, contractData = {}) {
       margin: 7px 0 9px;
       text-align: justify;
     }
-    .pdf-section {
-      margin: 9px 0 11px;
-      break-inside: avoid;
-      page-break-inside: avoid;
-    }
+    .pdf-section { margin: 7px 0 9px; }
     h2 {
       margin: 0 0 4px;
       font-size: 10.5pt;
@@ -6067,7 +6190,7 @@ function buildUafePdfHtml(uafeData = {}, contractData = {}) {
       width: 100%;
     }
     .pdf-field {
-      min-height: 31px;
+      min-height: 27px;
       padding: 4px 6px;
       border-right: 1px solid #111827;
       border-bottom: 1px solid #111827;
@@ -6140,7 +6263,6 @@ function buildUafePdfHtml(uafeData = {}, contractData = {}) {
       gap: 22mm;
       margin-top: 18mm;
       text-align: center;
-      break-inside: avoid;
     }
     .line {
       border-top: 1px solid #111827;
@@ -6150,7 +6272,7 @@ function buildUafePdfHtml(uafeData = {}, contractData = {}) {
       text-transform: uppercase;
     }
     .line small { display:block; margin-top: 4px; font-weight: 400; text-transform: none; }
-    .page-break { break-before: page; page-break-before: always; }
+    tr { break-inside: avoid; page-break-inside: avoid; }
     @media print {
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .pdf-page { max-width: none; }
@@ -6288,8 +6410,6 @@ function buildUafePdfHtml(uafeData = {}, contractData = {}) {
       </p>
     `)}
 
-    <div class="page-break"></div>
-
     ${section("8", "Declaracion de origen licito de fondos", `
       ${grid([
         box("Los fondos provienen de", "fondos_origen", { span: 2 }),
@@ -6402,7 +6522,7 @@ function buildUafePdfHtml(uafeData = {}, contractData = {}) {
       </p>
     `)}
 
-    ${section("Operacion vinculada", grid([
+    ${section("15", "Operacion vinculada", grid([
       box("Placa", "operacion_placa", { fallback: contractData.placa }),
       box("Agencia", "operacion_agencia", { fallback: contractData.agencia }),
       box("Valor de contrato", "operacion_valor", { fallback: contractData.precioContrato }),
@@ -6486,6 +6606,13 @@ async function submitCommercialUafeForm(event) {
   const contractData = task ? getSaleContractDataFromTask(task) : pendingSaleContractData;
   if (!contractData) {
     setCommercialUafeStatus("Primero complete el formulario de contrato.", true);
+    return;
+  }
+  const validation = validateCommercialUafeData(uafeData);
+  if (!validation.ok) {
+    setCommercialUafeStatus(validation.message, true);
+    showToast(validation.message, "error");
+    focusCommercialUafeField(validation.key);
     return;
   }
   const submitButton = commercialUafeForm.querySelector("button[type='submit']");
@@ -16138,6 +16265,13 @@ document.addEventListener("click", (event) => {
   if (uafePreviewButton) {
     event.preventDefault();
     const data = getCommercialUafeFormData();
+    const validation = validateCommercialUafeData(data);
+    if (!validation.ok) {
+      setCommercialUafeStatus(validation.message, true);
+      showToast(validation.message, "error");
+      focusCommercialUafeField(validation.key);
+      return;
+    }
     openUafePdfHtml(buildUafePdfHtml(data, pendingSaleContractData || {}));
     return;
   }
