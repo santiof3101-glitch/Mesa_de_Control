@@ -14131,6 +14131,21 @@ function getProviderDuplicateChargeItems(group) {
   return group.items.slice(1);
 }
 
+function getProviderDuplicateStableItemId(item, index = 0) {
+  const rawParts = [
+    item?.id,
+    item?.loadId,
+    item?.provider,
+    item?.FECHA,
+    item?.CODIGO || item?.CUV,
+    getProviderRecordAmount(item),
+    getProviderObservation(item)
+  ].filter((part) => part !== undefined && part !== null && String(part).trim() !== "");
+  return rawParts.length
+    ? rawParts.map((part) => normalizeLooseText(String(part))).join("::")
+    : `SIN-ID-${index}`;
+}
+
 function getProviderBillableRecords(records) {
   const groups = new Map();
   const withoutPlate = [];
@@ -14186,6 +14201,10 @@ function getProviderBillableAmount(records) {
 }
 
 function getProviderDuplicateItemKey(group, item, index) {
+  return `${group.plate}::item::${getProviderDuplicateStableItemId(item, index)}`;
+}
+
+function getProviderDuplicateLegacyItemKey(group, item, index) {
   return `${group.approvalKey}::item::${item.id || `${item.loadId || "SIN-CARGA"}-${item.CODIGO || item.CUV || item.FECHA || index}`}`;
 }
 
@@ -14204,12 +14223,14 @@ function isProviderDuplicateApprovalEntryRejected(entry) {
 
 function isProviderDuplicateItemApproved(group, item, index) {
   const approvals = getProviderDuplicateApprovals();
-  return isProviderDuplicateApprovalEntryApproved(approvals[getProviderDuplicateItemKey(group, item, index)]);
+  return isProviderDuplicateApprovalEntryApproved(approvals[getProviderDuplicateItemKey(group, item, index)])
+    || isProviderDuplicateApprovalEntryApproved(approvals[getProviderDuplicateLegacyItemKey(group, item, index)]);
 }
 
 function isProviderDuplicateItemRejected(group, item, index) {
   const approvals = getProviderDuplicateApprovals();
-  return isProviderDuplicateApprovalEntryRejected(approvals[getProviderDuplicateItemKey(group, item, index)]);
+  return isProviderDuplicateApprovalEntryRejected(approvals[getProviderDuplicateItemKey(group, item, index)])
+    || isProviderDuplicateApprovalEntryRejected(approvals[getProviderDuplicateLegacyItemKey(group, item, index)]);
 }
 
 function getProviderUnauthorizedDuplicateItems(group) {
@@ -14227,6 +14248,19 @@ function getProviderRejectedDuplicateItems(group) {
 function getProviderDuplicateUnauthorizedAmount(group, records = getFilteredProviderRecords()) {
   const fallbackAmount = getProviderPlateResolvedAmount(group.items, getProviderCommonAmount(records));
   return getProviderUnauthorizedDuplicateItems(group)
+    .reduce((sum, { item }) => sum + (getProviderRecordAmount(item) || fallbackAmount), 0);
+}
+
+function getProviderDuplicateAuthorizedAmount(group, records = getFilteredProviderRecords()) {
+  const fallbackAmount = getProviderPlateResolvedAmount(group.items, getProviderCommonAmount(records));
+  return getProviderDuplicateChargeItems(group)
+    .filter((item, index) => isProviderDuplicateItemApproved(group, item, index + 1))
+    .reduce((sum, item) => sum + (getProviderRecordAmount(item) || fallbackAmount), 0);
+}
+
+function getProviderDuplicateRejectedAmount(group, records = getFilteredProviderRecords()) {
+  const fallbackAmount = getProviderPlateResolvedAmount(group.items, getProviderCommonAmount(records));
+  return getProviderRejectedDuplicateItems(group)
     .reduce((sum, { item }) => sum + (getProviderRecordAmount(item) || fallbackAmount), 0);
 }
 
@@ -14286,7 +14320,9 @@ function toggleProviderDuplicateApproval(key, approved, fallbackKey = "") {
     if (group) {
       getProviderDuplicateChargeItems(group).forEach((chargeItem, chargeIndex) => {
         const itemKey = getProviderDuplicateItemKey(group, chargeItem, chargeIndex + 1);
+        const legacyItemKey = getProviderDuplicateLegacyItemKey(group, chargeItem, chargeIndex + 1);
         delete approvals[itemKey];
+        delete approvals[legacyItemKey];
       });
     }
     providerDuplicateView = "pending";
@@ -14312,7 +14348,9 @@ function setProviderDuplicateRejected(key, rejected = true, fallbackKey = "") {
   } else if (group) {
     getProviderDuplicateChargeItems(group).forEach((chargeItem, chargeIndex) => {
       const itemKey = getProviderDuplicateItemKey(group, chargeItem, chargeIndex + 1);
+      const legacyItemKey = getProviderDuplicateLegacyItemKey(group, chargeItem, chargeIndex + 1);
       if (isProviderDuplicateApprovalEntryRejected(approvals[itemKey])) delete approvals[itemKey];
+      if (isProviderDuplicateApprovalEntryRejected(approvals[legacyItemKey])) delete approvals[legacyItemKey];
     });
   }
   providerDuplicateView = "pending";
@@ -14340,6 +14378,12 @@ function toggleProviderDuplicateItemApproval(groupKey, itemKey, approved) {
       });
     }
     delete approvals[itemKey];
+    if (group) {
+      getProviderDuplicateChargeItems(group).forEach((chargeItem, chargeIndex) => {
+        const key = getProviderDuplicateItemKey(group, chargeItem, chargeIndex + 1);
+        if (key === itemKey) delete approvals[getProviderDuplicateLegacyItemKey(group, chargeItem, chargeIndex + 1)];
+      });
+    }
   }
   providerDuplicateView = "pending";
   providerDuplicatePage = 1;
@@ -14873,15 +14917,27 @@ function renderProviderDuplicateCard(group, contextRecords = getFilteredProvider
   const rejected = isProviderDuplicateRejected(group);
   const pending = !approved && !rejected;
   const unauthorizedAmount = getProviderDuplicateUnauthorizedAmount(group, contextRecords);
+  const authorizedAmount = getProviderDuplicateAuthorizedAmount(group, contextRecords);
+  const rejectedAmount = getProviderDuplicateRejectedAmount(group, contextRecords);
   const simpleKey = getProviderDuplicateSimpleKey(group);
   const statusText = approved ? "Duplicado autorizado" : rejected ? "No aprobado" : "Sin autorizacion";
+  const pendingItems = getProviderUnauthorizedDuplicateItems(group);
+  const approvedItems = getProviderDuplicateChargeItems(group).filter((item, index) => isProviderDuplicateItemApproved(group, item, index + 1));
+  const rejectedItems = getProviderRejectedDuplicateItems(group);
   return `
     <details class="duplicate-insight-card provider-alert-card ${approved ? "is-approved" : rejected ? "is-rejected" : ""}">
       <summary>
         <strong>${escapeHtml(group.plate)}</strong>
-        <span>${group.items.length} registros | $ ${group.total.toFixed(2)} | sobrecobro $ ${unauthorizedAmount.toFixed(2)} | ${escapeHtml(group.providers.join(", "))}</span>
+        <span>${group.items.length} registros | nuevo por revisar $ ${unauthorizedAmount.toFixed(2)} | ya autorizado $ ${authorizedAmount.toFixed(2)} | no aprobado $ ${rejectedAmount.toFixed(2)} | ${escapeHtml(group.providers.join(", "))}</span>
         <em>${escapeHtml(statusText)}</em>
       </summary>
+      ${pendingItems.length ? `
+        <div class="provider-alert-brief provider-duplicate-money">
+          <span><b>Pagado base</b>$ ${escapeHtml(getProviderRecordDisplayAmount(group.items[0], group.items).toFixed(2))}</span>
+          <span><b>Nuevo por autorizar</b>${pendingItems.length} registro(s) | $ ${unauthorizedAmount.toFixed(2)}</span>
+          <span><b>Historial</b>${approvedItems.length} autorizado(s) | ${rejectedItems.length} no aprobado(s)</span>
+        </div>
+      ` : ""}
       ${pending ? `
         <label class="provider-bulk-check">
           <input type="checkbox" data-provider-bulk-duplicate="${escapeHtml(group.approvalKey)}" data-provider-bulk-simple-key="${escapeHtml(simpleKey)}">
