@@ -14927,15 +14927,23 @@ function renderProviderDuplicateCard(group, contextRecords = getFilteredProvider
   return `
     <details class="duplicate-insight-card provider-alert-card ${approved ? "is-approved" : rejected ? "is-rejected" : ""}">
       <summary>
-        <strong>${escapeHtml(group.plate)}</strong>
-        <span>${group.items.length} registros | nuevo por revisar $ ${unauthorizedAmount.toFixed(2)} | ya autorizado $ ${authorizedAmount.toFixed(2)} | no aprobado $ ${rejectedAmount.toFixed(2)} | ${escapeHtml(group.providers.join(", "))}</span>
+        <div class="provider-duplicate-head">
+          <strong>${escapeHtml(group.plate)}</strong>
+          <span>${group.items.length} registros</span>
+          <small>${escapeHtml(group.providers.join(", "))}</small>
+        </div>
+        <div class="provider-duplicate-summary">
+          <span><b>Por revisar</b>$ ${unauthorizedAmount.toFixed(2)}</span>
+          <span><b>Autorizado</b>$ ${authorizedAmount.toFixed(2)}</span>
+          <span><b>No aprobado</b>$ ${rejectedAmount.toFixed(2)}</span>
+        </div>
         <em>${escapeHtml(statusText)}</em>
       </summary>
       ${pendingItems.length ? `
         <div class="provider-alert-brief provider-duplicate-money">
-          <span><b>Pagado base</b>$ ${escapeHtml(getProviderRecordDisplayAmount(group.items[0], group.items).toFixed(2))}</span>
-          <span><b>Nuevo por autorizar</b>${pendingItems.length} registro(s) | $ ${unauthorizedAmount.toFixed(2)}</span>
-          <span><b>Historial</b>${approvedItems.length} autorizado(s) | ${rejectedItems.length} no aprobado(s)</span>
+          <span><b>Pagado base</b><strong>$ ${escapeHtml(getProviderRecordDisplayAmount(group.items[0], group.items).toFixed(2))}</strong><small>Primer cobro registrado</small></span>
+          <span><b>Nuevo por autorizar</b><strong>$ ${unauthorizedAmount.toFixed(2)}</strong><small>${pendingItems.length} registro(s) pendientes</small></span>
+          <span><b>Historial</b><strong>${approvedItems.length} / ${rejectedItems.length}</strong><small>Autorizados / no aprobados</small></span>
         </div>
       ` : ""}
       ${pending ? `
