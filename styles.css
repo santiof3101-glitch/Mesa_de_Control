@@ -16543,3 +16543,194 @@ body.legal-contract-modal-open::before {
     border-radius: 18px !important;
   }
 }
+/* Commercial home compact polish 20260828
+   Final visual correction: calmer banner and cleaner navigation. */
+#formulario .commercial-workspace {
+  grid-template-columns: minmax(220px, 252px) minmax(0, 1fr) !important;
+  align-items: start !important;
+  gap: clamp(18px, 1.8vw, 28px) !important;
+}
+
+#formulario .commercial-sidebar {
+  padding: 16px !important;
+  border-radius: 20px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(250, 252, 255, 0.96)),
+    radial-gradient(circle at 24% 0%, rgba(228, 61, 48, 0.07), transparent 34%) !important;
+  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.07) !important;
+}
+
+#formulario .commercial-sidebar-group {
+  padding: 2px 0 14px !important;
+  gap: 5px !important;
+}
+
+#formulario .commercial-sidebar-group + .commercial-sidebar-group {
+  padding-top: 16px !important;
+  border-top: 1px solid #edf0f5 !important;
+}
+
+#formulario .commercial-sidebar-group > span {
+  padding: 0 10px 8px !important;
+  color: #8a94a6 !important;
+  font-size: 0.66rem !important;
+  line-height: 1.2 !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.1em !important;
+}
+
+#formulario .commercial-side-link {
+  min-height: 40px !important;
+  padding: 0 10px !important;
+  border-radius: 12px !important;
+  font-size: 0.82rem !important;
+  line-height: 1.18 !important;
+  font-weight: 600 !important;
+  color: #334155 !important;
+}
+
+#formulario .commercial-side-link span {
+  width: 28px !important;
+  min-width: 28px !important;
+  height: 28px !important;
+  margin-right: 8px !important;
+  border-radius: 10px !important;
+  font-size: 0.95rem !important;
+}
+
+#formulario .commercial-side-link.is-active {
+  color: #e43d30 !important;
+  background: linear-gradient(90deg, rgba(228, 61, 48, 0.11), rgba(255, 255, 255, 0.96)) !important;
+  box-shadow: inset 3px 0 0 #e43d30 !important;
+}
+
+#formulario .commercial-support-card {
+  padding: 14px !important;
+  border-radius: 16px !important;
+  gap: 7px !important;
+}
+
+#formulario .commercial-support-card strong {
+  font-size: 0.78rem !important;
+}
+
+#formulario .commercial-support-card span {
+  font-size: 0.76rem !important;
+}
+
+#formulario .commercial-support-card .btn {
+  min-height: 38px !important;
+  border-radius: 12px !important;
+  font-size: 0.78rem !important;
+}
+
+#formulario .commercial-content {
+  gap: 18px !important;
+}
+
+#formulario .commercial-start-hero {
+  min-height: clamp(238px, 23vw, 330px) !important;
+  padding: clamp(26px, 3.4vw, 44px) !important;
+  border-radius: 22px !important;
+  background:
+    linear-gradient(90deg, rgba(7, 16, 31, 0.95) 0%, rgba(7, 16, 31, 0.82) 42%, rgba(7, 16, 31, 0.24) 70%, rgba(7, 16, 31, 0.03) 100%),
+    url("hero-comercial-premium.png") center right / cover no-repeat !important;
+  box-shadow: 0 22px 54px rgba(15, 23, 42, 0.16) !important;
+}
+
+#formulario .commercial-start-hero::after {
+  background:
+    linear-gradient(108deg, transparent 0 47%, rgba(228, 61, 48, 0.86) 47% 50%, rgba(228, 61, 48, 0.34) 50% 53%, transparent 53%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 52%) !important;
+}
+
+#formulario .commercial-start-copy {
+  max-width: 570px !important;
+  gap: 10px !important;
+}
+
+#formulario .commercial-start-copy .eyebrow {
+  font-size: 0.68rem !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.09em !important;
+}
+
+#formulario .commercial-start-copy h2 {
+  max-width: 640px !important;
+  font-size: clamp(2rem, 3.5vw, 3.85rem) !important;
+  line-height: 1 !important;
+}
+
+#formulario #commercialProcessTitle {
+  font-size: clamp(0.98rem, 1.05vw, 1.18rem) !important;
+  line-height: 1.25 !important;
+}
+
+#formulario .commercial-start-copy p:not(.eyebrow) {
+  max-width: 500px !important;
+  font-size: clamp(0.88rem, 0.98vw, 1.02rem) !important;
+  line-height: 1.45 !important;
+}
+
+#formulario .commercial-start-actions {
+  gap: 10px !important;
+  margin-top: 8px !important;
+}
+
+#formulario .commercial-start-actions .btn {
+  min-width: clamp(118px, 9vw, 150px) !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 13px !important;
+  font-size: 0.84rem !important;
+}
+
+#formulario .commercial-process-shell {
+  padding: clamp(20px, 2.3vw, 32px) !important;
+  border-radius: 22px !important;
+}
+
+#formulario .commercial-process-card {
+  min-height: 104px !important;
+  padding: 18px !important;
+  border-radius: 16px !important;
+}
+
+@media (min-width: 1420px) {
+  #formulario .commercial-start-hero {
+    min-height: 340px !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  #formulario .commercial-workspace {
+    grid-template-columns: 1fr !important;
+  }
+
+  #formulario .commercial-sidebar {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  #formulario .commercial-start-hero {
+    min-height: 330px !important;
+    padding: 24px !important;
+    background:
+      linear-gradient(180deg, rgba(7, 16, 31, 0.94), rgba(7, 16, 31, 0.55)),
+      url("hero-comercial-premium.png") center / cover no-repeat !important;
+  }
+
+  #formulario .commercial-start-copy h2 {
+    font-size: clamp(2rem, 9vw, 3rem) !important;
+  }
+
+  #formulario .commercial-start-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  #formulario .commercial-start-actions .btn {
+    width: 100% !important;
+  }
+}
