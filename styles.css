@@ -16696,6 +16696,126 @@ body.legal-contract-modal-open::before {
   border-radius: 16px !important;
 }
 
+/* Pastel process cards polish 20260829 */
+#formulario .commercial-process-grid {
+  grid-template-columns: repeat(3, minmax(220px, 1fr)) !important;
+  gap: 14px !important;
+}
+
+#formulario .commercial-process-card {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: 48px minmax(0, 1fr) 26px;
+  align-items: center !important;
+  gap: 14px !important;
+  min-height: 96px !important;
+  padding: 18px 20px !important;
+  overflow: hidden;
+  border: 1px solid rgba(216, 220, 229, 0.88) !important;
+  border-radius: 18px !important;
+  text-align: left !important;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.055) !important;
+}
+
+#formulario .commercial-process-card::before {
+  content: "";
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: var(--process-icon-bg);
+  box-shadow: inset 0 0 0 1px var(--process-icon-border);
+}
+
+#formulario .commercial-process-card::after {
+  content: ">";
+  justify-self: end;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  color: var(--process-tone);
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  font-weight: 900;
+  line-height: 26px;
+  text-align: center;
+}
+
+#formulario .commercial-process-card strong,
+#formulario .commercial-process-card span {
+  grid-column: 2;
+}
+
+#formulario .commercial-process-card strong {
+  margin: 0 0 5px !important;
+  color: #111827 !important;
+  font-size: 1.02rem !important;
+  line-height: 1.1 !important;
+}
+
+#formulario .commercial-process-card span {
+  color: #475569 !important;
+  font-size: 0.88rem !important;
+  line-height: 1.35 !important;
+}
+
+#formulario .commercial-process-card[data-commercial-process="commercial-purchase-process"] {
+  --process-tone: #e43d30;
+  --process-icon-bg: linear-gradient(145deg, #fff2f0, #ffe3df);
+  --process-icon-border: rgba(228, 61, 48, 0.18);
+  background: linear-gradient(135deg, #fffafa 0%, #fff4f2 100%) !important;
+}
+
+#formulario .commercial-process-card[data-commercial-process="commercial-sale-process"] {
+  --process-tone: #2563eb;
+  --process-icon-bg: linear-gradient(145deg, #eff6ff, #dbeafe);
+  --process-icon-border: rgba(37, 99, 235, 0.16);
+  background: linear-gradient(135deg, #fbfdff 0%, #f0f6ff 100%) !important;
+}
+
+#formulario .commercial-process-card[data-commercial-process="commercial-cuv-process"] {
+  --process-tone: #059669;
+  --process-icon-bg: linear-gradient(145deg, #ecfdf5, #d1fae5);
+  --process-icon-border: rgba(5, 150, 105, 0.16);
+  background: linear-gradient(135deg, #fcfffd 0%, #effdf6 100%) !important;
+}
+
+#formulario .commercial-process-card[data-commercial-process="commercial-purchase-process"]::before {
+  background:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='none' stroke='%23e43d30' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M6 7h12l-1 12H7L6 7Zm3 0a3 3 0 0 1 6 0M9 11h6'/%3E%3C/svg%3E") center / 23px 23px no-repeat,
+    var(--process-icon-bg);
+}
+
+#formulario .commercial-process-card[data-commercial-process="commercial-sale-process"]::before {
+  background:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M4 15h16M7 15l2-5h6l2 5M7 15v3m10-3v3M8 18h.01M16 18h.01M10 10V7h4v3'/%3E%3C/svg%3E") center / 25px 25px no-repeat,
+    var(--process-icon-bg);
+}
+
+#formulario .commercial-process-card[data-commercial-process="commercial-cuv-process"]::before {
+  background:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='none' stroke='%23059669' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M7 3h7l4 4v14H7V3Zm7 0v5h5M9.5 13h5M9.5 17h5'/%3E%3C/svg%3E") center / 24px 24px no-repeat,
+    var(--process-icon-bg);
+}
+
+#formulario .commercial-process-card:hover {
+  border-color: color-mix(in srgb, var(--process-tone) 28%, #d8dce5) !important;
+  box-shadow: 0 22px 42px rgba(15, 23, 42, 0.1) !important;
+  transform: translateY(-3px) !important;
+}
+
+#formulario .commercial-process-card.is-active,
+#formulario .commercial-process-card[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--process-tone) 42%, #ffffff) !important;
+  box-shadow: 0 22px 46px rgba(15, 23, 42, 0.11), 0 0 0 3px color-mix(in srgb, var(--process-tone) 11%, transparent) !important;
+}
+
+@media (max-width: 900px) {
+  #formulario .commercial-process-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 @media (min-width: 1420px) {
   #formulario .commercial-start-hero {
     min-height: 340px !important;
