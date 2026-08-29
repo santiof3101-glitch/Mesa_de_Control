@@ -16909,3 +16909,53 @@ body.legal-contract-modal-open::before {
     min-height: 44px !important;
   }
 }
+
+/* Commercial sidebar support card visibility fix 20260829 */
+#formulario .commercial-sidebar {
+  overflow: visible !important;
+  padding-bottom: 22px !important;
+}
+
+#formulario .commercial-support-card {
+  margin-top: 12px !important;
+  margin-bottom: 0 !important;
+  padding: 13px !important;
+  min-height: auto !important;
+  display: grid !important;
+  gap: 6px !important;
+}
+
+#formulario .commercial-support-card::before {
+  margin-bottom: 0 !important;
+  padding: 5px 10px !important;
+  font-size: 0.58rem !important;
+}
+
+#formulario .commercial-support-card strong,
+#formulario .commercial-support-card span {
+  display: block !important;
+  text-align: center !important;
+}
+
+#formulario .commercial-support-card .btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  min-height: 42px !important;
+  margin-top: 3px !important;
+  margin-bottom: 0 !important;
+  padding: 0 16px !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+@media (min-width: 1181px) {
+  #formulario .commercial-sidebar {
+    max-height: calc(100vh - 126px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(226, 35, 42, 0.38) transparent !important;
+  }
+}
