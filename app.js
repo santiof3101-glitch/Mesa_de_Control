@@ -8677,6 +8677,7 @@ function resetCommercialProcesses() {
   commercialProcessButtons.forEach((item) => {
     item.classList.remove("is-active");
     item.setAttribute("aria-pressed", "false");
+    item.setAttribute("aria-expanded", "false");
   });
 }
 
@@ -8713,13 +8714,22 @@ function setCommercialArea(area = "process", options = {}) {
   }
 }
 
-function setCommercialProcessFromTarget(target, shouldScroll = true) {
+function setCommercialProcessFromTarget(target, shouldScroll = true, options = {}) {
+  const activeSection = document.querySelector(`[data-commercial-process-section="${target}"]`);
+  const shouldCollapse = options.toggle === true && activeSection && !activeSection.hidden;
+  if (shouldCollapse) {
+    resetCommercialProcesses();
+    activeCommercialProcess = "";
+    renderCommercialDashboard();
+    return;
+  }
   activeCommercialProcess = target === "commercial-sale-process" ? "venta" : target === "commercial-cuv-process" ? "cuv" : "compra";
   setCommercialArea("process", { scroll: shouldScroll, keepProcess: true });
   commercialProcessButtons.forEach((item) => {
     const isActive = item.dataset.commercialProcess === target;
     item.classList.toggle("is-active", isActive);
     item.setAttribute("aria-pressed", String(isActive));
+    item.setAttribute("aria-expanded", String(isActive));
   });
   commercialProcessSections.forEach((section) => {
     const isActive = section.dataset.commercialProcessSection === target;
@@ -16677,7 +16687,7 @@ commercialAreaButtons.forEach((button) => {
 
 commercialProcessButtons.forEach((button) => {
   button.addEventListener("click", () => {
-    setCommercialProcessFromTarget(button.dataset.commercialProcess);
+    setCommercialProcessFromTarget(button.dataset.commercialProcess, true, { toggle: true });
   });
 });
 
