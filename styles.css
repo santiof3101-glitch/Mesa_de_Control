@@ -16952,10 +16952,59 @@ body.legal-contract-modal-open::before {
 
 @media (min-width: 1181px) {
   #formulario .commercial-sidebar {
-    max-height: calc(100vh - 126px) !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    scrollbar-width: thin !important;
-    scrollbar-color: rgba(226, 35, 42, 0.38) transparent !important;
+    max-height: none !important;
+    overflow: visible !important;
+    align-self: start !important;
+    padding: 14px 12px !important;
+    border-radius: 22px !important;
+  }
+
+  #formulario .commercial-sidebar-group {
+    gap: 4px !important;
+    padding: 3px 3px 10px !important;
+  }
+
+  #formulario .commercial-sidebar-group + .commercial-sidebar-group {
+    margin-top: 6px !important;
+    padding-top: 12px !important;
+  }
+
+  #formulario .commercial-sidebar-group > span {
+    padding: 0 10px 6px !important;
+    font-size: 0.6rem !important;
+  }
+
+  #formulario .commercial-side-link {
+    min-height: 36px !important;
+    padding: 0 9px !important;
+    border-radius: 13px !important;
+    font-size: 0.78rem !important;
+  }
+
+  #formulario .commercial-side-link span {
+    width: 27px !important;
+    min-width: 27px !important;
+    height: 27px !important;
+    margin-right: 8px !important;
+    border-radius: 10px !important;
+    font-size: 0.86rem !important;
+  }
+
+  #formulario .commercial-support-card {
+    margin-top: 10px !important;
+    padding: 10px 12px !important;
+    gap: 4px !important;
+    border-radius: 16px !important;
+  }
+
+  #formulario .commercial-support-card .btn {
+    min-height: 36px !important;
+    font-size: 0.76rem !important;
+  }
+
+  #formulario .commercial-profile-card {
+    margin-top: 10px !important;
+    padding: 9px 10px !important;
+    min-height: 54px !important;
   }
 }
