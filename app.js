@@ -4142,7 +4142,8 @@ function isMarriedLegalStatus(status = "") {
   return /casad|union/i.test(String(status || ""));
 }
 
-function getLegalContractTemplateKey(operationType, documentType, estadoCivil) {
+function getLegalContractTemplateKey(operationType, documentType, estadoCivil, contractModel = "") {
+  if (LEGAL_CONTRACT_TEMPLATE_KEYS.includes(contractModel)) return contractModel;
   const isConsignment = operationType === "consignacion";
   const isMarried = isMarriedLegalStatus(estadoCivil);
   if (isConsignment && isMarried) return "consignmentMarriedPrestacion";
@@ -4151,22 +4152,34 @@ function getLegalContractTemplateKey(operationType, documentType, estadoCivil) {
   return "directSinglePrestacion";
 }
 
+function getLegalContractModelMeta(contractModel = "") {
+  const model = LEGAL_CONTRACT_TEMPLATE_KEYS.includes(contractModel) ? contractModel : "";
+  return {
+    key: model,
+    operationType: model.includes("consignment") ? "consignacion" : "compra-directa",
+    estadoCivil: model.includes("Married") ? "Casado/a" : "Soltero/a"
+  };
+}
+
 function collectLegalContractData(formElement) {
   const data = Object.fromEntries(new FormData(formElement).entries());
+  const modelMeta = getLegalContractModelMeta(data.contractModel);
+  const operationType = modelMeta.key ? modelMeta.operationType : data.operationType || "compra-directa";
+  const estadoCivil = modelMeta.key ? modelMeta.estadoCivil : data.estadoCivil || "Soltero/a";
   const today = new Date().toISOString().slice(0, 10);
   const city = data.ciudad?.trim() || "Guayaquil";
   const price = Number(data.precioCompra || 0);
   const propietario = cleanDisplayName(data.propietario);
-  const estadoCivil = data.estadoCivil || "Soltero/a";
   const married = isMarriedLegalStatus(estadoCivil);
   const conyuge = cleanDisplayName(data.conyuge);
   const comparecientesCliente = married
     ? `el senor(a) ${propietario || "__________________"} y su conyuge ${conyuge || "__________________"}, por sus propios y personales derechos y en representacion de la sociedad conyugal conforme aplique, a quien para los efectos del presente instrumento se le denominara EL CLIENTE`
     : `el senor(a) ${propietario || "__________________"}, de estado civil ${estadoCivil}, por sus propios y personales derechos, a quien para los efectos del presente instrumento se le denominara EL CLIENTE`;
   return {
-    operationType: data.operationType || "compra-directa",
+    contractModel: modelMeta.key || getLegalContractTemplateKey(operationType, data.documentType, estadoCivil),
+    operationType,
     documentType: "prestacion-servicios",
-    tipoOperacion: data.operationType === "consignacion" ? "A consignacion / comision" : "Pago directo",
+    tipoOperacion: operationType === "consignacion" ? "A consignacion / comision" : "Pago directo",
     tipoDocumento: "Contrato de prestacion de servicios",
     ciudad: city,
     fecha: data.fecha || today,
@@ -4225,6 +4238,7 @@ function prefillLegalContractFormFromTask(task = {}) {
   const pickCustom = (...labels) => labels.map((label) => customValues[normalizeLooseText(label)]).find(Boolean) || "";
   const cliente = task.cliente || task.vendedor || task.sourceCliente || "";
   setLegalContractField("operationType", savedData.operationType || task.operationType || "compra-directa", { force: true });
+  setLegalContractField("contractModel", savedData.contractModel || getLegalContractTemplateKey(savedData.operationType || task.operationType || "compra-directa", "prestacion-servicios", savedData.estadoCivil || task.estadoCivil || pickCustom("estado civil")), { force: true });
   setLegalContractField("placa", savedData.placa || task.placa, { force: true });
   setLegalContractField("marca", savedData.marca || task.marca || pickCustom("marca", "marca del auto"), { force: true });
   setLegalContractField("modelo", savedData.modelo || task.modelo || pickCustom("modelo", "modelo del auto"), { force: true });
@@ -4249,6 +4263,28 @@ function prefillLegalContractFormFromTask(task = {}) {
   setLegalContractField("codigoDactilarConyuge", savedData.codigoDactilarConyuge || task.codigoDactilarConyuge || pickCustom("codigo dactilar conyuge"), { force: true });
   setLegalContractField("celularConyuge", savedData.celularConyuge || task.celularConyuge || pickCustom("celular conyuge"), { force: true });
   setLegalContractField("correoConyuge", savedData.correoConyuge || task.correoConyuge || pickCustom("correo conyuge"), { force: true });
+  syncLegalContractControlsFromModel();
+}
+
+function syncLegalContractControlsFromModel() {
+  if (!legalContractForm) return;
+  const modelField = legalContractForm.elements.contractModel;
+  if (!modelField?.value) return;
+  const meta = getLegalContractModelMeta(modelField.value);
+  if (!meta.key) return;
+  setLegalContractField("operationType", meta.operationType, { force: true });
+  setLegalContractField("estadoCivil", meta.estadoCivil, { force: true });
+}
+
+function syncLegalContractModelFromControls() {
+  if (!legalContractForm) return;
+  const modelField = legalContractForm.elements.contractModel;
+  if (!modelField) return;
+  modelField.value = getLegalContractTemplateKey(
+    legalContractForm.elements.operationType?.value || "compra-directa",
+    "prestacion-servicios",
+    legalContractForm.elements.estadoCivil?.value || "Soltero/a"
+  );
 }
 
 function getLegalContractDocuments(task = {}) {
@@ -4272,6 +4308,7 @@ function saveLegalContractDocumentToTask(taskId, document = {}) {
       title: `${data.tipoDocumento || "Contrato legal"} - ${data.placa || task.placa || "Sin placa"}`,
       placa: data.placa || task.placa || "",
       documentType: data.documentType || "prestacion-servicios",
+      contractModel: data.contractModel || "",
       operationType: data.operationType || "",
       html: document.html,
       text: document.text || "",
@@ -4656,7 +4693,7 @@ function generateLegalContract(event) {
   }
   try {
     const data = collectLegalContractData(legalContractForm);
-    const templateKey = getLegalContractTemplateKey(data.operationType, data.documentType, data.estadoCivil);
+    const templateKey = getLegalContractTemplateKey(data.operationType, data.documentType, data.estadoCivil, data.contractModel);
     const template = getLegalContractTemplates()[templateKey] || DEFAULT_LEGAL_CONTRACT_TEMPLATES[templateKey] || "";
     if (!template.trim()) {
       showToast("No existe una plantilla configurada para este tipo de contrato.");
@@ -4746,6 +4783,7 @@ function openLegalContractModal(taskId = "") {
   if (legalContractForm.elements.fecha && !legalContractForm.elements.fecha.value) {
     legalContractForm.elements.fecha.value = new Date().toISOString().slice(0, 10);
   }
+  syncLegalContractControlsFromModel();
   window.setTimeout(() => legalContractForm.querySelector("input, select")?.focus(), 0);
 }
 
@@ -17365,11 +17403,15 @@ legalPasswordForm.addEventListener("submit", (event) => {
 });
 
 legalContractForm?.addEventListener("submit", generateLegalContract);
+legalContractForm?.elements.contractModel?.addEventListener("change", syncLegalContractControlsFromModel);
+legalContractForm?.elements.operationType?.addEventListener("change", syncLegalContractModelFromControls);
+legalContractForm?.elements.estadoCivil?.addEventListener("change", syncLegalContractModelFromControls);
 legalContractForm?.addEventListener("reset", () => {
   window.setTimeout(() => {
     if (legalContractForm?.elements.fecha) {
       legalContractForm.elements.fecha.value = new Date().toISOString().slice(0, 10);
     }
+    syncLegalContractControlsFromModel();
     if (legalContractPreview) {
       legalContractPreview.hidden = true;
       legalContractPreview.innerHTML = "";

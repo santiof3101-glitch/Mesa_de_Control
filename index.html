@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260829-dilileg-contracts">
+<html lang="es" data-app-version="20260829-dilileg-contract-models">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260829-dilileg-contracts">
+  <link rel="stylesheet" href="styles.css?v=20260829-dilileg-contract-models">
   <link rel="stylesheet" href="layout-fix.css?v=20260727-ui-sanity-provider-fix">
 </head>
 <body>
@@ -1206,6 +1206,15 @@
                 <option value="prestacion-servicios">Contrato de prestacion de servicios</option>
               </select>
             </label>
+            <label class="span-2">
+              Modelo del PDF
+              <select name="contractModel" required>
+                <option value="directSinglePrestacion">Pago directo - soltero</option>
+                <option value="directMarriedPrestacion">Pago directo - casado</option>
+                <option value="consignmentSinglePrestacion">Consignacion / comision - soltero</option>
+                <option value="consignmentMarriedPrestacion">Consignacion / comision - casado</option>
+              </select>
+            </label>
             <label>
               Ciudad
               <input name="ciudad" placeholder="Ej. Guayaquil">
@@ -1668,7 +1677,7 @@
             </label>
             <div class="contract-template-vars span-admin">
               <strong>Variables disponibles</strong>
-              <span>{{placa}}</span><span>{{marca}}</span><span>{{modelo}}</span><span>{{anio}}</span><span>{{color}}</span><span>{{kilometraje}}</span><span>{{chasis}}</span><span>{{motor}}</span><span>{{precioCompra}}</span><span>{{propietario}}</span><span>{{comparecientesCliente}}</span><span>{{cedulaPropietario}}</span><span>{{codigoDactilar}}</span><span>{{celular}}</span><span>{{correo}}</span><span>{{direccion}}</span><span>{{estadoCivil}}</span><span>{{estadoCivilContrato}}</span><span>{{conyuge}}</span><span>{{cedulaConyuge}}</span><span>{{correoConyuge}}</span>
+              <span>{{placa}}</span><span>{{marca}}</span><span>{{modelo}}</span><span>{{anio}}</span><span>{{color}}</span><span>{{kilometraje}}</span><span>{{chasis}}</span><span>{{motor}}</span><span>{{tablaVehiculo}}</span><span>{{precioCompra}}</span><span>{{precioCompraValor}}</span><span>{{precioCompraLetras}}</span><span>{{fechaLegal}}</span><span>{{propietario}}</span><span>{{comparecientesCliente}}</span><span>{{cedulaPropietario}}</span><span>{{codigoDactilar}}</span><span>{{celular}}</span><span>{{correo}}</span><span>{{direccion}}</span><span>{{estadoCivil}}</span><span>{{estadoCivilContrato}}</span><span>{{conyuge}}</span><span>{{cedulaConyuge}}</span><span>{{correoConyuge}}</span>
             </div>
             <div class="form-actions span-admin">
               <button class="btn primary" type="submit">Guardar plantillas</button>
@@ -2699,6 +2708,6 @@
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20260829-dilileg-contracts"></script>
+  <script src="app.js?v=20260829-dilileg-contract-models"></script>
 </body>
 </html>
