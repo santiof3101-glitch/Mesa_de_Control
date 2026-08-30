@@ -276,57 +276,69 @@ const LEGAL_CONTRACT_TEMPLATE_LABELS = {
   consignmentMarriedPrestacion: "A consignacion / comision - casado"
 };
 
+const LEGAL_CONTRACT_TEMPLATE_VERSION = "20260829-dilileg-prestacion-v1";
+
 function buildPrestacionTemplate(operationType, maritalType) {
   const isConsignment = operationType === "consignacion";
   const isMarried = maritalType === "casado";
   const title = isConsignment
-    ? "CONTRATO DE PRESTACION DE SERVICIOS DE INTERMEDIACION Y GESTION DE VEHICULOS USADOS POR COMISION Y/O CONSIGNACION"
-    : "CONTRATO DE PRESTACION DE SERVICIOS DE INTERMEDIACION Y GESTION DE VEHICULOS USADOS - PAGO DIRECTO";
+    ? "CONTRATO DE PRESTACION DE SERVICIOS DE INTERMEDIACION\nY GESTION DE VEHICULOS USADOS POR COMISION Y/O CONSIGNACION"
+    : "CONTRATO DE PRESTACION DE SERVICIOS DE INTERMEDIACION Y GESTION DE VEHICULOS USADOS\n-PAGO DIRECTO-";
+  const clientAppearance = isMarried
+    ? "por una parte, el senor (a) {{propietario}} y/o senor (a) {{conyuge}} de estado civil CASADO(S); por sus propios y personales derechos a quien, para los efectos del presente instrumento se le denominara EL CLIENTE"
+    : "por una parte, el senor (a) {{propietario}} de estado civil {{estadoCivilContrato}}; por sus propios y personales derechos a quien, para los efectos del presente instrumento se le denominara EL CLIENTE";
+  const intro = `En el Distrito Metropolitano de {{ciudad}}, a {{fechaLegal}}, comparecen a la celebracion del presente contrato, ${clientAppearance} y, por otra parte, la compania DILIGENCIAS LEGALES SEMINUEVOS DILILEG CIA. LTDA. quien a su vez esta representada por su Gerente General el senor BILLY NIKE BROWN BELTRAN Apoderado especial de AUTOCOR AUTOEVOLUCION S.A.S., debidamente representada por la senora VERONICA GUADALUPE LLUGCHA BONILLA y/o AUTOCOR-AUTOPLAZA S.A.S. debidamente representada por el senor BILLY NIKE BROWN BELTRAN y/o LUIS JOAQUIN CORONEL BELTRAN por sus propios derechos, todos estos - cuando aplique -, a quienes en adelante se le denominaran EL INTERMEDIARIO. Los comparecientes son de nacionalidad ECUATORIANA, mayores de edad, domiciliados en Ecuador, habiles para ejercer derechos y contraer obligaciones. Es voluntad de las partes celebrar el presente Contrato de Prestacion de Servicios de Intermediacion y Gestion de Vehiculos Usados, al tenor y cumplimiento de las clausulas que a continuacion se expresan:`;
   const priceClause = isConsignment
-    ? "CUARTA: PRECIO.- Acorde al estado mecanico y estetico del VEHICULO, las partes de mutuo acuerdo senalan que este tendra un valor de venta estimado en DOLARES DE LOS ESTADOS UNIDOS DE AMERICA (USD {{precioCompra}}). EL CLIENTE autoriza que se publique el VEHICULO minimo en este valor y acepta que se aplique al mismo la tabla de descuentos promocionales por el rango del valor del VEHICULO. EL INTERMEDIARIO podra recibir ofertas, negociarlas y comunicarlas a EL CLIENTE por llamada telefonica, mensaje de datos, WhatsApp u otro medio de comunicacion."
-    : "TERCERA: PRECIO.- Conforme al estado mecanico y estetico del VEHICULO, las partes acuerdan que EL INTERMEDIARIO cancelara, una vez realizadas las validaciones legales y documentales correspondientes, el valor de DOLARES DE LOS ESTADOS UNIDOS DE AMERICA (USD {{precioCompra}}), mediante cheque o transferencia a la cuenta indicada por EL CLIENTE. Este valor corresponde al acuerdo comercial de pago directo registrado para la operacion.";
+    ? "CUARTA: PRECIO.- Acorde al estado mecanico y estetico del VEHICULO, las partes de mutuo acuerdo senalan que este tendra un valor de venta estimado en {{precioCompraLetras}} (USD {{precioCompraValor}}). EL CLIENTE autoriza que se publique el VEHICULO minimo en este valor y acepta que se aplique al mismo la tabla de descuentos promocionales por el rango del valor del VEHICULO; independientemente, si EL INTERMEDIARIO recibe otras ofertas, estas seran comunicadas a EL CLIENTE quien podra aceptar o no las mismas via telefonica, sms, WhatsApp u otro medio de comunicacion, y suscribir el respectivo contrato de transferencia de dominio por el valor final acordado por las partes; por lo que EL CLIENTE renuncia a cualquier accion judicial respecto de la fijacion del precio aqui determinado, como del valor al cual efectivamente se transfiera el VEHICULO al momento de la firma del contrato de traspaso. EL CLIENTE autoriza que los honorarios por servicios prestados de intermediacion como gastos mecanicos efectuados, alistamiento o pagos de multas, matriculacion tardia u otros determinados en este instrumento, seran descontados del valor a pagar a EL CLIENTE, previa presentacion de la correspondiente liquidacion."
+    : "TERCERA: PRECIO.- Conforme al estado mecanico y estetico del VEHICULO, las partes acuerdan que EL INTERMEDIARIO cancelara, una vez que se hayan realizado todas las validaciones legales respecto del estado del VEHICULO, el valor de {{precioCompraLetras}} (USD {{precioCompraValor}}) mediante cheque o transferencia a la cuenta indicada por EL CLIENTE; independientemente del valor al cual EL INTERMEDIARIO -de forma posterior- venda el VEHICULO, conforme el contrato de mandato o encargo suscrito entre las partes. EL CLIENTE renuncia a realizar cualquier accion legal respecto de la fijacion de este precio o del monto al cual venda EL INTERMEDIARIO a un tercero el VEHICULO. EL CLIENTE suscribira con EL INTERMEDIARIO un acta de entrega recepcion conforme lo detallado en la Resolucion emitida por el SRI. Ademas, EL CLIENTE autoriza a EL INTERMEDIARIO que descuente los gastos senalados en este contrato del precio acordado, previa suscripcion del acta de liquidacion. Los valores a descontar consisten en multas no canceladas, valores impagos de peajes, pagos pendientes de matriculacion, entre otros.";
   const billingClause = isConsignment
-    ? "QUINTA: FACTURACION.- La comision por los servicios prestados de intermediacion sera del TRES POR CIENTO (3%) mas IVA del valor de venta final del VEHICULO, pero nunca podra ser inferior a CUATROCIENTOS CINCUENTA DOLARES DE LOS ESTADOS UNIDOS DE AMERICA mas IVA, valor que sera descontado del monto a pagar a EL CLIENTE, previa la correspondiente liquidacion."
-    : "QUINTA: FACTURACION.- EL INTERMEDIARIO emitira la factura correspondiente por servicios de intermediacion directa a nombre de EL CLIENTE, incluido el IVA, deduciendo los gastos en los cuales haya incurrido para la gestion documental, comercial o legal del VEHICULO, una vez concluidos los actos determinados en este contrato.";
-  const spouseClause = isMarried
-    ? "DATOS DEL CONYUGE.- Comparece tambien {{conyuge}}, de nacionalidad {{nacionalidadConyuge}}, con cedula {{cedulaConyuge}}, codigo dactilar {{codigoDactilarConyuge}}, celular {{celularConyuge}} y correo {{correoConyuge}}, quien declara conocer y aceptar las condiciones del presente contrato conforme corresponda a la sociedad conyugal."
-    : "ESTADO CIVIL.- EL CLIENTE declara comparecer en calidad de {{estadoCivilContrato}}, por sus propios y personales derechos, sin intervencion de conyuge para los efectos del presente instrumento.";
+    ? "QUINTA: FACTURACION.- La comision por los servicios prestados de intermediacion sera del TRES POR CIENTO (3%) mas IVA del valor de venta final del VEHICULO (contrato de traspaso), pero nunca podra ser inferior a CUATROCIENTOS CINCUENTA DOLARES DE LOS ESTADOS UNIDOS DE AMERICA mas IVA que seran descontados del valor a pagar a EL CLIENTE, previa la correspondiente liquidacion. EL CLIENTE declara que esta de acuerdo con el valor aqui senalado y la forma en la cual se cancelara este. EL INTERMEDIARIO procedera a emitir a favor de EL CLIENTE la respectiva factura por comision en el momento que se concluyan con todos los actos de venta; asi como, por el alistamiento o reparaciones del VEHICULO de acuerdo a la liquidacion."
+    : "QUINTA: FACTURACION.- EL INTERMEDIARIO emitira una factura por servicios de intermediacion directa a nombre de EL CLIENTE, incluido el IVA, deduciendo todos los gastos en los cuales haya incurrido para la venta, una vez que se concluyan todos los actos determinados en este contrato y en el contrato de mandato o encargo.";
+  const plazoClause = isConsignment
+    ? "TERCERA: PLAZO.- Debido a la naturaleza de los servicios y considerando que estos dependen de diferentes circunstancias, el plazo que las partes se fijan para la prestacion de los servicios de intermediacion para la venta del VEHICULO de EL CLIENTE es indefinida o hasta el momento que este se venda a un comprador final. Si EL CLIENTE por alguna razon no desea continuar con los servicios de EL INTERMEDIARIO, este debera notificar por escrito su intencion de finiquitar el contrato con al menos 10 dias de antelacion y EL INTERMEDIARIO suspendera los servicios determinados en este, debiendo cancelar el valor de OCHENTA DOLARES DE LOS ESTADOS UNIDOS DE AMERICA (USD 80,00) a EL INTERMEDIARIO por concepto de servicios administrativos, exhibicion y promocion, MAS EL VALOR DE REPARACIONES O ALISTAMIENTO, en caso de que se hayan efectuado de acuerdo a la liquidacion que se presente; las cuales deberan ser canceladas por EL CLIENTE a EL INTERMEDIARIO hasta el momento en que se retire del VEHICULO. Si EL CLIENTE no cancela los valores antes indicados, el VEHICULO no sera entregado por EL INTERMEDIARIO."
+    : "CUARTA: PLAZO.- Debido a la naturaleza de los servicios, considerando que estos dependen de diferentes circunstancias, el plazo que las partes fijan para la prestacion de los servicios de intermediacion para la venta del VEHICULO de EL CLIENTE es indefinida o hasta el momento que este se venda a un comprador final, independientemente de que EL INTERMEDIARIO ya haya cancelado el precio aqui acordado.";
 
   return [
     title,
     "",
-    "En el Distrito Metropolitano de {{ciudad}}, a {{fecha}}, comparecen a la celebracion del presente contrato {{comparecientesCliente}}; y, por otra parte, la compania AUTOCOR AUTOEVOLUCION S.A.S., debidamente representada por su delegada, a quien en adelante se denominara EL INTERMEDIARIO. Los comparecientes son de nacionalidad ecuatoriana, mayores de edad, domiciliados en la ciudad de {{ciudad}}, habiles para ejercer derechos y contraer obligaciones.",
+    intro,
     "",
-    spouseClause,
+    "PRIMERA: ANTECEDENTES.- EL CLIENTE es propietario de un vehiculo de las siguientes caracteristicas (a continuacion, VEHICULO):",
     "",
-    "PRIMERA: ANTECEDENTES.- EL CLIENTE es propietario del VEHICULO descrito en el cuadro superior del documento y declara que la informacion proporcionada es real, completa y suficiente para iniciar la gestion de intermediacion, validacion documental y proceso comercial correspondiente.",
+    "{{tablaVehiculo}}",
     "",
-    "1.1.- EL INTERMEDIARIO cuenta con experiencia, conocimiento, infraestructura fisica y logistica necesaria para realizar actividades de intermediacion de vehiculos usados. 1.2.- EL CLIENTE tiene la intencion de vender el VEHICULO descrito anteriormente. 1.3.- El presente contrato cumple con los requerimientos aplicables para otorgar certeza juridica a las transacciones de automotores usados.",
+    isConsignment
+      ? "1.1.- EL INTERMEDIARIO es una persona natural autorizada a realizar actividades de intermediacion de vehiculos usados, contando con todos los requisitos exigidos por la ley, experiencia, conocimiento, infraestructura fisica y logistica necesaria para hacerlo; 1.2.- EL CLIENTE tiene la intencion de VENDER el VEHICULO, detallado anteriormente; 1.3. El presente contrato cumple con los requerimientos de la Resolucion No. NAC-DGERCGC14-00575 emitida por el Servicio de Rentas Internas para otorgar certeza juridica tributaria a las transacciones de automotores usados, y se sometera a las futuras regulaciones vigentes en la materia."
+      : "1.1.- EL INTERMEDIARIO es una persona natural autorizada a realizar actividades de intermediacion de vehiculos usados, contando con todos los requisitos exigidos por la ley, experiencia, conocimiento, infraestructura fisica y logistica necesaria para hacerlo; 1.2.- EL CLIENTE tiene la intencion de VENDER el VEHICULO, por lo que suscribe conjuntamente a este, un contrato de mandato o encargo que facultan firmar la venta de su vehiculo, de acuerdo a lo aqui previsto. 1.3. El presente contrato cumple con los requerimientos de la Resolucion No. NAC-DGERCGC14-00575 emitida por el Servicio de Rentas Internas para otorgar certeza juridica tributaria a las transacciones de automotores usado y, se someteran a las futuras regulaciones vigentes en la materia.",
     "",
-    "SEGUNDA: OBJETO.- Con los antecedentes expuestos, EL CLIENTE contrata los servicios de EL INTERMEDIARIO para promocionar, exhibir, revisar, preparar, negociar y gestionar la venta del VEHICULO, asi como para realizar las gestiones documentales, comerciales y legales necesarias hasta la conclusion de la operacion.",
+    "SEGUNDA: OBJETO.- Con los antecedentes expuestos, EL CLIENTE contrata los servicios de EL INTERMEDIARIO, a fin de que este promocione y exhiba el VEHICULO de manera fisica en sus patios, mediante visitas, citas programadas con interesados, publicacion en portales web y otros medios masivos de publicidad. EL INTERMEDIARIO recibira ofertas y negociara el VEHICULO, podra revisar y preparar este para su venta; asi como, realizar permutas con otro(s) vehiculo(s) de acuerdo a lo instruido por EL CLIENTE.",
     "",
     priceClause,
     "",
-    "CUARTA: PLAZO.- Debido a la naturaleza de los servicios y considerando que estos dependen de diferentes circunstancias, el plazo para la prestacion de los servicios de intermediacion sera indefinido o hasta el momento en que el VEHICULO sea vendido a un comprador final, salvo terminacion anticipada comunicada por escrito.",
+    plazoClause,
     "",
     billingClause,
     "",
-    "SEXTA: GASTOS.- Todos los gastos mecanicos, alistamiento, repuestos, accesorios, multas, matriculacion, tasas, tributos, SPPAT u otros valores vinculados al VEHICULO seran asumidos por EL CLIENTE o descontados en la liquidacion correspondiente, segun corresponda a la operacion y a los valores previamente informados.",
+    isConsignment
+      ? "EL CLIENTE suscribira con EL INTERMEDIARIO, un acta de entrega recepcion del VEHICULO conforme lo detallado en la Resolucion emitida por el SRI. EL CLIENTE autoriza a que EL INTERMEDIARIO reciba pagos parciales o totales por parte del comprador final. Una vez que se hayan cubierto todos los gastos y, siempre y cuando, EL INTERMEDIARIO haya recibido la totalidad del valor este sera cancelado a EL CLIENTE."
+      : "",
     "",
-    "SEPTIMA: AUTORIZACION DE RODAJE.- EL CLIENTE autoriza a EL INTERMEDIARIO a movilizar y desplazar el VEHICULO a nivel nacional para exhibirlo, probarlo, revisarlo mecanicamente, trasladarlo a patios, talleres, centros de revision o lugares requeridos para la gestion comercial. Tambien autoriza la toma y publicacion de fotografias del VEHICULO en medios digitales o comerciales.",
+    "SEXTA: GASTOS.- Todos los gastos de tipo mecanico, alistamiento, repuestos, accesorios u otros que deban realizarse en el VEHICULO seran asumidos por EL CLIENTE los cuales constaran en la liquidacion de acuerdo al avaluo realizado y seran descontados a EL CLIENTE del pago final. Si EL CLIENTE termina de manera anticipada este instrumento debera pagar todos los gastos senalados en este contrato previo a la entrega del VEHICULO como el valor de servicios administrativos. EL CLIENTE conoce que debe estar al dia con todos los valores, tasas o tributos por concepto de multas, matriculacion, SPPAT u otros de tipo legal que antecedan a la firma del presente contrato para el efectivo traspaso del VEHICULO; caso contrario, acepta que EL INTERMEDIARIO pueda realizar los pagos y se descuente del valor a pagar a EL CLIENTE.",
     "",
-    "OCTAVA: DECLARACIONES.- EL CLIENTE declara que el VEHICULO es de su propiedad, que no fue obtenido de manera ilegal, que no oculta informacion relevante para la negociacion, que no mantiene gravamen, prohibicion o antecedente que impida su transferencia, salvo aquellos expresamente informados a EL INTERMEDIARIO. Si existiere informacion omitida, EL CLIENTE asumira las consecuencias civiles, penales, administrativas y economicas que correspondan.",
+    "SEPTIMA: AUTORIZACION DE RODAJE.- EL CLIENTE autoriza a EL INTERMEDIARIO a movilizar y desplazar el vehiculo de manera nacional a fin de exhibirlo; asi como para ser probado y/o trasladarlo para revisiones mecanicas por parte del comprador final. Asimismo, autoriza a tomar fotografias del vehiculo y que estas sean exhibidas en paginas web o medios de comunicacion masivos.",
     "",
-    "NOVENA: CONFIDENCIALIDAD.- Las partes declaran que la informacion comercial, legal, documental y operativa derivada del presente contrato sera tratada de manera confidencial y no podra ser divulgada a terceros sin autorizacion expresa, salvo requerimiento de autoridad competente o necesidad propia de la operacion.",
+    "OCTAVA: DECLARACIONES.- EL CLIENTE con la suscripcion de este instrumento declara lo siguiente: 8.1. Que sobre el VEHICULO de su propiedad no pesa gravamen alguno, prohibicion de enajenar y no mantiene antecedentes de cualquier naturaleza en el sistema judicial del pais que puedan impedir su transferencia, declarando que el VEHICULO se encuentra totalmente saneado y, si llega a existir algun problema judicial de cualquier naturaleza, incluyendo prohibiciones de enajenar, denuncias de robo, entre otros, sera su directa responsabilidad, incluso una vez firmado el respectivo contrato de venta con el tercero. EL CLIENTE debera responder frente a EL INTERMEDIARIO y el comprador; sin perjuicio de las acciones civiles y penales que se puedan presentar. Esto da la posibilidad a EL INTERMEDIARIO de terminar inmediatamente el contrato, solicitar el valor pagado a EL CLIENTE -en caso de que se haya transferido el valor- en el plazo de 3 dias de enviada la comunicacion y, si es posible, transferir el vehiculo a EL CLIENTE y/o realizar todos los tramites para resciliar el contrato firmado. Si EL CLIENTE no devuelve el valor(es) en el plazo de 5 dias, se podra cobrar el maximo interes convencional determinado por el BCE hasta que cancele el mismo, mas todos los gastos legales correspondientes a transferencia de dominio, compensacion al COMPRADOR, gastos de retencion del vehiculo, o incluso los honorarios de abogados de los procesos legales correspondientes; 8.2. EL CLIENTE autoriza a verificar, validar y contrastar la informacion personal, legal, registral, comercial y aquella vinculada a sus antecedentes financieros o crediticios; asi como todo aquello relacionado con la evaluacion de riesgos del vehiculo, historial de propiedad, antecedentes, entre otros, a traves de cualquier fuente publica o privada que considere pertinente, antes, durante o despues de la operacion. 8.3. Que, a la fecha de suscripcion de este instrumento, se entrego el VEHICULO en el estado fisico y mecanico suscrito en el acta de entrega recepcion, declarando que el kilometraje no ha sido manipulado o alterado y que el VEHICULO se encuentra en condiciones mecanicas y esteticas aceptables, no mantiene vicios ocultos y no ha ocultado informacion relevante para la negociacion como choques, danos, siniestros, entre otros. Si EL INTERMEDIARIO comprueba que EL CLIENTE omitio lo senalado, podra cobrar dichos valores, devolver el VEHICULO contra entrega de los valores cancelados o iniciar las acciones legales correspondientes; 8.4. Que se compromete a pagar en el plazo de 48 horas cualquier multa o sancion impuesto por una autoridad que le correspondan del periodo en el cual fue propietario, incluso si el VEHICULO ya esta vendido a un tercero, o se podran iniciar acciones legales por dichos valores; 8.5. Que entregara todos los documentos necesarios en el plazo maximo de 48 horas de ser solicitados para el traspaso del vehiculo y acudira a la firma correspondiente; si en este tiempo no lo hace, EL INTERMEDIARIO a su solo criterio podra dar por terminado este contrato y cobrar el valor de QUINIENTOS DOLARES DE LOS ESTADOS UNIDOS DE AMERICA por concepto de servicios administrativos, exhibicion y gestion y devolver el VEHICULO una vez cancelado este monto; asi como los gastos de alistamiento o mecanicos, si los hubiera; 8.6. Que autoriza a que EL INTERMEDIARIO pueda ceder o delegar total o parcialmente los derechos y/u obligaciones del presente contrato a cualquier tercero sin necesidad de notificacion alguna, en las mismas condiciones a las aqui senaladas. 8.7. Que mantendra indemne a EL INTERMEDIARIO de cualquier accion judicial que se presente en su contra respecto del VEHICULO, y debera cubrir cualquier gastos, costas u honorarios de abogados que se hayan originado por este motivo; 8.8. Que mientras el VEHICULO se encuentre con EL INTERMEDIARIO no podra ser ofertado o comercializado directamente por EL CLIENTE o por ningun tercero. 8.9. Que no podra dar por terminado este contrato cuando el VEHICULO se encuentre reservado a un tercero o que el tercero haya realizado pagos parciales o totales como reserva y, asi lo demuestra EL INTERMEDIARIO. Si esto ocurre, EL CLIENTE conoce y esta conforme en que debera pagar una multa de QUINIENTOS DOLARES DE LOS ESTADOS UNIDOS DE AMERICA correspondiente a servicios administrativos, publicidad, etc. Este valor es independiente a los gastos por alistamiento o mecanicos realizados conforme la liquidacion; hasta que EL CLIENTE no cancele la multa antes determinada como los gastos, no se procedera a la devolucion del VEHICULO. 8.10. Conoce que, con el fin de mantener una buena comunicacion y asesoria, podra acudir a nuestro canal de atencion al cliente al numero 0992963898.",
     "",
-    "DECIMA: AUTORIZACIONES Y TRATAMIENTO DE DATOS PERSONALES.- EL CLIENTE autoriza el tratamiento, recoleccion, transferencia, almacenamiento, gestion, analisis y uso de sus datos personales para fines propios del proceso comercial, documental, legal, promocional y de servicio de EL INTERMEDIARIO, conforme la normativa vigente.",
+    "NOVENA: CONFIDENCIALIDAD.- Las partes declaran que por la naturaleza del contrato, especificaciones y know how contenido en el mismo, este sera tratado de manera confidencial, y que EL CLIENTE no podra divulgar el mismo a un tercero sin el consentimiento expreso de EL INTERMEDIARIO o podra dar inicio a las acciones a las que haya lugar.",
     "",
-    "DECIMA PRIMERA: NOTIFICACIONES.- Las partes acuerdan que cualquier citacion, comunicacion o notificacion sera recibida por EL INTERMEDIARIO en los canales corporativos de AUTOCOR y por EL CLIENTE en la direccion {{direccion}}, correo {{correo}} y celular {{celular}}. Las comunicaciones remitidas a estos canales se entenderan validas y efectivamente realizadas.",
+    "DECIMA: AUTORIZACIONES Y TRATAMIENTO DE DATOS PERSONALES.- EL CLIENTE declara que fue informado sobre el Tratamiento de Datos Personales y autoriza al tratamiento de estos, recoleccion, transferencia, almacenamiento, gestion, entre otros conforme la politica de EL INTERMEDIARIO, la cual fue debidamente informada y esta sujeta a la normativa vigente. EL CLIENTE autoriza que la informacion entregada en este contrato, como en el acta de entrega recepcion o cualquier documento suscrito entre las partes, sea utilizado por EL INTERMEDIARIO para procesos propios de este como mercadeo, procesamiento de datos, analisis, investigacion, cobro, promocion, entre otros que permitan facilitar, promover, permitir, otorgar o promocionar actividades de EL INTERMEDIARIO o de cualquier institucion publica que la solicite, conforme la normativa vigente. Ademas, EL CLIENTE autoriza a ser contactado por cualquier medio de comunicacion, mensajes de datos, correo electronico, entre otros con fines informativos, publicitarios, comerciales, entre otros.",
     "",
-    "DECIMA SEGUNDA: CONTROVERSIAS.- En caso de controversias derivadas del presente instrumento, las partes buscaran solucionarlas de buena fe. De no ser posible, EL CLIENTE renuncia fuero y domicilio y las partes se someteran al tramite que seleccione EL INTERMEDIARIO ante los jueces competentes.",
+    "DECIMA PRIMERA: NOTIFICACIONES.- Las partes acuerdan que cualquier citacion o notificacion sera recibida en las siguientes direcciones: EL INTERMEDIARIO en la Av. 6 de Diciembre y Santa Lucia, Quito, correo electronico veronica.llugcha@autocor.com.ec y, EL CLIENTE en la direccion {{direccion}}, correo electronico {{correo}} y celular {{celular}}. Todas las comunicaciones realizadas a los respectivos correos electronicos, las partes estan de acuerdo que se entenderan como validas y efectivamente realizadas. Si una de las partes modifica su direccion, correo electronico o telefono sera responsabilidad de esta notificar a la otra.",
+    "",
+    "DECIMA SEGUNDA: CONTROVERSIAS.- En caso de suscitarse controversias que se deriven del presente instrumento. EL CLIENTE renuncia fuero y domicilio y las partes se someteran al tramite monitorio, cuando corresponda o al tramite que seleccione EL INTERMEDIARIO, ante los jueces competentes del canton Quito.",
     "",
     "Las partes se someten a la totalidad de las clausulas que preceden, expresando su aceptacion con sus firmas habituales en tres ejemplares de identico valor y tenor."
-  ].join("\n");
+  ].filter((block) => block !== "").join("\n\n");
 }
 
 const DEFAULT_LEGAL_CONTRACT_TEMPLATES = {
@@ -381,6 +393,7 @@ const defaultState = {
     { id: "status-pilot", label: "Saneamiento realizado y subido a Pilot", value: "saneamiento realizado y subido a pilot", color: "#23865d", closes: true, isDefault: false }
   ],
   formConfig: structuredClone(DEFAULT_FORM_CONFIG),
+  legalContractTemplateVersion: LEGAL_CONTRACT_TEMPLATE_VERSION,
   legalContractTemplates: structuredClone(DEFAULT_LEGAL_CONTRACT_TEMPLATES),
   agencies: ["Matriz Guayaquil", "Sucursal Norte", "Sucursal Sur", "Via Daule", "Samborondon", "Duran", "Quito", "Cuenca", "Manta"],
   commercialAdvisors: [
@@ -4106,6 +4119,11 @@ function normalizeLegalContractTemplates(templates = {}) {
 }
 
 function getLegalContractTemplates() {
+  if (state.legalContractTemplateVersion !== LEGAL_CONTRACT_TEMPLATE_VERSION) {
+    state.legalContractTemplates = structuredClone(DEFAULT_LEGAL_CONTRACT_TEMPLATES);
+    state.legalContractTemplateVersion = LEGAL_CONTRACT_TEMPLATE_VERSION;
+    saveState();
+  }
   state.legalContractTemplates = normalizeLegalContractTemplates(state.legalContractTemplates);
   return state.legalContractTemplates;
 }
@@ -4152,6 +4170,7 @@ function collectLegalContractData(formElement) {
     tipoDocumento: "Contrato de prestacion de servicios",
     ciudad: city,
     fecha: data.fecha || today,
+    fechaLegal: formatLegalContractDate(data.fecha || today),
     placa: cleanUpper(data.placa),
     marca: cleanUpper(data.marca),
     modelo: cleanUpper(data.modelo),
@@ -4161,6 +4180,8 @@ function collectLegalContractData(formElement) {
     chasis: cleanUpper(data.chasis),
     motor: cleanUpper(data.motor),
     precioCompra: price ? formatCurrencyValue(price) : "",
+    precioCompraValor: price ? formatLegalCurrencyNumber(price) : "",
+    precioCompraLetras: price ? formatLegalCurrencyWords(price) : "__________________ DOLARES DE LOS ESTADOS UNIDOS DE AMERICA",
     propietario,
     nacionalidadPropietario: cleanDisplayName(data.nacionalidadPropietario || "Ecuatoriana"),
     cedulaPropietario: data.cedulaPropietario || "",
@@ -4329,6 +4350,65 @@ function cleanDisplayName(value = "") {
   return String(value || "").trim().replace(/\s+/g, " ").toLowerCase().replace(/\b\p{L}/gu, (letter) => letter.toUpperCase());
 }
 
+function formatLegalCurrencyNumber(value) {
+  const amount = Number(value || 0);
+  if (!Number.isFinite(amount) || amount <= 0) return "";
+  return amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatLegalCurrencyWords(value) {
+  const totalCents = Math.round(Number(value || 0) * 100);
+  if (!Number.isFinite(totalCents) || totalCents <= 0) return "CERO DOLARES DE LOS ESTADOS UNIDOS DE AMERICA";
+  const integer = Math.floor(totalCents / 100);
+  const cents = totalCents % 100;
+  const dollarLabel = integer === 1 ? "DOLAR" : "DOLARES";
+  const centsText = cents ? ` CON ${String(cents).padStart(2, "0")}/100` : "";
+  return `${numberToSpanishWords(integer).toUpperCase()} ${dollarLabel} DE LOS ESTADOS UNIDOS DE AMERICA${centsText}`;
+}
+
+function formatLegalContractDate(value = "") {
+  const date = value ? new Date(`${value}T00:00:00`) : new Date();
+  if (Number.isNaN(date.getTime())) return "los ___ dias del mes de ______ del 202_";
+  const months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  return `los ${date.getDate()} dias del mes de ${months[date.getMonth()]} del ${date.getFullYear()}`;
+}
+
+function numberToSpanishWords(value) {
+  const number = Math.floor(Number(value || 0));
+  if (!Number.isFinite(number) || number <= 0) return "cero";
+  const units = ["", "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve"];
+  const teens = ["diez", "once", "doce", "trece", "catorce", "quince", "dieciseis", "diecisiete", "dieciocho", "diecinueve"];
+  const tens = ["", "", "veinte", "treinta", "cuarenta", "cincuenta", "sesenta", "setenta", "ochenta", "noventa"];
+  const hundreds = ["", "ciento", "doscientos", "trescientos", "cuatrocientos", "quinientos", "seiscientos", "setecientos", "ochocientos", "novecientos"];
+  const belowHundred = (n) => {
+    if (n < 10) return units[n];
+    if (n < 20) return teens[n - 10];
+    if (n === 20) return "veinte";
+    if (n < 30) return `veinti${units[n - 20]}`;
+    const ten = Math.floor(n / 10);
+    const unit = n % 10;
+    return unit ? `${tens[ten]} y ${units[unit]}` : tens[ten];
+  };
+  const belowThousand = (n) => {
+    if (n === 100) return "cien";
+    if (n < 100) return belowHundred(n);
+    const hundred = Math.floor(n / 100);
+    const rest = n % 100;
+    return rest ? `${hundreds[hundred]} ${belowHundred(rest)}` : hundreds[hundred];
+  };
+  if (number < 1000) return belowThousand(number);
+  if (number < 1000000) {
+    const thousands = Math.floor(number / 1000);
+    const rest = number % 1000;
+    const prefix = thousands === 1 ? "mil" : `${belowThousand(thousands)} mil`;
+    return rest ? `${prefix} ${belowThousand(rest)}` : prefix;
+  }
+  const millions = Math.floor(number / 1000000);
+  const rest = number % 1000000;
+  const prefix = millions === 1 ? "un millon" : `${numberToSpanishWords(millions)} millones`;
+  return rest ? `${prefix} ${numberToSpanishWords(rest)}` : prefix;
+}
+
 function replaceContractPlaceholders(template, data) {
   let result = template || "";
   Object.entries(data).forEach(([key, value]) => {
@@ -4340,12 +4420,37 @@ function replaceContractPlaceholders(template, data) {
 
 function getLegalContractPrintTitle(data = {}) {
   if (data.operationType === "consignacion") {
-    return "CONTRATO DE PRESTACION DE SERVICIOS DE INTERMEDIACION Y GESTION DE VEHICULOS USADOS POR COMISION Y/O CONSIGNACION";
+    return "CONTRATO DE PRESTACION DE SERVICIOS DE INTERMEDIACION\nY GESTION DE VEHICULOS USADOS POR COMISION Y/O CONSIGNACION";
   }
-  return "CONTRATO DE PRESTACION DE SERVICIOS DE INTERMEDIACION Y GESTION DE VEHICULOS USADOS - PAGO DIRECTO";
+  return "CONTRATO DE PRESTACION DE SERVICIOS DE INTERMEDIACION Y GESTION DE VEHICULOS USADOS\n-PAGO DIRECTO-";
 }
 
-function renderLegalContractBody(contractText = "") {
+function renderLegalVehicleTable(data = {}) {
+  return `
+    <table class="vehicle-table" aria-label="Datos del vehiculo">
+      <tbody>
+        <tr>
+          <td class="label">Placa</td><td class="value">${escapeHtml(data.placa || "")}</td>
+          <td class="label">Color</td><td class="value">${escapeHtml(data.color || "")}</td>
+        </tr>
+        <tr>
+          <td class="label">Marca</td><td class="value">${escapeHtml(data.marca || "")}</td>
+          <td class="label">Año</td><td class="value">${escapeHtml(data.anio || "")}</td>
+        </tr>
+        <tr>
+          <td class="label">Modelo</td><td class="value">${escapeHtml(data.modelo || "")}</td>
+          <td class="label">Chasis</td><td class="value">${escapeHtml(data.chasis || "")}</td>
+        </tr>
+        <tr>
+          <td class="label">Motor</td><td class="value">${escapeHtml(data.motor || "")}</td>
+          <td class="label">KM</td><td class="value">${escapeHtml(data.kilometraje || "")}</td>
+        </tr>
+      </tbody>
+    </table>
+  `;
+}
+
+function renderLegalContractBody(contractText = "", data = {}) {
   const blocks = String(contractText || "")
     .replace(/\r\n/g, "\n")
     .split(/\n{2,}/)
@@ -4354,6 +4459,7 @@ function renderLegalContractBody(contractText = "") {
 
   return blocks.map((block, index) => {
     if (index === 0 && /^(CONTRATO|ENCARGO)\b/i.test(block)) return "";
+    if (block.trim() === "{{tablaVehiculo}}") return renderLegalVehicleTable(data);
     const normalized = block.replace(/\s+/g, " ").trim();
     const isClauseTitle = /^[A-ZÁÉÍÓÚÜÑ0-9 .,:;"'()\/%-]+$/.test(normalized) && normalized.length <= 150;
     const className = isClauseTitle ? "contract-clause-title" : "contract-paragraph";
@@ -4364,7 +4470,7 @@ function renderLegalContractBody(contractText = "") {
 function buildLegalContractPrintHtml(data, contractText) {
   const title = getLegalContractPrintTitle(data);
   const logoSrc = state.logoDataUrl || new URL(CORPORATE_LOGO_SRC, window.location.href).href;
-  const bodyHtml = renderLegalContractBody(contractText);
+  const bodyHtml = renderLegalContractBody(contractText, data);
   return `<!doctype html>
 <html lang="es">
 <head>
@@ -4379,7 +4485,7 @@ function buildLegalContractPrintHtml(data, contractText) {
     body {
       font-family: 'Roboto Condensed', 'Arial Narrow', Arial, sans-serif;
       font-size: 10pt;
-      line-height: 1.24;
+      line-height: 1.5;
     }
     .print-toolbar {
       position: sticky;
@@ -4419,31 +4525,31 @@ function buildLegalContractPrintHtml(data, contractText) {
     }
     .contract-logo {
       display: block;
-      width: 118px;
-      max-height: 42px;
+      width: 120px;
+      max-height: 44px;
       object-fit: contain;
-      margin: 0 auto 18mm;
+      margin: 0 auto 13mm;
     }
     .contract-title {
       max-width: 150mm;
-      margin: 0 auto 8mm;
+      margin: 0 auto 7mm;
       text-align: center;
       text-transform: uppercase;
       font-size: 11pt;
-      line-height: 1.22;
+      line-height: 1.5;
       font-weight: 900;
       letter-spacing: .01em;
     }
     .contract-body {
       font-size: 10pt;
-      line-height: 1.25;
+      line-height: 1.5;
       color: #111;
       text-align: justify;
       text-justify: inter-word;
       hyphens: auto;
     }
     .contract-body p {
-      margin: 0 0 5.2mm;
+      margin: 0 0 4.2mm;
       text-align: justify;
       text-justify: inter-word;
     }
@@ -4453,10 +4559,10 @@ function buildLegalContractPrintHtml(data, contractText) {
     }
     .vehicle-table {
       width: 75%;
-      margin: 7mm auto 8mm;
+      margin: 5mm auto 6mm;
       border-collapse: collapse;
       font-size: 10pt;
-      line-height: 1.08;
+      line-height: 1.5;
     }
     .vehicle-table td {
       border: .8px solid #111;
@@ -4519,28 +4625,8 @@ function buildLegalContractPrintHtml(data, contractText) {
   </div>
   <article class="sheet">
     <img class="contract-logo" src="${escapeHtml(logoSrc)}" alt="Autocor">
-    <h1 class="contract-title">${escapeHtml(title)}</h1>
-    <section class="contract-body">
-      <table class="vehicle-table" aria-label="Datos del vehiculo">
-        <tbody>
-          <tr>
-            <td class="label">Placa</td><td class="value">${escapeHtml(data.placa || "")}</td>
-            <td class="label">Color</td><td class="value">${escapeHtml(data.color || "")}</td>
-          </tr>
-          <tr>
-            <td class="label">Marca</td><td class="value">${escapeHtml(data.marca || "")}</td>
-            <td class="label">Año</td><td class="value">${escapeHtml(data.anio || "")}</td>
-          </tr>
-          <tr>
-            <td class="label">Modelo</td><td class="value">${escapeHtml(data.modelo || "")}</td>
-            <td class="label">Chasis</td><td class="value">${escapeHtml(data.chasis || "")}</td>
-          </tr>
-          <tr>
-            <td class="label">Motor</td><td class="value">${escapeHtml(data.motor || "")}</td>
-            <td class="label">KM</td><td class="value">${escapeHtml(data.kilometraje || "")}</td>
-          </tr>
-        </tbody>
-      </table>
+    <h1 class="contract-title">${escapeHtml(title).replace(/\n/g, "<br>")}</h1>
+      <section class="contract-body">
       ${bodyHtml}
       <section class="signature-grid">
         <div class="signature-box">
@@ -4628,6 +4714,7 @@ function saveLegalContractTemplates(event) {
   LEGAL_CONTRACT_TEMPLATE_KEYS.forEach((key) => {
     nextTemplates[key] = legalContractTemplateForm.elements[key]?.value.trim() || DEFAULT_LEGAL_CONTRACT_TEMPLATES[key];
   });
+  state.legalContractTemplateVersion = LEGAL_CONTRACT_TEMPLATE_VERSION;
   state.legalContractTemplates = normalizeLegalContractTemplates(nextTemplates);
   saveState();
   renderLegalContractTemplateAdmin();
@@ -4637,6 +4724,7 @@ function saveLegalContractTemplates(event) {
 function resetLegalContractTemplates() {
   const confirmed = window.confirm("Desea restaurar los textos base de contratos legales?");
   if (!confirmed) return;
+  state.legalContractTemplateVersion = LEGAL_CONTRACT_TEMPLATE_VERSION;
   state.legalContractTemplates = structuredClone(DEFAULT_LEGAL_CONTRACT_TEMPLATES);
   saveState();
   renderLegalContractTemplateAdmin();
