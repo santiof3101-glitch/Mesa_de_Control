@@ -276,7 +276,7 @@ const LEGAL_CONTRACT_TEMPLATE_LABELS = {
   consignmentMarriedPrestacion: "A consignacion / comision - casado"
 };
 
-const LEGAL_CONTRACT_TEMPLATE_VERSION = "20260830-dilileg-mayusculas-negrilla-v4";
+const LEGAL_CONTRACT_TEMPLATE_VERSION = "20260830-dilileg-enie-negrilla-v5";
 
 function buildPrestacionTemplate(operationType, maritalType) {
   const isConsignment = operationType === "consignacion";
@@ -4185,8 +4185,8 @@ function collectLegalContractData(formElement) {
   const married = isMarriedLegalStatus(estadoCivil);
   const conyuge = cleanDisplayName(data.conyuge);
   const comparecientesCliente = married
-    ? `el senor(a) ${propietario || "__________________"} y su conyuge ${conyuge || "__________________"}, por sus propios y personales derechos y en representacion de la sociedad conyugal conforme aplique, a quien para los efectos del presente instrumento se le denominara EL CLIENTE`
-    : `el senor(a) ${propietario || "__________________"}, de estado civil ${estadoCivil}, por sus propios y personales derechos, a quien para los efectos del presente instrumento se le denominara EL CLIENTE`;
+    ? `el señor(a) ${propietario || "__________________"} y su cónyuge ${conyuge || "__________________"}, por sus propios y personales derechos y en representación de la sociedad conyugal conforme aplique, a quien para los efectos del presente instrumento se le denominará EL CLIENTE`
+    : `el señor(a) ${propietario || "__________________"}, de estado civil ${estadoCivil}, por sus propios y personales derechos, a quien para los efectos del presente instrumento se le denominará EL CLIENTE`;
   return {
     contractModel: modelMeta.key || getLegalContractTemplateKey(operationType, data.documentType, estadoCivil),
     operationType,
@@ -4462,8 +4462,93 @@ function numberToSpanishWords(value) {
   return rest ? `${prefix} ${numberToSpanishWords(rest)}` : prefix;
 }
 
+function normalizeLegalContractTemplateText(text = "") {
+  return String(text || "")
+    .replace(/\bsenor\b/g, "señor")
+    .replace(/\bSenor\b/g, "Señor")
+    .replace(/\bSENOR\b/g, "SEÑOR")
+    .replace(/\bsenora\b/g, "señora")
+    .replace(/\bSenora\b/g, "Señora")
+    .replace(/\bSENORA\b/g, "SEÑORA")
+    .replace(/\bsenalad([ao]s?)\b/g, "señalad$1")
+    .replace(/\bSenalad([ao]s?)\b/g, "Señalad$1")
+    .replace(/\bSENALAD([AO]S?)\b/g, "SEÑALAD$1")
+    .replace(/\bdanos\b/g, "daños")
+    .replace(/\bDanos\b/g, "Daños")
+    .replace(/\bDANOS\b/g, "DAÑOS")
+    .replace(/\banos\b/g, "años")
+    .replace(/\bAnos\b/g, "Años")
+    .replace(/\bANOS\b/g, "AÑOS")
+    .replace(/\bcompania\b/g, "compañía")
+    .replace(/\bCompania\b/g, "Compañía")
+    .replace(/\bCOMPANIA\b/g, "COMPAÑÍA")
+    .replace(/\bdias\b/g, "días")
+    .replace(/\bDias\b/g, "Días")
+    .replace(/\bDIAS\b/g, "DÍAS")
+    .replace(/\bpais\b/g, "país")
+    .replace(/\bPais\b/g, "País")
+    .replace(/\bPAIS\b/g, "PAÍS")
+    .replace(/\bmaximo\b/g, "máximo")
+    .replace(/\bMaximo\b/g, "Máximo")
+    .replace(/\bMAXIMO\b/g, "MÁXIMO")
+    .replace(/\bningun\b/g, "ningún")
+    .replace(/\bNingun\b/g, "Ningún")
+    .replace(/\bNINGUN\b/g, "NINGÚN")
+    .replace(/\bpodra\b/g, "podrá")
+    .replace(/\bPodra\b/g, "Podrá")
+    .replace(/\bPODRA\b/g, "PODRÁ")
+    .replace(/\bdebera\b/g, "deberá")
+    .replace(/\bDebera\b/g, "Deberá")
+    .replace(/\bDEBERA\b/g, "DEBERÁ")
+    .replace(/\bsera\b/g, "será")
+    .replace(/\bSera\b/g, "Será")
+    .replace(/\bSERA\b/g, "SERÁ")
+    .replace(/\baqui\b/g, "aquí")
+    .replace(/\bAqui\b/g, "Aquí")
+    .replace(/\bAQUI\b/g, "AQUÍ")
+    .replace(/\bconyuge\b/g, "cónyuge")
+    .replace(/\bConyuge\b/g, "Cónyuge")
+    .replace(/\bCONYUGE\b/g, "CÓNYUGE")
+    .replace(/\bvehiculo\b/g, "vehículo")
+    .replace(/\bVehiculo\b/g, "Vehículo")
+    .replace(/\bVEHICULO\b/g, "VEHÍCULO")
+    .replace(/\bsuscripcion\b/g, "suscripción")
+    .replace(/\bSuscripcion\b/g, "Suscripción")
+    .replace(/\bSUSCRIPCION\b/g, "SUSCRIPCIÓN")
+    .replace(/\bprohibicion\b/g, "prohibición")
+    .replace(/\bProhibicion\b/g, "Prohibición")
+    .replace(/\bPROHIBICION\b/g, "PROHIBICIÓN")
+    .replace(/\binformacion\b/g, "información")
+    .replace(/\bInformacion\b/g, "Información")
+    .replace(/\bINFORMACION\b/g, "INFORMACIÓN")
+    .replace(/\boperacion\b/g, "operación")
+    .replace(/\bOperacion\b/g, "Operación")
+    .replace(/\bOPERACION\b/g, "OPERACIÓN")
+    .replace(/\bnegociacion\b/g, "negociación")
+    .replace(/\bNegociacion\b/g, "Negociación")
+    .replace(/\bNEGOCIACION\b/g, "NEGOCIACIÓN")
+    .replace(/\bnotificacion\b/g, "notificación")
+    .replace(/\bNotificacion\b/g, "Notificación")
+    .replace(/\bNOTIFICACION\b/g, "NOTIFICACIÓN")
+    .replace(/\bcomision\b/g, "comisión")
+    .replace(/\bComision\b/g, "Comisión")
+    .replace(/\bCOMISION\b/g, "COMISIÓN")
+    .replace(/\batencion\b/g, "atención")
+    .replace(/\bAtencion\b/g, "Atención")
+    .replace(/\bATENCION\b/g, "ATENCIÓN")
+    .replace(/\bgestion\b/g, "gestión")
+    .replace(/\bGestion\b/g, "Gestión")
+    .replace(/\bGESTION\b/g, "GESTIÓN")
+    .replace(/\bintermediacion\b/g, "intermediación")
+    .replace(/\bIntermediacion\b/g, "Intermediación")
+    .replace(/\bINTERMEDIACION\b/g, "INTERMEDIACIÓN")
+    .replace(/\bprestacion\b/g, "prestación")
+    .replace(/\bPrestacion\b/g, "Prestación")
+    .replace(/\bPRESTACION\b/g, "PRESTACIÓN");
+}
+
 function replaceContractPlaceholders(template, data) {
-  let result = template || "";
+  let result = normalizeLegalContractTemplateText(template || "");
   Object.entries(data).forEach(([key, value]) => {
     const pattern = new RegExp(`{{\\s*${key}\\s*}}`, "gi");
     result = result.replace(pattern, value || "");
@@ -4473,9 +4558,9 @@ function replaceContractPlaceholders(template, data) {
 
 function getLegalContractPrintTitle(data = {}) {
   if (data.operationType === "consignacion") {
-    return "CONTRATO DE PRESTACION DE SERVICIOS DE INTERMEDIACION\nY GESTION DE VEHICULOS USADOS POR COMISION Y/O CONSIGNACION";
+    return "CONTRATO DE PRESTACIÓN DE SERVICIOS DE INTERMEDIACIÓN\nY GESTIÓN DE VEHÍCULOS USADOS POR COMISIÓN Y/O CONSIGNACIÓN";
   }
-  return "CONTRATO DE PRESTACION DE SERVICIOS DE INTERMEDIACION Y GESTION DE VEHICULOS USADOS\n-PAGO DIRECTO-";
+  return "CONTRATO DE PRESTACIÓN DE SERVICIOS DE INTERMEDIACIÓN Y GESTIÓN DE VEHÍCULOS USADOS\n-PAGO DIRECTO-";
 }
 
 function renderLegalVehicleTable(data = {}) {
@@ -4517,7 +4602,7 @@ function highlightLegalContractText(html = "", data = {}) {
   const excludedVehicleValues = new Set(vehicleValues);
   const upperTextPattern = /\b[A-ZÁÉÍÓÚÜÑ0-9][A-ZÁÉÍÓÚÜÑ0-9.,;:()/%-]*(?:\s+[A-ZÁÉÍÓÚÜÑ0-9][A-ZÁÉÍÓÚÜÑ0-9.,;:()/%-]*)*\b/g;
 
-  return String(html || "").split(/(<[^>]+>)/g).map((part) => {
+  let result = String(html || "").split(/(<[^>]+>)/g).map((part) => {
     if (!part || part.startsWith("<")) return part;
     return part.replace(upperTextPattern, (match) => {
       const cleanValue = match.trim();
@@ -4526,6 +4611,17 @@ function highlightLegalContractText(html = "", data = {}) {
       return `<strong>${cleanValue}</strong>`;
     });
   }).join("");
+  [
+    data.propietario,
+    data.conyuge && data.conyuge !== "No aplica" ? data.conyuge : "",
+    data.estadoCivil,
+    data.estadoCivilContrato
+  ].filter(Boolean).forEach((value) => {
+    const escaped = escapeHtml(String(value)).trim();
+    if (!escaped) return;
+    result = result.replace(new RegExp(escapeRegExp(escaped), "gi"), `<strong>${escaped.toUpperCase()}</strong>`);
+  });
+  return result;
 }
 
 function renderLegalContractBody(contractText = "", data = {}) {
