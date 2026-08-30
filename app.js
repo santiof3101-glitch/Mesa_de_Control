@@ -276,7 +276,7 @@ const LEGAL_CONTRACT_TEMPLATE_LABELS = {
   consignmentMarriedPrestacion: "A consignacion / comision - casado"
 };
 
-const LEGAL_CONTRACT_TEMPLATE_VERSION = "20260829-dilileg-prestacion-completo-v2";
+const LEGAL_CONTRACT_TEMPLATE_VERSION = "20260830-dilileg-formato-firmas-v3";
 
 function buildPrestacionTemplate(operationType, maritalType) {
   const isConsignment = operationType === "consignacion";
@@ -4399,6 +4399,10 @@ function cleanDisplayName(value = "") {
   return String(value || "").trim().replace(/\s+/g, " ").toLowerCase().replace(/\b\p{L}/gu, (letter) => letter.toUpperCase());
 }
 
+function escapeRegExp(value = "") {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function formatLegalCurrencyNumber(value) {
   const amount = Number(value || 0);
   if (!Number.isFinite(amount) || amount <= 0) return "";
@@ -4499,6 +4503,26 @@ function renderLegalVehicleTable(data = {}) {
   `;
 }
 
+function highlightLegalContractText(html = "", data = {}) {
+  let result = String(html || "");
+  const clausePattern = /(^|<br>)(PRIMERA|SEGUNDA|TERCERA|CUARTA|QUINTA|SEXTA|S[EÉ]PTIMA|OCTAVA|NOVENA|D[EÉ]CIMA(?:\s+PRIMERA|\s+SEGUNDA)?)([:.-])/gi;
+  result = result.replace(clausePattern, (match, prefix, title, suffix) => `${prefix}<strong>${title.toUpperCase()}${suffix}</strong>`);
+  [
+    data.propietario,
+    data.conyuge && data.conyuge !== "No aplica" ? data.conyuge : "",
+    data.placa,
+    data.marca,
+    data.modelo,
+    data.precioCompraLetras,
+    data.precioCompraValor
+  ].filter(Boolean).forEach((value) => {
+    const escaped = escapeHtml(String(value)).trim();
+    if (!escaped) return;
+    result = result.replace(new RegExp(escapeRegExp(escaped), "gi"), `<strong>${escaped.toUpperCase()}</strong>`);
+  });
+  return result;
+}
+
 function renderLegalContractBody(contractText = "", data = {}) {
   const blocks = String(contractText || "")
     .replace(/\r\n/g, "\n")
@@ -4512,7 +4536,8 @@ function renderLegalContractBody(contractText = "", data = {}) {
     const normalized = block.replace(/\s+/g, " ").trim();
     const isClauseTitle = /^[A-ZÁÉÍÓÚÜÑ0-9 .,:;"'()\/%-]+$/.test(normalized) && normalized.length <= 150;
     const className = isClauseTitle ? "contract-clause-title" : "contract-paragraph";
-    return `<p class="${className}">${escapeHtml(block).replace(/\n/g, "<br>")}</p>`;
+    const html = highlightLegalContractText(escapeHtml(block).replace(/\n/g, "<br>"), data);
+    return `<p class="${className}">${html}</p>`;
   }).join("");
 }
 
@@ -4541,7 +4566,9 @@ function buildLegalContractPrintHtml(data, contractText) {
       top: 0;
       z-index: 10;
       display: flex;
+      flex-wrap: wrap;
       justify-content: center;
+      align-items: center;
       gap: 10px;
       padding: 12px;
       background: rgba(238, 241, 245, .92);
@@ -4647,11 +4674,18 @@ function buildLegalContractPrintHtml(data, contractText) {
     .signature-role {
       font-weight: 500;
       text-transform: uppercase;
-      margin-bottom: 6mm;
     }
-    .signature-name {
-      font-weight: 900;
+    .contract-footer {
+      margin-top: 12mm;
+      padding-top: 4mm;
+      border-top: .8px solid #d8dce5;
+      color: #555;
+      text-align: center;
       text-transform: uppercase;
+      font-size: 8.5pt;
+      font-weight: 700;
+      letter-spacing: .03em;
+      page-break-inside: avoid;
     }
     @media print {
       html, body { background: #fff; }
@@ -4668,6 +4702,7 @@ function buildLegalContractPrintHtml(data, contractText) {
   </style>
 </head>
 <body>
+  <script>try { history.replaceState(null, document.title, "contrato-autocor.html"); } catch (error) {}</script>
   <div class="print-toolbar">
     <button class="primary" onclick="window.print()">Imprimir / guardar PDF</button>
     <button onclick="window.close()">Cerrar</button>
@@ -4681,14 +4716,13 @@ function buildLegalContractPrintHtml(data, contractText) {
         <div class="signature-box">
           <div class="signature-line"></div>
           <div class="signature-role">El cliente</div>
-          <div class="signature-name">${escapeHtml(data.propietario || "")}</div>
         </div>
         <div class="signature-box">
           <div class="signature-line"></div>
           <div class="signature-role">El intermediario</div>
-          <div class="signature-name">Autocor Autoevolucion S.A.S</div>
         </div>
       </section>
+      <footer class="contract-footer">Elaborado por Mesa de Control Legal de Autocor</footer>
     </section>
   </article>
 </body>
@@ -4822,7 +4856,7 @@ function downloadLegalContractHtml(html, data) {
 }
 
 function openLegalContractPreview(html, data, options = {}) {
-  const reportWindow = window.open("about:blank", "_blank", "width=980,height=900");
+  const reportWindow = window.open("", "_blank", "width=980,height=900");
   if (reportWindow) {
     reportWindow.document.open();
     reportWindow.document.write(html);
