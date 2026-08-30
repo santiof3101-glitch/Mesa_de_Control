@@ -276,7 +276,7 @@ const LEGAL_CONTRACT_TEMPLATE_LABELS = {
   consignmentMarriedPrestacion: "A consignacion / comision - casado"
 };
 
-const LEGAL_CONTRACT_TEMPLATE_VERSION = "20260830-dilileg-enie-negrilla-v5";
+const LEGAL_CONTRACT_TEMPLATE_VERSION = "20260830-contrato-casado-firmas-v6";
 
 function buildPrestacionTemplate(operationType, maritalType) {
   const isConsignment = operationType === "consignacion";
@@ -4467,7 +4467,13 @@ function numberToSpanishWords(value) {
 }
 
 function normalizeLegalContractTemplateText(text = "") {
-  return String(text || "")
+  const placeholders = [];
+  const maskedText = String(text || "").replace(/{{\s*[^}]+\s*}}/g, (match) => {
+    const token = `__LEGAL_PLACEHOLDER_${placeholders.length}__`;
+    placeholders.push(match);
+    return token;
+  });
+  return maskedText
     .replace(/\bsenor\b/g, "señor")
     .replace(/\bSenor\b/g, "Señor")
     .replace(/\bSENOR\b/g, "SEÑOR")
@@ -4548,7 +4554,8 @@ function normalizeLegalContractTemplateText(text = "") {
     .replace(/\bINTERMEDIACION\b/g, "INTERMEDIACIÓN")
     .replace(/\bprestacion\b/g, "prestación")
     .replace(/\bPrestacion\b/g, "Prestación")
-    .replace(/\bPRESTACION\b/g, "PRESTACIÓN");
+    .replace(/\bPRESTACION\b/g, "PRESTACIÓN")
+    .replace(/__LEGAL_PLACEHOLDER_(\d+)__/g, (match, index) => placeholders[Number(index)] || match);
 }
 
 function replaceContractPlaceholders(template, data) {
@@ -4650,6 +4657,30 @@ function buildLegalContractPrintHtml(data, contractText) {
   const title = getLegalContractPrintTitle(data);
   const logoSrc = state.logoDataUrl || new URL(CORPORATE_LOGO_SRC, window.location.href).href;
   const bodyHtml = renderLegalContractBody(contractText, data);
+  const married = isMarriedLegalStatus(data.estadoCivil);
+  const signatureHtml = married
+    ? `
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <div class="signature-role">Cliente titular</div>
+        </div>
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <div class="signature-role">Cliente cónyuge</div>
+        </div>
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <div class="signature-role">El intermediario</div>
+        </div>`
+    : `
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <div class="signature-role">El cliente</div>
+        </div>
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <div class="signature-role">El intermediario</div>
+        </div>`;
   return `<!doctype html>
 <html lang="es">
 <head>
@@ -4766,6 +4797,11 @@ function buildLegalContractPrintHtml(data, contractText) {
       align-items: end;
       page-break-inside: avoid;
     }
+    .signature-grid.is-married {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12mm;
+      margin-top: 18mm;
+    }
     .signature-box {
       text-align: center;
       font-size: 10pt;
@@ -4805,15 +4841,8 @@ function buildLegalContractPrintHtml(data, contractText) {
     <h1 class="contract-title">${escapeHtml(title).replace(/\n/g, "<br>")}</h1>
       <section class="contract-body">
       ${bodyHtml}
-      <section class="signature-grid">
-        <div class="signature-box">
-          <div class="signature-line"></div>
-          <div class="signature-role">El cliente</div>
-        </div>
-        <div class="signature-box">
-          <div class="signature-line"></div>
-          <div class="signature-role">El intermediario</div>
-        </div>
+      <section class="signature-grid${married ? " is-married" : ""}">
+        ${signatureHtml}
       </section>
     </section>
   </article>
