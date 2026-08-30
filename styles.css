@@ -17453,6 +17453,36 @@ body.legal-contract-modal-open::before {
   }
 }
 
+/* Real-color compact home 20260829 */
+#acceso .hero-dashboard {
+  background:
+    linear-gradient(90deg, #ffffff 0 40%, rgba(255, 255, 255, 0.04) 40%),
+    url("hero-control-legal.png") right center / auto 100% no-repeat,
+    #ffffff !important;
+}
+
+#acceso .hero-dashboard::before {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0) 0 40%, rgba(255, 255, 255, 0.02) 40% 61%, rgba(15, 23, 42, 0.1) 100%) !important;
+}
+
+#acceso .hero-dashboard::after {
+  background:
+    linear-gradient(102deg, #e43d30, #d71920 58%, #991b1b),
+    linear-gradient(140deg, transparent 0 55%, rgba(69, 10, 10, 0.22) 55% 100%) !important;
+  box-shadow: inset -34px 0 0 rgba(69, 10, 10, 0.14), 0 24px 62px rgba(228, 61, 48, 0.24) !important;
+}
+
+#acceso .access-grid {
+  grid-template-columns: repeat(5, minmax(168px, 1fr)) !important;
+}
+
+@media (max-width: 1280px) {
+  #acceso .access-grid {
+    grid-template-columns: repeat(3, minmax(190px, 1fr)) !important;
+  }
+}
+
 /* Commercial process action icons 20260829 */
 #formulario .commercial-start-actions .btn {
   display: inline-flex !important;
