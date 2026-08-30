@@ -3697,6 +3697,10 @@ function applyTheme() {
   themeForm.elements.font.value = state.theme.font;
 }
 
+function renderAccessTitle(value = "") {
+  return escapeHtml(value || "").replace(/(control legal)/i, "<span>$1</span>");
+}
+
 function applyCopy() {
   const repairedCopy = Object.fromEntries(
     Object.entries(state.copy || {}).map(([key, value]) => [key, normalizeCopyText(key, value)])
@@ -3704,7 +3708,7 @@ function applyCopy() {
   const copyChanged = JSON.stringify(repairedCopy) !== JSON.stringify(state.copy || {});
   state.copy = { ...structuredClone(defaultState.copy), ...repairedCopy };
   document.querySelector("#heroEyebrow").textContent = state.copy.heroEyebrow;
-  document.querySelector("#access-title").textContent = state.copy.heroTitle;
+  document.querySelector("#access-title").innerHTML = renderAccessTitle(state.copy.heroTitle);
   document.querySelector("#heroSubtitle").textContent = state.copy.heroSubtitle;
   document.querySelector("#commercialAccessTitle").textContent = state.copy.commercialTitle;
   document.querySelector("#commercialAccessText").textContent = state.copy.commercialText;

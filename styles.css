@@ -173,6 +173,10 @@ main {
   margin-bottom: 18px;
 }
 
+#access-title span {
+  color: var(--red);
+}
+
 #tareas.legal-desk.is-active {
   display: grid;
   grid-template-columns: 240px minmax(0, 1fr) 360px;
