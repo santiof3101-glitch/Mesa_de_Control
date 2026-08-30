@@ -276,7 +276,7 @@ const LEGAL_CONTRACT_TEMPLATE_LABELS = {
   consignmentMarriedPrestacion: "A consignacion / comision - casado"
 };
 
-const LEGAL_CONTRACT_TEMPLATE_VERSION = "20260830-dilileg-formato-firmas-v3";
+const LEGAL_CONTRACT_TEMPLATE_VERSION = "20260830-dilileg-mayusculas-negrilla-v4";
 
 function buildPrestacionTemplate(operationType, maritalType) {
   const isConsignment = operationType === "consignacion";
@@ -4504,23 +4504,28 @@ function renderLegalVehicleTable(data = {}) {
 }
 
 function highlightLegalContractText(html = "", data = {}) {
-  let result = String(html || "");
-  const clausePattern = /(^|<br>)(PRIMERA|SEGUNDA|TERCERA|CUARTA|QUINTA|SEXTA|S[EÉ]PTIMA|OCTAVA|NOVENA|D[EÉ]CIMA(?:\s+PRIMERA|\s+SEGUNDA)?)([:.-])/gi;
-  result = result.replace(clausePattern, (match, prefix, title, suffix) => `${prefix}<strong>${title.toUpperCase()}${suffix}</strong>`);
-  [
-    data.propietario,
-    data.conyuge && data.conyuge !== "No aplica" ? data.conyuge : "",
+  const vehicleValues = [
     data.placa,
     data.marca,
     data.modelo,
-    data.precioCompraLetras,
-    data.precioCompraValor
-  ].filter(Boolean).forEach((value) => {
-    const escaped = escapeHtml(String(value)).trim();
-    if (!escaped) return;
-    result = result.replace(new RegExp(escapeRegExp(escaped), "gi"), `<strong>${escaped.toUpperCase()}</strong>`);
-  });
-  return result;
+    data.anio,
+    data.color,
+    data.chasis,
+    data.motor,
+    data.kilometraje
+  ].filter(Boolean).map((value) => escapeHtml(String(value)).trim().toUpperCase());
+  const excludedVehicleValues = new Set(vehicleValues);
+  const upperTextPattern = /\b[A-ZÁÉÍÓÚÜÑ0-9][A-ZÁÉÍÓÚÜÑ0-9.,;:()/%-]*(?:\s+[A-ZÁÉÍÓÚÜÑ0-9][A-ZÁÉÍÓÚÜÑ0-9.,;:()/%-]*)*\b/g;
+
+  return String(html || "").split(/(<[^>]+>)/g).map((part) => {
+    if (!part || part.startsWith("<")) return part;
+    return part.replace(upperTextPattern, (match) => {
+      const cleanValue = match.trim();
+      const letters = cleanValue.replace(/[^A-ZÁÉÍÓÚÜÑ]/g, "");
+      if (letters.length < 2 || excludedVehicleValues.has(cleanValue.toUpperCase())) return match;
+      return `<strong>${cleanValue}</strong>`;
+    });
+  }).join("");
 }
 
 function renderLegalContractBody(contractText = "", data = {}) {
@@ -4675,18 +4680,6 @@ function buildLegalContractPrintHtml(data, contractText) {
       font-weight: 500;
       text-transform: uppercase;
     }
-    .contract-footer {
-      margin-top: 12mm;
-      padding-top: 4mm;
-      border-top: .8px solid #d8dce5;
-      color: #555;
-      text-align: center;
-      text-transform: uppercase;
-      font-size: 8.5pt;
-      font-weight: 700;
-      letter-spacing: .03em;
-      page-break-inside: avoid;
-    }
     @media print {
       html, body { background: #fff; }
       .print-toolbar { display: none; }
@@ -4722,7 +4715,6 @@ function buildLegalContractPrintHtml(data, contractText) {
           <div class="signature-role">El intermediario</div>
         </div>
       </section>
-      <footer class="contract-footer">Elaborado por Mesa de Control Legal de Autocor</footer>
     </section>
   </article>
 </body>
