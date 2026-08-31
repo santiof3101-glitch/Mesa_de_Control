@@ -4919,6 +4919,12 @@ body.uafe-client-mode .commercial-uafe-card {
   background: linear-gradient(135deg, #109e6f, #0b7d58);
 }
 
+.provider-bulk-actions button.is-success {
+  border-color: rgba(16, 158, 111, 0.3);
+  color: #075f43;
+  background: linear-gradient(135deg, #dff8ed, #ffffff);
+}
+
 .provider-bulk-check {
   display: inline-flex;
   align-items: center;

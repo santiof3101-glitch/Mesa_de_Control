@@ -14843,6 +14843,29 @@ function approveSelectedProviderDuplicates() {
   showToast(`${selected.length} duplicado(s) aprobado(s).`);
 }
 
+function approveAllPendingProviderDuplicates() {
+  const pendingGroups = getPendingProviderDuplicateGroups(getFilteredProviderRecords());
+  const pendingItems = pendingGroups.reduce((sum, group) => sum + getProviderUnauthorizedDuplicateItems(group).length, 0);
+  if (!pendingGroups.length || !pendingItems) {
+    showToast("No hay duplicados pendientes por aprobar en el filtro actual.");
+    return;
+  }
+  const confirmed = window.confirm(`Se aprobaran todos los valores duplicados pendientes del filtro actual.\n\nPlacas: ${pendingGroups.length}\nValores pendientes: ${pendingItems}\n\nDesea continuar?`);
+  if (!confirmed) return;
+  const approval = { approvedAt: new Date().toISOString(), approvedBy: session.name || "Usuario" };
+  pendingGroups.forEach((group) => {
+    getProviderUnauthorizedDuplicateItems(group).forEach(({ item, index }) => {
+      setProviderDuplicateItemDecision(group, item, index, approval);
+    });
+  });
+  providerDuplicateView = "pending";
+  providerDuplicatePage = 1;
+  saveState();
+  renderProviderProcessing();
+  sincronizarProveedoresCriticosAhora();
+  showToast(`${pendingItems} valor(es) duplicado(s) aprobados en ${pendingGroups.length} placa(s).`);
+}
+
 function rejectProviderDuplicateGroupByKeys(key, fallbackKey = "") {
   const approvals = getProviderDuplicateApprovals();
   const group = getProviderDuplicateGroups(getFilteredProviderRecords())
@@ -15246,6 +15269,7 @@ function renderProviderDuplicates(records) {
         <button type="button" data-provider-bulk-select="all">Seleccionar visibles</button>
         <button type="button" data-provider-bulk-select="none">Limpiar</button>
         <button class="is-primary" type="button" data-provider-bulk-approve>Aprobar seleccionados</button>
+        <button class="is-success" type="button" data-provider-bulk-approve-all>Aprobar todos (${pendingDuplicates.length})</button>
         <button class="is-danger" type="button" data-provider-bulk-reject>No aprobar seleccionados</button>
       </div>
     ` : ""}
@@ -15282,6 +15306,9 @@ function renderProviderDuplicates(records) {
   });
   providerDuplicateReport.querySelectorAll("[data-provider-bulk-approve]").forEach((button) => {
     button.addEventListener("click", approveSelectedProviderDuplicates);
+  });
+  providerDuplicateReport.querySelectorAll("[data-provider-bulk-approve-all]").forEach((button) => {
+    button.addEventListener("click", approveAllPendingProviderDuplicates);
   });
   providerDuplicateReport.querySelectorAll("[data-provider-bulk-reject]").forEach((button) => {
     button.addEventListener("click", rejectSelectedProviderDuplicates);
