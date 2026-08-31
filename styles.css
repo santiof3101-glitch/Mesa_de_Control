@@ -18760,3 +18760,77 @@ body.legal-contract-modal-open::before {
     width: fit-content;
   }
 }
+
+/* Admin legal users containment fix 20260830 */
+#admin-users-module {
+  overflow: hidden;
+}
+
+#admin-users-module .admin-legal-user-row {
+  grid-template-columns: minmax(250px, 360px) minmax(0, 1fr) !important;
+  overflow: hidden;
+}
+
+#admin-users-module .admin-user-summary,
+#admin-users-module .admin-user-controls {
+  min-width: 0;
+}
+
+#admin-users-module .admin-user-controls {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  justify-content: flex-end !important;
+}
+
+#admin-users-module .admin-user-mailboxes {
+  flex: 1 1 280px;
+  flex-wrap: wrap !important;
+  overflow: visible !important;
+}
+
+#admin-users-module .admin-user-controls .contract-agencies-input {
+  flex: 1 1 180px;
+  max-width: 260px;
+}
+
+#admin-users-module .admin-user-controls input[type="password"] {
+  flex: 1 1 150px;
+  max-width: 210px;
+}
+
+#admin-users-module .admin-user-controls .btn {
+  flex: 0 0 auto;
+  width: auto !important;
+  min-width: 76px;
+}
+
+#admin-users-module .admin-user-controls .toggle-legal-availability {
+  min-width: 118px;
+}
+
+@media (max-width: 1500px) {
+  #admin-users-module .admin-legal-user-form {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  #admin-users-module .admin-mailbox-picker {
+    grid-column: span 2;
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 1180px) {
+  #admin-users-module .admin-legal-user-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  #admin-users-module .admin-legal-user-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  #admin-users-module .admin-user-controls {
+    justify-content: flex-start !important;
+  }
+}
