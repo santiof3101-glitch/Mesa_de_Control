@@ -14258,6 +14258,7 @@ function renderProviderProcessing() {
   renderProviderProfileControls();
   const records = getFilteredProviderRecords();
   const allRecords = (state.dataProcessing?.proveedores || []).filter(isValidProviderRecord);
+  if (migrateProviderDuplicateAmountApprovals(allRecords)) saveState();
   if (providerRecordCount) providerRecordCount.textContent = `${records.length} de ${allRecords.length} registros`;
   renderProviderHeroMetrics(records, allRecords);
   renderProviderFilters();
@@ -14451,6 +14452,65 @@ function getProviderDuplicateStableItemId(item, index = 0) {
     : `SIN-ID-${index}`;
 }
 
+function getProviderDuplicateAmountKey(group, item, index = 0) {
+  const amount = getProviderRecordDisplayAmount(item, group.items || []) || getProviderPlateResolvedAmount(group.items || []);
+  const amountKey = Number(amount || 0).toFixed(2);
+  return `${group.plate}::amount::${amountKey}`;
+}
+
+function getProviderDuplicateDecisionKeys(group, item, index = 0) {
+  return [
+    getProviderDuplicateAmountKey(group, item, index),
+    getProviderDuplicateItemKey(group, item, index),
+    getProviderDuplicateLegacyItemKey(group, item, index)
+  ];
+}
+
+function setProviderDuplicateItemDecision(group, item, index, decision) {
+  const approvals = getProviderDuplicateApprovals();
+  getProviderDuplicateDecisionKeys(group, item, index).forEach((key) => {
+    approvals[key] = decision;
+  });
+}
+
+function clearProviderDuplicateItemDecision(group, item, index) {
+  const approvals = getProviderDuplicateApprovals();
+  getProviderDuplicateDecisionKeys(group, item, index).forEach((key) => {
+    delete approvals[key];
+  });
+}
+
+function getProviderDuplicateSavedDecision(group, item, index) {
+  const approvals = getProviderDuplicateApprovals();
+  const keys = [
+    getProviderDuplicateAmountKey(group, item, index),
+    getProviderDuplicateItemKey(group, item, index),
+    getProviderDuplicateLegacyItemKey(group, item, index),
+    group.approvalKey,
+    getProviderDuplicateSimpleKey(group)
+  ];
+  return keys.map((key) => approvals[key])
+    .find((entry) => isProviderDuplicateApprovalEntryApproved(entry) || isProviderDuplicateApprovalEntryRejected(entry));
+}
+
+function migrateProviderDuplicateAmountApprovals(records = []) {
+  const groups = getProviderDuplicateGroups(records);
+  let changed = false;
+  groups.forEach((group) => {
+    getProviderDuplicateChargeItems(group).forEach((item, offset) => {
+      const index = offset + 1;
+      const amountKey = getProviderDuplicateAmountKey(group, item, index);
+      const approvals = getProviderDuplicateApprovals();
+      if (isProviderDuplicateApprovalEntryApproved(approvals[amountKey]) || isProviderDuplicateApprovalEntryRejected(approvals[amountKey])) return;
+      const decision = getProviderDuplicateSavedDecision(group, item, index);
+      if (!decision) return;
+      setProviderDuplicateItemDecision(group, item, index, decision);
+      changed = true;
+    });
+  });
+  return changed;
+}
+
 function getProviderBillableRecords(records) {
   const groups = new Map();
   const withoutPlate = [];
@@ -14528,14 +14588,14 @@ function isProviderDuplicateApprovalEntryRejected(entry) {
 
 function isProviderDuplicateItemApproved(group, item, index) {
   const approvals = getProviderDuplicateApprovals();
-  return isProviderDuplicateApprovalEntryApproved(approvals[getProviderDuplicateItemKey(group, item, index)])
-    || isProviderDuplicateApprovalEntryApproved(approvals[getProviderDuplicateLegacyItemKey(group, item, index)]);
+  return getProviderDuplicateDecisionKeys(group, item, index)
+    .some((key) => isProviderDuplicateApprovalEntryApproved(approvals[key]));
 }
 
 function isProviderDuplicateItemRejected(group, item, index) {
   const approvals = getProviderDuplicateApprovals();
-  return isProviderDuplicateApprovalEntryRejected(approvals[getProviderDuplicateItemKey(group, item, index)])
-    || isProviderDuplicateApprovalEntryRejected(approvals[getProviderDuplicateLegacyItemKey(group, item, index)]);
+  return getProviderDuplicateDecisionKeys(group, item, index)
+    .some((key) => isProviderDuplicateApprovalEntryRejected(approvals[key]));
 }
 
 function getProviderUnauthorizedDuplicateItems(group) {
@@ -14616,7 +14676,7 @@ function toggleProviderDuplicateApproval(key, approved, fallbackKey = "") {
     const approval = { approvedAt: new Date().toISOString(), approvedBy: session.name || "Usuario" };
     if (group) {
       getProviderUnauthorizedDuplicateItems(group).forEach(({ item: chargeItem, index: chargeIndex }) => {
-        approvals[getProviderDuplicateItemKey(group, chargeItem, chargeIndex)] = approval;
+        setProviderDuplicateItemDecision(group, chargeItem, chargeIndex, approval);
       });
     }
     providerDuplicateView = "pending";
@@ -14624,10 +14684,7 @@ function toggleProviderDuplicateApproval(key, approved, fallbackKey = "") {
   } else {
     if (group) {
       getProviderDuplicateChargeItems(group).forEach((chargeItem, chargeIndex) => {
-        const itemKey = getProviderDuplicateItemKey(group, chargeItem, chargeIndex + 1);
-        const legacyItemKey = getProviderDuplicateLegacyItemKey(group, chargeItem, chargeIndex + 1);
-        delete approvals[itemKey];
-        delete approvals[legacyItemKey];
+        clearProviderDuplicateItemDecision(group, chargeItem, chargeIndex + 1);
       });
     }
     providerDuplicateView = "pending";
@@ -14647,15 +14704,14 @@ function setProviderDuplicateRejected(key, rejected = true, fallbackKey = "") {
   if (rejected) {
     if (group) {
       getProviderUnauthorizedDuplicateItems(group).forEach(({ item: chargeItem, index: chargeIndex }) => {
-        approvals[getProviderDuplicateItemKey(group, chargeItem, chargeIndex)] = rejection;
+        setProviderDuplicateItemDecision(group, chargeItem, chargeIndex, rejection);
       });
     }
   } else if (group) {
     getProviderDuplicateChargeItems(group).forEach((chargeItem, chargeIndex) => {
-      const itemKey = getProviderDuplicateItemKey(group, chargeItem, chargeIndex + 1);
-      const legacyItemKey = getProviderDuplicateLegacyItemKey(group, chargeItem, chargeIndex + 1);
-      if (isProviderDuplicateApprovalEntryRejected(approvals[itemKey])) delete approvals[itemKey];
-      if (isProviderDuplicateApprovalEntryRejected(approvals[legacyItemKey])) delete approvals[legacyItemKey];
+      getProviderDuplicateDecisionKeys(group, chargeItem, chargeIndex + 1).forEach((itemKey) => {
+        if (isProviderDuplicateApprovalEntryRejected(approvals[itemKey])) delete approvals[itemKey];
+      });
     });
   }
   providerDuplicateView = "pending";
@@ -14669,7 +14725,17 @@ function toggleProviderDuplicateItemApproval(groupKey, itemKey, approved) {
   const approvals = getProviderDuplicateApprovals();
   const current = approvals[itemKey] && typeof approvals[itemKey] === "object" ? approvals[itemKey] : {};
   if (approved) {
-    approvals[itemKey] = { ...current, approvedAt: new Date().toISOString(), approvedBy: session.name || "Usuario" };
+    const groups = getProviderDuplicateGroups(getFilteredProviderRecords());
+    const group = groups.find((item) => item.approvalKey === groupKey);
+    const chargeItems = group ? getProviderDuplicateChargeItems(group) : [];
+    const itemIndex = chargeItems.findIndex((chargeItem, chargeIndex) =>
+      getProviderDuplicateDecisionKeys(group, chargeItem, chargeIndex + 1).includes(itemKey)
+    );
+    if (group && itemIndex >= 0) {
+      setProviderDuplicateItemDecision(group, chargeItems[itemIndex], itemIndex + 1, { ...current, approvedAt: new Date().toISOString(), approvedBy: session.name || "Usuario" });
+    } else {
+      approvals[itemKey] = { ...current, approvedAt: new Date().toISOString(), approvedBy: session.name || "Usuario" };
+    }
   } else {
     const groups = getProviderDuplicateGroups(getFilteredProviderRecords());
     const group = groups.find((item) => item.approvalKey === groupKey);
@@ -14678,15 +14744,16 @@ function toggleProviderDuplicateItemApproval(groupKey, itemKey, approved) {
       getProviderDuplicateChargeItems(group).forEach((chargeItem, chargeIndex) => {
         const key = getProviderDuplicateItemKey(group, chargeItem, chargeIndex + 1);
         if (key !== itemKey) {
-          approvals[key] = { approvedAt: new Date().toISOString(), approvedBy: session.name || "Usuario" };
+          setProviderDuplicateItemDecision(group, chargeItem, chargeIndex + 1, { approvedAt: new Date().toISOString(), approvedBy: session.name || "Usuario" });
         }
       });
     }
     delete approvals[itemKey];
     if (group) {
       getProviderDuplicateChargeItems(group).forEach((chargeItem, chargeIndex) => {
-        const key = getProviderDuplicateItemKey(group, chargeItem, chargeIndex + 1);
-        if (key === itemKey) delete approvals[getProviderDuplicateLegacyItemKey(group, chargeItem, chargeIndex + 1)];
+        if (getProviderDuplicateDecisionKeys(group, chargeItem, chargeIndex + 1).includes(itemKey)) {
+          clearProviderDuplicateItemDecision(group, chargeItem, chargeIndex + 1);
+        }
       });
     }
   }
@@ -14713,7 +14780,7 @@ function approveProviderDuplicateGroupByKeys(key, fallbackKey = "") {
   if (fallbackKey) delete approvals[fallbackKey];
   if (group) {
     getProviderUnauthorizedDuplicateItems(group).forEach(({ item: chargeItem, index: chargeIndex }) => {
-      approvals[getProviderDuplicateItemKey(group, chargeItem, chargeIndex)] = approval;
+      setProviderDuplicateItemDecision(group, chargeItem, chargeIndex, approval);
     });
   }
 }
@@ -14743,7 +14810,7 @@ function rejectProviderDuplicateGroupByKeys(key, fallbackKey = "") {
   if (fallbackKey) delete approvals[fallbackKey];
   if (group) {
     getProviderUnauthorizedDuplicateItems(group).forEach(({ item: chargeItem, index: chargeIndex }) => {
-      approvals[getProviderDuplicateItemKey(group, chargeItem, chargeIndex)] = rejection;
+      setProviderDuplicateItemDecision(group, chargeItem, chargeIndex, rejection);
     });
   }
 }
@@ -15279,7 +15346,7 @@ function renderProviderDuplicateCard(group, contextRecords = getFilteredProvider
               const isBase = index === 0;
               const itemApproved = isBase || isProviderDuplicateItemApproved(group, item, index);
               const itemRejected = !isBase && isProviderDuplicateItemRejected(group, item, index);
-              const itemKey = getProviderDuplicateItemKey(group, item, index);
+              const itemKey = getProviderDuplicateAmountKey(group, item, index);
               return `
               <tr>
                 <td>${isBase ? "BASE" : itemApproved ? "AUTORIZADO" : itemRejected ? "NO APROBADO" : "SOBRECOBRO"}</td>
