@@ -18267,3 +18267,286 @@ body.legal-contract-modal-open::before {
     display: none;
   }
 }
+
+/* Mobile stability pass 20260830 */
+@media (max-width: 900px) {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  main {
+    width: 100%;
+    max-width: 100%;
+    padding: 14px 10px 32px;
+  }
+
+  .topbar {
+    position: sticky;
+    min-height: auto;
+    padding: 8px 10px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .brand,
+  .logo-slot {
+    flex: 0 0 auto;
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
+    height: 48px;
+    max-height: 48px;
+  }
+
+  .logo-slot img {
+    width: 150px !important;
+    height: 48px !important;
+    max-width: 150px !important;
+    max-height: 48px !important;
+  }
+
+  .topbar .nav-tabs {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .topbar .nav-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab,
+  .chip,
+  .btn {
+    min-height: 38px;
+    white-space: nowrap;
+  }
+
+  .panel,
+  .card,
+  .glass-card {
+    max-width: 100%;
+  }
+
+  #acceso.view.is-active {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  #acceso .hero-dashboard {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    min-height: 0 !important;
+    margin: 4px 0 16px !important;
+    overflow: hidden !important;
+    border-radius: 18px !important;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0 54%, rgba(255, 255, 255, 0.2) 100%),
+      url("hero-control-legal.png") center bottom / cover no-repeat,
+      #ffffff !important;
+  }
+
+  #acceso .hero-dashboard::before,
+  #acceso .hero-dashboard::after,
+  #acceso .hero-panel {
+    display: none !important;
+  }
+
+  #acceso .hero-copy {
+    min-height: 260px !important;
+    max-width: none !important;
+    padding: 24px 20px !important;
+  }
+
+  #acceso .hero-copy h1 {
+    max-width: 11ch !important;
+    font-size: clamp(1.95rem, 11vw, 3rem) !important;
+    line-height: 1 !important;
+    overflow-wrap: anywhere;
+  }
+
+  #acceso .hero-copy p:last-child {
+    max-width: 28rem !important;
+    margin-top: 12px !important;
+    font-size: 0.88rem !important;
+  }
+
+  #acceso .compact-head {
+    display: grid !important;
+    gap: 4px !important;
+    align-items: start !important;
+  }
+
+  #acceso .access-grid,
+  #acceso .access-trust-panel {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  #acceso .access-card,
+  #acceso .access-card:nth-child(6) {
+    min-height: auto !important;
+    padding: 16px !important;
+    border-radius: 16px !important;
+  }
+
+  #acceso .access-card p {
+    min-height: 0 !important;
+    margin: 10px 0 12px !important;
+  }
+
+  #formulario .commercial-workspace,
+  #tareas.legal-desk.is-active {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  #formulario .commercial-sidebar {
+    position: static !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    padding: 12px !important;
+    border-radius: 18px !important;
+  }
+
+  #formulario .commercial-content,
+  #formulario .commercial-module-grid,
+  #formulario .commercial-process-grid,
+  #formulario .commercial-start-actions {
+    width: 100% !important;
+    max-width: 100% !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  #formulario .commercial-start-hero {
+    min-height: 260px !important;
+    padding: 20px !important;
+    border-radius: 18px !important;
+  }
+
+  #formulario .commercial-start-copy h2 {
+    font-size: clamp(1.8rem, 10vw, 2.75rem) !important;
+    line-height: 1 !important;
+    overflow-wrap: anywhere;
+  }
+
+  .legal-sidebar,
+  .legal-side-panel,
+  .legal-main,
+  .task-list-panel,
+  .legal-contract-generator,
+  .legal-contract-preview,
+  .report-modal-dialog,
+  .commercial-modal-card,
+  .admin-lead-modal-dialog,
+  .legal-task-modal-dialog {
+    width: 100% !important;
+    max-width: calc(100vw - 20px) !important;
+  }
+
+  .legal-sidebar,
+  .legal-side-panel {
+    position: static !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .task-board,
+  .task-list,
+  .processing-table,
+  .load-report-list,
+  .report-table-wrap,
+  .legal-contract-preview pre {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .summary-grid,
+  .kpi-grid,
+  .report-kpis,
+  .legal-contract-grid,
+  .form-grid,
+  .filters-row,
+  .search-row,
+  .admin-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .commercial-modal,
+  .report-modal,
+  .admin-lead-modal,
+  .legal-task-modal {
+    padding: 10px !important;
+  }
+
+  .commercial-modal-card,
+  .report-modal-dialog,
+  .admin-lead-modal-dialog,
+  .legal-task-modal-dialog {
+    max-height: calc(100dvh - 20px) !important;
+    overflow: auto !important;
+    border-radius: 18px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  main {
+    padding-inline: 8px;
+  }
+
+  #acceso .hero-copy {
+    min-height: 230px !important;
+    padding: 20px 16px !important;
+  }
+
+  #acceso .hero-copy h1 {
+    font-size: clamp(1.7rem, 10.5vw, 2.35rem) !important;
+  }
+
+  #acceso .access-card {
+    grid-template-columns: 38px minmax(0, 1fr) !important;
+    gap: 0 10px !important;
+  }
+
+  #acceso .access-icon {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 13px !important;
+  }
+
+  #acceso .access-card h2 {
+    font-size: 0.92rem !important;
+  }
+
+  #acceso .access-card p {
+    font-size: 0.76rem !important;
+  }
+
+  .topbar-commercial-profile-wrap {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .topbar-commercial-profile {
+    max-width: calc(100vw - 76px) !important;
+  }
+
+  .btn,
+  button,
+  input,
+  select,
+  textarea {
+    max-width: 100%;
+  }
+}
