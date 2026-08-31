@@ -6,8 +6,8 @@ const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
 const SUPABASE_AUTO_RESTORE = false;
 const SUPABASE_MODULE_SYNC = true;
 const SUPABASE_FULL_STATE_SYNC = false;
-const SUPABASE_FOCUS_REFRESH_MIN_MS = 2 * 60 * 1000;
-const SUPABASE_HEAVY_MODULE_REFRESH_MIN_MS = 10 * 60 * 1000;
+const SUPABASE_FOCUS_REFRESH_MIN_MS = 30 * 1000;
+const SUPABASE_HEAVY_MODULE_REFRESH_MIN_MS = 2 * 60 * 1000;
 const OLD_STORAGE_KEY = "autocor-saneamiento";
 const STATE_SCHEMA_VERSION = 20260520;
 const REMEMBER_ACCESS_KEY = "autocor-remembered-access";
@@ -1552,6 +1552,37 @@ async function guardarModulosSupabase() {
   }
 }
 
+async function guardarModuloSupabaseAhora(modulo) {
+  if (!SUPABASE_MODULE_SYNC || !SUPABASE_URL || !SUPABASE_KEY || !modulo) return false;
+  const datos = getSupabaseModuleSnapshots()[modulo];
+  if (!datos) return false;
+  const hash = getSupabaseSnapshotHash(datos);
+  if (supabasePublishedHashes[modulo] === hash) return true;
+  if (await shouldSkipUnsafeModulePublish(modulo, datos)) return false;
+  const ok = await guardarRegistroSupabase(
+    modulo,
+    "base",
+    { ...datos, updatedAt: new Date().toISOString() },
+    session?.name || session?.role || "sistema"
+  );
+  if (ok) {
+    supabasePublishedHashes[modulo] = hash;
+    const count = getProtectedSupabaseModuleCount(modulo, datos);
+    if (count) supabaseProtectedRemoteCounts[modulo] = Math.max(supabaseProtectedRemoteCounts[modulo] || 0, count);
+  }
+  return ok;
+}
+
+function guardarProveedoresSupabaseAhora() {
+  return guardarModuloSupabaseAhora("proveedores");
+}
+
+function sincronizarProveedoresCriticosAhora() {
+  guardarProveedoresSupabaseAhora().then((ok) => {
+    if (!ok) scheduleSupabaseModuleSync();
+  });
+}
+
 async function guardarUsuariosSupabaseAhora() {
   if (!SUPABASE_MODULE_SYNC || !SUPABASE_URL || !SUPABASE_KEY) return false;
   const datos = getSupabaseModuleSnapshots().usuarios;
@@ -1701,11 +1732,11 @@ function startSupabaseModulePolling() {
 }
 
 function getSupabasePollInterval() {
-  if (session.role === "legal") return 2 * 60 * 1000;
-  if (session.role === "admin") return 5 * 60 * 1000;
-  if (session.role === "commercial") return 5 * 60 * 1000;
-  if (session.role === "manager") return 8 * 60 * 1000;
-  if (session.role === "processing") return 10 * 60 * 1000;
+  if (session.role === "legal") return 45 * 1000;
+  if (session.role === "admin") return 60 * 1000;
+  if (session.role === "commercial") return 60 * 1000;
+  if (session.role === "manager") return 90 * 1000;
+  if (session.role === "processing") return 90 * 1000;
   return 0;
 }
 
@@ -1793,7 +1824,10 @@ function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
       processing.proveedores = (snapshot.proveedores || []).map(normalizeProviderRecord);
       processing.providerLoads = (snapshot.providerLoads || []).map(normalizeProviderLoad);
       processing.providerProfiles = buildProviderProfilesFromHistory(processing.providerProfiles || [], processing);
-      processing.providerDuplicateApprovals = snapshot.providerDuplicateApprovals || {};
+      processing.providerDuplicateApprovals = {
+        ...(snapshot.providerDuplicateApprovals || {}),
+        ...(processing.providerDuplicateApprovals || {})
+      };
       return true;
     case "archivos":
       processing.files = (snapshot.files || []).map(normalizeStoredFile);
@@ -14212,6 +14246,7 @@ function addProviderRecords(records) {
   providerFilters = { provider, month: importMonth, plate: "", loadId };
   saveState();
   renderProviderProcessing();
+  sincronizarProveedoresCriticosAhora();
   showToast(`${records.length} registros de ${provider} procesados.`);
 }
 
@@ -14258,7 +14293,10 @@ function renderProviderProcessing() {
   renderProviderProfileControls();
   const records = getFilteredProviderRecords();
   const allRecords = (state.dataProcessing?.proveedores || []).filter(isValidProviderRecord);
-  if (migrateProviderDuplicateAmountApprovals(allRecords)) saveState();
+  if (migrateProviderDuplicateAmountApprovals(allRecords)) {
+    saveState();
+    sincronizarProveedoresCriticosAhora();
+  }
   if (providerRecordCount) providerRecordCount.textContent = `${records.length} de ${allRecords.length} registros`;
   renderProviderHeroMetrics(records, allRecords);
   renderProviderFilters();
@@ -14692,6 +14730,7 @@ function toggleProviderDuplicateApproval(key, approved, fallbackKey = "") {
   }
   saveState();
   renderProviderProcessing();
+  sincronizarProveedoresCriticosAhora();
 }
 
 function setProviderDuplicateRejected(key, rejected = true, fallbackKey = "") {
@@ -14718,6 +14757,7 @@ function setProviderDuplicateRejected(key, rejected = true, fallbackKey = "") {
   providerDuplicatePage = 1;
   saveState();
   renderProviderProcessing();
+  sincronizarProveedoresCriticosAhora();
   showToast(rejected ? "Duplicado marcado como no aprobado." : "Duplicado devuelto a pendientes.");
 }
 
@@ -14761,6 +14801,7 @@ function toggleProviderDuplicateItemApproval(groupKey, itemKey, approved) {
   providerDuplicatePage = 1;
   saveState();
   renderProviderProcessing();
+  sincronizarProveedoresCriticosAhora();
 }
 
 function handleProviderGroupApprovalChange(input) {
@@ -14798,6 +14839,7 @@ function approveSelectedProviderDuplicates() {
   providerDuplicatePage = 1;
   saveState();
   renderProviderProcessing();
+  sincronizarProveedoresCriticosAhora();
   showToast(`${selected.length} duplicado(s) aprobado(s).`);
 }
 
@@ -14828,6 +14870,7 @@ function rejectSelectedProviderDuplicates() {
   providerDuplicatePage = 1;
   saveState();
   renderProviderProcessing();
+  sincronizarProveedoresCriticosAhora();
   showToast(`${selected.length} duplicado(s) marcado(s) como no aprobado(s).`);
 }
 
@@ -15863,7 +15906,7 @@ function deleteSelectedProviderLoad() {
   renderProviderPastePreview([]);
   saveState();
   renderProviderProcessing();
-  guardarModulosSupabase();
+  sincronizarProveedoresCriticosAhora();
   showToast("Carga eliminada.");
 }
 
@@ -18248,6 +18291,7 @@ if (clearProvidersBtn) {
     renderProviderPastePreview([]);
     saveState();
     renderProviderProcessing();
+    sincronizarProveedoresCriticosAhora();
     showToast("Reportes de proveedores limpiados.");
   });
 }
@@ -18270,6 +18314,7 @@ if (restoreProviderTrashBtn) {
     providerFilters = { provider: "", month: "", plate: "", loadId: "" };
     saveState();
     renderProviderProcessing();
+    sincronizarProveedoresCriticosAhora();
     showToast("Proveedores restaurados desde el ultimo borrado.");
   });
 }
