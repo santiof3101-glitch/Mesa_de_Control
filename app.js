@@ -5581,17 +5581,19 @@ function renderUsers() {
     const mailboxes = normalizeLegalMailboxes(user.mailboxes);
     const contractAgencies = normalizeContractAgencies(user.contractAgencies);
     const item = document.createElement("article");
-    item.className = "user-row";
+    item.className = "user-row admin-legal-user-row";
     item.innerHTML = `
-      <div>
-        <strong>${escapeHtml(user.name)}</strong>
-        <span>Usuario: ${escapeHtml(user.username)}</span>
-        <small>Buzones: ${mailboxes.map((mailbox) => LEGAL_MAILBOXES.find((entry) => entry.id === mailbox)?.label || mailbox).join(", ")}</small>
-        <small>Agencias contratos: ${contractAgencies.length ? contractAgencies.join(", ") : "Todas"}</small>
-        <small class="availability-badge ${user.legalAvailable === false ? "is-off" : "is-on"}">${user.legalAvailable === false ? "No disponible para nuevas tareas" : "Disponible para nuevas tareas"}</small>
+      <div class="admin-user-summary">
+        <div class="admin-user-avatar">${escapeHtml(user.name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U")}</div>
+        <div class="admin-user-copy">
+          <strong>${escapeHtml(user.name)}</strong>
+          <span>@${escapeHtml(user.username)}</span>
+          <small>${mailboxes.map((mailbox) => LEGAL_MAILBOXES.find((entry) => entry.id === mailbox)?.label || mailbox).join(" + ")} · Agencias: ${contractAgencies.length ? contractAgencies.join(", ") : "Todas"}</small>
+        </div>
+        <small class="availability-badge ${user.legalAvailable === false ? "is-off" : "is-on"}">${user.legalAvailable === false ? "No disponible" : "Disponible"}</small>
       </div>
-      <div class="row-actions">
-        <div class="mailbox-picker is-inline">
+      <div class="row-actions admin-user-controls">
+        <div class="mailbox-picker is-inline admin-user-mailboxes" aria-label="Buzones de ${escapeHtml(user.name)}">
           ${LEGAL_MAILBOXES.map((mailbox) => `
             <label>
               <input type="checkbox" value="${escapeHtml(mailbox.id)}" ${mailboxes.includes(mailbox.id) ? "checked" : ""}>
@@ -5599,11 +5601,11 @@ function renderUsers() {
             </label>
           `).join("")}
         </div>
-        <input class="contract-agencies-input" type="text" value="${escapeHtml(contractAgencies.join(", "))}" placeholder="Agencias contratos: Shyris, Prensa">
-        <button class="btn secondary save-mailboxes" type="button">Guardar buzones</button>
-        <button class="btn secondary toggle-legal-availability" type="button">${user.legalAvailable === false ? "Poner disponible" : "Marcar no disponible"}</button>
+        <input class="contract-agencies-input" type="text" value="${escapeHtml(contractAgencies.join(", "))}" placeholder="Agencias contratos">
+        <button class="btn secondary save-mailboxes" type="button">Guardar</button>
+        <button class="btn secondary toggle-legal-availability" type="button">${user.legalAvailable === false ? "Disponible" : "No disponible"}</button>
         <input type="password" placeholder="Nueva contrasena">
-        <button class="btn secondary change-password" type="button">Cambiar</button>
+        <button class="btn secondary change-password" type="button">Clave</button>
         <button class="btn secondary delete-user" type="button">Eliminar</button>
       </div>
     `;

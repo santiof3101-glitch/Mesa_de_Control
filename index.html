@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260830-mobile-responsive">
+<html lang="es" data-app-version="20260830-admin-users-compact">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260830-mobile-responsive">
+  <link rel="stylesheet" href="styles.css?v=20260830-admin-users-compact">
   <link rel="stylesheet" href="layout-fix.css?v=20260727-ui-sanity-provider-fix">
 </head>
 <body>
@@ -1718,16 +1718,28 @@
 
         <section id="admin-users-module" class="panel span-admin admin-module-section" data-admin-section="admin-users-module">
           <h2>Usuarios de asistentes de control legal</h2>
-          <form id="userForm" class="user-form">
-            <input name="name" placeholder="Nombre del asistente" required>
-            <input name="username" placeholder="Usuario" required>
-            <input name="password" type="password" placeholder="Contrasena" required>
-            <div class="mailbox-picker" aria-label="Buzones de tareas">
+          <form id="userForm" class="user-form admin-legal-user-form">
+            <div class="admin-user-field">
+              <span>Asistente</span>
+              <input name="name" placeholder="Nombre del asistente" required>
+            </div>
+            <div class="admin-user-field">
+              <span>Acceso</span>
+              <input name="username" placeholder="Usuario" required>
+            </div>
+            <div class="admin-user-field">
+              <span>Clave</span>
+              <input name="password" type="password" placeholder="Contrasena" required>
+            </div>
+            <div class="mailbox-picker admin-mailbox-picker" aria-label="Buzones de tareas">
               <label><input type="checkbox" name="mailboxes" value="saneamientos" checked> Saneamientos</label>
               <label><input type="checkbox" name="mailboxes" value="contratos"> Contratos</label>
               <label><input type="checkbox" name="mailboxes" value="cuv"> CUV</label>
             </div>
-            <input name="contractAgencies" placeholder="Agencias contratos: Shyris, Prensa, Cumbaya">
+            <div class="admin-user-field admin-user-agencies-field">
+              <span>Agencias contratos</span>
+              <input name="contractAgencies" placeholder="Shyris, Prensa, Cumbaya">
+            </div>
             <button class="btn primary" type="submit">Crear usuario</button>
           </form>
           <div id="usersList" class="users-list"></div>
@@ -2708,6 +2720,6 @@
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20260830-mobile-responsive"></script>
+  <script src="app.js?v=20260830-admin-users-compact"></script>
 </body>
 </html>
