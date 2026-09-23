@@ -2248,3 +2248,36 @@ body {
     padding: 0 8px !important;
   }
 }
+
+/* Keep the advisor profile compact and show the saved initials. */
+.topbar-commercial-profile .commercial-user-avatar,
+#formulario .commercial-user-profile .commercial-user-avatar {
+  position: static !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  width: 38px !important;
+  height: 38px !important;
+  flex: 0 0 38px !important;
+  border: 1px solid #ffd1ce !important;
+  border-radius: 50% !important;
+  background: #fff4f3 !important;
+  color: #d92d20 !important;
+  box-shadow: none !important;
+  font-size: 0.78rem !important;
+  font-weight: 900 !important;
+  overflow: visible !important;
+}
+
+.topbar-commercial-profile .commercial-user-avatar::before,
+.topbar-commercial-profile .commercial-user-avatar::after,
+#formulario .commercial-user-profile .commercial-user-avatar::before,
+#formulario .commercial-user-profile .commercial-user-avatar::after {
+  content: none !important;
+  display: none !important;
+}
+
+@media (max-width: 560px) {
+  #formulario .commercial-process-area .commercial-start-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}

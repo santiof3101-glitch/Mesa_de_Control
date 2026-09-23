@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260830-provider-approve-all">
+<html lang="es" data-app-version="20260923-consignacion-fix-v2">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260922-tracking-four-states-v5">
-  <link rel="stylesheet" href="layout-fix.css?v=20260922-tracking-four-states-v5">
+  <link rel="stylesheet" href="styles.css?v=20260923-consignacion-fix-v2">
+  <link rel="stylesheet" href="layout-fix.css?v=20260923-consignacion-fix-v2">
 </head>
 <body>
   <header class="topbar">
@@ -942,6 +942,7 @@
             <div class="commercial-start-actions">
               <button class="btn primary" type="button" data-commercial-start="commercial-purchase-process"><span class="process-action-icon process-action-icon-purchase" aria-hidden="true"></span>Compra</button>
               <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-sale-process"><span class="process-action-icon process-action-icon-sale" aria-hidden="true"></span>Venta</button>
+              <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-consignment-process"><span class="process-action-icon process-action-icon-consignment" aria-hidden="true"></span>Consignación</button>
               <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-cuv-process"><span class="process-action-icon process-action-icon-cuv" aria-hidden="true"></span>CUV</button>
             </div>
           </div>
@@ -962,6 +963,10 @@
             <button class="commercial-process-card" type="button" data-commercial-process="commercial-sale-process" aria-pressed="false">
               <strong>Venta</strong>
               <span>Tracking de contratos de compraventa.</span>
+            </button>
+            <button class="commercial-process-card commercial-process-card-consignment" type="button" data-commercial-process="commercial-consignment-process" aria-pressed="false">
+              <strong>Consignación</strong>
+              <span>Contratos de prestación de servicios.</span>
             </button>
             <button class="commercial-process-card" type="button" data-commercial-process="commercial-cuv-process" aria-pressed="false">
               <strong>CUV</strong>
@@ -1022,6 +1027,121 @@
             <button type="reset" class="btn secondary">Limpiar</button>
             <button type="submit" class="btn primary">Enviar a control legal</button>
           </div>
+        </form>
+      </section>
+
+      <section id="commercial-consignment-process" class="commercial-process-panel" data-commercial-process-section="commercial-consignment-process" hidden>
+        <form id="consignmentContractForm" class="panel form-grid consignment-contract-form">
+          <input name="recordId" type="hidden">
+          <div class="span-2 form-intro consignment-form-intro">
+            <div>
+              <p class="eyebrow">Consignación</p>
+              <h2>Contrato de prestación de servicios</h2>
+              <span>Complete la ficha y genere el formato oficial de tres páginas. Cada corrección quedará guardada como una nueva versión.</span>
+            </div>
+            <span class="consignment-template-badge">Formato legal DILILEG</span>
+          </div>
+
+          <label class="span-2">
+            Tipo de cliente y contrato
+            <select name="contractType" id="consignmentContractType" required>
+              <option value="soltero">Persona natural - soltero/a</option>
+              <option value="casado">Persona natural - casado/a</option>
+              <option value="juridica">Persona jurídica</option>
+            </select>
+          </label>
+
+          <div class="consignment-field-group span-2" data-consignment-client="natural">
+            <label>
+              Nombre completo del cliente titular
+              <input name="clientName" autocomplete="name" required>
+            </label>
+            <label data-consignment-spouse hidden>
+              Nombre completo del cónyuge
+              <input name="spouseName" autocomplete="name">
+            </label>
+          </div>
+
+          <div class="consignment-field-group span-2" data-consignment-client="juridica" hidden>
+            <label>
+              Nombre completo del representante legal
+              <input name="representativeName">
+            </label>
+            <label>
+              Estado civil del representante
+              <select name="representativeCivilStatus">
+                <option value="SOLTERO(A)">Soltero/a</option>
+                <option value="CASADO(A)">Casado/a</option>
+                <option value="UNIÓN LIBRE">Unión libre</option>
+                <option value="DIVORCIADO(A)">Divorciado/a</option>
+                <option value="VIUDO(A)">Viudo/a</option>
+              </select>
+            </label>
+            <label>
+              Razón social de la empresa
+              <input name="companyName">
+            </label>
+            <label>
+              RUC
+              <input name="companyRuc" inputmode="numeric" maxlength="13">
+            </label>
+          </div>
+
+          <div class="form-section-title span-2">
+            <strong>Fecha y notificaciones</strong>
+            <span>Datos que se insertarán en la comparecencia y en la cláusula décima primera.</span>
+          </div>
+          <label>
+            Ciudad
+            <input name="city" value="Quito" required>
+          </label>
+          <label>
+            Fecha del contrato
+            <input name="contractDate" type="date" required>
+          </label>
+          <label class="span-2">
+            Dirección del cliente
+            <input name="clientAddress" required>
+          </label>
+          <label class="span-2">
+            Correo electrónico del cliente
+            <input name="clientEmail" type="email" required>
+          </label>
+
+          <div class="form-section-title span-2">
+            <strong>Datos del vehículo</strong>
+            <span>Se escribirán en la tabla original del contrato.</span>
+          </div>
+          <label>Placa<input name="plate" maxlength="10" required></label>
+          <label>Color<input name="color" required></label>
+          <label>Marca<input name="brand" required></label>
+          <label>Año<input name="year" type="number" min="1900" max="2100" required></label>
+          <label>Modelo<input name="model" required></label>
+          <label>Chasis<input name="chassis" required></label>
+          <label>Motor<input name="engine" required></label>
+          <label>Kilometraje<input name="mileage" type="number" min="0" step="1" required></label>
+          <label class="span-2">
+            Valor estimado de venta (USD)
+            <input name="salePrice" type="number" min="0.01" step="0.01" required>
+            <small>El valor también se colocará automáticamente en letras.</small>
+          </label>
+
+          <div id="consignmentFormStatus" class="consignment-form-status span-2" hidden></div>
+          <div class="form-actions span-2">
+            <button type="reset" class="btn secondary">Limpiar</button>
+            <button type="submit" class="btn primary">Guardar y generar PDF</button>
+          </div>
+
+          <section class="consignment-records span-2">
+            <div class="panel-title-row">
+              <div>
+                <p class="eyebrow">Fichas guardadas</p>
+                <h3>Contratos por placa</h3>
+                <span>Edite los datos o vuelva a descargar cualquier versión generada.</span>
+              </div>
+            </div>
+            <div id="commercialConsignmentList" class="consignment-record-list"></div>
+          </section>
         </form>
       </section>
 
@@ -2721,6 +2841,8 @@
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20260922-tracking-four-states-v5"></script>
+  <script src="js/consignment-templates.js?v=20260923-consignacion-fix-v2"></script>
+  <script src="js/vendor/pdf-lib.min.js?v=20260923-consignacion-fix-v2"></script>
+  <script src="app.js?v=20260923-consignacion-fix-v2"></script>
 </body>
 </html>

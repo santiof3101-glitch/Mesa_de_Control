@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260807-mobile-sync";
+const APP_BUILD_VERSION = "20260923-consignacion-fix-v2";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -24,6 +24,11 @@ const BACKUP_STORE_NAME = "snapshots";
 const FILE_PAYLOAD_STORE_NAME = "filePayloads";
 const BACKUP_RECORD_ID = "latest";
 const CORPORATE_LOGO_SRC = "autocor-logo.svg.webp";
+const CONSIGNMENT_TEMPLATE_PATHS = {
+  soltero: "assets/contracts/prestacion-consignacion-soltero.pdf",
+  casado: "assets/contracts/prestacion-consignacion-casado.pdf",
+  juridica: "assets/contracts/prestacion-consignacion-persona-juridica.pdf"
+};
 const SHARED_PC_STATE_URL = location.protocol === "file:"
   ? "http://127.0.0.1:8787/api/state"
   : `${location.origin}/api/state`;
@@ -445,6 +450,7 @@ const defaultState = {
   taskDeletions: [],
   legalChatMessages: [],
   uafeClientRequests: [],
+  commercialConsignments: [],
   tasks: []
 };
 
@@ -558,6 +564,10 @@ const processingPanels = document.querySelectorAll("[data-processing-panel]");
 const logoutBtn = document.querySelector("#logoutBtn");
 const form = document.querySelector("#requestForm");
 const saleContractForm = document.querySelector("#saleContractForm");
+const consignmentContractForm = document.querySelector("#consignmentContractForm");
+const consignmentContractType = document.querySelector("#consignmentContractType");
+const commercialConsignmentList = document.querySelector("#commercialConsignmentList");
+const consignmentFormStatus = document.querySelector("#consignmentFormStatus");
 const cuvRequestForm = document.querySelector("#cuvRequestForm");
 const commercialCuvList = document.querySelector("#commercialCuvList");
 const taskList = document.querySelector("#taskList");
@@ -1467,7 +1477,8 @@ function getSupabaseModuleSnapshots() {
     },
     contratos: {
       contratos: structuredClone(processing.contratos || []),
-      contractLoads: structuredClone(processing.contractLoads || [])
+      contractLoads: structuredClone(processing.contractLoads || []),
+      commercialConsignments: structuredClone(state.commercialConsignments || [])
     },
     proveedores: {
       proveedores: structuredClone(processing.proveedores || []),
@@ -1802,6 +1813,7 @@ function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
     case "contratos":
       processing.contratos = (snapshot.contratos || []).map(normalizeContractRecord);
       processing.contractLoads = (snapshot.contractLoads || []).map(normalizeContractLoad);
+      state.commercialConsignments = (snapshot.commercialConsignments || state.commercialConsignments || []).map(normalizeCommercialConsignmentRecord);
       return true;
     case "proveedores":
       {
@@ -2843,6 +2855,7 @@ function getStateScore(snapshot = state) {
     snapshot.dataProcessing?.proveedores?.length || 0,
     snapshot.dataProcessing?.providerLoads?.length || 0,
     snapshot.dataProcessing?.files?.length || 0,
+    snapshot.commercialConsignments?.length || 0,
     getActiveAnnouncements(snapshot).length || 0,
     snapshot.commercialAdvisors?.length || 0,
     snapshot.legalUsers?.length || 0,
@@ -2859,7 +2872,8 @@ function getOperationalScore(snapshot = state) {
     snapshot.dataProcessing?.contractLoads?.length || 0,
     snapshot.dataProcessing?.proveedores?.length || 0,
     snapshot.dataProcessing?.providerLoads?.length || 0,
-    snapshot.dataProcessing?.files?.length || 0
+    snapshot.dataProcessing?.files?.length || 0,
+    snapshot.commercialConsignments?.length || 0
   ].reduce((sum, value) => sum + value, 0);
 }
 
@@ -2981,12 +2995,14 @@ function normalizeImportedState(importedState) {
   importedState.statusOptions = parseMaybeJson(importedState.statusOptions) || importedState.statusOptions;
   importedState.tasks = parseMaybeJson(importedState.tasks) || importedState.tasks;
   importedState.uafeClientRequests = parseMaybeJson(importedState.uafeClientRequests) || importedState.uafeClientRequests;
+  importedState.commercialConsignments = parseMaybeJson(importedState.commercialConsignments) || importedState.commercialConsignments;
   if (!isPlainObject(importedState.copy)) importedState.copy = {};
   if (!isPlainObject(importedState.theme)) importedState.theme = {};
   if (!isPlainObject(importedState.dataProcessing)) importedState.dataProcessing = {};
   if (!Array.isArray(importedState.statusOptions)) importedState.statusOptions = [];
   if (!Array.isArray(importedState.tasks)) importedState.tasks = [];
   if (!Array.isArray(importedState.uafeClientRequests)) importedState.uafeClientRequests = [];
+  if (!Array.isArray(importedState.commercialConsignments)) importedState.commercialConsignments = [];
   const merged = { ...structuredClone(defaultState), ...importedState };
   merged.commercialAdvisors = normalizeCommercialAdvisors(merged.commercialAdvisors || []);
   merged.legalUsers = normalizeLegalUsers(merged.legalUsers || []);
@@ -2998,6 +3014,7 @@ function normalizeImportedState(importedState) {
   merged.forceLogoutRequests = (merged.forceLogoutRequests || []).map(normalizeForceLogoutRequest);
   merged.legalChatMessages = normalizeLegalChatMessages(merged.legalChatMessages || []);
   merged.uafeClientRequests = (merged.uafeClientRequests || []).map(normalizeUafeClientRequest);
+  merged.commercialConsignments = (merged.commercialConsignments || []).map(normalizeCommercialConsignmentRecord);
   merged.theme = { ...structuredClone(defaultState.theme), ...(merged.theme || {}) };
   merged.copy = { ...structuredClone(defaultState.copy), ...(merged.copy || {}) };
   sanitizeStateVisuals(merged);
@@ -8404,6 +8421,379 @@ function isCuvTask(task = {}) {
   return getTaskProcess(task) === "cuv";
 }
 
+function normalizeCommercialConsignmentRecord(record = {}) {
+  const data = record.data && typeof record.data === "object" ? record.data : {};
+  const versions = Array.isArray(record.versions) ? record.versions : [];
+  return {
+    id: record.id || crypto.randomUUID(),
+    createdAt: record.createdAt || new Date().toISOString(),
+    updatedAt: record.updatedAt || record.createdAt || new Date().toISOString(),
+    plate: normalizePlate(record.plate || data.plate || ""),
+    contractType: ["soltero", "casado", "juridica"].includes(record.contractType || data.contractType)
+      ? (record.contractType || data.contractType)
+      : "soltero",
+    advisorId: record.advisorId || "",
+    advisorName: record.advisorName || "",
+    agency: record.agency || "",
+    data: { ...data },
+    versions: versions.map((version) => ({
+      id: version.id || crypto.randomUUID(),
+      createdAt: version.createdAt || new Date().toISOString(),
+      fileName: version.fileName || "",
+      data: { ...(version.data || data) }
+    })).slice(0, 20)
+  };
+}
+
+function getConsignmentTypeLabel(type = "") {
+  if (type === "casado") return "Persona natural - casado/a";
+  if (type === "juridica") return "Persona jurídica";
+  return "Persona natural - soltero/a";
+}
+
+function setConsignmentFormStatus(message = "", isError = false) {
+  if (!consignmentFormStatus) return;
+  consignmentFormStatus.hidden = !message;
+  consignmentFormStatus.textContent = message;
+  consignmentFormStatus.classList.toggle("is-error", Boolean(isError));
+}
+
+function setDefaultConsignmentContractDate() {
+  const field = consignmentContractForm?.elements?.contractDate;
+  if (field && !field.value) field.value = new Date().toISOString().slice(0, 10);
+}
+
+function syncConsignmentContractFields() {
+  if (!consignmentContractForm) return;
+  const type = consignmentContractForm.elements.contractType?.value || "soltero";
+  const naturalGroup = consignmentContractForm.querySelector('[data-consignment-client="natural"]');
+  const legalGroup = consignmentContractForm.querySelector('[data-consignment-client="juridica"]');
+  const spouseLabel = consignmentContractForm.querySelector("[data-consignment-spouse]");
+  const isLegal = type === "juridica";
+  const isMarried = type === "casado";
+  if (naturalGroup) naturalGroup.hidden = isLegal;
+  if (legalGroup) legalGroup.hidden = !isLegal;
+  if (spouseLabel) spouseLabel.hidden = !isMarried;
+  ["clientName", "spouseName", "representativeName", "representativeCivilStatus", "companyName", "companyRuc"].forEach((name) => {
+    const field = consignmentContractForm.elements[name];
+    if (!field) return;
+    const enabled = isLegal
+      ? ["representativeName", "representativeCivilStatus", "companyName", "companyRuc"].includes(name)
+      : name === "clientName" || (name === "spouseName" && isMarried);
+    field.disabled = !enabled;
+    field.required = enabled;
+  });
+}
+
+function collectConsignmentContractData() {
+  const raw = Object.fromEntries(new FormData(consignmentContractForm).entries());
+  return {
+    recordId: raw.recordId || "",
+    contractType: raw.contractType || "soltero",
+    clientName: cleanUpper(raw.clientName),
+    spouseName: cleanUpper(raw.spouseName),
+    representativeName: cleanUpper(raw.representativeName),
+    representativeCivilStatus: cleanUpper(raw.representativeCivilStatus),
+    companyName: cleanUpper(raw.companyName),
+    companyRuc: normalizeId(raw.companyRuc),
+    city: cleanDisplayName(raw.city || "Quito"),
+    contractDate: raw.contractDate || new Date().toISOString().slice(0, 10),
+    clientAddress: String(raw.clientAddress || "").trim(),
+    clientEmail: String(raw.clientEmail || "").trim().toLowerCase(),
+    plate: normalizePlate(raw.plate),
+    color: cleanUpper(raw.color),
+    brand: cleanUpper(raw.brand),
+    year: String(raw.year || "").trim(),
+    model: cleanUpper(raw.model),
+    chassis: cleanUpper(raw.chassis),
+    engine: cleanUpper(raw.engine),
+    mileage: String(raw.mileage || "").trim(),
+    salePrice: Number(raw.salePrice || 0)
+  };
+}
+
+function getConsignmentTemplateUrl(type = "soltero") {
+  const path = CONSIGNMENT_TEMPLATE_PATHS[type] || CONSIGNMENT_TEMPLATE_PATHS.soltero;
+  return new URL(path, window.location.href).href;
+}
+
+function getConsignmentDateParts(value = "") {
+  const date = value ? new Date(`${value}T00:00:00`) : new Date();
+  const safeDate = Number.isNaN(date.getTime()) ? new Date() : date;
+  const months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  return {
+    day: String(safeDate.getDate()),
+    month: months[safeDate.getMonth()],
+    year: String(safeDate.getFullYear())
+  };
+}
+
+function getConsignmentPriceWords(value = 0) {
+  const cents = Math.round(Number(value || 0) * 100);
+  const integer = Math.floor(cents / 100);
+  const decimal = cents % 100;
+  return `${numberToSpanishWords(integer).toUpperCase()}${decimal ? ` CON ${String(decimal).padStart(2, "0")}/100` : ""}`;
+}
+
+async function buildConsignmentPdfBytes(data = {}) {
+  if (!window.PDFLib?.PDFDocument) throw new Error("No se pudo cargar el generador PDF.");
+  const embeddedTemplate = window.AUTOCOR_CONSIGNMENT_TEMPLATES?.[data.contractType] ||
+    window.AUTOCOR_CONSIGNMENT_TEMPLATES?.soltero || "";
+  let sourceBytes;
+  if (embeddedTemplate) {
+    const binary = window.atob(embeddedTemplate);
+    sourceBytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  } else {
+    const templateResponse = await fetch(getConsignmentTemplateUrl(data.contractType), { cache: "no-store" });
+    if (!templateResponse.ok) throw new Error("No se pudo cargar la plantilla oficial del contrato.");
+    sourceBytes = await templateResponse.arrayBuffer();
+  }
+  const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
+  const documentPdf = await PDFDocument.load(sourceBytes);
+  const regularFont = await documentPdf.embedFont(StandardFonts.Helvetica);
+  const boldFont = await documentPdf.embedFont(StandardFonts.HelveticaBold);
+  const pages = documentPdf.getPages();
+  const firstPage = pages[0];
+  const thirdPage = pages[2];
+  const black = rgb(0.03, 0.03, 0.03);
+  const white = rgb(1, 1, 1);
+
+  const erase = (page, x, top, width, height = 11) => {
+    page.drawRectangle({ x, y: page.getHeight() - top - height, width, height, color: white });
+  };
+  const drawFit = (page, text, x, top, width, options = {}) => {
+    const value = String(text || "").trim();
+    if (!value) return;
+    const font = options.bold ? boldFont : regularFont;
+    let size = options.size || 7;
+    const minSize = options.minSize || 4.2;
+    while (size > minSize && font.widthOfTextAtSize(value, size) > width) size -= 0.2;
+    page.drawText(value, {
+      x,
+      y: page.getHeight() - top - size - (options.baselineOffset ?? 1.6),
+      size,
+      font,
+      color: black,
+      maxWidth: width
+    });
+  };
+  const replace = (page, text, x, top, width, options = {}) => {
+    erase(page, x, top, width, options.height || 11);
+    drawFit(page, text, x + (options.padding || 0), top, width - ((options.padding || 0) * 2), options);
+  };
+
+  const dateParts = getConsignmentDateParts(data.contractDate);
+  replace(firstPage, data.city, 159, 119.4, 25.5, { bold: true, size: 6.8, minSize: 4.4 });
+  replace(firstPage, dateParts.day, 207.5, 119.4, 13.2, { bold: true, size: 6.8, minSize: 5 });
+  replace(firstPage, dateParts.month, 288.2, 119.4, 26.2, { bold: true, size: 6.4, minSize: 3.9 });
+  replace(firstPage, dateParts.year, 330.6, 119.4, 21.8, { bold: true, size: 6.2, minSize: 4.6 });
+
+  if (data.contractType === "casado") {
+    replace(firstPage, data.clientName, 139.2, 133.2, 90.2, { bold: true, size: 6.4, minSize: 3.8 });
+    replace(firstPage, data.spouseName, 286.1, 133.2, 90.2, { bold: true, size: 6.4, minSize: 3.8 });
+  } else if (data.contractType === "juridica") {
+    replace(firstPage, data.representativeName, 154.8, 133.2, 90.2, { bold: true, size: 6.4, minSize: 3.8 });
+    replace(firstPage, data.representativeCivilStatus, 321.1, 133.2, 63.8, { bold: true, size: 6.2, minSize: 3.8 });
+    replace(firstPage, data.companyName, 70.2, 147.0, 162.4, { bold: true, size: 6.4, minSize: 3.8 });
+    replace(firstPage, data.companyRuc, 272.8, 147.0, 73.5, { bold: true, size: 6.4, minSize: 4.2 });
+  } else {
+    replace(firstPage, data.clientName, 140.4, 133.2, 90.2, { bold: true, size: 6.4, minSize: 3.8 });
+  }
+
+  const tableTop = data.contractType === "soltero" ? 297.9 : 311.7;
+  const rowHeight = 14.3;
+  const leftValues = [data.plate, data.brand, data.model, data.engine];
+  const rightValues = [data.color, data.year, data.chassis, data.mileage];
+  leftValues.forEach((value, index) => {
+    replace(firstPage, value, 222.4, tableTop + (rowHeight * index) + 0.7, 115.6, { size: 6.5, minSize: 4.3, height: 12.5, padding: 2 });
+  });
+  rightValues.forEach((value, index) => {
+    replace(firstPage, value, 388.9, tableTop + (rowHeight * index) + 0.7, 97.8, { size: 6.5, minSize: 4.3, height: 12.5, padding: 2 });
+  });
+
+  const priceTop = data.contractType === "soltero" ? 674.2 : 688.1;
+  replace(firstPage, getConsignmentPriceWords(data.salePrice), 144.5, priceTop, 79.0, { bold: true, size: 6.4, minSize: 3.5 });
+  replace(firstPage, formatLegalCurrencyNumber(data.salePrice), 445.0, priceTop, 29.0, { bold: true, size: 6.4, minSize: 4.1 });
+
+  const notificationTop = data.contractType === "soltero" ? 464.5 : 492.2;
+  replace(thirdPage, data.clientAddress, 140.6, notificationTop, 38.5, { bold: true, size: 5.4, minSize: 3.4 });
+  replace(thirdPage, data.clientEmail, 311.8, notificationTop, 21.3, { bold: true, size: 5.2, minSize: 2.8 });
+
+  documentPdf.setTitle(`Contrato de consignación - ${data.plate || "SIN PLACA"}`);
+  documentPdf.setSubject(getConsignmentTypeLabel(data.contractType));
+  documentPdf.setCreator("AUTOCOR - Operación Comercial");
+  documentPdf.setProducer("AUTOCOR");
+  return documentPdf.save();
+}
+
+function getConsignmentFileName(data = {}, versionNumber = 1) {
+  const plate = normalizePlate(data.plate || "SIN-PLACA") || "SIN-PLACA";
+  const type = String(data.contractType || "soltero").toUpperCase();
+  return `${plate}-PRESTACION-CONSIGNACION-${type}-V${versionNumber}.pdf`;
+}
+
+async function downloadConsignmentPdf(data = {}, fileName = "") {
+  const bytes = await buildConsignmentPdfBytes(data);
+  const blob = new Blob([bytes], { type: "application/pdf" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName || getConsignmentFileName(data, 1);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
+async function previewConsignmentPdf(data = {}, fileName = "") {
+  const bytes = await buildConsignmentPdfBytes(data);
+  const blob = new Blob([bytes], { type: "application/pdf" });
+  const url = URL.createObjectURL(blob);
+  const preview = window.open(url, "_blank", "noopener");
+  if (!preview) {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName || getConsignmentFileName(data, 1);
+    link.click();
+    showToast("El navegador bloqueó la vista previa. Se descargó el PDF.");
+  }
+  window.setTimeout(() => URL.revokeObjectURL(url), 120000);
+}
+
+function getVisibleCommercialConsignments() {
+  const records = (state.commercialConsignments || []).map(normalizeCommercialConsignmentRecord);
+  if (session.role !== "commercial") return records;
+  return records.filter((record) => record.advisorId === session.userId || (!record.advisorId && record.advisorName === session.name));
+}
+
+function renderCommercialConsignments() {
+  if (!commercialConsignmentList) return;
+  const records = getVisibleCommercialConsignments().sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  if (!records.length) {
+    commercialConsignmentList.innerHTML = '<div class="empty compact-empty">Aún no hay contratos de consignación guardados.</div>';
+    return;
+  }
+  commercialConsignmentList.innerHTML = records.map((record) => {
+    const versions = (record.versions || []).slice(0, 6);
+    const owner = record.advisorName || "Asesor comercial";
+    const client = record.contractType === "juridica" ? record.data.companyName : record.data.clientName;
+    return `
+      <article class="consignment-record">
+        <div class="consignment-record-main">
+          <strong>${escapeHtml(record.plate || "SIN PLACA")}</strong>
+          <span>${escapeHtml(client || "Cliente sin nombre")}</span>
+        </div>
+        <div class="consignment-record-meta">
+          <span>${escapeHtml(getConsignmentTypeLabel(record.contractType))}</span>
+          <span>${escapeHtml(owner)} · ${escapeHtml(record.agency || "Sin agencia")}</span>
+        </div>
+        <div class="consignment-record-actions">
+          <button class="btn secondary tiny" type="button" data-consignment-action="edit" data-record-id="${escapeHtml(record.id)}">Editar ficha</button>
+          ${versions[0] ? `<button class="btn primary tiny" type="button" data-consignment-action="preview" data-record-id="${escapeHtml(record.id)}" data-version-id="${escapeHtml(versions[0].id)}">Ver PDF</button>` : ""}
+        </div>
+        <div class="consignment-version-list">
+          ${versions.map((version, index) => `
+            <div class="consignment-version">
+              <span>Versión ${record.versions.length - index} · ${escapeHtml(formatDateTime(version.createdAt))}</span>
+              <div class="consignment-version-actions">
+                <button class="btn secondary tiny" type="button" data-consignment-action="preview" data-record-id="${escapeHtml(record.id)}" data-version-id="${escapeHtml(version.id)}">Vista previa</button>
+                <button class="btn secondary tiny" type="button" data-consignment-action="download" data-record-id="${escapeHtml(record.id)}" data-version-id="${escapeHtml(version.id)}">Descargar</button>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function fillConsignmentContractForm(record = {}) {
+  if (!consignmentContractForm) return;
+  const data = record.data || {};
+  consignmentContractForm.reset();
+  Object.entries({ ...data, recordId: record.id || "" }).forEach(([name, value]) => {
+    const field = consignmentContractForm.elements[name];
+    if (field) field.value = value ?? "";
+  });
+  syncConsignmentContractFields();
+  setDefaultConsignmentContractDate();
+  setConsignmentFormStatus(`Editando la ficha ${record.plate || "sin placa"}. Al guardar se conservará la versión anterior.`);
+  consignmentContractForm.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function findConsignmentVersion(recordId = "", versionId = "") {
+  const record = (state.commercialConsignments || []).find((item) => String(item.id) === String(recordId));
+  if (!record) return {};
+  const version = (record.versions || []).find((item) => String(item.id) === String(versionId));
+  return { record, version };
+}
+
+async function submitConsignmentContract(event) {
+  event.preventDefault();
+  if (!consignmentContractForm?.checkValidity()) {
+    consignmentContractForm?.reportValidity();
+    return;
+  }
+  const submitButton = consignmentContractForm.querySelector('button[type="submit"]');
+  const data = collectConsignmentContractData();
+  const companyRucValid = data.contractType !== "juridica" || data.companyRuc.length === 13;
+  if (!companyRucValid) {
+    setConsignmentFormStatus("El RUC de la persona jurídica debe tener 13 dígitos.", true);
+    consignmentContractForm.elements.companyRuc?.focus();
+    return;
+  }
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = "Generando PDF...";
+  }
+  try {
+    await buildConsignmentPdfBytes(data);
+    const now = new Date().toISOString();
+    let record = (state.commercialConsignments || []).find((item) => String(item.id) === String(data.recordId));
+    if (!record) {
+      record = normalizeCommercialConsignmentRecord({
+        id: crypto.randomUUID(),
+        createdAt: now,
+        advisorId: session.userId || "",
+        advisorName: session.name || "",
+        agency: session.agency || "",
+        data,
+        versions: []
+      });
+      state.commercialConsignments = [record, ...(state.commercialConsignments || [])];
+    }
+    const versionNumber = (record.versions || []).length + 1;
+    const fileName = getConsignmentFileName(data, versionNumber);
+    record.plate = data.plate;
+    record.contractType = data.contractType;
+    record.data = { ...data, recordId: record.id };
+    record.updatedAt = now;
+    record.advisorId = record.advisorId || session.userId || "";
+    record.advisorName = record.advisorName || session.name || "";
+    record.agency = record.agency || session.agency || "";
+    record.versions = [{ id: crypto.randomUUID(), createdAt: now, fileName, data: { ...record.data } }, ...(record.versions || [])].slice(0, 20);
+    saveState();
+    renderCommercialConsignments();
+    const onlineSaved = await guardarModuloSupabaseAhora("contratos");
+    await downloadConsignmentPdf(record.data, fileName);
+    setConsignmentFormStatus(onlineSaved
+      ? `Ficha ${record.plate} guardada en línea y PDF generado. Versión ${versionNumber}.`
+      : `Ficha ${record.plate} guardada en este equipo. La sincronización en línea quedó pendiente.`
+    );
+    consignmentContractForm.elements.recordId.value = record.id;
+    showToast(`Contrato de consignación ${record.plate} generado y guardado.`);
+  } catch (error) {
+    console.error("No se pudo generar el contrato de consignación", error);
+    setConsignmentFormStatus(error.message || "No se pudo generar el PDF. Actualice la página e intente nuevamente.", true);
+    showToast("No se pudo generar el contrato de consignación.", "error");
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = "Guardar y generar PDF";
+    }
+  }
+}
+
 function getEligibleLegalUsersForTask(task = {}) {
   const mailbox = getTaskMailbox(task);
   if (mailbox === "firmas") {
@@ -8603,6 +8993,7 @@ function filterTasksByCommercialProcess(tasks = [], process = activeCommercialPr
 function getCommercialProcessLabel(process = activeCommercialProcess) {
   if (process === "firma") return "Firmas | Pilot";
   if (process === "cuv") return "CUV | control";
+  if (process === "consignacion") return "Consignación | contratos";
   return process === "venta" ? "Venta | contratos" : "Compra | saneamientos";
 }
 
@@ -9035,6 +9426,7 @@ function setCommercialArea(area = "process", options = {}) {
     moduleButton?.click();
   }
   renderCommercialDashboard();
+  renderCommercialConsignments();
   renderCommercialRequests();
   renderCommercialControlSummary();
   if (area === "lookup") renderStatusLookup();
@@ -9048,11 +9440,17 @@ function setCommercialProcessFromTarget(target, shouldScroll = true, options = {
   const shouldCollapse = options.toggle === true && activeSection && !activeSection.hidden;
   if (shouldCollapse) {
     resetCommercialProcesses();
-    activeCommercialProcess = "";
+    if (target !== "commercial-consignment-process") activeCommercialProcess = "";
     renderCommercialDashboard();
     return;
   }
-  activeCommercialProcess = target === "commercial-sale-process" ? "venta" : target === "commercial-cuv-process" ? "cuv" : "compra";
+  if (target !== "commercial-consignment-process") {
+    activeCommercialProcess = target === "commercial-sale-process"
+      ? "venta"
+      : target === "commercial-cuv-process"
+        ? "cuv"
+        : "compra";
+  }
   setCommercialArea("process", { scroll: shouldScroll, keepProcess: true });
   commercialProcessButtons.forEach((item) => {
     const isActive = item.dataset.commercialProcess === target;
@@ -16895,6 +17293,7 @@ function renderAll() {
   updateDuplicatePreview();
   applyCommercialSessionToForm();
   setDefaultCuvRequestDate();
+  setDefaultConsignmentContractDate();
   initPasswordToggles();
 }
 
@@ -17635,6 +18034,43 @@ saleContractForm?.addEventListener("submit", (event) => {
 saleContractForm?.querySelector("button[type='submit']")?.addEventListener("click", (event) => {
   event.preventDefault();
   openSaleContractUafeFromForm();
+});
+
+consignmentContractType?.addEventListener("change", syncConsignmentContractFields);
+consignmentContractForm?.addEventListener("submit", submitConsignmentContract);
+consignmentContractForm?.addEventListener("reset", () => {
+  window.setTimeout(() => {
+    syncConsignmentContractFields();
+    setDefaultConsignmentContractDate();
+    setConsignmentFormStatus("");
+  }, 0);
+});
+commercialConsignmentList?.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-consignment-action]");
+  if (!button) return;
+  const { record, version } = findConsignmentVersion(button.dataset.recordId, button.dataset.versionId);
+  if (!record) {
+    showToast("No se encontró la ficha de consignación.", "error");
+    return;
+  }
+  if (button.dataset.consignmentAction === "edit") {
+    fillConsignmentContractForm(record);
+    return;
+  }
+  if (!version) {
+    showToast("No se encontró la versión del contrato.", "error");
+    return;
+  }
+  button.disabled = true;
+  try {
+    if (button.dataset.consignmentAction === "preview") await previewConsignmentPdf(version.data, version.fileName);
+    if (button.dataset.consignmentAction === "download") await downloadConsignmentPdf(version.data, version.fileName);
+  } catch (error) {
+    console.error("No se pudo abrir el contrato de consignación", error);
+    showToast(error.message || "No se pudo abrir el PDF.", "error");
+  } finally {
+    button.disabled = false;
+  }
 });
 
 commercialUafeForm?.addEventListener("submit", submitCommercialUafeForm);
