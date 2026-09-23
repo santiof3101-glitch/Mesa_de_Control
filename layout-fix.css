@@ -2109,7 +2109,7 @@ body {
   overflow: hidden !important;
   border: 1px solid #e5e9ef !important;
   border-radius: 22px !important;
-  background: #fff url("hero-comercial-white-logo-20260922.png") center / cover no-repeat !important;
+  background: #fff url("hero-comercial-white-sign-20260922.png") center / cover no-repeat !important;
   box-shadow: 0 22px 56px rgba(17, 30, 49, 0.12) !important;
 }
 
@@ -2128,28 +2128,11 @@ body {
 }
 
 #formulario .commercial-start-logo {
-  width: clamp(132px, 12vw, 184px);
+  width: clamp(145px, 15vw, 220px);
   height: auto;
-  margin: 0;
+  margin: 0 0 4px;
   object-fit: contain;
   object-position: left center;
-}
-
-#formulario .commercial-start-welcome {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 48px;
-  margin: 2px 0 4px;
-}
-
-#formulario .commercial-start-welcome > span {
-  color: #667085;
-  font-size: 0.7rem;
-  font-weight: 850;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  white-space: nowrap;
 }
 
 #formulario .commercial-process-area .commercial-start-copy .eyebrow {
@@ -2237,7 +2220,7 @@ body {
   }
 
   #formulario .commercial-start-logo {
-    width: 130px;
+    width: 140px;
   }
 }
 
@@ -2252,12 +2235,6 @@ body {
 
   #formulario .commercial-process-area .commercial-start-copy h2 {
     font-size: clamp(1.75rem, 9.5vw, 2.55rem) !important;
-  }
-
-  #formulario .commercial-start-welcome {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 4px;
   }
 
   #formulario .commercial-process-area .commercial-start-actions {
