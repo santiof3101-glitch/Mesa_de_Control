@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260923-consignacion-font-v3";
+const APP_BUILD_VERSION = "20260923-consignacion-font-v4";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -8656,6 +8656,7 @@ async function buildConsignmentPdfBytes(data = {}) {
         cursorX += item.width + (itemIndex < items.length - 1 ? gap : 0);
       });
     });
+    return { lineCount: lines.length, bottomTop: top + (lines.length * lineHeight) };
   };
 
   const dateParts = getConsignmentDateParts(data.contractDate);
@@ -8736,9 +8737,35 @@ async function buildConsignmentPdfBytes(data = {}) {
   replace(firstPage, getConsignmentPriceWords(data.salePrice), 144.5, priceTop, 79.0, { bold: true, size: 9.6 });
   replace(firstPage, formatLegalCurrencyNumber(data.salePrice), 445.0, priceTop, 29.0, { bold: true, size: 9.6 });
 
-  const notificationTop = data.contractType === "soltero" ? 464.5 : 492.2;
-  replace(thirdPage, data.clientAddress, 140.6, notificationTop, 38.5, { bold: true, size: 9.6 });
-  replace(thirdPage, data.clientEmail, 311.8, notificationTop, 21.3, { bold: true, size: 9.6 });
+  const notificationTop = data.contractType === "soltero" ? 437.7 : 465.3;
+  erase(thirdPage, 35.5, notificationTop - 5, 524, 178);
+  const notificationBlock = drawRichJustified(thirdPage, [
+    { text: "DÉCIMA PRIMERA: NOTIFICACIONES.-", bold: true },
+    { text: "Las partes acuerdan que cualquier citación o notificación será recibida en las siguientes direcciones:" },
+    { text: "EL INTERMEDIARIO", bold: true },
+    { text: "en la Av. 6 de Diciembre y Santa Lucía, Quito, correo electrónico veronica.llugcha@autocor.com.ec y," },
+    { text: "EL CLIENTE", bold: true },
+    { text: "en la calle" },
+    { text: `${data.clientAddress},`, bold: true },
+    { text: "dirección de correo electrónico:" },
+    { text: `${data.clientEmail}.`, bold: true },
+    { text: "Todas las comunicaciones realizadas a los respectivos correos electrónicos, las partes están de acuerdo que se entenderán como válidas y efectivamente realizadas. Si una de las partes modifica su dirección, correo electrónico o teléfono será responsabilidad de esta notificar a la otra." }
+  ], { x: 36, top: notificationTop, width: 523.2, size: 10, lineHeight: 13.8 });
+
+  drawRichJustified(thirdPage, [
+    { text: "DÉCIMA SEGUNDA: CONTROVERSIAS. -", bold: true },
+    { text: "En caso de suscitarse controversias que se deriven del presente instrumento." },
+    { text: "EL CLIENTE", bold: true },
+    { text: "renuncia fuero y domicilio y las partes se someterán al trámite monitorio, cuando corresponda o al trámite que seleccione" },
+    { text: "EL INTERMEDIARIO,", bold: true },
+    { text: "ante los jueces competentes del cantón Quito. Las partes se someten a la totalidad de las cláusulas que preceden, expresando dicha aceptación con sus firmas habituales en tres ejemplares de idéntico valor y tenor." }
+  ], {
+    x: 36,
+    top: notificationBlock.bottomTop + 13.8,
+    width: 523.2,
+    size: 10,
+    lineHeight: 13.8
+  });
 
   documentPdf.setTitle(`Contrato de consignación - ${data.plate || "SIN PLACA"}`);
   documentPdf.setSubject(getConsignmentTypeLabel(data.contractType));
