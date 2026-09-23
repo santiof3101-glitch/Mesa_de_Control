@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260923-consignacion-fix-v2";
+const APP_BUILD_VERSION = "20260923-consignacion-font-v3";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -8537,21 +8537,43 @@ function getConsignmentPriceWords(value = 0) {
 
 async function buildConsignmentPdfBytes(data = {}) {
   if (!window.PDFLib?.PDFDocument) throw new Error("No se pudo cargar el generador PDF.");
+  const decodeBase64 = (value = "") => {
+    const binary = window.atob(value);
+    return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  };
   const embeddedTemplate = window.AUTOCOR_CONSIGNMENT_TEMPLATES?.[data.contractType] ||
     window.AUTOCOR_CONSIGNMENT_TEMPLATES?.soltero || "";
   let sourceBytes;
   if (embeddedTemplate) {
-    const binary = window.atob(embeddedTemplate);
-    sourceBytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    sourceBytes = decodeBase64(embeddedTemplate);
   } else {
     const templateResponse = await fetch(getConsignmentTemplateUrl(data.contractType), { cache: "no-store" });
     if (!templateResponse.ok) throw new Error("No se pudo cargar la plantilla oficial del contrato.");
     sourceBytes = await templateResponse.arrayBuffer();
   }
-  const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
+  const {
+    PDFDocument,
+    StandardFonts,
+    rgb,
+    pushGraphicsState,
+    popGraphicsState,
+    beginText,
+    endText,
+    setFillingRgbColor,
+    setFontAndSize,
+    setTextMatrix,
+    showText
+  } = window.PDFLib;
   const documentPdf = await PDFDocument.load(sourceBytes);
-  const regularFont = await documentPdf.embedFont(StandardFonts.Helvetica);
-  const boldFont = await documentPdf.embedFont(StandardFonts.HelveticaBold);
+  const customFonts = window.AUTOCOR_CONSIGNMENT_FONTS || {};
+  const canUseRobotoCondensed = Boolean(window.fontkit && customFonts.regular && customFonts.bold);
+  if (canUseRobotoCondensed) documentPdf.registerFontkit(window.fontkit);
+  const regularFont = canUseRobotoCondensed
+    ? await documentPdf.embedFont(decodeBase64(customFonts.regular), { subset: true })
+    : await documentPdf.embedFont(StandardFonts.Helvetica);
+  const boldFont = canUseRobotoCondensed
+    ? await documentPdf.embedFont(decodeBase64(customFonts.bold), { subset: true })
+    : await documentPdf.embedFont(StandardFonts.HelveticaBold);
   const pages = documentPdf.getPages();
   const firstPage = pages[0];
   const thirdPage = pages[2];
@@ -8565,59 +8587,158 @@ async function buildConsignmentPdfBytes(data = {}) {
     const value = String(text || "").trim();
     if (!value) return;
     const font = options.bold ? boldFont : regularFont;
-    let size = options.size || 7;
-    const minSize = options.minSize || 4.2;
-    while (size > minSize && font.widthOfTextAtSize(value, size) > width) size -= 0.2;
-    page.drawText(value, {
-      x,
-      y: page.getHeight() - top - size - (options.baselineOffset ?? 1.6),
-      size,
-      font,
-      color: black,
-      maxWidth: width
-    });
+    const size = options.size || 9.6;
+    const naturalWidth = Math.max(font.widthOfTextAtSize(value, size), 0.01);
+    const horizontalScale = Math.min(1, width / naturalWidth);
+    const y = page.getHeight() - top - size - (options.baselineOffset ?? 0.5);
+    page.setFont(font);
+    const [, fontKey] = page.getFont();
+    page.pushOperators(
+      pushGraphicsState(),
+      beginText(),
+      setFillingRgbColor(0.03, 0.03, 0.03),
+      setFontAndSize(fontKey, size),
+      setTextMatrix(horizontalScale, 0, 0, 1, x, y),
+      showText(font.encodeText(value)),
+      endText(),
+      popGraphicsState()
+    );
   };
   const replace = (page, text, x, top, width, options = {}) => {
     erase(page, x, top, width, options.height || 11);
     drawFit(page, text, x + (options.padding || 0), top, width - ((options.padding || 0) * 2), options);
   };
 
-  const dateParts = getConsignmentDateParts(data.contractDate);
-  replace(firstPage, data.city, 159, 119.4, 25.5, { bold: true, size: 6.8, minSize: 4.4 });
-  replace(firstPage, dateParts.day, 207.5, 119.4, 13.2, { bold: true, size: 6.8, minSize: 5 });
-  replace(firstPage, dateParts.month, 288.2, 119.4, 26.2, { bold: true, size: 6.4, minSize: 3.9 });
-  replace(firstPage, dateParts.year, 330.6, 119.4, 21.8, { bold: true, size: 6.2, minSize: 4.6 });
+  const drawRichJustified = (page, segments, options = {}) => {
+    const size = options.size || 9.6;
+    const lineHeight = options.lineHeight || 13.8;
+    const x = options.x || 36;
+    const top = options.top || 120.2;
+    const width = options.width || 523.2;
+    const words = segments.flatMap((segment) =>
+      String(segment.text || "").match(/\S+/g)?.map((text) => ({ text, bold: Boolean(segment.bold) })) || []
+    );
+    const spaceWidth = regularFont.widthOfTextAtSize(" ", size);
+    const lines = [];
+    let line = [];
+    let lineWidth = 0;
+    words.forEach((word) => {
+      const font = word.bold ? boldFont : regularFont;
+      const wordWidth = font.widthOfTextAtSize(word.text, size);
+      const candidateWidth = line.length ? lineWidth + spaceWidth + wordWidth : wordWidth;
+      if (line.length && candidateWidth > width) {
+        lines.push(line);
+        line = [{ ...word, width: wordWidth }];
+        lineWidth = wordWidth;
+      } else {
+        line.push({ ...word, width: wordWidth });
+        lineWidth = candidateWidth;
+      }
+    });
+    if (line.length) lines.push(line);
 
+    lines.forEach((items, lineIndex) => {
+      const wordsWidth = items.reduce((sum, item) => sum + item.width, 0);
+      const isLastLine = lineIndex === lines.length - 1;
+      const gap = !isLastLine && items.length > 1
+        ? Math.max(spaceWidth, (width - wordsWidth) / (items.length - 1))
+        : spaceWidth;
+      let cursorX = x;
+      const y = page.getHeight() - top - size - (lineIndex * lineHeight) - 0.5;
+      items.forEach((item, itemIndex) => {
+        page.drawText(item.text, {
+          x: cursorX,
+          y,
+          size,
+          font: item.bold ? boldFont : regularFont,
+          color: black
+        });
+        cursorX += item.width + (itemIndex < items.length - 1 ? gap : 0);
+      });
+    });
+  };
+
+  const dateParts = getConsignmentDateParts(data.contractDate);
+  const introSegments = [
+    { text: "En el Distrito Metropolitano de" },
+    { text: data.city, bold: true },
+    { text: ", a los" },
+    { text: dateParts.day, bold: true },
+    { text: "días del mes de" },
+    { text: dateParts.month, bold: true },
+    { text: "del" },
+    { text: dateParts.year, bold: true },
+    { text: ", comparecen a la celebración del presente contrato, por una parte, el señor (a)" }
+  ];
   if (data.contractType === "casado") {
-    replace(firstPage, data.clientName, 139.2, 133.2, 90.2, { bold: true, size: 6.4, minSize: 3.8 });
-    replace(firstPage, data.spouseName, 286.1, 133.2, 90.2, { bold: true, size: 6.4, minSize: 3.8 });
+    introSegments.push(
+      { text: data.clientName, bold: true },
+      { text: "y/o señor (a)" },
+      { text: data.spouseName, bold: true },
+      { text: "de estado civil" },
+      { text: "CASADO (S);", bold: true },
+      { text: "por sus propios y personales derechos" }
+    );
   } else if (data.contractType === "juridica") {
-    replace(firstPage, data.representativeName, 154.8, 133.2, 90.2, { bold: true, size: 6.4, minSize: 3.8 });
-    replace(firstPage, data.representativeCivilStatus, 321.1, 133.2, 63.8, { bold: true, size: 6.2, minSize: 3.8 });
-    replace(firstPage, data.companyName, 70.2, 147.0, 162.4, { bold: true, size: 6.4, minSize: 3.8 });
-    replace(firstPage, data.companyRuc, 272.8, 147.0, 73.5, { bold: true, size: 6.4, minSize: 4.2 });
+    introSegments.push(
+      { text: data.representativeName, bold: true },
+      { text: "de estado civil" },
+      { text: `${data.representativeCivilStatus};`, bold: true },
+      { text: "en calidad de representante Legal de la empresa" },
+      { text: data.companyName, bold: true },
+      { text: "con RUC" },
+      { text: `${data.companyRuc},`, bold: true }
+    );
   } else {
-    replace(firstPage, data.clientName, 140.4, 133.2, 90.2, { bold: true, size: 6.4, minSize: 3.8 });
+    introSegments.push(
+      { text: data.clientName, bold: true },
+      { text: "de estado civil soltero(a); por sus propios y personales derechos" }
+    );
   }
+  introSegments.push(
+    { text: "a quién, para los efectos del presente instrumento se le denominará" },
+    { text: "EL CLIENTE", bold: true },
+    { text: "y, por otra parte, la compañía" },
+    { text: "DILIGENCIAS LEGALES SEMINUEVOS DILILEG CIA. LTDA.", bold: true },
+    { text: "quién a su vez está representada por su Gerente General el señor" },
+    { text: "BILLY NIKE BROWN BELTRAN", bold: true },
+    { text: "Apoderado especial de" },
+    { text: "AUTOCOR AUTOEVOLUCION S.A.S.,", bold: true },
+    { text: "debidamente representada por la señora" },
+    { text: "VERONICA GUADALUPE LLUGCHA BONILLA", bold: true },
+    { text: "y/o" },
+    { text: "AUTOCOR-AUTOPLAZA S.A.S.", bold: true },
+    { text: "debidamente representada por el señor" },
+    { text: "BILLY NIKE BROWN BELTRAN", bold: true },
+    { text: "y/o" },
+    { text: "LUIS JOAQUIN CORONEL BELTRÁN", bold: true },
+    { text: "por sus propios derechos, todos estos - cuando aplique-, a quienes en adelante se le denominarán" },
+    { text: "“EL INTERMEDIARIO”.", bold: true },
+    { text: "Los comparecientes, son de nacionalidad" },
+    { text: "ECUATORIANA,", bold: true },
+    { text: "mayores de edad, domiciliados en Ecuador, hábiles para ejercer derechos y contraer obligaciones. Es voluntad de las partes celebrar el presente Contrato de Prestación de Servicios de Intermediación y Gestión de Vehículos Usados, al tenor y cumplimiento de las cláusulas que a continuación se expresan:" }
+  );
+  erase(firstPage, 35.5, 118.5, 524, 153);
+  drawRichJustified(firstPage, introSegments, { x: 36, top: 120.2, width: 523.2, size: 9.6, lineHeight: 13.8 });
 
   const tableTop = data.contractType === "soltero" ? 297.9 : 311.7;
   const rowHeight = 14.3;
   const leftValues = [data.plate, data.brand, data.model, data.engine];
   const rightValues = [data.color, data.year, data.chassis, data.mileage];
   leftValues.forEach((value, index) => {
-    replace(firstPage, value, 222.4, tableTop + (rowHeight * index) + 0.7, 115.6, { size: 6.5, minSize: 4.3, height: 12.5, padding: 2 });
+    replace(firstPage, value, 222.4, tableTop + (rowHeight * index) + 0.7, 115.6, { size: 9.2, height: 12.5, padding: 2 });
   });
   rightValues.forEach((value, index) => {
-    replace(firstPage, value, 388.9, tableTop + (rowHeight * index) + 0.7, 97.8, { size: 6.5, minSize: 4.3, height: 12.5, padding: 2 });
+    replace(firstPage, value, 388.9, tableTop + (rowHeight * index) + 0.7, 97.8, { size: 9.2, height: 12.5, padding: 2 });
   });
 
   const priceTop = data.contractType === "soltero" ? 674.2 : 688.1;
-  replace(firstPage, getConsignmentPriceWords(data.salePrice), 144.5, priceTop, 79.0, { bold: true, size: 6.4, minSize: 3.5 });
-  replace(firstPage, formatLegalCurrencyNumber(data.salePrice), 445.0, priceTop, 29.0, { bold: true, size: 6.4, minSize: 4.1 });
+  replace(firstPage, getConsignmentPriceWords(data.salePrice), 144.5, priceTop, 79.0, { bold: true, size: 9.6 });
+  replace(firstPage, formatLegalCurrencyNumber(data.salePrice), 445.0, priceTop, 29.0, { bold: true, size: 9.6 });
 
   const notificationTop = data.contractType === "soltero" ? 464.5 : 492.2;
-  replace(thirdPage, data.clientAddress, 140.6, notificationTop, 38.5, { bold: true, size: 5.4, minSize: 3.4 });
-  replace(thirdPage, data.clientEmail, 311.8, notificationTop, 21.3, { bold: true, size: 5.2, minSize: 2.8 });
+  replace(thirdPage, data.clientAddress, 140.6, notificationTop, 38.5, { bold: true, size: 9.6 });
+  replace(thirdPage, data.clientEmail, 311.8, notificationTop, 21.3, { bold: true, size: 9.6 });
 
   documentPdf.setTitle(`Contrato de consignación - ${data.plate || "SIN PLACA"}`);
   documentPdf.setSubject(getConsignmentTypeLabel(data.contractType));
