@@ -1670,7 +1670,7 @@ body {
 
 #formulario .commercial-tracking-grid,
 #formulario .commercial-kanban-board {
-  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   gap: 12px !important;
 }
 
@@ -1997,7 +1997,7 @@ body {
 
 #formulario .commercial-tracking-summary {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
   margin-top: 16px;
 }

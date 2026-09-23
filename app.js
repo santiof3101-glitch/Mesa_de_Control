@@ -9439,7 +9439,7 @@ function getCommercialTrackingColumnKey(task = {}) {
   const status = normalizeLooseText(task.status);
   if (stage.key === "rechazado" || status.includes("RECHAZ")) return "rechazado";
   if (isCommercialTrackingFinished(task) || stage.key === "firma-finalizada" || stage.key === "saneamiento-pilot") return "completado";
-  if (["firma-solicitada", "firma-enviada", "subir-firmados"].includes(stage.key)) return "revision";
+  if (["firma-solicitada", "firma-enviada", "subir-firmados"].includes(stage.key)) return "completado";
   if (stage.key === "gestion" || task.legalUserId || task.takenAt || status.includes("TOMADO")) return "proceso";
   return "pendiente";
 }
@@ -9448,7 +9448,6 @@ function getCommercialTrackingColumns() {
   return [
     { key: "pendiente", label: "Pendiente", hint: "Solicitudes", icon: "&#9201;", color: "#64748b", soft: "#f6f8fb" },
     { key: "proceso", label: "En proceso", hint: "Solicitudes", icon: "&#128260;", color: "#f97316", soft: "#fff8f1" },
-    { key: "revision", label: "En revision", hint: "Solicitud", icon: "&#128203;", color: "#eab308", soft: "#fffbed" },
     { key: "completado", label: "Completado", hint: "Solicitudes", icon: "&#10003;", color: "#16a36f", soft: "#f2fbf7" },
     { key: "rechazado", label: "Rechazado", hint: "Solicitud", icon: "&#10005;", color: "#ef4444", soft: "#fff5f5" }
   ];
@@ -9587,6 +9586,9 @@ function renderCommercialTrackingBoard(tasks = [], process = activeCommercialPro
   const visibleTasks = getCommercialTrackingTasks(processTasks);
   const visibleKanbanRequests = visibleTasks;
   const columns = getCommercialTrackingColumns();
+  if (commercialTrackingFilter !== "todos" && !columns.some((column) => column.key === commercialTrackingFilter)) {
+    commercialTrackingFilter = "todos";
+  }
   if (!columns.some((column) => column.key === commercialTrackingMobileStatus)) {
     commercialTrackingMobileStatus = columns[0]?.key || "pendiente";
   }
@@ -9693,7 +9695,6 @@ function renderCommercialTrackingBoard(tasks = [], process = activeCommercialPro
       <article><strong>${totalVisible}</strong><span>Total solicitudes</span></article>
       <article><strong>${kanbanCounts.pendiente || 0}</strong><span>Pendientes</span></article>
       <article><strong>${kanbanCounts.proceso || 0}</strong><span>En proceso</span></article>
-      <article><strong>${kanbanCounts.revision || 0}</strong><span>En revision</span></article>
       <article><strong>${kanbanCounts.completado || 0}</strong><span>Completadas</span></article>
       <article><strong>${kanbanCounts.rechazado || 0}</strong><span>Rechazadas</span></article>
       <article><strong>${uniquePlates}</strong><span>Placas unicas</span></article>
