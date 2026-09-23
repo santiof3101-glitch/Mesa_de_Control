@@ -2099,3 +2099,151 @@ body {
     width: 100%;
   }
 }
+
+/* Commercial white hero refresh 20260922 */
+#formulario .commercial-process-area .commercial-start-hero {
+  min-height: clamp(270px, 24vw, 348px) !important;
+  display: grid !important;
+  align-items: center !important;
+  padding: clamp(24px, 3vw, 42px) clamp(24px, 4vw, 58px) !important;
+  overflow: hidden !important;
+  border: 1px solid #e5e9ef !important;
+  border-radius: 22px !important;
+  background: #fff url("hero-comercial-white-20260922.png") center / cover no-repeat !important;
+  box-shadow: 0 22px 56px rgba(17, 30, 49, 0.12) !important;
+}
+
+#formulario .commercial-process-area .commercial-start-hero::after {
+  display: none !important;
+}
+
+#formulario .commercial-process-area .commercial-start-copy {
+  position: relative !important;
+  z-index: 1 !important;
+  display: grid !important;
+  gap: 8px !important;
+  width: min(45%, 610px) !important;
+  max-width: 610px !important;
+  color: #111d2e !important;
+}
+
+#formulario .commercial-start-logo {
+  width: clamp(145px, 15vw, 220px);
+  height: auto;
+  margin: 0 0 4px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+#formulario .commercial-process-area .commercial-start-copy .eyebrow {
+  margin: 2px 0 0 !important;
+  color: #667085 !important;
+  font-size: 0.68rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.22em !important;
+  text-shadow: none !important;
+}
+
+#formulario .commercial-process-area .commercial-start-copy h2 {
+  max-width: none !important;
+  margin: 0 !important;
+  color: #111d2e !important;
+  font-size: clamp(2rem, 3.25vw, 3.7rem) !important;
+  line-height: 0.98 !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+  text-transform: uppercase !important;
+  text-shadow: none !important;
+}
+
+#formulario .commercial-process-area .commercial-start-copy h3,
+#formulario .commercial-process-area #commercialProcessTitle {
+  margin: 3px 0 0 !important;
+  color: #3f4652 !important;
+  font-size: clamp(0.98rem, 1.25vw, 1.28rem) !important;
+  line-height: 1.25 !important;
+  font-weight: 750 !important;
+  text-shadow: none !important;
+}
+
+#formulario .commercial-process-area .commercial-start-copy p:not(.eyebrow) {
+  max-width: 520px !important;
+  margin: 2px 0 0 !important;
+  color: #656d79 !important;
+  font-size: clamp(0.82rem, 0.9vw, 0.96rem) !important;
+  line-height: 1.45 !important;
+  text-shadow: none !important;
+}
+
+#formulario .commercial-process-area .commercial-start-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  margin-top: 10px !important;
+}
+
+#formulario .commercial-process-area .commercial-start-actions .btn {
+  width: auto !important;
+  min-width: 116px !important;
+  min-height: 43px !important;
+  padding: 0 18px !important;
+  border-radius: 11px !important;
+  font-size: 0.86rem !important;
+  box-shadow: 0 8px 20px rgba(17, 30, 49, 0.12) !important;
+}
+
+#formulario .commercial-process-area .commercial-start-actions .light-btn {
+  border-color: #d8dee8 !important;
+  color: #182438 !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+}
+
+@media (max-width: 900px) {
+  #formulario .commercial-process-area .commercial-start-hero {
+    min-height: 430px !important;
+    align-items: end !important;
+    padding: 22px !important;
+    background-position: 61% center !important;
+  }
+
+  #formulario .commercial-process-area .commercial-start-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02) 20%, rgba(255,255,255,0.96) 58%, #fff 100%);
+  }
+
+  #formulario .commercial-process-area .commercial-start-copy {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  #formulario .commercial-start-logo {
+    width: 140px;
+  }
+}
+
+@media (max-width: 560px) {
+  #formulario .commercial-process-area .commercial-start-hero {
+    min-height: 500px !important;
+    padding: 18px !important;
+    border-radius: 18px !important;
+    background-size: auto 100% !important;
+    background-position: 59% top !important;
+  }
+
+  #formulario .commercial-process-area .commercial-start-copy h2 {
+    font-size: clamp(1.75rem, 9.5vw, 2.55rem) !important;
+  }
+
+  #formulario .commercial-process-area .commercial-start-actions {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  #formulario .commercial-process-area .commercial-start-actions .btn {
+    min-width: 0 !important;
+    padding: 0 8px !important;
+  }
+}
