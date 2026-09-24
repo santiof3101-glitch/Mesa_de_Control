@@ -2508,6 +2508,113 @@ body.uafe-client-mode .commercial-uafe-card {
   overflow-wrap: anywhere;
 }
 
+.datacil-plate-field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.datacil-plate-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+#formulario .datacil-plate-control .datacil-lookup-btn {
+  width: auto !important;
+  min-width: 128px;
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.datacil-plate-field small {
+  color: #788396;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.datacil-result,
+.datacil-ficha-panel {
+  padding: 14px;
+  border: 1px solid #cfe1dc;
+  border-left: 4px solid #16816d;
+  border-radius: 8px;
+  background: #f7fcfa;
+}
+
+.datacil-result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.datacil-result-head > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.datacil-result-head strong {
+  color: #15263a;
+  font-size: 1rem;
+}
+
+.datacil-result-head small {
+  color: #637083;
+}
+
+.datacil-result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.datacil-result-grid > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #e0ebe8;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.datacil-result-grid span {
+  color: #788396;
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.datacil-result-grid strong {
+  color: #17253a;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 780px) {
+  .datacil-plate-control,
+  .datacil-result-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #formulario .datacil-plate-control .datacil-lookup-btn {
+    width: 100% !important;
+  }
+
+  .datacil-result-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 @media (max-width: 780px) {
   .commercial-process-grid,
   .lead-ficha-grid,

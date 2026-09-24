@@ -1,0 +1,4 @@
+project_id = "evblnxgeyelatdmloydl"
+
+[functions.datacil-vehiculo]
+verify_jwt = false

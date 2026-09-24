@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260923-consignacion-pdf-v6">
-  <link rel="stylesheet" href="layout-fix.css?v=20260923-consignacion-pdf-v6">
+  <link rel="stylesheet" href="styles.css?v=20260924-datacil-v1">
+  <link rel="stylesheet" href="layout-fix.css?v=20260924-datacil-v1">
 </head>
 <body>
   <header class="topbar">
@@ -986,10 +986,15 @@
             Numero de cedula del titular
             <input name="cedula" inputmode="numeric" required>
           </label>
-          <label>
-            Placa
-            <input name="placa" required>
-          </label>
+          <div class="datacil-plate-field">
+            <label for="purchasePlateInput">Placa</label>
+            <div class="datacil-plate-control">
+              <input id="purchasePlateInput" name="placa" autocomplete="off" maxlength="8" required>
+              <button id="datacilLookupBtn" class="btn secondary datacil-lookup-btn" type="button">Consultar ANT</button>
+            </div>
+            <small id="datacilLookupStatus">La primera consulta consume un credito. Las siguientes usan la copia guardada.</small>
+          </div>
+          <section id="datacilLookupResult" class="datacil-result span-2" hidden></section>
           <label>
             Valor de toma
             <input name="valorToma" type="number" min="0" step="0.01" required>
@@ -2844,6 +2849,6 @@
   <script src="js/consignment-templates.js?v=20260923-consignacion-pdf-v6"></script>
   <script src="js/vendor/fontkit.umd.min.js?v=20260923-consignacion-pdf-v6"></script>
   <script src="js/vendor/pdf-lib.min.js?v=20260923-consignacion-pdf-v6"></script>
-  <script src="app.js?v=20260923-consignacion-pdf-v6"></script>
+  <script src="app.js?v=20260924-datacil-v1"></script>
 </body>
 </html>

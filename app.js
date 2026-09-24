@@ -1,7 +1,8 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260923-consignacion-pdf-v6";
+const APP_BUILD_VERSION = "20260924-datacil-v1";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
+const SUPABASE_FUNCTIONS_URL = "https://evblnxgeyelatdmloydl.supabase.co/functions/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
 const SUPABASE_AUTO_RESTORE = false;
 const SUPABASE_MODULE_SYNC = true;
@@ -688,6 +689,10 @@ const supportWhatsappLink = document.querySelector("#supportWhatsappLink");
 const commercialConstructionModal = document.querySelector("#commercialConstructionModal");
 const commercialLeadModal = document.querySelector("#commercialLeadModal");
 const commercialLeadFichaContent = document.querySelector("#commercialLeadFichaContent");
+const purchasePlateInput = document.querySelector("#purchasePlateInput");
+const datacilLookupBtn = document.querySelector("#datacilLookupBtn");
+const datacilLookupStatus = document.querySelector("#datacilLookupStatus");
+const datacilLookupResult = document.querySelector("#datacilLookupResult");
 const commercialUafeModal = document.querySelector("#commercialUafeModal");
 const commercialUafeForm = document.querySelector("#commercialUafeForm");
 const commercialUafeStatus = document.querySelector("#commercialUafeStatus");
@@ -2389,6 +2394,7 @@ function normalizeTask(task) {
     signatureRequestTaskId: task.signatureRequestTaskId || "",
     signaturePilotTaskId: task.signaturePilotTaskId || "",
     signaturePayload: task.signaturePayload || null,
+    vehicleLookup: task.vehicleLookup || null,
     uafe: task.uafe || null,
     uafeStatus: task.uafeStatus || (task.uafe ? "completo" : ""),
     fechaSolicitud: task.fechaSolicitud || "",
@@ -3527,6 +3533,24 @@ function openCommercialLeadFicha(taskId) {
       <div class="tracking-stage-list">
         ${stageItems.map(renderCommercialTrackingStageItem).join("")}
       </div>
+    </section>
+    <section class="datacil-ficha-panel span-2">
+      ${task.vehicleLookup
+        ? renderDatacilSnapshot(task.vehicleLookup, {
+          cached: true,
+          allowRefresh: session.role === "commercial" && (!task.commercialUserId || task.commercialUserId === session.userId),
+          taskId: task.id
+        })
+        : `
+          <div class="datacil-result-head">
+            <div>
+              <span class="eyebrow">ANT / Datacil</span>
+              <strong>Consulta vehicular pendiente</strong>
+              <small>La respuesta quedara guardada permanentemente en esta ficha.</small>
+            </div>
+            ${session.role === "commercial" ? `<button class="btn tiny secondary" type="button" data-datacil-task-query="${escapeHtml(task.id)}">Consultar ANT</button>` : ""}
+          </div>
+        `}
     </section>
     ${renderLegalObservationList(task)}
     <div class="lead-ficha-actions span-2">
@@ -6159,6 +6183,7 @@ async function createTask(data) {
     agencyAdvisorKey: `${data.agencia}::${data.asesor}`,
     placa: normalizePlate(data.placa),
     cedula: normalizeId(data.cedula),
+    vehicleLookup: pendingVehicleLookup?.placa === normalizePlate(data.placa) ? structuredClone(pendingVehicleLookup) : null,
     syncStatus: "pending"
   };
 
@@ -7551,6 +7576,180 @@ function updateDuplicatePreview() {
 
 function normalizePlate(value = "") {
   return String(value).trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+let pendingVehicleLookup = null;
+
+function findSavedVehicleLookup(plate = "", excludeTaskId = "") {
+  const normalizedPlate = normalizePlate(plate);
+  if (!normalizedPlate) return null;
+  if (pendingVehicleLookup?.placa === normalizedPlate) return pendingVehicleLookup;
+  return state.tasks
+    .filter((task) => String(task.id) !== String(excludeTaskId || ""))
+    .map((task) => task.vehicleLookup)
+    .filter((lookup) => lookup?.placa === normalizedPlate)
+    .sort((a, b) => String(b.queriedAt || "").localeCompare(String(a.queriedAt || "")))[0] || null;
+}
+
+function flattenDatacilValues(value, prefix = "", output = [], depth = 0) {
+  if (output.length >= 40 || depth > 5 || value === null || value === undefined) return output;
+  if (["string", "number", "boolean"].includes(typeof value)) {
+    const text = String(value).trim();
+    if (text) output.push({ key: prefix || "dato", value: text });
+    return output;
+  }
+  if (Array.isArray(value)) {
+    value.slice(0, 8).forEach((item, index) => flattenDatacilValues(item, `${prefix} ${index + 1}`.trim(), output, depth + 1));
+    return output;
+  }
+  if (typeof value === "object") {
+    Object.entries(value).forEach(([key, item]) => {
+      const nextPrefix = prefix ? `${prefix}.${key}` : key;
+      flattenDatacilValues(item, nextPrefix, output, depth + 1);
+    });
+  }
+  return output;
+}
+
+function formatDatacilLabel(key = "") {
+  const lastPart = String(key).split(".").pop() || key;
+  return lastPart
+    .replace(/[_-]+/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function getDatacilDisplayEntries(snapshot = {}) {
+  const entries = flattenDatacilValues(snapshot.data || {});
+  const priority = ["propiet", "nombre", "ident", "cedula", "ruc", "marca", "modelo", "anio", "año", "color", "chasis", "motor", "clase", "tipo", "servicio", "matricula"];
+  return entries
+    .filter((entry) => !/(token|authorization|apikey|api_key|debug|stack)/i.test(entry.key))
+    .sort((a, b) => {
+      const aIndex = priority.findIndex((word) => a.key.toLowerCase().includes(word));
+      const bIndex = priority.findIndex((word) => b.key.toLowerCase().includes(word));
+      return (aIndex < 0 ? 999 : aIndex) - (bIndex < 0 ? 999 : bIndex);
+    })
+    .filter((entry, index, list) => list.findIndex((item) => item.key === entry.key && item.value === entry.value) === index)
+    .slice(0, 18);
+}
+
+function renderDatacilSnapshot(snapshot = {}, options = {}) {
+  const entries = getDatacilDisplayEntries(snapshot);
+  const cachedLabel = options.cached ? "Consulta guardada" : "Consulta nueva guardada";
+  return `
+    <div class="datacil-result-head">
+      <div>
+        <span class="eyebrow">ANT / Datacil</span>
+        <strong>${escapeHtml(snapshot.placa || "Sin placa")}</strong>
+        <small>${escapeHtml(cachedLabel)}${snapshot.queriedAt ? ` | ${escapeHtml(formatDateTime(snapshot.queriedAt))}` : ""}</small>
+      </div>
+      ${options.allowRefresh ? `<button class="btn tiny secondary" type="button" data-datacil-refresh="${escapeHtml(options.taskId || "form")}">Actualizar consulta</button>` : ""}
+    </div>
+    <div class="datacil-result-grid">
+      ${entries.length ? entries.map((entry) => `
+        <div>
+          <span>${escapeHtml(formatDatacilLabel(entry.key))}</span>
+          <strong>${escapeHtml(entry.value)}</strong>
+        </div>
+      `).join("") : `<p>Datacil respondio correctamente. La respuesta completa quedo guardada en la ficha.</p>`}
+    </div>
+  `;
+}
+
+function showDatacilFormSnapshot(snapshot, cached = false) {
+  pendingVehicleLookup = snapshot;
+  if (datacilLookupResult) {
+    datacilLookupResult.hidden = false;
+    datacilLookupResult.innerHTML = renderDatacilSnapshot(snapshot, { cached, allowRefresh: true, taskId: "form" });
+  }
+  if (datacilLookupStatus) {
+    datacilLookupStatus.textContent = cached
+      ? "Se utilizo la consulta guardada. No se consumio un credito adicional."
+      : "Consulta realizada y guardada en linea.";
+  }
+}
+
+function resetDatacilFormSnapshot() {
+  pendingVehicleLookup = null;
+  if (datacilLookupResult) {
+    datacilLookupResult.hidden = true;
+    datacilLookupResult.innerHTML = "";
+  }
+  if (datacilLookupStatus) datacilLookupStatus.textContent = "La primera consulta consume un credito. Las siguientes usan la copia guardada.";
+}
+
+async function queryDatacilVehicle({ plate = "", forceRefresh = false, taskId = "" } = {}) {
+  const task = taskId ? state.tasks.find((item) => String(item.id) === String(taskId)) : null;
+  const normalizedPlate = normalizePlate(plate || task?.placa || purchasePlateInput?.value || "");
+  if (!/^[A-Z]{3}[0-9]{3,4}$/.test(normalizedPlate)) {
+    showToast("Ingrese una placa ecuatoriana valida.");
+    purchasePlateInput?.focus();
+    return null;
+  }
+
+  const savedLookup = task?.vehicleLookup || findSavedVehicleLookup(normalizedPlate, taskId);
+  if (savedLookup && !forceRefresh) {
+    if (task) {
+      task.vehicleLookup = savedLookup;
+      task.updatedAt = new Date().toISOString();
+      task.syncStatus = "pending";
+      saveState();
+      await guardarTareaSupabase(task, "vincular-consulta-datacil");
+      openCommercialLeadFicha(task.id);
+    } else {
+      showDatacilFormSnapshot(savedLookup, true);
+    }
+    return savedLookup;
+  }
+
+  if (forceRefresh && !window.confirm("Actualizar esta consulta consumira un nuevo credito de Datacil. Desea continuar?")) return null;
+  const advisor = session.role === "commercial"
+    ? { id: session.userId, name: session.name, agency: session.agency || "" }
+    : { id: session.userId || session.role, name: session.name || session.role, agency: session.agency || "" };
+  const activeButton = task ? commercialLeadFichaContent?.querySelector("[data-datacil-refresh]") : datacilLookupBtn;
+  const activeButtonLabel = activeButton?.textContent || "Consultar ANT";
+  if (activeButton) {
+    activeButton.disabled = true;
+    activeButton.textContent = "Consultando...";
+  }
+  if (datacilLookupStatus && !task) datacilLookupStatus.textContent = "Consultando ANT por medio de Datacil...";
+
+  try {
+    const apiResponse = await fetch(`${SUPABASE_FUNCTIONS_URL}/datacil-vehiculo`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`
+      },
+      body: JSON.stringify({ placa: normalizedPlate, forceRefresh, advisor })
+    });
+    const payload = await apiResponse.json().catch(() => ({}));
+    if (!apiResponse.ok || !payload.ok || !payload.snapshot) throw new Error(payload.error || "No se pudo completar la consulta.");
+    const snapshot = payload.snapshot;
+    if (task) {
+      task.vehicleLookup = snapshot;
+      task.updatedAt = new Date().toISOString();
+      task.syncStatus = "pending";
+      saveState();
+      await guardarTareaSupabase(task, forceRefresh ? "actualizar-consulta-datacil" : "consultar-datacil");
+      openCommercialLeadFicha(task.id);
+    } else {
+      showDatacilFormSnapshot(snapshot, Boolean(payload.cached));
+    }
+    showToast(payload.cached ? "Consulta recuperada sin consumir otro credito." : "Consulta ANT guardada correctamente.");
+    return snapshot;
+  } catch (error) {
+    const message = error?.message || "No se pudo consultar Datacil.";
+    if (datacilLookupStatus && !task) datacilLookupStatus.textContent = message;
+    showToast(message);
+    return null;
+  } finally {
+    if (activeButton?.isConnected) {
+      activeButton.disabled = false;
+      activeButton.textContent = activeButtonLabel;
+    }
+  }
 }
 
 function normalizeProviderPlateValue(value = "") {
@@ -17895,6 +18094,19 @@ document.addEventListener("click", async (event) => {
     renderCommercialDashboard();
     return;
   }
+  const datacilTaskButton = event.target.closest("[data-datacil-task-query]");
+  if (datacilTaskButton) {
+    event.preventDefault();
+    await queryDatacilVehicle({ taskId: datacilTaskButton.dataset.datacilTaskQuery });
+    return;
+  }
+  const datacilRefreshButton = event.target.closest("[data-datacil-refresh]");
+  if (datacilRefreshButton) {
+    event.preventDefault();
+    const targetId = datacilRefreshButton.dataset.datacilRefresh;
+    await queryDatacilVehicle({ forceRefresh: true, taskId: targetId === "form" ? "" : targetId });
+    return;
+  }
   const fichaButton = event.target.closest("[data-commercial-ficha]");
   if (fichaButton) {
     openCommercialLeadFicha(fichaButton.dataset.commercialFicha);
@@ -18205,6 +18417,16 @@ heroSearchForm?.addEventListener("submit", (event) => {
 
 form?.addEventListener("input", updateDuplicatePreview);
 
+purchasePlateInput?.addEventListener("input", () => {
+  const normalizedPlate = normalizePlate(purchasePlateInput.value);
+  if (purchasePlateInput.value !== normalizedPlate) purchasePlateInput.value = normalizedPlate;
+  if (pendingVehicleLookup && pendingVehicleLookup.placa !== normalizedPlate) resetDatacilFormSnapshot();
+});
+
+datacilLookupBtn?.addEventListener("click", () => queryDatacilVehicle());
+
+form?.addEventListener("reset", () => window.setTimeout(resetDatacilFormSnapshot, 0));
+
 form?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = Object.fromEntries(new FormData(form).entries());
@@ -18227,6 +18449,7 @@ form?.addEventListener("submit", async (event) => {
     if (submitButton) submitButton.textContent = "Guardando...";
     await createTask(data);
     form.reset();
+    resetDatacilFormSnapshot();
     updateDuplicatePreview();
     applyCommercialSessionToForm();
     setView("formulario");
