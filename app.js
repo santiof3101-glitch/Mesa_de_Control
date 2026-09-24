@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260923-consignacion-cloud-v5";
+const APP_BUILD_VERSION = "20260923-consignacion-pdf-v6";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -8526,7 +8526,10 @@ function syncConsignmentContractFields() {
   const isMarried = type === "casado";
   if (naturalGroup) naturalGroup.hidden = isLegal;
   if (legalGroup) legalGroup.hidden = !isLegal;
-  if (spouseLabel) spouseLabel.hidden = !isMarried;
+  if (spouseLabel) {
+    spouseLabel.hidden = !isMarried;
+    spouseLabel.setAttribute("aria-hidden", String(!isMarried));
+  }
   ["clientName", "spouseName", "representativeName", "representativeCivilStatus", "companyName", "companyRuc"].forEach((name) => {
     const field = consignmentContractForm.elements[name];
     if (!field) return;
@@ -8535,6 +8538,7 @@ function syncConsignmentContractFields() {
       : name === "clientName" || (name === "spouseName" && isMarried);
     field.disabled = !enabled;
     field.required = enabled;
+    if (name === "spouseName" && !isMarried) field.value = "";
   });
 }
 
@@ -8773,22 +8777,48 @@ async function buildConsignmentPdfBytes(data = {}) {
     { text: "mayores de edad, domiciliados en Ecuador, hábiles para ejercer derechos y contraer obligaciones. Es voluntad de las partes celebrar el presente Contrato de Prestación de Servicios de Intermediación y Gestión de Vehículos Usados, al tenor y cumplimiento de las cláusulas que a continuación se expresan:" }
   );
   erase(firstPage, 35.5, 118.5, 524, 153);
-  drawRichJustified(firstPage, introSegments, { x: 36, top: 120.2, width: 523.2, size: 9.6, lineHeight: 13.8 });
+  drawRichJustified(firstPage, introSegments, { x: 36, top: 120.2, width: 523.2, size: 10, lineHeight: 13.2 });
 
   const tableTop = data.contractType === "soltero" ? 297.9 : 311.7;
   const rowHeight = 14.3;
   const leftValues = [data.plate, data.brand, data.model, data.engine];
   const rightValues = [data.color, data.year, data.chassis, data.mileage];
   leftValues.forEach((value, index) => {
-    replace(firstPage, value, 222.4, tableTop + (rowHeight * index) + 0.7, 115.6, { size: 9.2, height: 12.5, padding: 2 });
+    replace(firstPage, value, 222.4, tableTop + (rowHeight * index) + 0.7, 115.6, { size: 10, height: 12.5, padding: 2 });
   });
   rightValues.forEach((value, index) => {
-    replace(firstPage, value, 388.9, tableTop + (rowHeight * index) + 0.7, 97.8, { size: 9.2, height: 12.5, padding: 2 });
+    replace(firstPage, value, 388.9, tableTop + (rowHeight * index) + 0.7, 97.8, { size: 10, height: 12.5, padding: 2 });
   });
 
-  const priceTop = data.contractType === "soltero" ? 674.2 : 688.1;
-  replace(firstPage, getConsignmentPriceWords(data.salePrice), 144.5, priceTop, 79.0, { bold: true, size: 9.6 });
-  replace(firstPage, formatLegalCurrencyNumber(data.salePrice), 445.0, priceTop, 29.0, { bold: true, size: 9.6 });
+  const priceTop = data.contractType === "soltero" ? 652 : 665.8;
+  erase(firstPage, 35.5, priceTop - 4, 524, 148);
+  drawRichJustified(firstPage, [
+    { text: "CUARTA: PRECIO.-", bold: true },
+    { text: "Acorde al estado mecánico y estético del" },
+    { text: "VEHICULO,", bold: true },
+    { text: "las partes de mutuo acuerdo señalan que este tendrá un valor de venta estimado en" },
+    { text: getConsignmentPriceWords(data.salePrice), bold: true },
+    { text: "DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA", bold: true },
+    { text: `(USD ${formatLegalCurrencyNumber(data.salePrice)}).`, bold: true },
+    { text: "EL CLIENTE", bold: true },
+    { text: "autoriza que se publique el" },
+    { text: "VEHICULO", bold: true },
+    { text: "mínimo en este valor y acepta que se aplique al mismo la tabla de descuentos promocionales por el rango del valor del" },
+    { text: "VEHICULO;", bold: true },
+    { text: "independientemente, si el" },
+    { text: "INTERMEDIARIO", bold: true },
+    { text: "recibe otras ofertas, estas serán comunicadas a" },
+    { text: "EL CLIENTE", bold: true },
+    { text: "quién podrá aceptar o no las mismas vía telefónica, sms, whatsapp u otro medio de comunicación, y suscribir el respectivo contrato de transferencia de dominio por el valor final acordado por las partes; por lo que" },
+    { text: "EL CLIENTE", bold: true },
+    { text: "renuncia a cualquier acción judicial respecto de la fijación del precio aquí determinado, como del valor al cual efectivamente se transfiera el" },
+    { text: "VEHICULO", bold: true },
+    { text: "al momento de la firma del contrato de traspaso." },
+    { text: "EL CLIENTE", bold: true },
+    { text: "autoriza que los honorarios por servicios prestados de intermediación como gastos mecánicos efectuados, alistamiento o pagos de multas, matriculación tardía u otros determinados en este instrumento, serán descontados del valor a pagar a" },
+    { text: "EL CLIENTE,", bold: true },
+    { text: "previa presentación de la correspondiente liquidación." }
+  ], { x: 36, top: priceTop, width: 523.2, size: 10, lineHeight: 13.2 });
 
   const notificationTop = data.contractType === "soltero" ? 437.7 : 465.3;
   erase(thirdPage, 35.5, notificationTop - 5, 524, 178);
