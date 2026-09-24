@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260924-datacil-v1">
-  <link rel="stylesheet" href="layout-fix.css?v=20260924-datacil-v1">
+  <link rel="stylesheet" href="styles.css?v=20260924-datacil-v2">
+  <link rel="stylesheet" href="layout-fix.css?v=20260924-datacil-v2">
 </head>
 <body>
   <header class="topbar">
@@ -944,6 +944,7 @@
               <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-sale-process"><span class="process-action-icon process-action-icon-sale" aria-hidden="true"></span>Venta</button>
               <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-consignment-process"><span class="process-action-icon process-action-icon-consignment" aria-hidden="true"></span>Consignación</button>
               <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-cuv-process"><span class="process-action-icon process-action-icon-cuv" aria-hidden="true"></span>CUV</button>
+              <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-ant-process"><span class="process-action-icon process-action-icon-ant" aria-hidden="true"></span>Consulta ANT</button>
             </div>
           </div>
         </div>
@@ -972,6 +973,10 @@
               <strong>CUV</strong>
               <span>Solicitud de certificado unico vehicular.</span>
             </button>
+            <button class="commercial-process-card commercial-process-card-ant" type="button" data-commercial-process="commercial-ant-process" aria-pressed="false">
+              <strong>Consulta ANT</strong>
+              <span>Propietario, vehículo y valores pendientes.</span>
+            </button>
           </div>
         </div>
 
@@ -986,15 +991,11 @@
             Numero de cedula del titular
             <input name="cedula" inputmode="numeric" required>
           </label>
-          <div class="datacil-plate-field">
-            <label for="purchasePlateInput">Placa</label>
-            <div class="datacil-plate-control">
-              <input id="purchasePlateInput" name="placa" autocomplete="off" maxlength="8" required>
-              <button id="datacilLookupBtn" class="btn secondary datacil-lookup-btn" type="button">Consultar ANT</button>
-            </div>
-            <small id="datacilLookupStatus">La primera consulta consume un credito. Las siguientes usan la copia guardada.</small>
-          </div>
-          <section id="datacilLookupResult" class="datacil-result span-2" hidden></section>
+          <label>
+            Placa
+            <input id="purchasePlateInput" name="placa" autocomplete="off" maxlength="8" required>
+            <small id="datacilMigrationNotice" class="datacil-migration-notice" hidden></small>
+          </label>
           <label>
             Valor de toma
             <input name="valorToma" type="number" min="0" step="0.01" required>
@@ -1033,6 +1034,38 @@
             <button type="submit" class="btn primary">Enviar a control legal</button>
           </div>
         </form>
+      </section>
+
+      <section id="commercial-ant-process" class="commercial-process-panel" data-commercial-process-section="commercial-ant-process" hidden>
+        <div class="panel ant-lookup-workspace">
+          <div class="panel-title-row ant-lookup-heading">
+            <div>
+              <p class="eyebrow">Consulta ANT</p>
+              <h2>Validación vehicular por placa</h2>
+              <span>La consulta queda guardada. Volver a abrirla no consume créditos.</span>
+            </div>
+            <span class="soft-badge">Datacil conectado</span>
+          </div>
+          <form id="antLookupForm" class="ant-lookup-form">
+            <label>
+              Placa del vehículo
+              <input id="antLookupPlate" name="placa" autocomplete="off" maxlength="8" placeholder="ABC1234" required>
+            </label>
+            <button id="datacilLookupBtn" class="btn primary" type="submit">Consultar ANT</button>
+          </form>
+          <p id="datacilLookupStatus" class="ant-lookup-status">La primera consulta consume un crédito. Las siguientes usan la copia guardada.</p>
+          <section id="datacilLookupResult" class="datacil-result" hidden></section>
+          <div class="ant-saved-heading">
+            <div>
+              <p class="eyebrow">Consultas guardadas</p>
+              <h3>Historial de validaciones</h3>
+            </div>
+            <button id="reloadDatacilLookupsBtn" class="btn tiny secondary" type="button">Actualizar listado</button>
+          </div>
+          <div id="datacilSavedList" class="ant-saved-list">
+            <div class="empty compact-empty">Abre el módulo para cargar las consultas guardadas.</div>
+          </div>
+        </div>
       </section>
 
       <section id="commercial-consignment-process" class="commercial-process-panel" data-commercial-process-section="commercial-consignment-process" hidden>
@@ -2849,6 +2882,6 @@
   <script src="js/consignment-templates.js?v=20260923-consignacion-pdf-v6"></script>
   <script src="js/vendor/fontkit.umd.min.js?v=20260923-consignacion-pdf-v6"></script>
   <script src="js/vendor/pdf-lib.min.js?v=20260923-consignacion-pdf-v6"></script>
-  <script src="app.js?v=20260924-datacil-v1"></script>
+  <script src="app.js?v=20260924-datacil-v2"></script>
 </body>
 </html>

@@ -44,12 +44,10 @@ Deno.serve(async (req) => {
     return response(origin, 400, { ok: false, error: "Solicitud invalida." });
   }
 
+  const action = String(body.action || "query").toLowerCase();
   const placa = normalizePlate(body.placa);
   const forceRefresh = body.forceRefresh === true;
   const advisor = typeof body.advisor === "object" && body.advisor ? body.advisor as Record<string, unknown> : {};
-  if (!/^[A-Z]{3}[0-9]{3,4}$/.test(placa)) {
-    return response(origin, 400, { ok: false, error: "Ingrese una placa ecuatoriana valida." });
-  }
   if (!String(advisor.id || "").trim() || !String(advisor.name || "").trim()) {
     return response(origin, 401, { ok: false, error: "No se pudo validar al asesor comercial." });
   }
@@ -59,6 +57,37 @@ Deno.serve(async (req) => {
     Authorization: `Bearer ${serviceRoleKey}`,
     "Content-Type": "application/json",
   };
+
+  if (action === "list") {
+    const listQuery = new URL(`${supabaseUrl}/rest/v1/REGISTROS`);
+    listQuery.searchParams.set("select", "datos");
+    listQuery.searchParams.set("modulo", "eq.datacil");
+    listQuery.searchParams.set("tipo", "eq.vehiculo");
+    listQuery.searchParams.set("order", "id.desc");
+    listQuery.searchParams.set("limit", "200");
+    try {
+      const listResponse = await fetch(listQuery, { headers: dbHeaders });
+      if (!listResponse.ok) return response(origin, 502, { ok: false, error: "No se pudo cargar el historial de consultas." });
+      const rows = await listResponse.json();
+      const seen = new Set<string>();
+      const lookups = (Array.isArray(rows) ? rows : [])
+        .map((row) => row?.datos)
+        .filter((snapshot) => {
+          const snapshotPlate = normalizePlate(snapshot?.placa);
+          if (!snapshotPlate || seen.has(snapshotPlate)) return false;
+          seen.add(snapshotPlate);
+          return true;
+        });
+      return response(origin, 200, { ok: true, lookups });
+    } catch {
+      return response(origin, 502, { ok: false, error: "No se pudo cargar el historial de consultas." });
+    }
+  }
+
+  if (!/^[A-Z]{3}[0-9]{3,4}$/.test(placa)) {
+    return response(origin, 400, { ok: false, error: "Ingrese una placa ecuatoriana valida." });
+  }
+
   const cacheQuery = new URL(`${supabaseUrl}/rest/v1/REGISTROS`);
   cacheQuery.searchParams.set("select", "datos");
   cacheQuery.searchParams.set("modulo", "eq.datacil");

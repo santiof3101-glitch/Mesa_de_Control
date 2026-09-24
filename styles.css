@@ -2568,6 +2568,145 @@ body.uafe-client-mode .commercial-uafe-card {
   color: #637083;
 }
 
+.datacil-result-actions {
+  display: flex !important;
+  grid-auto-flow: column;
+  gap: 8px !important;
+  flex: 0 0 auto;
+}
+
+.datacil-pending-summary {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #f2cf9a;
+  border-radius: 7px;
+  color: #7c4300;
+  background: #fff8ec;
+}
+
+.datacil-pending-summary > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.datacil-pending-summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  background: #fff;
+}
+
+.datacil-pending-summary span b::after {
+  content: ":";
+}
+
+.datacil-pending-summary.is-clear {
+  grid-template-columns: auto minmax(0, 1fr);
+  color: #176957;
+  border-color: #cde5df;
+  background: #f2fbf8;
+}
+
+.datacil-migration-notice {
+  display: block;
+  padding: 7px 9px;
+  border-left: 3px solid #16816d;
+  color: #176957;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  background: #f2fbf8;
+}
+
+.datacil-migration-notice[hidden] {
+  display: none;
+}
+
+.ant-lookup-workspace {
+  display: grid;
+  gap: 16px;
+}
+
+.ant-lookup-heading > div {
+  display: grid;
+  gap: 4px;
+}
+
+.ant-lookup-form {
+  display: grid;
+  grid-template-columns: minmax(260px, 520px) auto;
+  align-items: end;
+  gap: 10px;
+  max-width: 760px;
+}
+
+.ant-lookup-form .btn {
+  min-height: 44px;
+}
+
+.ant-lookup-status {
+  margin: -6px 0 0;
+  color: #6f7a8c;
+  font-size: 0.78rem;
+}
+
+.ant-saved-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+  padding-top: 6px;
+  border-top: 1px solid #e4e9f0;
+}
+
+.ant-saved-heading h3,
+.ant-saved-heading p {
+  margin: 0;
+}
+
+.ant-saved-list {
+  display: grid;
+  gap: 8px;
+}
+
+.ant-saved-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.6fr) minmax(220px, 1.4fr) minmax(180px, 0.9fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 13px;
+  border: 1px solid #e0e6ed;
+  border-radius: 7px;
+  background: #fff;
+}
+
+.ant-saved-row > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ant-saved-row span {
+  color: #7b8494;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.ant-saved-row strong {
+  color: #18263a;
+  overflow-wrap: anywhere;
+}
+
+.ant-saved-plate strong {
+  color: #16816d;
+  font-size: 1.05rem;
+}
+
 .datacil-result-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2612,6 +2751,23 @@ body.uafe-client-mode .commercial-uafe-card {
   .datacil-result-head {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .datacil-result-actions,
+  .ant-saved-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .datacil-result-actions .btn,
+  .ant-saved-heading .btn {
+    width: 100%;
+  }
+
+  .datacil-pending-summary.is-clear,
+  .ant-lookup-form,
+  .ant-saved-row {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -17815,6 +17971,10 @@ body.legal-contract-modal-open::before {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='none' stroke='%23059669' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' d='M7 3h7l4 4v14H7V3Zm7 0v5h5M9.5 13h5M9.5 17h5'/%3E%3C/svg%3E");
 }
 
+#formulario .process-action-icon-ant {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%230e7490' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='m15.5 15.5 4 4M7.5 10.5h6M10.5 7.5v6'/%3E%3C/g%3E%3C/svg%3E");
+}
+
 /* Pastel process cards polish 20260829 */
 #formulario .commercial-process-grid {
   grid-template-columns: repeat(3, minmax(220px, 1fr)) !important;
@@ -19134,7 +19294,7 @@ body.legal-contract-modal-open::before {
 
 /* Final process-card overrides: keep the three existing identities and add Consignacion. */
 #formulario .commercial-process-grid {
-  grid-template-columns: repeat(4, minmax(210px, 1fr)) !important;
+  grid-template-columns: repeat(5, minmax(180px, 1fr)) !important;
 }
 
 #formulario .commercial-process-card[data-commercial-process="commercial-consignment-process"] {
@@ -19153,6 +19313,24 @@ body.legal-contract-modal-open::before {
 #formulario .commercial-process-card[data-commercial-process="commercial-consignment-process"].is-active::after,
 #formulario .commercial-process-card[data-commercial-process="commercial-consignment-process"][aria-expanded="true"]::after {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m6 9 6 6 6-6' fill='none' stroke='%237c3aed' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+#formulario .commercial-process-card[data-commercial-process="commercial-ant-process"] {
+  --process-tone: #0e7490;
+  --process-icon-bg: linear-gradient(145deg, #ecfeff, #cffafe);
+  --process-icon-border: rgba(14, 116, 144, 0.17);
+  background: linear-gradient(135deg, #fbfeff 0%, #ecfbfd 100%) !important;
+}
+
+#formulario .commercial-process-card[data-commercial-process="commercial-ant-process"]::before {
+  background:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%230e7490' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='m15.5 15.5 4 4M7.5 10.5h6M10.5 7.5v6'/%3E%3C/g%3E%3C/svg%3E") center / 25px 25px no-repeat,
+    var(--process-icon-bg);
+}
+
+#formulario .commercial-process-card[data-commercial-process="commercial-ant-process"].is-active::after,
+#formulario .commercial-process-card[data-commercial-process="commercial-ant-process"][aria-expanded="true"]::after {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m6 9 6 6 6-6' fill='none' stroke='%230e7490' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 @media (max-width: 1180px) {
