@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260924-datacil-v3";
+const APP_BUILD_VERSION = "20260924-performance-v1";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_FUNCTIONS_URL = "https://evblnxgeyelatdmloydl.supabase.co/functions/v1";
@@ -1328,36 +1328,8 @@ async function runInitialRemoteSyncAfterLogin(reason = "login") {
   initialRemoteSyncInFlight = true;
   try {
     await restoreModulesFromSupabaseIfNeeded();
-    const [remoteHistory, remoteDeletions] = await Promise.all([
-      leerTareasSupabase(true),
-      leerEliminacionesTareasSupabase(true)
-    ]);
-    if (remoteHistory.length || remoteDeletions.length) {
-      const remoteTasks = collapseTaskHistoryByLifecycle(remoteHistory);
-      const before = JSON.stringify({
-        tasks: (state.tasks || []).map((task) => [task.id, task.updatedAt, task.status, task.legalUserId, task.completedAt, task.deleted]),
-        deletions: (state.taskDeletions || []).map((item) => [item.id, item.deletedAt, item.updatedAt])
-      });
-      const mergedChanges = mergeTaskChanges(
-        state.tasks || [],
-        [...remoteTasks, ...remoteDeletions],
-        state.taskDeletions || []
-      );
-      state.tasks = mergedChanges.tasks;
-      state.taskDeletions = mergedChanges.deletions;
-      const after = JSON.stringify({
-        tasks: (state.tasks || []).map((task) => [task.id, task.updatedAt, task.status, task.legalUserId, task.completedAt, task.deleted]),
-        deletions: (state.taskDeletions || []).map((item) => [item.id, item.deletedAt, item.updatedAt])
-      });
-      if (before !== after) {
-        hydrateCommercialOwners();
-        autoAssignOpenSaneamientos();
-        saveState();
-        safeRenderAll();
-      }
-    }
-    await sincronizarTareasPendientesSupabase();
-    await syncUafeClientRequestsFromSupabase(true);
+    void sincronizarTareasPendientesSupabase();
+    void syncUafeClientRequestsFromSupabase(true);
     supabaseLastRefreshAt = Date.now();
   } catch (error) {
     console.warn(`No se pudo completar la sincronizacion inicial (${reason}):`, error);
@@ -1737,7 +1709,7 @@ async function restoreModulesFromSupabaseIfNeeded() {
       }
       saveState();
       safeRenderAll();
-      showToast("Datos sincronizados desde Supabase.");
+      showToast("Datos actualizados en segundo plano.");
     }
     if (!anyRemoteModule && getOperationalScore(state) > 0) {
       await guardarModulosSupabase();
@@ -3785,7 +3757,6 @@ function setView(viewId) {
   currentViewId = viewId;
   persistView(viewId);
   startSupabaseModulePolling();
-  if (canSyncCurrentView() && navigator.onLine) restoreModulesFromSupabaseIfNeeded();
   window.scrollTo({ top: 0, behavior: "smooth" });
   safeRenderAll();
 }
@@ -3873,11 +3844,7 @@ function setSession(nextSession) {
     window.setTimeout(maybeShowSessionAnnouncements, 450);
   }
   startSupabaseModulePolling();
-  if (session.role !== "public" && navigator.onLine) {
-    restoreModulesFromSupabaseIfNeeded();
-    sincronizarTareasPendientesSupabase();
-    reconcileTasksForCurrentBuild();
-  }
+  if (session.role !== "public") reconcileTasksForCurrentBuild();
 }
 
 function touchSession() {
@@ -17950,36 +17917,50 @@ function isToday(value) {
 }
 
 function renderAll() {
+  const isAdmin = session.role === "admin";
+  const isCommercial = session.role === "commercial";
+  const isLegal = session.role === "legal";
+  const isManager = session.role === "manager";
+  const isProcessing = session.role === "processing" || currentViewId === "procesamiento";
   applyTheme();
   applyCopy();
   renderLogo();
   updateTopbarCommercialProfile();
   applyRememberedLogins();
   renderSelects();
-  renderOptions();
   renderAnnouncements();
-  renderUsers();
-  renderManagerUsers();
-  renderProcessingUsers();
-  renderTasks();
   renderDashboards();
-  renderAdminLeads();
-  renderCommercialDashboard();
-  renderControlDashboard();
   renderDatacilAccess();
-  renderLegalAvailability();
-  renderLegalChat();
-  renderManagerDashboard();
-  renderPurchaseProcessing();
-  renderContractProcessing();
-  renderProviderProcessing();
-  renderFileLibrary();
-  renderPcBackups();
-  renderInternalBackupStatus();
-  updateDuplicatePreview();
-  applyCommercialSessionToForm();
-  setDefaultCuvRequestDate();
-  setDefaultConsignmentContractDate();
+  if (isAdmin) {
+    renderOptions();
+    renderUsers();
+    renderManagerUsers();
+    renderProcessingUsers();
+    renderAdminLeads();
+    renderPcBackups();
+    renderInternalBackupStatus();
+  } else if (isCommercial) {
+    applyFormConfiguration();
+    renderCommercialDashboard();
+    updateDuplicatePreview();
+    applyCommercialSessionToForm();
+    setDefaultCuvRequestDate();
+    setDefaultConsignmentContractDate();
+  } else if (isLegal) {
+    renderStatusFilters();
+    renderTasks();
+    renderControlDashboard();
+    renderLegalAvailability();
+    renderLegalChat();
+  } else if (isManager) {
+    renderManagerDashboard();
+  }
+  if (isProcessing) {
+    renderPurchaseProcessing();
+    renderContractProcessing();
+    renderProviderProcessing();
+    renderFileLibrary();
+  }
   initPasswordToggles();
 }
 
@@ -18559,8 +18540,8 @@ processingTabButtons.forEach((button) => {
     processingPanels.forEach((panel) => {
       panel.classList.toggle("is-active", panel.dataset.processingPanel === target);
     });
-    if (navigator.onLine && canSyncCurrentView()) {
-      restoreModulesFromSupabaseIfNeeded();
+    if (navigator.onLine && canSyncCurrentView() && Date.now() - supabaseLastRefreshAt > SUPABASE_FOCUS_REFRESH_MIN_MS) {
+      runInitialRemoteSyncAfterLogin("cambio-modulo-procesamiento");
     }
   });
 });
@@ -19654,16 +19635,12 @@ document.addEventListener("visibilitychange", () => {
   checkForAppUpdate();
   if (!canSyncCurrentView()) return;
   if (Date.now() - supabaseLastRefreshAt < SUPABASE_FOCUS_REFRESH_MIN_MS) return;
-  restoreModulesFromSupabaseIfNeeded();
-  sincronizarTareasPendientesSupabase();
-  syncUafeClientRequestsFromSupabase(true);
+  runInitialRemoteSyncAfterLogin("volver-a-la-pestana");
 });
 
 window.addEventListener("online", () => {
   if (!canSyncCurrentView()) return;
-  restoreModulesFromSupabaseIfNeeded();
-  sincronizarTareasPendientesSupabase();
-  syncUafeClientRequestsFromSupabase(true);
+  runInitialRemoteSyncAfterLogin("conexion-restablecida");
 });
 
 safeRenderAll();
@@ -19671,7 +19648,6 @@ restorePersistedViewAfterLoad();
 restoreStateFromInternalBackupIfNeeded();
 restoreStateFromSupabaseIfNeeded();
 restoreBrandingFromSupabaseIfNeeded();
-if (canSyncCurrentView()) restoreModulesFromSupabaseIfNeeded();
 openUafeClientRequestFromUrl();
 if (session.role !== "public") reconcileTasksForCurrentBuild();
 if (session.role !== "public") runInitialRemoteSyncAfterLogin("sesion-restaurada");
