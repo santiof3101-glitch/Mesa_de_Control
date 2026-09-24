@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260924-datacil-v2">
-  <link rel="stylesheet" href="layout-fix.css?v=20260924-datacil-v2">
+  <link rel="stylesheet" href="styles.css?v=20260924-datacil-v3">
+  <link rel="stylesheet" href="layout-fix.css?v=20260924-datacil-v3">
 </head>
 <body>
   <header class="topbar">
@@ -1284,6 +1284,7 @@
           <button type="button" data-legal-scroll="legalControlSummary">&#128200; Resumen operativo</button>
           <button type="button" data-legal-scroll="legalPasswordForm">&#128273; Cambiar clave</button>
           <button type="button" data-open-legal-contract-modal>&#128196; Contratos legales</button>
+          <button id="legalAntNavButton" type="button" data-legal-scroll="legalAntLookupPanel" hidden>Consulta ANT</button>
           <button type="button" data-legal-scroll="taskList">&#128269; Bandeja de tareas</button>
           <button type="button" data-legal-scroll="legalAvailabilityBlock">&#128994; Disponibilidad</button>
         </nav>
@@ -1336,6 +1337,36 @@
           <div id="controlKpis" class="kpi-grid compact-kpis"></div>
           <div class="legal-contract-quick-actions">
             <button class="btn primary" type="button" data-open-legal-contract-modal>Generar contratos legales</button>
+          </div>
+        </section>
+
+        <section id="legalAntLookupPanel" class="panel ant-lookup-workspace legal-ant-lookup-panel" hidden>
+          <div class="panel-title-row ant-lookup-heading">
+            <div>
+              <p class="eyebrow">Consulta ANT</p>
+              <h2>Validación vehicular por placa</h2>
+              <span>Reutiliza las consultas guardadas por Comercial o Mesa de Control sin consumir otro crédito.</span>
+            </div>
+            <span class="soft-badge">Datacil conectado</span>
+          </div>
+          <form id="legalAntLookupForm" class="ant-lookup-form">
+            <label>
+              Placa del vehículo
+              <input id="legalAntLookupPlate" name="placa" autocomplete="off" maxlength="8" placeholder="ABC1234" required>
+            </label>
+            <button id="legalDatacilLookupBtn" class="btn primary" type="submit">Consultar ANT</button>
+          </form>
+          <p id="legalDatacilLookupStatus" class="ant-lookup-status">Si la placa ya fue consultada, se mostrará la ficha guardada sin consumir crédito.</p>
+          <section id="legalDatacilLookupResult" class="datacil-result" hidden></section>
+          <div class="ant-saved-heading">
+            <div>
+              <p class="eyebrow">Consultas compartidas</p>
+              <h3>Historial de validaciones</h3>
+            </div>
+            <button id="reloadLegalDatacilLookupsBtn" class="btn tiny secondary" type="button">Actualizar listado</button>
+          </div>
+          <div id="legalDatacilSavedList" class="ant-saved-list">
+            <div class="empty compact-empty">Abre Consulta ANT para cargar las validaciones guardadas.</div>
           </div>
         </section>
 
@@ -1870,6 +1901,7 @@
             <input name="name" placeholder="Nombre del asesor comercial" required>
             <input name="username" placeholder="Usuario" required>
             <input name="password" type="password" placeholder="Contrasena" required>
+            <label class="check-row admin-datacil-create"><input name="datacilEnabled" type="checkbox"> Consulta ANT</label>
             <button class="btn primary" type="submit">Agregar</button>
           </form>
           <div id="commercialAdvisorsList" class="option-list"></div>
@@ -1895,6 +1927,7 @@
               <label><input type="checkbox" name="mailboxes" value="contratos"> Contratos</label>
               <label><input type="checkbox" name="mailboxes" value="cuv"> CUV</label>
             </div>
+            <label class="check-row admin-datacil-create"><input type="checkbox" name="datacilEnabled"> Consulta ANT</label>
             <div class="admin-user-field admin-user-agencies-field">
               <span>Agencias contratos</span>
               <input name="contractAgencies" placeholder="Shyris, Prensa, Cumbaya">
@@ -2882,6 +2915,6 @@
   <script src="js/consignment-templates.js?v=20260923-consignacion-pdf-v6"></script>
   <script src="js/vendor/fontkit.umd.min.js?v=20260923-consignacion-pdf-v6"></script>
   <script src="js/vendor/pdf-lib.min.js?v=20260923-consignacion-pdf-v6"></script>
-  <script src="app.js?v=20260924-datacil-v2"></script>
+  <script src="app.js?v=20260924-datacil-v3"></script>
 </body>
 </html>

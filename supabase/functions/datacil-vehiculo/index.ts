@@ -58,6 +58,30 @@ Deno.serve(async (req) => {
     "Content-Type": "application/json",
   };
 
+  const advisorRole = String(advisor.role || "").toLowerCase();
+  if (!["commercial", "legal"].includes(advisorRole)) {
+    return response(origin, 403, { ok: false, error: "Consulta ANT no habilitada para este perfil." });
+  }
+  const usersQuery = new URL(`${supabaseUrl}/rest/v1/REGISTROS`);
+  usersQuery.searchParams.set("select", "datos");
+  usersQuery.searchParams.set("modulo", "eq.usuarios");
+  usersQuery.searchParams.set("tipo", "eq.base");
+  usersQuery.searchParams.set("order", "id.desc");
+  usersQuery.searchParams.set("limit", "1");
+  try {
+    const usersResponse = await fetch(usersQuery, { headers: dbHeaders });
+    if (!usersResponse.ok) return response(origin, 503, { ok: false, error: "No se pudieron validar los permisos de Consulta ANT." });
+    const rows = await usersResponse.json();
+    const usersSnapshot = Array.isArray(rows) ? rows[0]?.datos : null;
+    const users = advisorRole === "legal" ? usersSnapshot?.legalUsers : usersSnapshot?.commercialAdvisors;
+    const allowed = Array.isArray(users) && users.some((user) =>
+      String(user?.id || "") === String(advisor.id || "") && user?.datacilEnabled === true
+    );
+    if (!allowed) return response(origin, 403, { ok: false, error: "El administrador no ha habilitado Consulta ANT para este usuario." });
+  } catch {
+    return response(origin, 503, { ok: false, error: "No se pudieron validar los permisos de Consulta ANT." });
+  }
+
   if (action === "list") {
     const listQuery = new URL(`${supabaseUrl}/rest/v1/REGISTROS`);
     listQuery.searchParams.set("select", "datos");

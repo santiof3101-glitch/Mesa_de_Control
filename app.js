@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260924-datacil-v2";
+const APP_BUILD_VERSION = "20260924-datacil-v3";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_FUNCTIONS_URL = "https://evblnxgeyelatdmloydl.supabase.co/functions/v1";
@@ -415,13 +415,13 @@ const defaultState = {
   legalContractTemplates: structuredClone(DEFAULT_LEGAL_CONTRACT_TEMPLATES),
   agencies: ["Matriz Guayaquil", "Sucursal Norte", "Sucursal Sur", "Via Daule", "Samborondon", "Duran", "Quito", "Cuenca", "Manta"],
   commercialAdvisors: [
-    { id: "comercial-1", name: "Asesor comercial 1", agency: "Matriz Guayaquil", username: "comercial1", password: "Comercial123" },
-    { id: "comercial-2", name: "Asesor comercial 2", agency: "Sucursal Norte", username: "comercial2", password: "Comercial123" },
-    { id: "comercial-3", name: "Asesor comercial 3", agency: "Sucursal Sur", username: "comercial3", password: "Comercial123" }
+    { id: "comercial-1", name: "Asesor comercial 1", agency: "Matriz Guayaquil", username: "comercial1", password: "Comercial123", datacilEnabled: false },
+    { id: "comercial-2", name: "Asesor comercial 2", agency: "Sucursal Norte", username: "comercial2", password: "Comercial123", datacilEnabled: false },
+    { id: "comercial-3", name: "Asesor comercial 3", agency: "Sucursal Sur", username: "comercial3", password: "Comercial123", datacilEnabled: false }
   ],
   legalUsers: [
-    { id: "legal-1", name: "Asistente legal 1", username: "legal1", password: "Legal123", mailboxes: ["saneamientos"], contractAgencies: [], legalAvailable: true },
-    { id: "legal-2", name: "Asistente legal 2", username: "legal2", password: "Legal123", mailboxes: ["saneamientos", "contratos"], contractAgencies: [], legalAvailable: true }
+    { id: "legal-1", name: "Asistente legal 1", username: "legal1", password: "Legal123", mailboxes: ["saneamientos"], contractAgencies: [], legalAvailable: true, datacilEnabled: false },
+    { id: "legal-2", name: "Asistente legal 2", username: "legal2", password: "Legal123", mailboxes: ["saneamientos", "contratos"], contractAgencies: [], legalAvailable: true, datacilEnabled: false }
   ],
   managerUsers: [
     { id: "gerente-1", name: "Gerente general", username: "gerente1", password: "Gerente123" }
@@ -698,6 +698,15 @@ const antLookupForm = document.querySelector("#antLookupForm");
 const antLookupPlate = document.querySelector("#antLookupPlate");
 const datacilSavedList = document.querySelector("#datacilSavedList");
 const reloadDatacilLookupsBtn = document.querySelector("#reloadDatacilLookupsBtn");
+const legalAntNavButton = document.querySelector("#legalAntNavButton");
+const legalAntLookupPanel = document.querySelector("#legalAntLookupPanel");
+const legalAntLookupForm = document.querySelector("#legalAntLookupForm");
+const legalAntLookupPlate = document.querySelector("#legalAntLookupPlate");
+const legalDatacilLookupBtn = document.querySelector("#legalDatacilLookupBtn");
+const legalDatacilLookupStatus = document.querySelector("#legalDatacilLookupStatus");
+const legalDatacilLookupResult = document.querySelector("#legalDatacilLookupResult");
+const legalDatacilSavedList = document.querySelector("#legalDatacilSavedList");
+const reloadLegalDatacilLookupsBtn = document.querySelector("#reloadLegalDatacilLookupsBtn");
 const commercialUafeModal = document.querySelector("#commercialUafeModal");
 const commercialUafeForm = document.querySelector("#commercialUafeForm");
 const commercialUafeStatus = document.querySelector("#commercialUafeStatus");
@@ -2176,14 +2185,15 @@ function normalizeStatusOptions(options) {
 function normalizeCommercialAdvisors(advisors) {
   return advisors.map((advisor, index) => {
     if (typeof advisor === "string") {
-      return { id: `advisor-${index}-${advisor}`, name: advisor, agency: "", username: `comercial${index + 1}`, password: "Comercial123" };
+      return { id: `advisor-${index}-${advisor}`, name: advisor, agency: "", username: `comercial${index + 1}`, password: "Comercial123", datacilEnabled: false };
     }
     return {
       id: advisor.id || crypto.randomUUID(),
       name: advisor.name || "",
       agency: advisor.agency || "",
       username: advisor.username || `comercial${index + 1}`,
-      password: advisor.password || "Comercial123"
+      password: advisor.password || "Comercial123",
+      datacilEnabled: advisor.datacilEnabled === true
     };
   }).filter((advisor) => advisor.name);
 }
@@ -2217,7 +2227,8 @@ function normalizeLegalUsers(users = []) {
         password: "Legal123",
         mailboxes: ["saneamientos"],
         contractAgencies: [],
-        legalAvailable: true
+        legalAvailable: true,
+        datacilEnabled: false
       };
     }
     return {
@@ -2227,7 +2238,8 @@ function normalizeLegalUsers(users = []) {
       password: user.password || "Legal123",
       mailboxes: normalizeLegalMailboxes(user.mailboxes || user.profiles || user.buzones || user.profile),
       contractAgencies: normalizeContractAgencies(user.contractAgencies || user.contractAgency || user.agenciasContratos),
-      legalAvailable: user.legalAvailable !== false
+      legalAvailable: user.legalAvailable !== false,
+      datacilEnabled: user.datacilEnabled === true
     };
   }).filter((user) => user.name && user.username);
 }
@@ -3553,7 +3565,7 @@ function openCommercialLeadFicha(taskId) {
               <strong>Consulta vehicular pendiente</strong>
               <small>La respuesta quedara guardada permanentemente en esta ficha.</small>
             </div>
-            ${session.role === "commercial" ? `<button class="btn tiny secondary" type="button" data-datacil-task-query="${escapeHtml(task.id)}">Consultar ANT</button>` : ""}
+            ${canCurrentUserUseDatacil() ? `<button class="btn tiny secondary" type="button" data-datacil-task-query="${escapeHtml(task.id)}">Consultar ANT</button>` : ""}
           </div>
         `}
     </section>
@@ -5246,11 +5258,14 @@ function renderCommercialAdvisors() {
   state.commercialAdvisors.forEach((advisor) => {
     const item = document.createElement("span");
     item.className = "option-item";
-    item.innerHTML = `<span>${escapeHtml(advisor.name)} <small>${escapeHtml(advisor.agency || "Sin agencia")} | Usuario: ${escapeHtml(advisor.username || "")}</small></span><input type="password" placeholder="Nueva contrasena"><button class="btn secondary change-password" type="button">Cambiar</button><button class="remove-option" type="button" aria-label="Eliminar ${escapeHtml(advisor.name)}">x</button>`;
+    item.innerHTML = `<span>${escapeHtml(advisor.name)} <small>${escapeHtml(advisor.agency || "Sin agencia")} | Usuario: ${escapeHtml(advisor.username || "")}</small></span><label class="check-row admin-datacil-access"><input class="toggle-datacil-access" type="checkbox" ${advisor.datacilEnabled ? "checked" : ""}> Consulta ANT</label><input type="password" placeholder="Nueva contrasena"><button class="btn secondary change-password" type="button">Cambiar</button><button class="remove-option" type="button" aria-label="Eliminar ${escapeHtml(advisor.name)}">x</button>`;
     item.querySelector(".remove-option").addEventListener("click", () => removeCommercialAdvisor(advisor.id));
     item.querySelector(".change-password").addEventListener("click", () => {
       changePassword("commercialAdvisors", advisor.id, item.querySelector("input").value);
       item.querySelector("input").value = "";
+    });
+    item.querySelector(".toggle-datacil-access").addEventListener("change", (event) => {
+      updateDatacilUserAccess("commercial", advisor.id, event.target.checked);
     });
     container.appendChild(item);
   });
@@ -5425,7 +5440,7 @@ function addCommercialAdvisor(data) {
     return;
   }
 
-  state.commercialAdvisors.push({ id: crypto.randomUUID(), name, agency, username, password });
+  state.commercialAdvisors.push({ id: crypto.randomUUID(), name, agency, username, password, datacilEnabled: data.datacilEnabled === "on" });
   saveState();
   guardarUsuariosSupabaseAhora();
   renderAll();
@@ -5438,6 +5453,20 @@ function removeCommercialAdvisor(id) {
   guardarUsuariosSupabaseAhora();
   renderAll();
   showToast("Asesor comercial eliminado.");
+}
+
+function updateDatacilUserAccess(role, id, enabled) {
+  const collection = role === "legal" ? state.legalUsers : state.commercialAdvisors;
+  const user = collection.find((item) => item.id === id);
+  if (!user) return;
+  user.datacilEnabled = Boolean(enabled);
+  saveState();
+  guardarUsuariosSupabaseAhora();
+  renderDatacilAccess();
+  showToast(user.datacilEnabled
+    ? `Consulta ANT habilitada para ${user.name}.`
+    : `Consulta ANT deshabilitada para ${user.name}.`
+  );
 }
 
 function getAnnouncementUserOptions() {
@@ -5631,7 +5660,8 @@ function createUser(data) {
     password,
     mailboxes,
     contractAgencies,
-    legalAvailable: true
+    legalAvailable: true,
+    datacilEnabled: data.datacilEnabled === "on"
   });
   saveState();
   autoAssignOpenSaneamientos();
@@ -5698,6 +5728,7 @@ function renderUsers() {
             </label>
           `).join("")}
         </div>
+        <label class="check-row admin-datacil-access"><input class="toggle-datacil-access" type="checkbox" ${user.datacilEnabled ? "checked" : ""}> Consulta ANT</label>
         <input class="contract-agencies-input" type="text" value="${escapeHtml(contractAgencies.join(", "))}" placeholder="Agencias contratos">
         <button class="btn secondary save-mailboxes" type="button">Guardar</button>
         <button class="btn secondary toggle-legal-availability" type="button">${user.legalAvailable === false ? "Disponible" : "No disponible"}</button>
@@ -5719,6 +5750,9 @@ function renderUsers() {
     });
     item.querySelector(".toggle-legal-availability").addEventListener("click", () => {
       setLegalUserAvailability(user.id, user.legalAvailable === false);
+    });
+    item.querySelector(".toggle-datacil-access").addEventListener("change", (event) => {
+      updateDatacilUserAccess("legal", user.id, event.target.checked);
     });
     container.appendChild(item);
   });
@@ -7642,16 +7676,49 @@ function getDatacilDisplayEntries(snapshot = {}) {
     .slice(0, 18);
 }
 
+function getDatacilPayload(snapshot = {}) {
+  const response = snapshot.data && typeof snapshot.data === "object" ? snapshot.data : {};
+  return response.data && typeof response.data === "object" ? response.data : response;
+}
+
 function getDatacilPendingEntries(snapshot = {}) {
-  return flattenDatacilValues(snapshot.data || {})
-    .filter((entry) => /(pendiente|deuda|multa|citacion|valor.*pagar|total.*pagar|amount.*due|balance)/i.test(entry.key))
-    .filter((entry, index, list) => list.findIndex((item) => item.key === entry.key && item.value === entry.value) === index)
-    .slice(0, 10);
+  const payload = getDatacilPayload(snapshot);
+  return Array.isArray(payload.pagos?.rubrosPendientes) ? payload.pagos.rubrosPendientes : [];
+}
+
+function formatDatacilMoney(value) {
+  const amount = Number(value);
+  return Number.isFinite(amount)
+    ? amount.toLocaleString("es-EC", { style: "currency", currency: "USD", minimumFractionDigits: 2 })
+    : "$ 0,00";
+}
+
+function renderDatacilMetric(label, value, className = "") {
+  return `<article class="datacil-metric ${className}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value ?? "No disponible")}</strong></article>`;
 }
 
 function renderDatacilSnapshot(snapshot = {}, options = {}) {
-  const entries = getDatacilDisplayEntries(snapshot);
+  const payload = getDatacilPayload(snapshot);
+  const owner = payload.propietario && typeof payload.propietario === "object" ? payload.propietario : {};
+  const payments = payload.pagos && typeof payload.pagos === "object" ? payload.pagos : {};
+  const citations = payload.citaciones && typeof payload.citaciones === "object" ? payload.citaciones : {};
+  const vehicle = payload.vehiculo && typeof payload.vehiculo === "object" ? payload.vehiculo : {};
   const pendingEntries = getDatacilPendingEntries(snapshot);
+  const debtTotal = Number(payments.totalPendiente || 0);
+  const pendingFines = Number(citations.pendientes || 0);
+  const yearKey = Object.keys(vehicle).find((key) => /^(año|anio|a.o)$/i.test(key)) || "";
+  const vehicleEntries = [
+    ["Marca", vehicle.marca],
+    ["Modelo", vehicle.modelo],
+    ["Año", yearKey ? vehicle[yearKey] : ""],
+    ["Color", vehicle.color],
+    ["Clase", vehicle.clase],
+    ["Servicio", vehicle.servicio],
+    ["RAM", vehicle.chasis],
+    ["Último año pagado", vehicle.ultimoAnioPagado],
+    ["Prohibición de enajenar", vehicle.prohibidoEnajenar === true ? "Sí" : vehicle.prohibidoEnajenar === false ? "No" : ""],
+    ["Bloqueo", owner.tieneBloqueo === true ? "Sí" : owner.tieneBloqueo === false ? "No" : ""]
+  ].filter(([, value]) => value !== "" && value !== null && value !== undefined);
   const cachedLabel = options.cached ? "Consulta guardada" : "Consulta nueva guardada";
   return `
     <div class="datacil-result-head">
@@ -7665,31 +7732,57 @@ function renderDatacilSnapshot(snapshot = {}, options = {}) {
         ${options.allowRefresh ? `<button class="btn tiny secondary" type="button" data-datacil-refresh="${escapeHtml(options.taskId || "module")}">Actualizar consulta</button>` : ""}
       </div>
     </div>
-    ${pendingEntries.length ? `
-      <div class="datacil-pending-summary">
-        <strong>Valores pendientes encontrados</strong>
-        <div>${pendingEntries.map((entry) => `<span><b>${escapeHtml(formatDatacilLabel(entry.key))}</b>${escapeHtml(entry.value)}</span>`).join("")}</div>
+    <section class="datacil-owner-summary">
+      <div class="datacil-section-title"><span>Propietario registrado</span></div>
+      <div class="datacil-owner-grid">
+        ${renderDatacilMetric("Nombre completo", owner.nombre || "No disponible", "is-wide")}
+        ${renderDatacilMetric("Cédula / identificación", owner.cedula || "No disponible")}
+        ${renderDatacilMetric("Correo electrónico", owner.email || "No disponible")}
       </div>
-    ` : `<div class="datacil-pending-summary is-clear"><strong>Valores pendientes</strong><span>Datacil no reportó valores pendientes en esta respuesta.</span></div>`}
-    <div class="datacil-result-grid">
-      ${entries.length ? entries.map((entry) => `
-        <div>
-          <span>${escapeHtml(formatDatacilLabel(entry.key))}</span>
-          <strong>${escapeHtml(entry.value)}</strong>
-        </div>
-      `).join("") : `<p>Datacil respondio correctamente. La respuesta completa quedo guardada en la ficha.</p>`}
-    </div>
+    </section>
+    <section class="datacil-financial-summary">
+      <div class="datacil-section-title"><span>Obligaciones y citaciones</span></div>
+      <div class="datacil-financial-grid">
+        ${renderDatacilMetric("Deuda total", formatDatacilMoney(debtTotal), debtTotal > 0 ? "is-alert" : "is-clear")}
+        ${renderDatacilMetric("Tiene deuda", owner.tieneDeuda === true || debtTotal > 0 ? "Sí" : "No")}
+        ${renderDatacilMetric("Tiene multas pendientes", pendingFines > 0 ? "Sí" : "No", pendingFines > 0 ? "is-alert" : "is-clear")}
+        ${renderDatacilMetric("Cantidad de multas", String(pendingFines))}
+      </div>
+      <div class="datacil-citation-strip">
+        <span>Pagadas <b>${escapeHtml(String(citations.pagadas ?? 0))}</b></span>
+        <span>Anuladas <b>${escapeHtml(String(citations.anuladas ?? 0))}</b></span>
+        <span>Convenio <b>${escapeHtml(String(citations.convenio ?? 0))}</b></span>
+        <span>Impugnación <b>${escapeHtml(String(citations.impugnacion ?? 0))}</b></span>
+      </div>
+    </section>
+    <section class="datacil-debt-detail">
+      <div class="datacil-section-title"><span>Desglose de deuda</span><strong>${escapeHtml(formatDatacilMoney(debtTotal))}</strong></div>
+      ${pendingEntries.length ? `
+        <div class="datacil-debt-table-wrap"><table class="datacil-debt-table">
+          <thead><tr><th>Concepto</th><th>Beneficiario</th><th>Periodo</th><th>Valor</th></tr></thead>
+          <tbody>${pendingEntries.map((entry) => `<tr><td>${escapeHtml(entry.concepto || "Sin concepto")}</td><td>${escapeHtml(entry.beneficiario || "-")}</td><td>${escapeHtml([entry.anioDesde, entry.anioHasta].filter(Boolean).join(" - ") || "-")}</td><td>${escapeHtml(formatDatacilMoney(entry.valor))}</td></tr>`).join("")}</tbody>
+        </table></div>
+      ` : `<div class="datacil-empty-state">No se reportaron rubros pendientes en esta consulta.</div>`}
+    </section>
+    <section class="datacil-vehicle-summary">
+      <div class="datacil-section-title"><span>Datos del vehículo</span></div>
+      <div class="datacil-vehicle-grid">${vehicleEntries.map(([label, value]) => renderDatacilMetric(label, value)).join("")}</div>
+    </section>
   `;
 }
 
-function showDatacilModuleSnapshot(snapshot, cached = false) {
-  if (datacilLookupResult) {
-    datacilLookupResult.hidden = false;
-    datacilLookupResult.innerHTML = renderDatacilSnapshot(snapshot, { cached, allowRefresh: true, allowMigrate: true, taskId: "module" });
+function showDatacilModuleSnapshot(snapshot, cached = false, target = "commercial") {
+  const isLegalTarget = target === "legal";
+  const result = isLegalTarget ? legalDatacilLookupResult : datacilLookupResult;
+  const plateInput = isLegalTarget ? legalAntLookupPlate : antLookupPlate;
+  const status = isLegalTarget ? legalDatacilLookupStatus : datacilLookupStatus;
+  if (result) {
+    result.hidden = false;
+    result.innerHTML = renderDatacilSnapshot(snapshot, { cached, allowRefresh: true, allowMigrate: !isLegalTarget, taskId: isLegalTarget ? "legal-module" : "module", target });
   }
-  if (antLookupPlate) antLookupPlate.value = snapshot.placa || "";
-  if (datacilLookupStatus) {
-    datacilLookupStatus.textContent = cached
+  if (plateInput) plateInput.value = snapshot.placa || "";
+  if (status) {
+    status.textContent = cached
       ? "Se utilizo la consulta guardada. No se consumio un credito adicional."
       : "Consulta realizada y guardada en linea.";
   }
@@ -7704,9 +7797,7 @@ function resetDatacilFormSnapshot() {
 }
 
 function getDatacilAdvisorIdentity() {
-  return session.role === "commercial"
-    ? { id: session.userId, name: session.name, agency: session.agency || "" }
-    : { id: session.userId || session.role, name: session.name || session.role, agency: session.agency || "" };
+  return { id: session.userId || session.role, name: session.name || session.role, agency: session.agency || "", role: session.role };
 }
 
 async function callDatacilFunction(body = {}) {
@@ -7739,24 +7830,31 @@ function getDatacilValue(snapshot = {}, patterns = []) {
   return "";
 }
 
-function renderDatacilStoredLookups() {
-  if (!datacilSavedList) return;
+function renderDatacilStoredLookupsTo(container, target = "commercial") {
+  if (!container) return;
   if (!datacilStoredLookups.length) {
-    datacilSavedList.innerHTML = `<div class="empty compact-empty">Todavía no existen consultas ANT guardadas.</div>`;
+    container.innerHTML = `<div class="empty compact-empty">Todavía no existen consultas ANT guardadas.</div>`;
     return;
   }
-  datacilSavedList.innerHTML = datacilStoredLookups.map((snapshot) => {
-    const owner = getDatacilValue(snapshot, [/propiet/i, /nombre.*(?:titular|dueno|dueño)/i]) || "Propietario sin identificar";
-    const pending = getDatacilPendingEntries(snapshot);
+  container.innerHTML = datacilStoredLookups.map((snapshot) => {
+    const payload = getDatacilPayload(snapshot);
+    const owner = payload.propietario?.nombre || "Propietario sin identificar";
+    const debtTotal = Number(payload.pagos?.totalPendiente || 0);
+    const pendingFines = Number(payload.citaciones?.pendientes || 0);
     return `
       <article class="ant-saved-row">
         <div class="ant-saved-plate"><strong>${escapeHtml(snapshot.placa || "Sin placa")}</strong><span>${escapeHtml(formatDateTime(snapshot.queriedAt) || "Sin fecha")}</span></div>
         <div><span>Propietario</span><strong>${escapeHtml(owner)}</strong></div>
-        <div><span>Valores pendientes</span><strong>${pending.length ? `${pending.length} dato(s) reportado(s)` : "Sin valores reportados"}</strong></div>
-        <button class="btn tiny secondary" type="button" data-datacil-open="${escapeHtml(snapshot.placa || "")}">Ver consulta</button>
+        <div><span>Deuda total</span><strong>${escapeHtml(formatDatacilMoney(debtTotal))} · ${pendingFines} multa(s)</strong></div>
+        <button class="btn tiny secondary" type="button" data-datacil-open="${escapeHtml(snapshot.placa || "")}" data-datacil-target="${escapeHtml(target)}">Ver consulta</button>
       </article>
     `;
   }).join("");
+}
+
+function renderDatacilStoredLookups() {
+  renderDatacilStoredLookupsTo(datacilSavedList, "commercial");
+  renderDatacilStoredLookupsTo(legalDatacilSavedList, "legal");
 }
 
 async function loadDatacilStoredLookups(force = false) {
@@ -7765,21 +7863,25 @@ async function loadDatacilStoredLookups(force = false) {
     return datacilStoredLookups;
   }
   if (datacilSavedList) datacilSavedList.innerHTML = `<div class="empty compact-empty">Cargando consultas guardadas...</div>`;
+  if (legalDatacilSavedList) legalDatacilSavedList.innerHTML = `<div class="empty compact-empty">Cargando consultas guardadas...</div>`;
   try {
     const payload = await callDatacilFunction({ action: "list" });
     datacilStoredLookups = Array.isArray(payload.lookups) ? payload.lookups : [];
     datacilLookupsLoadedAt = Date.now();
     renderDatacilStoredLookups();
   } catch (error) {
-    if (datacilSavedList) datacilSavedList.innerHTML = `<div class="empty compact-empty">${escapeHtml(error?.message || "No se pudo cargar el historial.")}</div>`;
+    const message = `<div class="empty compact-empty">${escapeHtml(error?.message || "No se pudo cargar el historial.")}</div>`;
+    if (datacilSavedList) datacilSavedList.innerHTML = message;
+    if (legalDatacilSavedList) legalDatacilSavedList.innerHTML = message;
   }
   return datacilStoredLookups;
 }
 
 function migrateDatacilLookupToPurchase(snapshot = {}) {
   if (!snapshot?.placa || !form) return false;
-  const owner = getDatacilValue(snapshot, [/propiet/i, /nombre.*(?:titular|dueno|dueño)/i]);
-  const identification = getDatacilValue(snapshot, [/(?:cedula|cédula).*propiet/i, /identific.*propiet/i, /numero.*identific/i, /cedula/i, /ruc/i]);
+  const payload = getDatacilPayload(snapshot);
+  const owner = payload.propietario?.nombre || "";
+  const identification = payload.propietario?.cedula || "";
   purchasePlateInput.value = snapshot.placa;
   if (owner && form.elements.cliente) form.elements.cliente.value = owner;
   if (identification && form.elements.cedula) form.elements.cedula.value = normalizeId(identification);
@@ -7804,12 +7906,42 @@ async function offerDatacilMigrationForPlate() {
   }
 }
 
+function getCurrentDatacilUser() {
+  if (session.role === "commercial") return state.commercialAdvisors.find((user) => user.id === session.userId) || null;
+  if (session.role === "legal") return state.legalUsers.find((user) => user.id === session.userId) || null;
+  return null;
+}
+
+function canCurrentUserUseDatacil() {
+  return getCurrentDatacilUser()?.datacilEnabled === true;
+}
+
+function renderDatacilAccess() {
+  const allowed = canCurrentUserUseDatacil();
+  document.querySelectorAll('[data-commercial-start="commercial-ant-process"], [data-commercial-process="commercial-ant-process"]').forEach((element) => {
+    element.hidden = session.role !== "commercial" || !allowed;
+  });
+  if (session.role === "commercial" && !allowed) {
+    const antSection = document.querySelector('[data-commercial-process-section="commercial-ant-process"]');
+    if (antSection) antSection.hidden = true;
+  }
+  if (legalAntNavButton) legalAntNavButton.hidden = session.role !== "legal" || !allowed;
+  if (legalAntLookupPanel && (session.role !== "legal" || !allowed)) legalAntLookupPanel.hidden = true;
+}
+
 async function queryDatacilVehicle({ plate = "", forceRefresh = false, taskId = "", target = "module" } = {}) {
+  if (!canCurrentUserUseDatacil()) {
+    showToast("El administrador no ha habilitado Consulta ANT para este usuario.");
+    return null;
+  }
   const task = taskId ? state.tasks.find((item) => String(item.id) === String(taskId)) : null;
-  const normalizedPlate = normalizePlate(plate || task?.placa || antLookupPlate?.value || "");
+  const isLegalTarget = target === "legal" || target === "legal-module" || (Boolean(task) && session.role === "legal");
+  const targetPlateInput = isLegalTarget ? legalAntLookupPlate : antLookupPlate;
+  const targetStatus = isLegalTarget ? legalDatacilLookupStatus : datacilLookupStatus;
+  const normalizedPlate = normalizePlate(plate || task?.placa || targetPlateInput?.value || "");
   if (!/^[A-Z]{3}[0-9]{3,4}$/.test(normalizedPlate)) {
     showToast("Ingrese una placa ecuatoriana valida.");
-    antLookupPlate?.focus();
+    targetPlateInput?.focus();
     return null;
   }
 
@@ -7822,18 +7954,18 @@ async function queryDatacilVehicle({ plate = "", forceRefresh = false, taskId = 
       saveState();
       await guardarTareaSupabase(task, "vincular-consulta-datacil");
       openCommercialLeadFicha(task.id);
-    } else showDatacilModuleSnapshot(savedLookup, true);
+    } else showDatacilModuleSnapshot(savedLookup, true, isLegalTarget ? "legal" : "commercial");
     return savedLookup;
   }
 
   if (forceRefresh && !window.confirm("Actualizar esta consulta consumira un nuevo credito de Datacil. Desea continuar?")) return null;
-  const activeButton = task ? commercialLeadFichaContent?.querySelector("[data-datacil-refresh]") : datacilLookupBtn;
+  const activeButton = task ? commercialLeadFichaContent?.querySelector("[data-datacil-refresh]") : (isLegalTarget ? legalDatacilLookupBtn : datacilLookupBtn);
   const activeButtonLabel = activeButton?.textContent || "Consultar ANT";
   if (activeButton) {
     activeButton.disabled = true;
     activeButton.textContent = "Consultando...";
   }
-  if (datacilLookupStatus && !task) datacilLookupStatus.textContent = "Consultando ANT por medio de Datacil...";
+  if (targetStatus && !task) targetStatus.textContent = "Consultando ANT por medio de Datacil...";
 
   try {
     const payload = await callDatacilFunction({ placa: normalizedPlate, forceRefresh });
@@ -7848,12 +7980,12 @@ async function queryDatacilVehicle({ plate = "", forceRefresh = false, taskId = 
       saveState();
       await guardarTareaSupabase(task, forceRefresh ? "actualizar-consulta-datacil" : "consultar-datacil");
       openCommercialLeadFicha(task.id);
-    } else showDatacilModuleSnapshot(snapshot, Boolean(payload.cached));
+    } else showDatacilModuleSnapshot(snapshot, Boolean(payload.cached), isLegalTarget ? "legal" : "commercial");
     showToast(payload.cached ? "Consulta recuperada sin consumir otro credito." : "Consulta ANT guardada correctamente.");
     return snapshot;
   } catch (error) {
     const message = error?.message || "No se pudo consultar Datacil.";
-    if (datacilLookupStatus && !task) datacilLookupStatus.textContent = message;
+    if (targetStatus && !task) targetStatus.textContent = message;
     showToast(message);
     return null;
   } finally {
@@ -9982,6 +10114,10 @@ function setCommercialArea(area = "process", options = {}) {
 }
 
 function setCommercialProcessFromTarget(target, shouldScroll = true, options = {}) {
+  if (target === "commercial-ant-process" && !canCurrentUserUseDatacil()) {
+    showToast("El administrador no ha habilitado Consulta ANT para este usuario.");
+    return;
+  }
   const activeSection = document.querySelector(`[data-commercial-process-section="${target}"]`);
   const shouldCollapse = options.toggle === true && activeSection && !activeSection.hidden;
   if (shouldCollapse) {
@@ -17830,6 +17966,7 @@ function renderAll() {
   renderAdminLeads();
   renderCommercialDashboard();
   renderControlDashboard();
+  renderDatacilAccess();
   renderLegalAvailability();
   renderLegalChat();
   renderManagerDashboard();
@@ -18219,14 +18356,18 @@ document.addEventListener("click", async (event) => {
   if (datacilRefreshButton) {
     event.preventDefault();
     const targetId = datacilRefreshButton.dataset.datacilRefresh;
-    await queryDatacilVehicle({ forceRefresh: true, taskId: ["form", "module"].includes(targetId) ? "" : targetId });
+    await queryDatacilVehicle({
+      forceRefresh: true,
+      taskId: ["form", "module", "legal-module"].includes(targetId) ? "" : targetId,
+      target: targetId === "legal-module" ? "legal" : "module"
+    });
     return;
   }
   const datacilOpenButton = event.target.closest("[data-datacil-open]");
   if (datacilOpenButton) {
     event.preventDefault();
     const snapshot = datacilStoredLookups.find((item) => item?.placa === datacilOpenButton.dataset.datacilOpen);
-    if (snapshot) showDatacilModuleSnapshot(snapshot, true);
+    if (snapshot) showDatacilModuleSnapshot(snapshot, true, datacilOpenButton.dataset.datacilTarget === "legal" ? "legal" : "commercial");
     return;
   }
   const datacilMigrateButton = event.target.closest("[data-datacil-migrate]");
@@ -18469,6 +18610,10 @@ legalSidebarNavButtons.forEach((button) => {
     const target = document.querySelector(`#${button.dataset.legalScroll}`);
     legalSidebarNavButtons.forEach((item) => item.classList.toggle("is-active", item === button));
     if (target) {
+      if (target === legalAntLookupPanel && canCurrentUserUseDatacil()) {
+        target.hidden = false;
+        loadDatacilStoredLookups();
+      }
       target.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   });
@@ -18565,6 +18710,18 @@ antLookupForm?.addEventListener("submit", async (event) => {
 });
 
 reloadDatacilLookupsBtn?.addEventListener("click", () => loadDatacilStoredLookups(true));
+
+legalAntLookupPlate?.addEventListener("input", () => {
+  const normalizedPlate = normalizePlate(legalAntLookupPlate.value);
+  if (legalAntLookupPlate.value !== normalizedPlate) legalAntLookupPlate.value = normalizedPlate;
+});
+
+legalAntLookupForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await queryDatacilVehicle({ plate: legalAntLookupPlate?.value || "", target: "legal" });
+});
+
+reloadLegalDatacilLookupsBtn?.addEventListener("click", () => loadDatacilStoredLookups(true));
 
 form?.addEventListener("reset", () => window.setTimeout(resetDatacilFormSnapshot, 0));
 
