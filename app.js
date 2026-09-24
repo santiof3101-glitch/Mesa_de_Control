@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260923-consignacion-font-v4";
+const APP_BUILD_VERSION = "20260923-consignacion-cloud-v5";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_KEY = "sb_publishable_lFsurzFERQn1kQlfSsz1rA_588-DHwk";
@@ -1503,6 +1503,11 @@ function scheduleSupabaseModuleSync() {
 
 function getProtectedSupabaseModuleCount(modulo, snapshot = {}) {
   if (!snapshot || typeof snapshot !== "object") return 0;
+  if (modulo === "contratos") {
+    const consignments = Array.isArray(snapshot.commercialConsignments) ? snapshot.commercialConsignments : [];
+    const versions = consignments.reduce((total, record) => total + (Array.isArray(record?.versions) ? record.versions.length : 0), 0);
+    return consignments.length * 1000 + versions;
+  }
   if (modulo === "proveedores") {
     const records = Array.isArray(snapshot.proveedores) ? snapshot.proveedores.length : 0;
     const profiles = Array.isArray(snapshot.providerProfiles) ? snapshot.providerProfiles.length : 0;
@@ -1512,7 +1517,7 @@ function getProtectedSupabaseModuleCount(modulo, snapshot = {}) {
 }
 
 function shouldProtectSupabaseModule(modulo) {
-  return modulo === "proveedores";
+  return modulo === "proveedores" || modulo === "contratos";
 }
 
 function allowIntentionalSmallerModulePublish(modulo) {
@@ -1540,7 +1545,8 @@ async function shouldSkipUnsafeModulePublish(modulo, datos) {
     applySupabaseModuleSnapshot(modulo, remoteSnapshot, { allowOlderVersion: true, reason: "protect-larger-remote" });
     saveState();
     safeRenderAll();
-    showToast("Proveedores recuperado desde Supabase: se evito publicar una copia incompleta.");
+    const moduleLabel = modulo === "contratos" ? "Contratos de consignación" : "Proveedores";
+    showToast(`${moduleLabel} recuperado desde Supabase: se evitó publicar una copia incompleta.`);
     return true;
   }
   return false;
@@ -1626,6 +1632,7 @@ function getActiveProcessingTab() {
 
 function getSupabaseModulesForCurrentView() {
   const modules = new Set(["usuarios", "catalogos", "saneamientos"]);
+  if (session.role === "commercial") modules.add("contratos");
   if (currentViewId === "procesamiento") {
     const tab = getActiveProcessingTab();
     if (tab === "compras") modules.add("compras");
@@ -1645,8 +1652,9 @@ async function restoreModulesFromSupabaseIfNeeded() {
   if (!SUPABASE_MODULE_SYNC || pollingSupabaseModules || !canSyncCurrentView()) return;
   pollingSupabaseModules = true;
   restoringSupabaseModules = true;
+  let modulesToSync = [];
   try {
-    const modulesToSync = getSupabaseModulesForCurrentView();
+    modulesToSync = getSupabaseModulesForCurrentView();
     const remoteVersions = await leerVersionesModulosSupabase(modulesToSync);
     const [usuariosResult, catalogosResult, saneamientosResult, tareasIndividuales, eliminacionesIndividuales, comprasResult, contratosResult, proveedoresResult, archivosResult] = await Promise.all([
       modulesToSync.includes("usuarios") ? leerModuloSupabaseSiCambio("usuarios", remoteVersions) : Promise.resolve({ snapshot: null, exists: false, changed: false }),
@@ -1723,6 +1731,12 @@ async function restoreModulesFromSupabaseIfNeeded() {
     restoringSupabaseModules = false;
     supabaseModulesReady = true;
     pollingSupabaseModules = false;
+  }
+  if (modulesToSync.includes("contratos") && navigator.onLine) {
+    const currentContracts = getSupabaseModuleSnapshots().contratos;
+    if (supabasePublishedHashes.contratos !== getSupabaseSnapshotHash(currentContracts)) {
+      await guardarModuloSupabaseAhora("contratos");
+    }
   }
 }
 
@@ -1813,7 +1827,10 @@ function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
     case "contratos":
       processing.contratos = (snapshot.contratos || []).map(normalizeContractRecord);
       processing.contractLoads = (snapshot.contractLoads || []).map(normalizeContractLoad);
-      state.commercialConsignments = (snapshot.commercialConsignments || state.commercialConsignments || []).map(normalizeCommercialConsignmentRecord);
+      state.commercialConsignments = mergeCommercialConsignmentRecords(
+        state.commercialConsignments || [],
+        snapshot.commercialConsignments || []
+      );
       return true;
     case "proveedores":
       {
@@ -8445,6 +8462,42 @@ function normalizeCommercialConsignmentRecord(record = {}) {
   };
 }
 
+function mergeCommercialConsignmentRecords(localRecords = [], remoteRecords = []) {
+  const recordsById = new Map();
+  [...localRecords, ...remoteRecords].forEach((rawRecord) => {
+    const record = normalizeCommercialConsignmentRecord(rawRecord);
+    const current = recordsById.get(record.id);
+    if (!current) {
+      recordsById.set(record.id, record);
+      return;
+    }
+
+    const recordUpdatedAt = new Date(record.updatedAt || record.createdAt || 0).getTime() || 0;
+    const currentUpdatedAt = new Date(current.updatedAt || current.createdAt || 0).getTime() || 0;
+    const newest = recordUpdatedAt >= currentUpdatedAt ? record : current;
+    const oldest = newest === record ? current : record;
+    const versionsById = new Map();
+    [...(oldest.versions || []), ...(newest.versions || [])].forEach((version) => {
+      if (!version?.id) return;
+      const stored = versionsById.get(version.id);
+      if (!stored || new Date(version.createdAt || 0) >= new Date(stored.createdAt || 0)) {
+        versionsById.set(version.id, version);
+      }
+    });
+
+    recordsById.set(record.id, normalizeCommercialConsignmentRecord({
+      ...oldest,
+      ...newest,
+      versions: [...versionsById.values()]
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+        .slice(0, 20)
+    }));
+  });
+
+  return [...recordsById.values()]
+    .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+}
+
 function getConsignmentTypeLabel(type = "") {
   if (type === "casado") return "Persona natural - casado/a";
   if (type === "juridica") return "Persona jurídica";
@@ -8895,6 +8948,10 @@ async function submitConsignmentContract(event) {
     submitButton.textContent = "Generando PDF...";
   }
   try {
+    const remoteContracts = await leerUltimoModuloSupabase("contratos");
+    if (remoteContracts) {
+      applySupabaseModuleSnapshot("contratos", remoteContracts, { allowOlderVersion: true });
+    }
     await buildConsignmentPdfBytes(data);
     const now = new Date().toISOString();
     let record = (state.commercialConsignments || []).find((item) => String(item.id) === String(data.recordId));
