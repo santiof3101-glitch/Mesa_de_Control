@@ -10,10 +10,10 @@
 
 ## Pasos de activacion (en este orden, en horario sin uso)
 
-1. Unir la rama `seguridad-supabase` a `main` (GitHub Pages publica la nueva version en 1-2 minutos).
-2. Aplicar `20261007000300_autocor_rls_registros.sql` (cierra la tabla REGISTROS).
-3. Aplicar `20261007000400_autocor_quitar_claves_guardadas.sql` (sincroniza cuentas y borra claves del historial).
-4. Publicar `datacil-vehiculo` con el mismo codigo seguro de `datacil-consulta`.
+1. [Hecho 2026-10-07] Unir la rama `seguridad-supabase` a `main` (GitHub Pages publica la nueva version en 1-2 minutos).
+2. [Hecho] Aplicar `20261007000300_autocor_rls_registros.sql` (cierra la tabla REGISTROS).
+3. [Hecho] Aplicar `20261007000400_autocor_quitar_claves_guardadas.sql` (sincroniza cuentas y borra claves del historial).
+4. [Hecho] Publicar `datacil-vehiculo` con el mismo codigo seguro de `datacil-consulta`.
 5. Probar: ingreso de administrador, comercial, mesa de control, procesamiento; guardar algo; Consulta ANT; subir un archivo.
 
 Los navegadores abiertos con la version anterior se recargan solos al detectar la nueva version.

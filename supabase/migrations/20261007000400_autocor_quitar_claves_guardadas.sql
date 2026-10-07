@@ -2,7 +2,7 @@
 -- Quita las contrasenas en texto plano que quedaron guardadas en el historial de REGISTROS.
 -- Se procesa por lotes porque "estado_completo" pesa varios cientos de MB.
 
-create or replace function autocor_private.quitar_claves_lote(p_desde bigint, p_hasta bigint)
+create or replace function autocor_private.quitar_claves_lote(p_modulo text, p_desde bigint, p_hasta bigint)
 returns integer
 language plpgsql
 security definer
@@ -27,15 +27,18 @@ begin
     from jsonb_each(r.datos) e
   )
   where r.id between p_desde and p_hasta
-    and ((r.modulo = 'usuarios' and r.tipo = 'base') or (r.modulo = 'sistema' and r.tipo = 'estado_completo'))
+    and r.modulo = p_modulo
+    and r.tipo = case when p_modulo = 'sistema' then 'estado_completo' else 'base' end
     and jsonb_typeof(r.datos) = 'object';
   get diagnostics v_filas = row_count;
   return v_filas;
 end;
 $$;
 
-revoke all on function autocor_private.quitar_claves_lote(bigint, bigint) from public, anon, authenticated;
+revoke all on function autocor_private.quitar_claves_lote(text, bigint, bigint) from public, anon, authenticated;
 
 -- En la activacion:
 --   select * from autocor_private.sync_auth_users_from_registros();
---   select autocor_private.quitar_claves_lote(1, 1000);  -- y siguientes rangos de id hasta el maximo
+--   select autocor_private.quitar_claves_lote('usuarios', 1, 999999);
+--   select autocor_private.quitar_claves_lote('sistema', <desde>, <hasta>);  -- lotes de ~30 MB; hay filas de 15 MB
+-- Ejecutado el 2026-10-07: 853 filas de usuarios y 297 de estado_completo quedaron sin claves.

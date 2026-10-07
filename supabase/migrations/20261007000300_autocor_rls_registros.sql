@@ -1,25 +1,20 @@
 -- Reglas de acceso (RLS) para REGISTROS.
 -- Antes: cualquier persona con la llave publica podia leer y crear registros.
 -- Ahora: solo usuarios con sesion de Supabase Auth; sin sesion solo se lee el logo y colores.
+-- (Aplicada el 2026-10-07 transformando las dos reglas abiertas anteriores.)
 
 alter table public."REGISTROS" enable row level security;
-
-drop policy if exists "Enable read access for all users" on public."REGISTROS";
-drop policy if exists "Permitir_guardar_registros" on public."REGISTROS";
 
 -- Quien guardo cada registro (no se puede falsificar desde el navegador).
 alter table public."REGISTROS" add column if not exists auth_uid uuid default auth.uid();
 
-create policy "registros_marca_publica" on public."REGISTROS"
-  for select to anon
+alter policy "Enable read access for all users" on public."REGISTROS"
+  to anon
   using (modulo = 'sistema' and tipo = 'branding');
+alter policy "Enable read access for all users" on public."REGISTROS" rename to "registros_marca_publica";
 
-create policy "registros_leer_con_sesion" on public."REGISTROS"
-  for select to authenticated
-  using ((auth.jwt() -> 'app_metadata' ->> 'autocor_role') in ('admin', 'commercial', 'legal', 'manager', 'processing'));
-
-create policy "registros_guardar_con_sesion" on public."REGISTROS"
-  for insert to authenticated
+alter policy "Permitir_guardar_registros" on public."REGISTROS"
+  to authenticated
   with check (
     (auth.jwt() -> 'app_metadata' ->> 'autocor_role') in ('admin', 'commercial', 'legal', 'manager', 'processing')
     and auth_uid = auth.uid()
@@ -28,6 +23,11 @@ create policy "registros_guardar_con_sesion" on public."REGISTROS"
     and (modulo <> 'usuarios' or (auth.jwt() -> 'app_metadata' ->> 'autocor_role') in ('admin', 'legal'))
     and (modulo <> 'sistema' or (auth.jwt() -> 'app_metadata' ->> 'autocor_role') = 'admin')
   );
+alter policy "Permitir_guardar_registros" on public."REGISTROS" rename to "registros_guardar_con_sesion";
+
+create policy "registros_leer_con_sesion" on public."REGISTROS"
+  for select to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'autocor_role') in ('admin', 'commercial', 'legal', 'manager', 'processing'));
 
 -- Sin reglas de UPDATE ni DELETE: desde la app nadie puede modificar ni borrar el historial.
 
