@@ -3491,3 +3491,21 @@ body {
 @media (prefers-reduced-motion: reduce) {
   #acceso .ac-card, #acceso .ac-go { transition: none; }
 }
+
+/* Fecha del dia en la barra superior */
+.topbar .topbar-date {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 14px;
+  padding-right: 16px;
+  border-right: 1px solid #e2e4e9;
+  color: #5f6168;
+  font-family: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.topbar .topbar-date:empty { display: none; }
+@media (max-width: 900px) {
+  .topbar .topbar-date { display: none; }
+}

@@ -9121,6 +9121,19 @@ async function changeAdminPassword(formElement) {
   }
 }
 
+// Fecha del dia en la barra superior (zona horaria del equipo).
+function renderTopbarDate() {
+  const element = document.querySelector("#topbarDate");
+  if (!element) return;
+  const now = new Date();
+  const text = new Intl.DateTimeFormat("es-EC", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(now);
+  element.textContent = text.charAt(0).toUpperCase() + text.slice(1);
+  const pad = (value) => String(value).padStart(2, "0");
+  element.setAttribute("datetime", `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`);
+}
+renderTopbarDate();
+window.setInterval(renderTopbarDate, 60 * 1000);
+
 function renderAdminPasswordNotice() {
   const notice = document.querySelector("#adminPasswordDefaultNotice");
   if (notice) notice.hidden = true;
