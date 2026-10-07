@@ -4301,3 +4301,202 @@ body {
     padding: 14px 16px 18px !important;
   }
 }
+
+/* Panel comercial: etiquetas de compromiso en el banner */
+#formulario .cc-badges {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 520px;
+  margin: 0 calc(var(--cc-h) * 1.85) 0 auto;
+  padding: 0 0 0 32px;
+  list-style: none;
+}
+
+#formulario .cc-badges li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px 10px 10px;
+  border: 1px solid #e6e8ec;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .94);
+  box-shadow: 0 6px 18px rgba(21, 23, 29, .06);
+}
+
+#formulario .cc-badges b {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--cc-rojo-claro);
+  color: var(--cc-rojo-osc);
+}
+
+#formulario .cc-badges b svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#formulario .cc-badges span {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+#formulario .cc-badges strong {
+  overflow: hidden;
+  color: var(--cc-tinta);
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#formulario .cc-badges small {
+  overflow: hidden;
+  color: var(--cc-suave);
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Laptop: etiquetas compactas, solo el titulo */
+@media (max-width: 1560px) {
+  #formulario .cc-badges {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 5px;
+    max-width: 230px;
+    padding-left: 20px;
+  }
+
+  #formulario .cc-badges li {
+    padding: 4px 10px 4px 4px;
+    border-radius: 9px;
+    box-shadow: none;
+  }
+
+  #formulario .cc-badges b {
+    flex-basis: 26px;
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+  }
+
+  #formulario .cc-badges b svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  #formulario .cc-badges small {
+    display: none;
+  }
+
+  #formulario .cc-badges strong {
+    font-size: 13px;
+  }
+}
+
+/* Tablet y celular: etiquetas en fila bajo el saludo */
+@media (max-width: 1180px) {
+  #formulario .commercial-process-area .commercial-start-hero.cc-hero {
+    flex-wrap: wrap !important;
+    align-content: center !important;
+  }
+
+  #formulario .commercial-process-area .cc-hero .cc-hero-copy {
+    flex: 1 1 100% !important;
+    width: auto !important;
+    padding-right: calc(var(--cc-h) * 1.85) !important;
+    padding-bottom: 8px !important;
+  }
+
+  #formulario .cc-badges {
+    flex: 1 1 100%;
+    grid-template-columns: repeat(2, max-content);
+    max-width: none;
+    margin: 0 calc(var(--cc-h) * 1.85) 16px 0;
+    padding-left: 24px;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1180px) {
+  #formulario .commercial-process-area .commercial-start-hero.cc-hero {
+    --cc-h: 230px;
+  }
+}
+
+@media (max-width: 760px) {
+  #formulario .commercial-process-area .cc-hero .cc-hero-copy {
+    padding-right: 16px !important;
+  }
+
+  #formulario .cc-badges {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0 16px 18px;
+    padding-left: 0;
+  }
+}
+
+#formulario .cc-badges {
+  margin-right: calc(var(--cc-h) * 1.6);
+}
+
+@media (max-width: 1560px) {
+  #formulario .cc-badges {
+    max-width: 250px;
+  }
+}
+
+@media (max-width: 1180px) {
+  #formulario .cc-badges {
+    margin-right: calc(var(--cc-h) * 1.85);
+  }
+}
+
+@media (max-width: 760px) {
+  #formulario .cc-badges {
+    margin-right: 16px;
+  }
+
+  #formulario .cc-badges li {
+    padding: 6px 8px 6px 6px;
+  }
+
+  #formulario .cc-badges strong {
+    font-size: 12.5px;
+    white-space: normal;
+    line-height: 1.2;
+  }
+}
+
+@media (max-width: 760px) {
+  #formulario .commercial-process-area .commercial-start-hero.cc-hero {
+    flex-wrap: nowrap !important;
+    align-content: stretch !important;
+  }
+
+  #formulario .commercial-process-area .cc-hero .cc-hero-copy,
+  #formulario .cc-badges {
+    flex: 0 0 auto !important;
+  }
+
+  #formulario .cc-badges {
+    width: auto;
+    max-width: none;
+    align-self: stretch;
+  }
+}
