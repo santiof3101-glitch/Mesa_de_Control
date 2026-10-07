@@ -19,8 +19,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Roboto+Condensed:wght@300;400;500;600;700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261007-comercial-v2">
-  <link rel="stylesheet" href="layout-fix.css?v=20261007-comercial-v2">
+  <link rel="stylesheet" href="styles.css?v=20261007-comercial-v3">
+  <link rel="stylesheet" href="layout-fix.css?v=20261007-comercial-v3">
 </head>
 <body>
   <header class="topbar">
@@ -958,16 +958,16 @@
             <span class="cc-pill"><span class="cc-pill-wheel"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="10"></circle><path d="M9 44 Q50 33 91 44 L91 55 Q72 52 61 59 L39 59 Q28 52 9 55 Z" fill="currentColor"></path><path d="M43 60 L57 60 L55.5 92 L44.5 92 Z" fill="currentColor"></path><circle cx="50" cy="57" r="7.5" fill="#ffffff" stroke="currentColor" stroke-width="5"></circle></svg></span>Bienvenido</span>
             <h2 id="commercialNewProcessGreeting">Hola, asesor</h2>
             <span class="cc-rule" aria-hidden="true"></span>
+            <p class="cc-hero-meta" id="ccHeroMeta"></p>
             <p id="commercialProcessTitle">Elige abajo el trámite que necesitas crear o revisa el estado de tus solicitudes.</p>
           </div>
+          <div class="cc-hero-stats" aria-label="Resumen de tus solicitudes">
+            <div class="cc-hs"><strong data-cc-stat="todos">0</strong><span>Mis solicitudes</span></div>
+            <div class="cc-hs is-pending"><strong data-cc-stat="pendientes">0</strong><span>Pendientes</span></div>
+            <div class="cc-hs is-progress"><strong data-cc-stat="en-proceso">0</strong><span>En proceso</span></div>
+            <div class="cc-hs is-closed"><strong data-cc-stat="cerradas">0</strong><span>Cerradas</span></div>
+          </div>
         </div>
-
-        <section class="cc-stats" aria-label="Resumen de tus solicitudes">
-          <div class="cc-stat"><span>Mis solicitudes</span><strong data-cc-stat="todos">0</strong><small>Registradas por ti</small></div>
-          <div class="cc-stat is-pending"><span>Pendientes</span><strong data-cc-stat="pendientes">0</strong><small>Aún sin tomar</small></div>
-          <div class="cc-stat is-progress"><span>En proceso</span><strong data-cc-stat="en-proceso">0</strong><small>Tomadas por mesa</small></div>
-          <div class="cc-stat is-closed"><span>Cerradas</span><strong data-cc-stat="cerradas">0</strong><small>Finalizadas</small></div>
-        </section>
 
         <div class="panel commercial-process-shell">
           <div class="panel-title-row">
@@ -2965,6 +2965,6 @@
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20261007-comercial-v2"></script>
+  <script src="app.js?v=20261007-comercial-v3"></script>
 </body>
 </html>
