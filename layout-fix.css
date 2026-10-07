@@ -5052,3 +5052,380 @@ body {
 #formulario .commercial-content .cf-form .cf-grid > .span-2 {
   grid-column: 1 / -1 !important;
 }
+
+/* ===== Ficha de consulta ANT / Datacil (2026-10-07) ===== */
+.datacil-result:has(.dx-card),
+.datacil-ficha-panel:has(.dx-card) {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.dx-card {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid #e2e4e9;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #2f3035;
+  font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+}
+
+.dx-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.dx-plate-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.dx-plate {
+  flex: 0 0 auto;
+  padding: 6px 14px;
+  border: 2px solid #15171d;
+  border-top-width: 6px;
+  border-top-color: #d71920;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #15171d;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  line-height: 1.1;
+}
+
+.dx-head-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dx-head-text strong {
+  color: #15171d;
+  font-family: "Roboto Condensed", "Arial Narrow", sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.dx-head-text small {
+  color: #5f6168;
+  font-size: 13px;
+}
+
+.dx-actions {
+  display: flex !important;
+  gap: 8px !important;
+}
+
+.dx-actions .btn {
+  min-height: 40px !important;
+  padding: 0 16px !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+}
+
+.dx-actions .btn.primary {
+  border: 0 !important;
+  background: #d71920 !important;
+  color: #ffffff !important;
+}
+
+.dx-actions .btn.primary:hover {
+  background: #b3121a !important;
+}
+
+.dx-actions .btn.secondary {
+  border: 1px solid #d5d7dc !important;
+  background: #ffffff !important;
+  color: #2f3035 !important;
+}
+
+.dx-verdict {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 12px 16px;
+  border-left: 4px solid;
+  border-radius: 8px;
+  font-size: 14.5px;
+}
+
+.dx-verdict strong {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.dx-verdict.is-ok { border-color: #15803d; background: #ecfdf3; color: #14532d; }
+.dx-verdict.is-warn { border-color: #d97706; background: #fffbeb; color: #78350f; }
+.dx-verdict.is-bad { border-color: #d71920; background: #fef2f2; color: #7f1d1d; }
+
+.dx-checks {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dx-check {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 12px 14px 12px 32px;
+  border: 1px solid #e2e4e9;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.dx-check::before {
+  content: "";
+  position: absolute;
+  top: 17px;
+  left: 14px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #9a9ca1;
+}
+
+.dx-check span {
+  color: #5f6168;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.dx-check strong {
+  color: #15171d;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.dx-check.is-ok::before { background: #16a34a; }
+.dx-check.is-warn { border-color: #fcd34d; background: #fffbeb; }
+.dx-check.is-warn::before { background: #d97706; }
+.dx-check.is-warn strong { color: #92400e; }
+.dx-check.is-bad { border-color: #fca5a5; background: #fef2f2; }
+.dx-check.is-bad::before { background: #d71920; }
+.dx-check.is-bad strong { color: #b3121a; }
+
+.dx-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dx-panel {
+  min-width: 0;
+  padding: 16px 18px;
+  border: 1px solid #e9ebef;
+  border-radius: 12px;
+  background: #fafbfc;
+}
+
+.dx-panel h4 {
+  margin: 0 0 8px !important;
+  color: #15171d !important;
+  font-family: "Roboto Condensed", "Arial Narrow", sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+}
+
+.dx-panel dl {
+  display: grid;
+  margin: 0;
+}
+
+.dx-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 42%) minmax(0, 1fr);
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid #eceef1;
+}
+
+.dx-row:last-child {
+  border-bottom: 0;
+}
+
+.dx-row dt {
+  color: #5f6168;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.dx-row dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #15171d;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.dx-note {
+  margin: 10px 0 0 !important;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #78350f !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+.dx-debt-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dx-debt-head strong {
+  color: #15171d;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.dx-empty {
+  margin: 4px 0 0 !important;
+  color: #5f6168 !important;
+  font-size: 14px !important;
+}
+
+.dx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.dx-table th {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e2e4e9;
+  color: #5f6168;
+  font-size: 12px;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.dx-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.dx-citations {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eceef1;
+  color: #5f6168;
+  font-size: 13px;
+}
+
+.dx-citations-label {
+  margin-right: 4px;
+  color: #3d3f45;
+  font-weight: 700;
+}
+
+.dx-citations span:not(.dx-citations-label) {
+  padding: 3px 10px;
+  border: 1px solid #e2e4e9;
+  border-radius: 999px;
+  background: #ffffff;
+}
+
+.dx-citations b {
+  color: #15171d;
+}
+
+@media (max-width: 900px) {
+  .dx-checks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dx-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .dx-card {
+    padding: 14px;
+  }
+
+  .dx-actions,
+  .dx-actions .btn {
+    width: 100%;
+  }
+
+  .dx-actions .btn {
+    flex: 1 1 0;
+    padding: 0 8px !important;
+  }
+
+  .dx-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}
+
+.dx-debt-head strong,
+.dx-check strong {
+  white-space: nowrap;
+}
+
+.dx-card .datacil-debt-table-wrap {
+  overflow-x: auto;
+}
+
+.dx-table td:last-child,
+.dx-table th:last-child {
+  text-align: right;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .dx-head,
+  .dx-plate-wrap {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dx-plate-wrap {
+    gap: 8px;
+  }
+
+  .dx-head-text strong {
+    font-size: 16px;
+  }
+}
+
+.dx-checks {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 560px) {
+  .dx-checks {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
