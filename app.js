@@ -10684,6 +10684,7 @@ function renderCommercialDashboard() {
   const kpis = getKpis(dashboardTasks);
   updateCommercialNotificationCount(dashboardTasks);
   updateCommercialStartGreeting();
+  renderCommercialHomeSummary();
   const title = document.querySelector("#commercial-dashboard-title");
   const lookupTitle = document.querySelector("#lookup-title");
   if (title) title.textContent = "Dashboard comercial integral";
@@ -10921,8 +10922,38 @@ function updateCommercialStartGreeting() {
   const greetingElement = document.querySelector("#commercialNewProcessGreeting");
   const title = document.querySelector("#commercialProcessTitle");
   const profile = getCommercialTrackingUserProfile();
-  if (greetingElement) greetingElement.textContent = `Hola, ${profile.name}`;
-  if (title) title.textContent = "Selecciona el tramite que necesitas crear";
+  if (greetingElement) greetingElement.innerHTML = `Hola, <span>${escapeHtml(profile.name)}</span>`;
+  if (title) title.textContent = "Elige abajo el trámite que necesitas crear o revisa el estado de tus solicitudes.";
+}
+
+const COMMERCIAL_PROCESS_LABELS = { compra: "Compra", venta: "Venta", cuv: "CUV" };
+
+function renderCommercialHomeSummary() {
+  ["todos", "pendientes", "en-proceso", "cerradas"].forEach((view) => {
+    const total = String(getCommercialRequestFilteredTasks(view).length);
+    document.querySelectorAll(`[data-cc-count="${view}"], [data-cc-stat="${view}"]`).forEach((element) => {
+      element.textContent = total;
+    });
+  });
+  const body = document.querySelector("#ccRecentBody");
+  if (!body) return;
+  const recent = getCommercialOperationalTasks(getCommercialOwnedTasks())
+    .slice()
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .slice(0, 5);
+  if (!recent.length) {
+    body.innerHTML = '<tr><td colspan="5" class="cc-empty">Aún no tienes solicitudes registradas.</td></tr>';
+    return;
+  }
+  body.innerHTML = recent.map((task) => `
+    <tr>
+      <td class="cc-plate">${escapeHtml(task.placa || "-")}</td>
+      <td>${escapeHtml(task.cliente || "-")}</td>
+      <td>${escapeHtml(COMMERCIAL_PROCESS_LABELS[getTaskProcess(task)] || "Compra")}</td>
+      <td>${renderStatusPill(task.status)}</td>
+      <td class="cc-date">${escapeHtml(task.createdAt ? formatDateTime(task.createdAt) : "-")}</td>
+    </tr>
+  `).join("");
 }
 
 function resetCommercialTopbarChrome() {

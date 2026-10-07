@@ -19,8 +19,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Roboto+Condensed:wght@300;400;500;600;700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261007-fecha-v1">
-  <link rel="stylesheet" href="layout-fix.css?v=20261007-fecha-v1">
+  <link rel="stylesheet" href="styles.css?v=20261007-comercial-v1">
+  <link rel="stylesheet" href="layout-fix.css?v=20261007-comercial-v1">
 </head>
 <body>
   <header class="topbar">
@@ -833,7 +833,7 @@
           <h1 id="form-title">Centro comercial Autocor</h1>
           <p class="section-subtitle">Gestion de compra, venta, CUV y seguimiento de solicitudes comerciales.</p>
         </div>
-        <button class="btn secondary" type="button" data-view="acceso">Volver al acceso</button>
+        <button class="btn secondary cc-back" type="button" data-view="acceso"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"></path></svg>Volver al inicio</button>
       </div>
 
       <div class="commercial-workspace">
@@ -843,24 +843,24 @@
         <aside class="commercial-sidebar">
           <div class="commercial-sidebar-group">
             <span>Principal</span>
-            <button class="commercial-side-link" type="button" data-commercial-area="dashboard"><span>&#128202;</span> Dashboard</button>
-            <button class="commercial-side-link" type="button" data-commercial-area="tracking"><span>&#128506;</span> Tracking</button>
-            <button class="commercial-side-link" type="button" data-commercial-area="requests"><span>&#128193;</span> Mis solicitudes</button>
-            <button class="commercial-side-link" type="button" data-commercial-area="control"><span>&#128737;</span> Carga de mesa</button>
-            <button class="commercial-side-link" type="button" data-commercial-area="lookup"><span>&#128269;</span> Consulta de placas</button>
-            <button class="commercial-side-link is-active" type="button" data-commercial-area="process" aria-current="page"><span>&#10133;</span> Nueva gestion</button>
+            <button class="commercial-side-link is-active" type="button" data-commercial-area="process" aria-current="page"><svg class="cc-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg> Nueva gestión</button>
+            <button class="commercial-side-link" type="button" data-commercial-area="dashboard"><svg class="cc-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"></path></svg> Dashboard</button>
+            <button class="commercial-side-link" type="button" data-commercial-area="tracking"><svg class="cc-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2"></circle><circle cx="18" cy="18" r="2"></circle><path d="M8 6h6a4 4 0 0 1 0 8h-4a4 4 0 0 0 0 8"></path></svg> Tracking</button>
+            <button class="commercial-side-link" type="button" data-commercial-area="requests"><svg class="cc-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg> Mis solicitudes</button>
+            <button class="commercial-side-link" type="button" data-commercial-area="control"><svg class="cc-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.3-3 8-7 9.5-4-1.5-7-5.2-7-9.5V6z"></path></svg> Carga de mesa</button>
+            <button class="commercial-side-link" type="button" data-commercial-area="lookup"><svg class="cc-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.5-4.5"></path></svg> Consulta de placas</button>
           </div>
           <div class="commercial-sidebar-group">
             <span>Solicitudes</span>
-            <button class="commercial-side-link" type="button" data-commercial-area="requests" data-commercial-status-view="todos"><span>&#128203;</span> Registro completo</button>
-            <button class="commercial-side-link" type="button" data-commercial-area="requests" data-commercial-status-view="pendientes"><span>&#9203;</span> Pendientes</button>
-            <button class="commercial-side-link" type="button" data-commercial-area="requests" data-commercial-status-view="en-proceso"><span>&#9881;</span> En proceso</button>
-            <button class="commercial-side-link" type="button" data-commercial-area="requests" data-commercial-status-view="cerradas"><span>&#9989;</span> Cerradas</button>
+            <button class="commercial-side-link" type="button" data-commercial-area="requests" data-commercial-status-view="todos"><svg class="cc-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path></svg> Registro completo<em class="cc-count" data-cc-count="todos">0</em></button>
+            <button class="commercial-side-link" type="button" data-commercial-area="requests" data-commercial-status-view="pendientes"><svg class="cc-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg> Pendientes<em class="cc-count" data-cc-count="pendientes">0</em></button>
+            <button class="commercial-side-link" type="button" data-commercial-area="requests" data-commercial-status-view="en-proceso"><svg class="cc-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"></path><path d="M21 4v5h-5"></path></svg> En proceso<em class="cc-count" data-cc-count="en-proceso">0</em></button>
+            <button class="commercial-side-link" type="button" data-commercial-area="requests" data-commercial-status-view="cerradas"><svg class="cc-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4 10-10"></path></svg> Cerradas<em class="cc-count" data-cc-count="cerradas">0</em></button>
           </div>
           <div class="commercial-support-card">
             <strong id="commercialSupportTitle">Soporte</strong>
             <span id="commercialSupportQuestion">&iquest;Necesitas ayuda?</span>
-            <button id="commercialSupportBtn" class="btn primary" type="button">Consultar</button>
+            <button id="commercialSupportBtn" class="btn secondary" type="button">Consultar</button>
           </div>
         </aside>
 
@@ -952,53 +952,76 @@
       </section>
 
       <section class="commercial-area commercial-process-area is-active-area" data-commercial-area-section="process">
-        <div class="commercial-start-hero">
-          <div class="commercial-start-copy">
-            <img class="commercial-start-logo" src="autocor-logo-commercial.png" alt="AUTOCOR Siempre nuevos">
-            <p class="eyebrow">Bienvenido</p>
+        <div class="commercial-start-hero cc-hero">
+          <div class="cc-hero-photo-m" aria-hidden="true"><img src="hero-comercial-white-sign-20260922.webp" alt=""></div>
+          <div class="commercial-start-copy cc-hero-copy">
+            <span class="cc-pill"><span class="cc-pill-wheel"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="10"></circle><path d="M9 44 Q50 33 91 44 L91 55 Q72 52 61 59 L39 59 Q28 52 9 55 Z" fill="currentColor"></path><path d="M43 60 L57 60 L55.5 92 L44.5 92 Z" fill="currentColor"></path><circle cx="50" cy="57" r="7.5" fill="#ffffff" stroke="currentColor" stroke-width="5"></circle></svg></span>Bienvenido</span>
             <h2 id="commercialNewProcessGreeting">Hola, asesor</h2>
-            <h3 id="commercialProcessTitle">Selecciona el tramite que necesitas crear</h3>
-            <p>Cada solicitud ayuda a que mas personas sigan moviendose con confianza.</p>
-            <div class="commercial-start-actions">
-              <button class="btn primary" type="button" data-commercial-start="commercial-purchase-process"><span class="process-action-icon process-action-icon-purchase" aria-hidden="true"></span>Compra</button>
-              <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-sale-process"><span class="process-action-icon process-action-icon-sale" aria-hidden="true"></span>Venta</button>
-              <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-consignment-process"><span class="process-action-icon process-action-icon-consignment" aria-hidden="true"></span>Consignación</button>
-              <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-cuv-process"><span class="process-action-icon process-action-icon-cuv" aria-hidden="true"></span>CUV</button>
-              <button class="btn secondary light-btn" type="button" data-commercial-start="commercial-ant-process"><span class="process-action-icon process-action-icon-ant" aria-hidden="true"></span>Consulta ANT</button>
-            </div>
+            <span class="cc-rule" aria-hidden="true"></span>
+            <p id="commercialProcessTitle">Elige abajo el trámite que necesitas crear o revisa el estado de tus solicitudes.</p>
           </div>
         </div>
+
+        <section class="cc-stats" aria-label="Resumen de tus solicitudes">
+          <div class="cc-stat"><span>Mis solicitudes</span><strong data-cc-stat="todos">0</strong><small>Registradas por ti</small></div>
+          <div class="cc-stat is-pending"><span>Pendientes</span><strong data-cc-stat="pendientes">0</strong><small>Aún sin tomar</small></div>
+          <div class="cc-stat is-progress"><span>En proceso</span><strong data-cc-stat="en-proceso">0</strong><small>Tomadas por mesa</small></div>
+          <div class="cc-stat is-closed"><span>Cerradas</span><strong data-cc-stat="cerradas">0</strong><small>Finalizadas</small></div>
+        </section>
 
         <div class="panel commercial-process-shell">
           <div class="panel-title-row">
             <div>
-              <p class="eyebrow">Operacion comercial</p>
-              <h2>Selecciona el proceso</h2>
+              <h2>Nueva gestión</h2>
             </div>
+            <span class="cc-shell-note">Cada trámite se registra y se sigue por separado</span>
           </div>
           <div class="commercial-process-grid">
             <button class="commercial-process-card" type="button" data-commercial-process="commercial-purchase-process" aria-pressed="false">
+              <span class="cc-proc-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 8h12l-1 12H7z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path></svg></span>
               <strong>Compra</strong>
-              <span>Solicitud de toma y saneamiento.</span>
+              <span>Toma de vehículo y saneamiento.</span>
+              <em class="cc-proc-go">Crear<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></em>
             </button>
             <button class="commercial-process-card" type="button" data-commercial-process="commercial-sale-process" aria-pressed="false">
+              <span class="cc-proc-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5M9 13h6M9 17h4"></path></svg></span>
               <strong>Venta</strong>
-              <span>Tracking de contratos de compraventa.</span>
+              <span>Contratos de compraventa.</span>
+              <em class="cc-proc-go">Crear<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></em>
             </button>
             <button class="commercial-process-card commercial-process-card-consignment" type="button" data-commercial-process="commercial-consignment-process" aria-pressed="false">
+              <span class="cc-proc-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 7h11l-3-3M16 17H5l3 3"></path></svg></span>
               <strong>Consignación</strong>
-              <span>Contratos de prestación de servicios.</span>
+              <span>Contrato de prestación de servicios.</span>
+              <em class="cc-proc-go">Crear<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></em>
             </button>
             <button class="commercial-process-card" type="button" data-commercial-process="commercial-cuv-process" aria-pressed="false">
+              <span class="cc-proc-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 16V12l2-5h10l2 5v4"></path><path d="M3 16h18v2H3z"></path><path d="M6 18v2M18 18v2"></path></svg></span>
               <strong>CUV</strong>
-              <span>Solicitud de certificado unico vehicular.</span>
+              <span>Certificado único vehicular.</span>
+              <em class="cc-proc-go">Crear<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></em>
             </button>
             <button class="commercial-process-card commercial-process-card-ant" type="button" data-commercial-process="commercial-ant-process" aria-pressed="false">
+              <span class="cc-proc-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.5-4.5"></path></svg></span>
               <strong>Consulta ANT</strong>
               <span>Propietario, vehículo y valores pendientes.</span>
+              <em class="cc-proc-go">Consultar<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></em>
             </button>
           </div>
         </div>
+
+        <section class="cc-recent" aria-labelledby="ccRecentTitle">
+          <div class="cc-recent-head">
+            <h2 id="ccRecentTitle">Últimas solicitudes</h2>
+            <button class="cc-link" type="button" data-commercial-area="requests" data-commercial-status-view="todos">Ver todas →</button>
+          </div>
+          <div class="cc-recent-scroll">
+            <table class="cc-table">
+              <thead><tr><th>Placa</th><th>Cliente</th><th>Trámite</th><th>Estado</th><th>Fecha</th></tr></thead>
+              <tbody id="ccRecentBody"></tbody>
+            </table>
+          </div>
+        </section>
 
       <section id="commercial-purchase-process" class="commercial-process-panel" data-commercial-process-section="commercial-purchase-process" hidden>
         <form id="requestForm" class="panel form-grid">
@@ -2942,6 +2965,6 @@
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20261007-fecha-v1"></script>
+  <script src="app.js?v=20261007-comercial-v1"></script>
 </body>
 </html>

@@ -3509,3 +3509,732 @@ body {
 @media (max-width: 900px) {
   .topbar .topbar-date { display: none; }
 }
+
+/* ===== Panel comercial corporativo (2026-10-07) ===== */
+#formulario {
+  --cc-tinta: #15171d;
+  --cc-texto: #2f3035;
+  --cc-suave: #5f6168;
+  --cc-gris: #8a8c8f;
+  --cc-borde: #e2e4e9;
+  --cc-fondo: #f4f5f7;
+  --cc-rojo: #d71920;
+  --cc-rojo-osc: #b3121a;
+  --cc-rojo-claro: #fdecec;
+}
+
+#formulario .cc-back {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+#formulario .cc-back svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Barra lateral: llega hasta el final del contenido */
+@media (min-width: 951px) {
+  #formulario .commercial-workspace {
+    align-items: stretch !important;
+  }
+
+  #formulario .commercial-sidebar {
+    position: relative !important;
+    top: auto !important;
+    align-self: stretch !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+#formulario .commercial-sidebar {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  padding: 14px !important;
+  border: 1px solid var(--cc-borde) !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+#formulario .commercial-sidebar-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+#formulario .commercial-sidebar-group + .commercial-sidebar-group {
+  padding-top: 14px !important;
+  border-top: 1px solid #eef0f3 !important;
+}
+
+#formulario .commercial-sidebar-group > span {
+  margin: 0 0 6px !important;
+  padding: 0 10px !important;
+  color: var(--cc-gris) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase !important;
+}
+
+#formulario .commercial-side-link {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  min-height: 40px !important;
+  padding: 0 10px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--cc-texto) !important;
+  font-size: 14.5px !important;
+  font-weight: 600 !important;
+  text-align: left !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+#formulario .commercial-side-link:hover {
+  background: var(--cc-fondo) !important;
+  color: var(--cc-tinta) !important;
+}
+
+#formulario .commercial-side-link.is-active {
+  background: var(--cc-rojo-claro) !important;
+  color: var(--cc-rojo-osc) !important;
+}
+
+#formulario .commercial-side-link .cc-ico {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  fill: none;
+  stroke: #6d6e71;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#formulario .commercial-side-link.is-active .cc-ico {
+  stroke: var(--cc-rojo-osc);
+}
+
+#formulario .commercial-side-link .cc-count {
+  margin-left: auto;
+  min-width: 24px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #eceef1;
+  color: var(--cc-texto);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+#formulario .commercial-support-card {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  width: auto !important;
+  max-width: none !important;
+  margin: auto 0 0 !important;
+  padding: 14px !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  background: var(--cc-fondo) !important;
+  text-align: left !important;
+  box-shadow: none !important;
+}
+
+#formulario .commercial-support-card strong {
+  color: var(--cc-tinta) !important;
+  font-size: 14px !important;
+}
+
+#formulario .commercial-support-card span {
+  color: var(--cc-suave) !important;
+  font-size: 13px !important;
+}
+
+#formulario .commercial-support-card .btn {
+  min-height: 40px !important;
+  border: 1px solid #d5d7dc !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  color: var(--cc-texto) !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+}
+
+/* Banner: la foto completa con los autos */
+#formulario .commercial-process-area .commercial-start-hero.cc-hero {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  aspect-ratio: 2000 / 625;
+  min-height: 230px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  background: #ffffff url("hero-comercial-white-sign-20260922.webp") right bottom / cover no-repeat !important;
+  box-shadow: 0 10px 28px rgba(21, 23, 29, .08) !important;
+}
+
+#formulario .commercial-process-area .commercial-start-hero.cc-hero::before {
+  content: none !important;
+  display: none !important;
+}
+
+#formulario .commercial-process-area .commercial-start-hero.cc-hero::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: auto 0 0 0 !important;
+  height: 5px !important;
+  background: linear-gradient(90deg, #6d6e71 0%, #8a8c8f 45%, #d71920 100%) !important;
+}
+
+#formulario .cc-hero-photo-m {
+  display: none;
+}
+
+#formulario .commercial-process-area .cc-hero .cc-hero-copy {
+  position: relative !important;
+  z-index: 2 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  width: 44% !important;
+  max-width: none !important;
+  padding: 24px 0 34px 32px !important;
+}
+
+#formulario .cc-pill {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 14px 3px 3px;
+  border-radius: 999px;
+  background: #fde9ea;
+  color: #c8101a;
+  font-family: "Plus Jakarta Sans", "Source Sans 3", sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  text-shadow: none !important;
+}
+
+#formulario .cc-pill-wheel {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--cc-rojo);
+}
+
+#formulario .cc-pill-wheel svg {
+  width: 22px;
+  height: 22px;
+}
+
+#formulario .commercial-process-area .cc-hero #commercialNewProcessGreeting {
+  margin: 0 !important;
+  color: #55575c !important;
+  font-family: "Plus Jakarta Sans", "Source Sans 3", sans-serif !important;
+  font-size: clamp(26px, 2.6vw, 38px) !important;
+  font-weight: 800 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -.02em !important;
+  text-transform: none !important;
+  text-shadow: none !important;
+}
+
+#formulario .commercial-process-area .cc-hero #commercialNewProcessGreeting span {
+  color: var(--cc-rojo) !important;
+  text-shadow: none !important;
+}
+
+#formulario .cc-rule {
+  width: 48px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--cc-rojo);
+}
+
+#formulario .commercial-process-area .cc-hero #commercialProcessTitle {
+  max-width: 36ch !important;
+  margin: 0 !important;
+  color: #4b4e56 !important;
+  font-size: clamp(14px, 1.2vw, 16px) !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  text-shadow: none !important;
+}
+
+/* Resumen */
+#formulario .cc-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+#formulario .cc-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--cc-borde);
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+#formulario .cc-stat span {
+  color: var(--cc-suave);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+#formulario .cc-stat strong {
+  color: var(--cc-tinta);
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
+
+#formulario .cc-stat.is-pending strong { color: #b45309; }
+#formulario .cc-stat.is-progress strong { color: #1d4ed8; }
+#formulario .cc-stat.is-closed strong { color: #15803d; }
+
+#formulario .cc-stat small {
+  color: var(--cc-gris);
+  font-size: 12.5px;
+}
+
+/* Nueva gestion */
+#formulario .commercial-process-area .commercial-process-shell {
+  padding: 20px !important;
+  border: 1px solid var(--cc-borde) !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+#formulario .commercial-process-shell .panel-title-row {
+  display: flex !important;
+  align-items: baseline !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  margin-bottom: 12px !important;
+}
+
+#formulario .commercial-process-shell .panel-title-row h2 {
+  margin: 0 !important;
+  color: var(--cc-tinta) !important;
+  font-family: "Roboto Condensed", "Arial Narrow", sans-serif !important;
+  font-size: 21px !important;
+  font-weight: 700 !important;
+}
+
+#formulario .cc-shell-note {
+  color: var(--cc-suave);
+  font-size: 14px;
+}
+
+#formulario .commercial-process-shell .commercial-process-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)) !important;
+  gap: 12px !important;
+}
+
+#formulario .commercial-process-shell .commercial-process-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 18px !important;
+  border: 1px solid var(--cc-borde) !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  color: inherit !important;
+  text-align: left !important;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: border-color .15s ease, box-shadow .15s ease !important;
+}
+
+#formulario .commercial-process-shell .commercial-process-card[hidden] {
+  display: none !important;
+}
+
+#formulario .commercial-process-shell .commercial-process-card::before,
+#formulario .commercial-process-shell .commercial-process-card::after {
+  content: none !important;
+  display: none !important;
+}
+
+#formulario .commercial-process-shell .commercial-process-card:hover,
+#formulario .commercial-process-shell .commercial-process-card.is-active {
+  border-color: var(--cc-rojo) !important;
+  box-shadow: 0 6px 18px rgba(21, 23, 29, .08) !important;
+}
+
+#formulario .commercial-process-shell .commercial-process-card.is-active {
+  background: #fffafa !important;
+}
+
+#formulario .commercial-process-card .cc-proc-ico {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: var(--cc-rojo-claro);
+  color: var(--cc-rojo-osc);
+}
+
+#formulario .commercial-process-card .cc-proc-ico svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#formulario .commercial-process-shell .commercial-process-card strong {
+  color: var(--cc-tinta) !important;
+  font-family: "Roboto Condensed", sans-serif !important;
+  font-size: 17px !important;
+}
+
+#formulario .commercial-process-shell .commercial-process-card > span:not(.cc-proc-ico) {
+  flex: 1;
+  color: var(--cc-suave) !important;
+  font-size: 13.5px !important;
+  line-height: 1.45 !important;
+}
+
+#formulario .commercial-process-card .cc-proc-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  background: var(--cc-rojo);
+  color: #ffffff;
+  font-size: 13.5px;
+  font-style: normal;
+  font-weight: 700;
+  transition: background-color .15s ease;
+}
+
+#formulario .commercial-process-card:hover .cc-proc-go,
+#formulario .commercial-process-card.is-active .cc-proc-go {
+  background: var(--cc-rojo-osc);
+}
+
+#formulario .commercial-process-card .cc-proc-go svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Ultimas solicitudes (se oculta mientras hay un formulario abierto) */
+#formulario .cc-recent {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--cc-borde);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+#formulario .commercial-process-area:has(.commercial-process-panel.is-active:not([hidden])) .cc-recent {
+  display: none;
+}
+
+#formulario .cc-recent-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px 10px;
+}
+
+#formulario .cc-recent-head h2 {
+  margin: 0 !important;
+  color: var(--cc-tinta) !important;
+  font-family: "Roboto Condensed", "Arial Narrow", sans-serif !important;
+  font-size: 21px !important;
+  font-weight: 700 !important;
+}
+
+#formulario .cc-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cc-rojo-osc);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#formulario .cc-link:hover {
+  color: #8e1015;
+  text-decoration: underline;
+}
+
+#formulario .cc-recent-scroll {
+  overflow-x: auto;
+}
+
+#formulario .cc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+#formulario .cc-table th {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--cc-borde);
+  color: var(--cc-suave);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+#formulario .cc-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #eef0f3;
+  color: var(--cc-texto);
+  white-space: nowrap;
+}
+
+#formulario .cc-table tr:last-child td {
+  border-bottom: 0;
+}
+
+#formulario .cc-table .cc-plate {
+  color: var(--cc-tinta);
+  font-weight: 700;
+}
+
+#formulario .cc-table .cc-date {
+  color: var(--cc-suave);
+}
+
+#formulario .cc-table .cc-empty {
+  padding: 22px 14px;
+  color: var(--cc-suave);
+  text-align: center;
+  white-space: normal;
+}
+
+@media (max-width: 1180px) {
+  #formulario .commercial-process-area .cc-hero .cc-hero-copy {
+    width: 50% !important;
+  }
+}
+
+@media (max-width: 760px) {
+  #formulario .commercial-process-area .commercial-start-hero.cc-hero {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    aspect-ratio: auto;
+    min-height: 0 !important;
+    background: #ffffff !important;
+  }
+
+  #formulario .cc-hero-photo-m {
+    display: block;
+    position: relative;
+    height: 170px;
+    overflow: hidden;
+    border-bottom: 4px solid var(--cc-rojo);
+  }
+
+  #formulario .cc-hero-photo-m img {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: auto;
+    height: 100%;
+    max-width: none;
+  }
+
+  #formulario .commercial-process-area .cc-hero .cc-hero-copy {
+    width: 100% !important;
+    padding: 18px 16px 22px !important;
+  }
+
+  #formulario .cc-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #formulario .commercial-process-shell .commercial-process-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #formulario .commercial-process-card,
+  #formulario .commercial-process-card .cc-proc-go {
+    transition: none !important;
+  }
+}
+
+/* Panel comercial: limpiar decoraciones anteriores */
+#formulario .commercial-sidebar::before,
+#formulario .commercial-sidebar::after,
+#formulario .commercial-side-link::before,
+#formulario .commercial-side-link::after,
+#formulario .commercial-support-card::before,
+#formulario .commercial-support-card::after,
+#formulario .commercial-process-shell::before,
+#formulario .commercial-process-shell::after,
+#formulario .commercial-process-shell .panel-title-row h2::before,
+#formulario .commercial-process-shell .panel-title-row h2::after {
+  content: none !important;
+  display: none !important;
+}
+
+#formulario .commercial-content > .commercial-process-area[data-commercial-area-section].is-active-area {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 20px !important;
+}
+
+#formulario .commercial-process-area > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+#formulario .commercial-process-shell .panel-title-row {
+  padding: 0 !important;
+}
+
+#formulario .commercial-support-card strong,
+#formulario .commercial-support-card span {
+  text-align: left !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+#formulario .commercial-side-link.is-active {
+  box-shadow: none !important;
+}
+
+#formulario .commercial-sidebar .commercial-support-card {
+  align-self: stretch !important;
+  justify-self: stretch !important;
+}
+
+/* Panel comercial en tablet y celular: menu en una fila deslizable */
+@media (max-width: 1180px) {
+  #formulario .commercial-mobile-menu-toggle {
+    display: none !important;
+  }
+
+  #formulario .commercial-workspace {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 16px !important;
+  }
+
+  #formulario .commercial-sidebar {
+    position: static !important;
+    inset: auto !important;
+    z-index: auto !important;
+    width: auto !important;
+    max-height: none !important;
+    transform: none !important;
+    flex-direction: row !important;
+    gap: 6px !important;
+    padding: 8px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: thin;
+  }
+
+  #formulario .commercial-sidebar {
+    align-items: center !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  #formulario .commercial-sidebar > * {
+    flex: 0 0 auto !important;
+  }
+
+  #formulario .commercial-sidebar-group {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 6px !important;
+    height: auto !important;
+  }
+
+  #formulario .commercial-side-link {
+    height: 40px !important;
+    min-height: 40px !important;
+  }
+
+  #formulario .commercial-sidebar-group + .commercial-sidebar-group {
+    padding: 0 0 0 6px !important;
+    border-top: 0 !important;
+    border-left: 1px solid #eef0f3 !important;
+  }
+
+  #formulario .commercial-sidebar-group > span,
+  #formulario .commercial-sidebar .commercial-support-card {
+    display: none !important;
+  }
+
+  #formulario .commercial-side-link {
+    width: auto !important;
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+  }
+
+  #formulario .commercial-side-link .cc-count {
+    margin-left: 4px;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1180px) {
+  #formulario .commercial-process-shell .commercial-process-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
