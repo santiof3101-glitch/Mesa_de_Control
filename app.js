@@ -379,17 +379,17 @@ const defaultState = {
   copy: {
     heroEyebrow: "Bienvenido a Autocor",
     heroTitle: "Centro operativo de mesa de control legal",
-    heroSubtitle: "Gestiona leads, tiempos de respuesta, duplicados y carga legal desde una sola bandeja.",
-    commercialTitle: "Acceso comercial",
-    commercialText: "Formulario de solicitudes y dashboard personal de saneamientos.",
-    legalTitle: "Acceso mesa de control",
-    legalText: "Bandeja legal para tomar, gestionar y cerrar saneamientos.",
-    adminTitle: "Acceso administrador",
+    heroSubtitle: "Gestión de saneamientos, contratos, CUV y documentación de los vehículos de Autocor.",
+    commercialTitle: "Comercial",
+    commercialText: "Registra solicitudes de saneamiento, CUV y contratos, y sigue su estado.",
+    legalTitle: "Mesa de control",
+    legalText: "Bandeja legal para tomar, gestionar y cerrar saneamientos, contratos y firmas.",
+    adminTitle: "Acceso de administrador",
     adminText: "Configuracion de usuarios, agencias, estados, diseno y comunicados.",
-    announcementsTitle: "Acceso a comunicados",
-    announcementsText: "Cartelera completa de anuncios, novedades y procesos internos.",
-    managerTitle: "Acceso consulta de saneamientos",
-    managerText: "Dashboard gerencial con filtros, graficos e indicadores de operacion.",
+    announcementsTitle: "Comunicados",
+    announcementsText: "Anuncios, novedades y procesos internos vigentes.",
+    managerTitle: "Consulta de saneamientos",
+    managerText: "Indicadores de operación con filtros y gráficos para gerencia.",
     supportTitle: "Soporte",
     supportQuestion: "\u00BFNecesitas ayuda?",
     supportButton: "Consultar",
@@ -4048,8 +4048,31 @@ function applyTheme() {
   themeForm.elements.font.value = state.theme.font;
 }
 
+// Textos anteriores del inicio que se reemplazan por los del diseno nuevo.
+const LEGACY_HOME_COPY = {
+  "Gestiona leads, tiempos de respuesta, duplicados y carga legal desde una sola bandeja.": "heroSubtitle",
+  "Acceso comercial": "commercialTitle",
+  "Formulario de solicitudes y dashboard personal de saneamientos.": "commercialText",
+  "Acceso mesa de control": "legalTitle",
+  "Bandeja legal para tomar, gestionar y cerrar saneamientos.": "legalText",
+  "Acceso administrador": "adminTitle",
+  "Acceso a comunicados": "announcementsTitle",
+  "Cartelera completa de anuncios, novedades y procesos internos.": "announcementsText",
+  "Acceso consulta de saneamientos": "managerTitle",
+  "Dashboard gerencial con filtros, graficos e indicadores de operacion.": "managerText"
+};
+
+function homeCopy(key) {
+  const value = String(state.copy?.[key] || "").trim();
+  if (!value || LEGACY_HOME_COPY[value] === key) return defaultState.copy[key];
+  return value;
+}
+
 function renderAccessTitle(value = "") {
-  return escapeHtml(value || "").replace(/(control legal)/i, "<span>$1</span>");
+  const words = String(value || "").trim().replace(/^centro operativo(\s+de)?\s*/i, "") || "Mesa de control legal";
+  const titled = words.toLowerCase().replace(/(^|\s)([a-záéíóúñ])/g, (match, space, letter) => space + letter.toUpperCase())
+    .replace(/\sDe\s/g, " de ").replace(/\sY\s/g, " y ");
+  return escapeHtml(titled).replace(/(control legal)/i, "<span>$1</span>");
 }
 
 function applyCopy() {
@@ -4060,17 +4083,17 @@ function applyCopy() {
   state.copy = { ...structuredClone(defaultState.copy), ...repairedCopy };
   document.querySelector("#heroEyebrow").textContent = state.copy.heroEyebrow;
   document.querySelector("#access-title").innerHTML = renderAccessTitle(state.copy.heroTitle);
-  document.querySelector("#heroSubtitle").textContent = state.copy.heroSubtitle;
-  document.querySelector("#commercialAccessTitle").textContent = state.copy.commercialTitle;
-  document.querySelector("#commercialAccessText").textContent = state.copy.commercialText;
-  document.querySelector("#legalAccessTitle").textContent = state.copy.legalTitle;
-  document.querySelector("#legalAccessText").textContent = state.copy.legalText;
-  document.querySelector("#adminAccessTitle").textContent = state.copy.adminTitle;
-  document.querySelector("#adminAccessText").textContent = state.copy.adminText;
-  document.querySelector("#announcementsAccessTitle").textContent = state.copy.announcementsTitle;
-  document.querySelector("#announcementsAccessText").textContent = state.copy.announcementsText;
-  document.querySelector("#managerAccessTitle").textContent = state.copy.managerTitle;
-  document.querySelector("#managerAccessText").textContent = state.copy.managerText;
+  document.querySelector("#heroSubtitle").textContent = homeCopy("heroSubtitle");
+  document.querySelector("#commercialAccessTitle").textContent = homeCopy("commercialTitle");
+  document.querySelector("#commercialAccessText").textContent = homeCopy("commercialText");
+  document.querySelector("#legalAccessTitle").textContent = homeCopy("legalTitle");
+  document.querySelector("#legalAccessText").textContent = homeCopy("legalText");
+  document.querySelector("#adminAccessTitle").textContent = homeCopy("adminTitle");
+  document.querySelector("#adminAccessText").textContent = homeCopy("adminText");
+  document.querySelector("#announcementsAccessTitle").textContent = homeCopy("announcementsTitle");
+  document.querySelector("#announcementsAccessText").textContent = homeCopy("announcementsText");
+  document.querySelector("#managerAccessTitle").textContent = homeCopy("managerTitle");
+  document.querySelector("#managerAccessText").textContent = homeCopy("managerText");
   const supportTitle = document.querySelector("#commercialSupportTitle");
   const supportQuestion = document.querySelector("#commercialSupportQuestion");
   const supportButton = document.querySelector("#commercialSupportBtn");
