@@ -10924,13 +10924,6 @@ function updateCommercialStartGreeting() {
   const profile = getCommercialTrackingUserProfile();
   if (greetingElement) greetingElement.innerHTML = `Hola, <span>${escapeHtml(profile.name)}</span>`;
   if (title) title.textContent = "Elige abajo el trámite que necesitas crear o revisa el estado de tus solicitudes.";
-  const meta = document.querySelector("#ccHeroMeta");
-  if (meta) {
-    const agency = formatDisplayName(session?.agency || "");
-    const today = new Intl.DateTimeFormat("es-EC", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
-    const day = today.charAt(0).toUpperCase() + today.slice(1);
-    meta.textContent = session?.agency ? `Agencia ${agency} · ${day}` : day;
-  }
 }
 
 const COMMERCIAL_PROCESS_LABELS = { compra: "Compra", venta: "Venta", cuv: "CUV" };
