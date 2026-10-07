@@ -568,7 +568,7 @@ p {
   color: var(--ink);
   background:
     linear-gradient(90deg, #ffffff 0%, #ffffff 44%, transparent 44%),
-    url("hero-control-legal.png") right center / auto 100% no-repeat,
+    url("hero-control-legal.webp") right center / auto 100% no-repeat,
     #ffffff;
   box-shadow: 0 28px 70px rgba(47, 48, 53, 0.16);
 }
@@ -806,7 +806,7 @@ button.kpi-card {
   border-radius: 18px;
   background:
     linear-gradient(90deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.94) 43%, rgba(21,23,29,0.2) 100%),
-    url("hero-control-legal.png") right center / auto 100% no-repeat;
+    url("hero-control-legal.webp") right center / auto 100% no-repeat;
   box-shadow: 0 28px 70px rgba(47, 48, 53, 0.12);
 }
 
@@ -994,7 +994,7 @@ button.kpi-card {
   border-radius: 18px;
   background:
     linear-gradient(90deg, rgba(21, 23, 29, 0.88) 0%, rgba(21, 23, 29, 0.76) 38%, rgba(21, 23, 29, 0.16) 66%),
-    url("hero-comercial-autos.png") center / cover no-repeat;
+    url("hero-comercial-autos.webp") center / cover no-repeat;
   box-shadow: 0 28px 70px rgba(47, 48, 53, 0.16);
 }
 
@@ -5885,7 +5885,7 @@ body.uafe-client-mode .commercial-uafe-card {
     overflow: hidden;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.90)),
-      url("hero-control-legal.png") center bottom / cover no-repeat !important;
+      url("hero-control-legal.webp") center bottom / cover no-repeat !important;
   }
 
   .hero-copy {
@@ -5955,7 +5955,7 @@ body.uafe-client-mode .commercial-uafe-card {
     border-radius: 14px;
     background:
       linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.90)),
-      url("hero-control-legal.png") center bottom / cover no-repeat !important;
+      url("hero-control-legal.webp") center bottom / cover no-repeat !important;
   }
 
   .login-shell h1 {
@@ -7166,7 +7166,7 @@ body.uafe-client-mode .commercial-uafe-card {
   margin-bottom: 16px;
   background:
     linear-gradient(135deg, rgba(21, 23, 29, 0.94), rgba(47, 48, 53, 0.88)),
-    url("hero-control-legal.png") right center / auto 100% no-repeat;
+    url("hero-control-legal.webp") right center / auto 100% no-repeat;
   color: #fff;
 }
 
@@ -9324,7 +9324,7 @@ textarea:focus {
     min-height: auto;
     background:
       linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.88)),
-      url("hero-autocor.png") center bottom / cover no-repeat;
+      url("hero-autocor.webp") center bottom / cover no-repeat;
   }
 
   .hero-dashboard::after {
@@ -9454,7 +9454,7 @@ textarea:focus {
     border-radius: 14px;
     background:
       linear-gradient(180deg, rgba(21, 23, 29, 0.20) 0%, rgba(21, 23, 29, 0.78) 48%, rgba(21, 23, 29, 0.94) 100%),
-      url("hero-comercial-autos.png") center / cover no-repeat;
+      url("hero-comercial-autos.webp") center / cover no-repeat;
   }
 
   .commercial-start-copy {
@@ -11640,7 +11640,7 @@ body.legal-chat-is-open #legalChatOpenBtn,
     overflow: hidden !important;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(255, 255, 255, 0.90)),
-      url("hero-control-legal.png") center bottom / cover no-repeat !important;
+      url("hero-control-legal.webp") center bottom / cover no-repeat !important;
   }
 
   .hero-search {
@@ -12421,7 +12421,7 @@ body.legal-chat-is-open #legalChatOpenBtn,
   border-radius: 18px;
   background:
     linear-gradient(90deg, #fff 0 45%, rgba(255, 255, 255, 0) 45%),
-    url("hero-control-legal.png") right center / auto 100% no-repeat,
+    url("hero-control-legal.webp") right center / auto 100% no-repeat,
     #fff;
   box-shadow: 0 26px 68px rgba(20, 28, 42, 0.16);
 }
@@ -12694,7 +12694,7 @@ body.legal-chat-is-open #legalChatOpenBtn,
     min-height: 460px;
     background:
       linear-gradient(90deg, rgba(255,255,255,0.96), rgba(255,255,255,0.78)),
-      url("hero-control-legal.png") center / cover no-repeat,
+      url("hero-control-legal.webp") center / cover no-repeat,
       #fff;
   }
 
@@ -12733,7 +12733,7 @@ body.legal-chat-is-open #legalChatOpenBtn,
     padding: 34px 24px !important;
     background:
       linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.82)),
-      url("hero-control-legal.png") center bottom / cover no-repeat !important;
+      url("hero-control-legal.webp") center bottom / cover no-repeat !important;
   }
 
   #acceso .hero-dashboard::before {
@@ -16871,7 +16871,7 @@ body.legal-contract-modal-open::before {
   border: 1px solid rgba(255, 255, 255, 0.32) !important;
   background:
     linear-gradient(90deg, rgba(7, 16, 31, 0.94) 0%, rgba(7, 16, 31, 0.82) 37%, rgba(7, 16, 31, 0.34) 64%, rgba(7, 16, 31, 0.05) 100%),
-    url("hero-comercial-premium.png") center right / cover no-repeat !important;
+    url("hero-comercial-premium.webp") center right / cover no-repeat !important;
   box-shadow: 0 28px 70px rgba(15, 23, 42, 0.18) !important;
 }
 
@@ -16974,7 +16974,7 @@ body.legal-contract-modal-open::before {
     padding: 28px !important;
     background:
       linear-gradient(180deg, rgba(7, 16, 31, 0.93), rgba(7, 16, 31, 0.54)),
-      url("hero-comercial-premium.png") center / cover no-repeat !important;
+      url("hero-comercial-premium.webp") center / cover no-repeat !important;
   }
 
   #formulario .commercial-start-copy h2 {
@@ -17092,7 +17092,7 @@ body.legal-contract-modal-open::before {
   border-radius: 22px !important;
   background:
     linear-gradient(90deg, rgba(7, 16, 31, 0.95) 0%, rgba(7, 16, 31, 0.82) 42%, rgba(7, 16, 31, 0.24) 70%, rgba(7, 16, 31, 0.03) 100%),
-    url("hero-comercial-premium.png") center right / cover no-repeat !important;
+    url("hero-comercial-premium.webp") center right / cover no-repeat !important;
   box-shadow: 0 22px 54px rgba(15, 23, 42, 0.16) !important;
 }
 
@@ -17173,7 +17173,7 @@ body.legal-contract-modal-open::before {
   border-radius: 26px !important;
   background:
     linear-gradient(90deg, #ffffff 0 46%, rgba(255, 255, 255, 0.08) 46%),
-    url("hero-control-legal.png") right center / auto 100% no-repeat,
+    url("hero-control-legal.webp") right center / auto 100% no-repeat,
     #ffffff !important;
   box-shadow: 0 26px 80px rgba(15, 23, 42, 0.14) !important;
 }
@@ -17585,7 +17585,7 @@ body.legal-contract-modal-open::before {
     min-height: 440px !important;
     background:
       linear-gradient(90deg, rgba(255,255,255,0.98), rgba(255,255,255,0.76)),
-      url("hero-control-legal.png") center / cover no-repeat,
+      url("hero-control-legal.webp") center / cover no-repeat,
       #fff !important;
   }
 
@@ -17618,7 +17618,7 @@ body.legal-contract-modal-open::before {
     border-radius: 22px !important;
     background:
       linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.74)),
-      url("hero-control-legal.png") center bottom / cover no-repeat,
+      url("hero-control-legal.webp") center bottom / cover no-repeat,
       #fff !important;
   }
 
@@ -17915,7 +17915,7 @@ body.legal-contract-modal-open::before {
 #acceso .hero-dashboard {
   background:
     linear-gradient(90deg, #ffffff 0 40%, rgba(255, 255, 255, 0.04) 40%),
-    url("hero-control-legal.png") right center / auto 100% no-repeat,
+    url("hero-control-legal.webp") right center / auto 100% no-repeat,
     #ffffff !important;
 }
 
@@ -18135,7 +18135,7 @@ body.legal-contract-modal-open::before {
     padding: 24px !important;
     background:
       linear-gradient(180deg, rgba(7, 16, 31, 0.94), rgba(7, 16, 31, 0.55)),
-      url("hero-comercial-premium.png") center / cover no-repeat !important;
+      url("hero-comercial-premium.webp") center / cover no-repeat !important;
   }
 
   #formulario .commercial-start-copy h2 {
@@ -18808,7 +18808,7 @@ body.legal-contract-modal-open::before {
     border-radius: 18px !important;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0 54%, rgba(255, 255, 255, 0.2) 100%),
-      url("hero-control-legal.png") center bottom / cover no-repeat,
+      url("hero-control-legal.webp") center bottom / cover no-repeat,
       #ffffff !important;
   }
 

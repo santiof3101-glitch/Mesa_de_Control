@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-app-version="20260923-consignacion-pdf-v6">
+<html lang="es" data-app-version="20261006-seguridad-v1">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -7,11 +7,20 @@
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Autocor | Control Legal</title>
+  <script>
+    (function redirectToLocalServer() {
+      if (location.protocol !== "file:" || !window.fetch) return;
+      fetch("http://127.0.0.1:8787/api/ping", { cache: "no-store" })
+        .then(function (response) { return response.ok ? response.json() : null; })
+        .then(function (payload) { if (payload && payload.ok && payload.url) location.replace(payload.url); })
+        .catch(function () {});
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260924-performance-v1">
-  <link rel="stylesheet" href="layout-fix.css?v=20260924-performance-v1">
+  <link rel="stylesheet" href="styles.css?v=20261006-seguridad-v1">
+  <link rel="stylesheet" href="layout-fix.css?v=20261006-seguridad-v1">
 </head>
 <body>
   <header class="topbar">
@@ -1536,7 +1545,6 @@
           <p class="eyebrow">Configuracion</p>
           <h1 id="admin-title">Panel de administrador</h1>
         </div>
-        <p class="counter">Clave inicial: <strong>Autocor2026!</strong></p>
       </div>
 
       <div class="admin-module-grid" aria-label="Modulos de administrador">
@@ -1905,6 +1913,17 @@
             <button class="btn primary" type="submit">Agregar</button>
           </form>
           <div id="commercialAdvisorsList" class="option-list"></div>
+        </section>
+
+        <section class="panel span-admin admin-module-section" data-admin-section="admin-users-module">
+          <h2>Clave de administrador</h2>
+          <p id="adminPasswordDefaultNotice" class="helper-text"><strong>Atencion:</strong> el administrador sigue usando la clave inicial. Cambiela ahora.</p>
+          <form id="adminPasswordForm" class="user-form">
+            <input name="currentPassword" type="password" placeholder="Clave actual" autocomplete="current-password" required>
+            <input name="newPassword" type="password" placeholder="Nueva clave (minimo 10 caracteres)" autocomplete="new-password" minlength="10" required>
+            <input name="confirmPassword" type="password" placeholder="Repita la nueva clave" autocomplete="new-password" minlength="10" required>
+            <button class="btn primary" type="submit">Cambiar clave</button>
+          </form>
         </section>
 
         <section id="admin-users-module" class="panel span-admin admin-module-section" data-admin-section="admin-users-module">
@@ -2912,9 +2931,6 @@
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="js/consignment-templates.js?v=20260923-consignacion-pdf-v6"></script>
-  <script src="js/vendor/fontkit.umd.min.js?v=20260923-consignacion-pdf-v6"></script>
-  <script src="js/vendor/pdf-lib.min.js?v=20260923-consignacion-pdf-v6"></script>
-  <script src="app.js?v=20260924-performance-v1"></script>
+  <script src="app.js?v=20261006-seguridad-v1"></script>
 </body>
 </html>

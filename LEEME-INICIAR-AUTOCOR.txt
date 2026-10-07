@@ -4,13 +4,19 @@ Para que los datos se vean iguales en cualquier navegador o perfil de Google del
 
 1. Abre el archivo iniciar-autocor.bat.
 2. Deja abierta la ventana "Autocor datos PC" mientras uses la plataforma.
-3. Abre la aplicacion desde el index.html o desde la ventana que se abre automaticamente.
+3. La aplicacion se abre sola en http://127.0.0.1:8787
+   (si abres index.html directamente, la pagina te lleva a esa direccion cuando el servidor esta activo).
 
 Los datos compartidos se guardan en:
 autocor-datos-pc.json
 
+Respaldos automaticos (carpeta respaldos-autocor):
+- Uno cada 15 minutos mientras se trabaja (se guardan los ultimos 96).
+- El ultimo de cada dia se conserva durante 60 dias.
+- Los respaldos manuales y los creados antes de restaurar se guardan aparte (ultimos 40).
+
 Importante:
 - Si abres index.html sin ejecutar iniciar-autocor.bat, cada perfil de navegador puede tener datos diferentes.
-- Si ejecutas iniciar-autocor.bat primero, todos los perfiles del mismo PC comparten la misma informacion.
-- Para migrar datos antiguos, abre iniciar-autocor.bat desde el perfil de Google donde ya ves tus datos y recarga la pagina.
-- No borres autocor-datos-pc.json si quieres conservar la informacion.
+- La primera vez despues de esta actualizacion tendras que iniciar sesion de nuevo.
+- No borres autocor-datos-pc.json ni la carpeta respaldos-autocor si quieres conservar la informacion.
+- No subas autocor-datos-pc.json ni respaldos-autocor a GitHub (ya estan en .gitignore).

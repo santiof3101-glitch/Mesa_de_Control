@@ -1,5 +1,5 @@
 const STORAGE_KEY = "autocor-control-legal";
-const APP_BUILD_VERSION = "20260924-performance-v1";
+const APP_BUILD_VERSION = "20261006-seguridad-v1";
 const TASK_RECONCILE_VERSION_KEY = "autocor-task-reconcile-version";
 const SUPABASE_URL = "https://evblnxgeyelatdmloydl.supabase.co/rest/v1";
 const SUPABASE_FUNCTIONS_URL = "https://evblnxgeyelatdmloydl.supabase.co/functions/v1";
@@ -36,7 +36,10 @@ const SHARED_PC_STATE_URL = location.protocol === "file:"
 const SHARED_PC_BACKUPS_URL = location.protocol === "file:"
   ? "http://127.0.0.1:8787/api/backups"
   : `${location.origin}/api/backups`;
-const ADMIN_PASSWORD = "Autocor2026!";
+const DEFAULT_ADMIN_PASSWORD_HASH = "pbkdf2-sha256$150000$CnSvkQxXrXVqbFjx/N6suA==$Etoo9hMzWvy/8Vsy11z+XtkEOcE/ZYgEW7D30loSfY8=";
+const PASSWORD_HASH_PREFIX = "pbkdf2-sha256$";
+const PASSWORD_HASH_ITERATIONS = 150000;
+const ACCESS_USER_COLLECTIONS = ["commercialAdvisors", "legalUsers", "managerUsers", "processingUsers"];
 const SESSION_TIMEOUT_MS = 2 * 60 * 60 * 1000;
 const MAX_FILE_LIBRARY_SIZE = 50 * 1024 * 1024;
 const MAX_PROVIDER_REASONABLE_AMOUNT = 100000;
@@ -958,6 +961,7 @@ function applyCachedAccessUsers(snapshot) {
   if (Array.isArray(cached.processingUsers) && cached.processingUsers.length) {
     snapshot.processingUsers = cached.processingUsers;
   }
+  if (isHashedPassword(cached.adminPasswordHash)) snapshot.adminPasswordHash = cached.adminPasswordHash;
   return snapshot;
 }
 
@@ -968,6 +972,7 @@ function persistAccessUsers(snapshot = state) {
       legalUsers: snapshot.legalUsers || [],
       managerUsers: snapshot.managerUsers || [],
       processingUsers: snapshot.processingUsers || [],
+      adminPasswordHash: isHashedPassword(snapshot.adminPasswordHash) ? snapshot.adminPasswordHash : "",
       updatedAt: new Date().toISOString()
     }));
   } catch (error) {
@@ -1444,7 +1449,8 @@ function getSupabaseModuleSnapshots() {
       commercialAdvisors: structuredClone(state.commercialAdvisors || []),
       legalUsers: structuredClone(normalizeLegalUsers(state.legalUsers || [])),
       managerUsers: structuredClone(state.managerUsers || []),
-      processingUsers: structuredClone(state.processingUsers || [])
+      processingUsers: structuredClone(state.processingUsers || []),
+      adminPasswordHash: isHashedPassword(state.adminPasswordHash) ? state.adminPasswordHash : ""
     },
     catalogos: {
       agencies: structuredClone(state.agencies || []),
@@ -1545,6 +1551,7 @@ async function shouldSkipUnsafeModulePublish(modulo, datos) {
 
 async function guardarModulosSupabase() {
   if (!SUPABASE_MODULE_SYNC || !SUPABASE_URL || !SUPABASE_KEY) return;
+  await secureStoredPasswords();
   const snapshots = getSupabaseModuleSnapshots();
   const usuario = session?.name || session?.role || "sistema";
   for (const [modulo, datos] of Object.entries(snapshots)) {
@@ -1593,6 +1600,7 @@ function sincronizarProveedoresCriticosAhora() {
 
 async function guardarUsuariosSupabaseAhora() {
   if (!SUPABASE_MODULE_SYNC || !SUPABASE_URL || !SUPABASE_KEY) return false;
+  await secureStoredPasswords();
   const datos = getSupabaseModuleSnapshots().usuarios;
   const hash = getSupabaseSnapshotHash(datos);
   const ok = await guardarRegistroSupabase(
@@ -1773,6 +1781,7 @@ function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
       state.legalUsers = normalizeLegalUsers(Array.isArray(snapshot.legalUsers) ? snapshot.legalUsers : (state.legalUsers || []));
       state.managerUsers = Array.isArray(snapshot.managerUsers) ? snapshot.managerUsers : (state.managerUsers || []);
       state.processingUsers = Array.isArray(snapshot.processingUsers) ? snapshot.processingUsers : (state.processingUsers || structuredClone(defaultState.processingUsers));
+      if (isHashedPassword(snapshot.adminPasswordHash)) state.adminPasswordHash = snapshot.adminPasswordHash;
       persistAccessUsers(state);
       return true;
     case "catalogos":
@@ -3845,6 +3854,7 @@ function setSession(nextSession) {
   }
   startSupabaseModulePolling();
   if (session.role !== "public") reconcileTasksForCurrentBuild();
+  if (session.role === "commercial" || session.role === "admin") preloadConsignmentPdfAssetsWhenIdle();
 }
 
 function touchSession() {
@@ -8665,6 +8675,152 @@ function cleanPasswordValue(value = "") {
   return String(value || "").trim();
 }
 
+function isHashedPassword(value = "") {
+  return String(value || "").startsWith(PASSWORD_HASH_PREFIX);
+}
+
+function canHashPasswords() {
+  return Boolean(window.crypto?.subtle && window.TextEncoder);
+}
+
+function bytesToBase64(bytes) {
+  let binary = "";
+  new Uint8Array(bytes).forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary);
+}
+
+function base64ToBytes(value = "") {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
+}
+
+async function derivePasswordBits(password, salt, iterations) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+  return crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations }, key, 256);
+}
+
+async function hashPassword(password) {
+  const clean = cleanPasswordValue(password);
+  if (!clean || !canHashPasswords()) return clean;
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const bits = await derivePasswordBits(clean, salt, PASSWORD_HASH_ITERATIONS);
+  return `${PASSWORD_HASH_PREFIX}${PASSWORD_HASH_ITERATIONS}$${bytesToBase64(salt)}$${bytesToBase64(bits)}`;
+}
+
+async function verifyPassword(password, stored) {
+  const clean = cleanPasswordValue(password);
+  const storedValue = String(stored || "");
+  if (!clean || !storedValue) return false;
+  if (!isHashedPassword(storedValue)) return cleanPasswordValue(storedValue) === clean;
+  if (!canHashPasswords()) return false;
+  try {
+    const [, iterationsText, saltText, hashText] = storedValue.split("$");
+    const iterations = Number(iterationsText) || PASSWORD_HASH_ITERATIONS;
+    const bits = new Uint8Array(await derivePasswordBits(clean, base64ToBytes(saltText), iterations));
+    const expected = base64ToBytes(hashText);
+    if (bits.length !== expected.length) return false;
+    let difference = 0;
+    for (let index = 0; index < bits.length; index += 1) difference |= bits[index] ^ expected[index];
+    return difference === 0;
+  } catch {
+    return false;
+  }
+}
+
+async function findUserByCredentials(users = [], username, password) {
+  const cleanUser = cleanUsernameValue(username);
+  const candidates = (users || []).filter((item) => cleanUsernameValue(item.username) === cleanUser);
+  for (const candidate of candidates) {
+    if (await verifyPassword(password, candidate.password)) return candidate;
+  }
+  return null;
+}
+
+// Convierte a hash cualquier clave que todavia este guardada en texto plano.
+let securingPasswordsPromise = null;
+function secureStoredPasswords() {
+  if (!canHashPasswords()) return Promise.resolve(false);
+  if (securingPasswordsPromise) return securingPasswordsPromise;
+  securingPasswordsPromise = (async () => {
+    let changed = false;
+    for (const collection of ACCESS_USER_COLLECTIONS) {
+      for (const user of state[collection] || []) {
+        if (!user || !user.password || isHashedPassword(user.password)) continue;
+        const plain = user.password;
+        const hashed = await hashPassword(plain);
+        if (user.password === plain) {
+          user.password = hashed;
+          changed = true;
+        }
+      }
+    }
+    if (changed) {
+      persistAccessUsers(state);
+      saveState();
+    }
+    return changed;
+  })().finally(() => {
+    securingPasswordsPromise = null;
+  });
+  return securingPasswordsPromise;
+}
+
+// Si el usuario entro con una clave antigua en texto plano, se guarda en hash
+// partiendo de la lista de usuarios mas reciente para no pisar cambios de otros equipos.
+function upgradeLegacyPasswordAfterLogin(user) {
+  if (!user || isHashedPassword(user.password) || !canHashPasswords()) return;
+  (async () => {
+    if (navigator.onLine) await actualizarUsuariosDesdeSupabaseParaLogin().catch(() => false);
+    const changed = await secureStoredPasswords();
+    if (changed) await guardarUsuariosSupabaseAhora();
+  })().catch((error) => console.warn("No se pudo proteger la clave:", error));
+}
+
+function getAdminPasswordHash() {
+  return isHashedPassword(state.adminPasswordHash) ? state.adminPasswordHash : DEFAULT_ADMIN_PASSWORD_HASH;
+}
+
+async function changeAdminPassword(formElement) {
+  if (session.role !== "admin" || !formElement) return;
+  const data = Object.fromEntries(new FormData(formElement).entries());
+  const current = cleanPasswordValue(data.currentPassword);
+  const next = cleanPasswordValue(data.newPassword);
+  const confirmation = cleanPasswordValue(data.confirmPassword);
+  if (!(await verifyPassword(current, getAdminPasswordHash()))) {
+    showToast("La clave actual no es correcta.");
+    return;
+  }
+  if (next.length < 10) {
+    showToast("La nueva clave debe tener al menos 10 caracteres.");
+    return;
+  }
+  if (next !== confirmation) {
+    showToast("La confirmacion no coincide con la nueva clave.");
+    return;
+  }
+  if (!canHashPasswords()) {
+    showToast("Este navegador no permite cambiar la clave de forma segura.");
+    return;
+  }
+  state.adminPasswordHash = await hashPassword(next);
+  clearRememberedAccess("admin");
+  persistAccessUsers(state);
+  saveState();
+  formElement.reset();
+  renderAdminPasswordNotice();
+  const ok = await guardarUsuariosSupabaseAhora();
+  showToast(ok ? "Clave de administrador actualizada." : "Clave guardada en este equipo. Pendiente de sincronizar.");
+}
+
+function renderAdminPasswordNotice() {
+  const notice = document.querySelector("#adminPasswordDefaultNotice");
+  if (notice) notice.hidden = isHashedPassword(state.adminPasswordHash);
+}
+
 async function refreshAccessUsersAfterFailedLogin() {
   if (!navigator.onLine) return false;
   return Promise.race([
@@ -8677,15 +8833,11 @@ async function loginLegal(data) {
   await refreshAccessUsersAfterFailedLogin();
   const username = cleanUsernameValue(data.username);
   const password = cleanPasswordValue(data.password);
-  let user = state.legalUsers.find((item) =>
-    cleanUsernameValue(item.username) === username && cleanPasswordValue(item.password) === password
-  );
+  let user = await findUserByCredentials(state.legalUsers, username, password);
 
   if (!user) {
     await refreshAccessUsersAfterFailedLogin();
-    user = state.legalUsers.find((item) =>
-      cleanUsernameValue(item.username) === username && cleanPasswordValue(item.password) === password
-    );
+    user = await findUserByCredentials(state.legalUsers, username, password);
     if (!user) {
       showToast("Usuario o contrasena incorrectos.");
       return;
@@ -8693,6 +8845,7 @@ async function loginLegal(data) {
   }
 
   rememberAccessFromLogin("legal", legalLoginForm, data);
+  upgradeLegacyPasswordAfterLogin(user);
   setSession({ role: "legal", userId: user.id, name: user.name });
   legalLoginForm.reset();
   setView("tareas");
@@ -8703,15 +8856,11 @@ async function loginLegal(data) {
 async function loginCommercial(data) {
   const username = cleanUsernameValue(data.username);
   const password = cleanPasswordValue(data.password);
-  let user = state.commercialAdvisors.find((item) =>
-    cleanUsernameValue(item.username) === username && cleanPasswordValue(item.password) === password
-  );
+  let user = await findUserByCredentials(state.commercialAdvisors, username, password);
 
   if (!user) {
     await refreshAccessUsersAfterFailedLogin();
-    user = state.commercialAdvisors.find((item) =>
-      cleanUsernameValue(item.username) === username && cleanPasswordValue(item.password) === password
-    );
+    user = await findUserByCredentials(state.commercialAdvisors, username, password);
     if (!user) {
       showToast("Usuario comercial o contrasena incorrectos.");
       return;
@@ -8719,6 +8868,7 @@ async function loginCommercial(data) {
   }
 
   rememberAccessFromLogin("commercial", commercialLoginForm, data);
+  upgradeLegacyPasswordAfterLogin(user);
   setSession({ role: "commercial", userId: user.id, name: user.name, agency: user.agency });
   commercialLoginForm.reset();
   setView("formulario");
@@ -8728,8 +8878,9 @@ async function loginCommercial(data) {
   showToast(`Bienvenido, ${user.name}.`);
 }
 
-function loginAdmin(data) {
-  if (cleanPasswordValue(data.password) !== ADMIN_PASSWORD) {
+async function loginAdmin(data) {
+  await refreshAccessUsersAfterFailedLogin();
+  if (!(await verifyPassword(data.password, getAdminPasswordHash()))) {
     showToast("Clave de administrador incorrecta.");
     return;
   }
@@ -8739,21 +8890,23 @@ function loginAdmin(data) {
   adminLoginForm.reset();
   setView("admin");
   runInitialRemoteSyncAfterLogin("login-admin");
-  showToast("Administrador activo.");
+  renderAdminPasswordNotice();
+  showToast(isHashedPassword(state.adminPasswordHash)
+    ? "Administrador activo."
+    : "Administrador activo. Cambie la clave inicial en Usuarios.");
+  secureStoredPasswords().then((changed) => {
+    if (changed) guardarUsuariosSupabaseAhora();
+  });
 }
 
 async function loginManager(data) {
   const username = cleanUsernameValue(data.username);
   const password = cleanPasswordValue(data.password);
-  let user = state.managerUsers.find((item) =>
-    cleanUsernameValue(item.username) === username && cleanPasswordValue(item.password) === password
-  );
+  let user = await findUserByCredentials(state.managerUsers, username, password);
 
   if (!user) {
     await refreshAccessUsersAfterFailedLogin();
-    user = state.managerUsers.find((item) =>
-      cleanUsernameValue(item.username) === username && cleanPasswordValue(item.password) === password
-    );
+    user = await findUserByCredentials(state.managerUsers, username, password);
     if (!user) {
       showToast("Usuario gerencial o contrasena incorrectos.");
       return;
@@ -8761,6 +8914,7 @@ async function loginManager(data) {
   }
 
   rememberAccessFromLogin("manager", managerLoginForm, data);
+  upgradeLegacyPasswordAfterLogin(user);
   setSession({ role: "manager", userId: user.id, name: user.name, agency: "" });
   managerLoginForm.reset();
   setView("gerencial");
@@ -8771,15 +8925,11 @@ async function loginManager(data) {
 async function loginProcessing(data) {
   const username = cleanUsernameValue(data.username);
   const password = cleanPasswordValue(data.password);
-  let user = (state.processingUsers || []).find((item) =>
-    cleanUsernameValue(item.username) === username && cleanPasswordValue(item.password) === password
-  );
+  let user = await findUserByCredentials(state.processingUsers, username, password);
 
   if (!user) {
     await refreshAccessUsersAfterFailedLogin();
-    user = (state.processingUsers || []).find((item) =>
-      cleanUsernameValue(item.username) === username && cleanPasswordValue(item.password) === password
-    );
+    user = await findUserByCredentials(state.processingUsers, username, password);
     if (!user) {
       showToast("Usuario de procesamiento o contrasena incorrectos.");
       return;
@@ -8787,6 +8937,7 @@ async function loginProcessing(data) {
   }
 
   rememberAccessFromLogin("processing", processingLoginForm, data);
+  upgradeLegacyPasswordAfterLogin(user);
   setSession({ role: "processing", userId: user.id, name: user.name, agency: "" });
   processingLoginForm.reset();
   setView("procesamiento");
@@ -9002,7 +9153,59 @@ function getConsignmentPriceWords(value = 0) {
   return `${numberToSpanishWords(integer).toUpperCase()}${decimal ? ` CON ${String(decimal).padStart(2, "0")}/100` : ""}`;
 }
 
+const CONSIGNMENT_PDF_ASSET_VERSION = "20260923-consignacion-pdf-v6";
+const CONSIGNMENT_PDF_SCRIPTS = [
+  "js/consignment-templates.js",
+  "js/vendor/fontkit.umd.min.js",
+  "js/vendor/pdf-lib.min.js"
+];
+let consignmentPdfAssetsPromise = null;
+
+function loadScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[data-lazy-src="${src}"]`);
+    if (existing?.dataset.loaded === "true") {
+      resolve();
+      return;
+    }
+    const script = existing || document.createElement("script");
+    script.addEventListener("load", () => {
+      script.dataset.loaded = "true";
+      resolve();
+    }, { once: true });
+    script.addEventListener("error", () => reject(new Error(`No se pudo cargar ${src}`)), { once: true });
+    if (!existing) {
+      script.dataset.lazySrc = src;
+      script.src = `${src}?v=${CONSIGNMENT_PDF_ASSET_VERSION}`;
+      document.body.appendChild(script);
+    }
+  });
+}
+
+// Las librerias PDF (unos 3,5 MB) solo se descargan cuando hacen falta.
+function loadConsignmentPdfAssets() {
+  if (window.PDFLib?.PDFDocument && window.AUTOCOR_CONSIGNMENT_TEMPLATES) return Promise.resolve();
+  if (!consignmentPdfAssetsPromise) {
+    consignmentPdfAssetsPromise = CONSIGNMENT_PDF_SCRIPTS
+      .reduce((chain, src) => chain.then(() => loadScriptOnce(src)), Promise.resolve())
+      .catch((error) => {
+        consignmentPdfAssetsPromise = null;
+        throw error;
+      });
+  }
+  return consignmentPdfAssetsPromise;
+}
+
+function preloadConsignmentPdfAssetsWhenIdle() {
+  const start = () => loadConsignmentPdfAssets().catch(() => {});
+  if ("requestIdleCallback" in window) window.requestIdleCallback(start, { timeout: 8000 });
+  else window.setTimeout(start, 3000);
+}
+
 async function buildConsignmentPdfBytes(data = {}) {
+  try {
+    await loadConsignmentPdfAssets();
+  } catch {}
   if (!window.PDFLib?.PDFDocument) throw new Error("No se pudo cargar el generador PDF.");
   const decodeBase64 = (value = "") => {
     const binary = window.atob(value);
@@ -10157,76 +10360,6 @@ function renderDashboards() {
   renderKpiCards("#accessKpis", cards.slice(0, 4));
   renderKpiCards("#adminKpis", adminCards);
   renderAdvisorKpis(adminTasks);
-}
-
-function getCommercialTasks() {
-  if (session.role === "admin") return state.tasks;
-  return state.tasks.filter((task) =>
-    task.commercialUserId === session.userId ||
-    (!task.commercialUserId && task.asesor === session.name && task.agencia === session.agency)
-  );
-}
-
-function renderCommercialDashboard() {
-  const kpiContainer = document.querySelector("#commercialKpis");
-  const chartContainer = document.querySelector("#commercialChart");
-  const generalKpiContainer = document.querySelector("#commercialGeneralKpis");
-  const generalChartContainer = document.querySelector("#commercialGeneralChart");
-  const leadList = document.querySelector("#commercialLeadList");
-  if (!kpiContainer || !chartContainer) return;
-
-  const tasks = getCommercialTasks();
-  const kpis = getKpis(tasks);
-  renderKpiCards("#commercialKpis", [
-    ["Mis solicitudes", kpis.total, "Registradas por tu usuario"],
-    ["PEND Pendientes", kpis.pending, "Aun sin tomar"],
-    ["En proceso", kpis.inProgress, "Tomadas por mesa"],
-    ["Cerradas", kpis.completed, "Finalizadas"]
-  ]);
-  chartContainer.innerHTML = renderBarRows(groupByStatus(tasks), Math.max(tasks.length, 1));
-  if (leadList) renderCommercialLeadList(leadList, tasks);
-  if (generalKpiContainer && generalChartContainer) renderCommercialGeneralDashboard();
-  renderCommercialRequests();
-  renderCommercialControlSummary();
-}
-
-function renderCommercialGeneralDashboard() {
-  const tasks = state.tasks;
-  const kpis = getKpis(tasks);
-  renderKpiCards("#commercialGeneralKpis", [
-    ["Disponibles", kpis.unassigned, "Por tomar en mesa"],
-    ["En proceso", kpis.inProgress, "Gestion legal activa"],
-    ["Cerrados", kpis.completed, "Finalizados"],
-    ["TIEMPO Prom. cierre", formatMinutes(kpis.avgCompletion), "Tomado a cerrado"]
-  ]);
-  document.querySelector("#commercialGeneralChart").innerHTML = renderBarRows(groupByStatus(tasks), Math.max(tasks.length, 1));
-}
-
-function renderCommercialLeadList(container, tasks) {
-  const sorted = [...tasks].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 8);
-  if (!sorted.length) {
-    container.innerHTML = `<div class="empty compact-empty"> Todavia no tienes solicitudes registradas.</div>`;
-    return;
-  }
-
-  container.innerHTML = `
-    <div class="mini-list-head">
-      <strong> Ultimas solicitudes</strong>
-      <span>${tasks.length} en total</span>
-    </div>
-    ${sorted.map((task) => `
-      <article class="commercial-lead-row">
-        <div>
-          <strong>${escapeHtml(task.placa || "Sin placa")}</strong>
-          <span>${escapeHtml(task.cliente || "Cliente sin nombre")}</span>
-        </div>
-        <div>
-          ${renderStatusPill(task.status)}
-          <small>${formatDateTime(task.createdAt)}</small>
-        </div>
-      </article>
-    `).join("")}
-  `;
 }
 
 function getCommercialTasks() {
@@ -17918,6 +18051,7 @@ function isToday(value) {
 
 function renderAll() {
   const isAdmin = session.role === "admin";
+  if (isAdmin) renderAdminPasswordNotice();
   const isCommercial = session.role === "commercial";
   const isLegal = session.role === "legal";
   const isManager = session.role === "manager";
@@ -18967,6 +19101,11 @@ userForm.addEventListener("submit", (event) => {
   });
   userForm.reset();
   userForm.querySelector("[name='mailboxes'][value='saneamientos']").checked = true;
+});
+
+document.querySelector("#adminPasswordForm")?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  changeAdminPassword(event.currentTarget);
 });
 
 managerUserForm.addEventListener("submit", (event) => {

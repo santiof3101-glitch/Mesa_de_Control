@@ -1,0 +1,6 @@
+autocor-datos-pc.json
+respaldos-autocor/
+*.tmp
+node_modules/
+.DS_Store
+Thumbs.db
