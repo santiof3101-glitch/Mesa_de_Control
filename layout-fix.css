@@ -3051,3 +3051,250 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
+
+/* ===== Perfil comercial: version corporativa (2026-10-07) =====
+   Un solo bloque sobrio: campana + separador + identidad del asesor.
+   Selectores por id para quedar por encima de los estilos anteriores. */
+#topbarCommercialProfile {
+  --perfil-tinta: #15171d;
+  --perfil-texto: #2f3035;
+  --perfil-suave: #6b6e76;
+  --perfil-borde: #e2e4e9;
+  --perfil-fondo: #ffffff;
+  --perfil-hover: #f5f6f8;
+  --perfil-rojo: #d71920;
+  position: relative;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0 !important;
+  margin-right: 14px !important;
+  padding: 4px !important;
+  border: 1px solid var(--perfil-borde);
+  border-radius: 12px;
+  background: var(--perfil-fondo);
+  box-shadow: 0 1px 2px rgba(21, 23, 29, 0.06);
+}
+#topbarCommercialProfile[hidden] { display: none !important; }
+#topbarCommercialProfile::after { content: none !important; }
+
+#topbarCommercialProfile .topbar-commercial-bell {
+  width: 40px !important;
+  min-width: 40px !important;
+  height: 40px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--perfil-texto) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+#topbarCommercialProfile .topbar-commercial-bell:hover,
+#topbarCommercialProfile .topbar-commercial-bell[aria-expanded="true"] {
+  background: var(--perfil-hover) !important;
+}
+#topbarCommercialProfile .commercial-bell-icon {
+  width: 20px !important;
+  height: 20px !important;
+  fill: currentColor;
+}
+#topbarCommercialProfile #commercialNotificationCount {
+  position: absolute !important;
+  top: 5px !important;
+  right: 5px !important;
+  min-width: 16px !important;
+  height: 16px !important;
+  padding: 0 4px !important;
+  border: 2px solid var(--perfil-fondo) !important;
+  border-radius: 8px !important;
+  background: var(--perfil-rojo) !important;
+  color: #fff !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  line-height: 12px !important;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+#topbarCommercialProfile #commercialNotificationCount[hidden] { display: none !important; }
+
+#topbarCommercialProfile .topbar-commercial-profile {
+  position: relative;
+  display: inline-grid !important;
+  grid-template-columns: 36px minmax(0, 1fr) 16px !important;
+  align-items: center;
+  gap: 10px !important;
+  min-width: 0 !important;
+  max-width: min(320px, 34vw) !important;
+  min-height: 40px !important;
+  margin-left: 9px !important;
+  padding: 2px 10px 2px 2px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--perfil-texto) !important;
+  box-shadow: none !important;
+  transform: none !important;
+  cursor: pointer;
+}
+#topbarCommercialProfile .topbar-commercial-profile::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: -5px;
+  width: 1px;
+  background: var(--perfil-borde);
+}
+#topbarCommercialProfile .topbar-commercial-profile:hover,
+#topbarCommercialProfile .topbar-commercial-profile[aria-expanded="true"] {
+  background: var(--perfil-hover) !important;
+}
+#topbarCommercialProfile .topbar-commercial-profile:focus-visible,
+#topbarCommercialProfile .topbar-commercial-bell:focus-visible {
+  outline: 2px solid var(--perfil-rojo);
+  outline-offset: 2px;
+}
+
+#topbarCommercialProfile .commercial-user-avatar {
+  display: grid !important;
+  place-items: center;
+  width: 36px !important;
+  height: 36px !important;
+  flex: 0 0 36px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: var(--perfil-tinta) !important;
+  color: #fff !important;
+  box-shadow: inset 0 -3px 0 var(--perfil-rojo) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  overflow: hidden;
+}
+#topbarCommercialProfile .commercial-user-avatar::before,
+#topbarCommercialProfile .commercial-user-avatar::after { content: none !important; }
+
+#topbarCommercialProfile .topbar-commercial-copy {
+  display: grid !important;
+  gap: 2px !important;
+  min-width: 0;
+  text-align: left;
+}
+#topbarCommercialProfile .topbar-commercial-copy strong {
+  overflow: hidden;
+  color: var(--perfil-tinta) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1.15 !important;
+  letter-spacing: 0 !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#topbarCommercialProfile .topbar-commercial-copy span {
+  overflow: hidden;
+  color: var(--perfil-suave) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#topbarCommercialProfile .topbar-commercial-caret {
+  width: 16px;
+  height: 16px;
+  color: var(--perfil-suave);
+  transition: transform 0.15s ease;
+}
+#topbarCommercialProfile .topbar-commercial-profile[aria-expanded="true"] .topbar-commercial-caret {
+  transform: rotate(180deg);
+}
+
+#topbarCommercialProfile .topbar-commercial-profile-menu {
+  top: calc(100% + 8px) !important;
+  right: 0 !important;
+  min-width: 240px !important;
+  padding: 6px !important;
+  border: 1px solid var(--perfil-borde) !important;
+  border-radius: 10px !important;
+  background: var(--perfil-fondo) !important;
+  box-shadow: 0 12px 32px rgba(21, 23, 29, 0.14) !important;
+}
+#topbarCommercialProfile .topbar-commercial-profile-menu[hidden] { display: none !important; }
+#topbarCommercialProfile .topbar-profile-menu-head {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 6px;
+  padding: 8px 10px 10px;
+  border-bottom: 1px solid var(--perfil-borde);
+}
+#topbarCommercialProfile .topbar-profile-menu-head strong {
+  color: var(--perfil-tinta);
+  font-size: 14px;
+  font-weight: 700;
+}
+#topbarCommercialProfile .topbar-profile-menu-head span {
+  color: var(--perfil-suave);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+#topbarCommercialProfile .topbar-commercial-profile-menu button {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  border-radius: 6px !important;
+  color: var(--perfil-texto) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+#topbarCommercialProfile .topbar-commercial-profile-menu button svg {
+  width: 16px;
+  height: 16px;
+  color: var(--perfil-suave);
+}
+#topbarCommercialProfile .topbar-commercial-profile-menu button:hover {
+  background: var(--perfil-hover) !important;
+  color: var(--perfil-tinta) !important;
+}
+#topbarCommercialProfile .topbar-commercial-profile-menu button.is-danger:hover,
+#topbarCommercialProfile .topbar-commercial-profile-menu button.is-danger:hover svg {
+  color: var(--perfil-rojo) !important;
+}
+
+@media (max-width: 720px) {
+  #topbarCommercialProfile .topbar-commercial-profile {
+    grid-template-columns: 36px 16px !important;
+    padding-right: 6px !important;
+  }
+  #topbarCommercialProfile .topbar-commercial-copy { display: none !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #topbarCommercialProfile .topbar-commercial-caret { transition: none; }
+}
+#topbarCommercialProfile .topbar-commercial-bell::before { content: none !important; }
+#topbarCommercialProfile .commercial-bell-icon {
+  display: block !important;
+  fill: var(--perfil-texto) !important;
+  filter: none !important;
+}
+#topbarCommercialProfile .topbar-commercial-bell:hover .commercial-bell-icon { fill: var(--perfil-tinta) !important; }
+@media (max-width: 720px) {
+  #topbarCommercialProfile {
+    width: auto !important;
+    max-width: none !important;
+    justify-content: flex-start !important;
+    flex: 0 0 auto !important;
+  }
+  #topbarCommercialProfile .topbar-commercial-profile {
+    width: auto !important;
+    max-width: none !important;
+    margin-left: 9px !important;
+  }
+}

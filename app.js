@@ -10924,9 +10924,17 @@ function updateTopbarCommercialProfile() {
   const avatar = document.querySelector("#topbarCommercialAvatar");
   const greeting = document.querySelector("#topbarCommercialGreeting");
   const role = document.querySelector("#topbarCommercialRole");
+  const agency = normalizeLooseText(session.agency || "");
+  const meta = agency ? `${profile.role} · ${formatDisplayName(agency)}` : profile.role;
   if (avatar) avatar.textContent = profile.initials;
-  if (greeting) greeting.textContent = `Hola, ${profile.name}`;
-  if (role) role.textContent = profile.role;
+  if (greeting) greeting.textContent = profile.name;
+  if (role) role.textContent = meta;
+  const menuName = document.querySelector("#topbarCommercialMenuName");
+  const menuMeta = document.querySelector("#topbarCommercialMenuMeta");
+  if (menuName) menuName.textContent = profile.name;
+  if (menuMeta) menuMeta.textContent = meta;
+  const button = document.querySelector("#topbarCommercialProfileButton");
+  if (button) button.setAttribute("aria-label", `${profile.name}, ${meta}. Abrir opciones de cuenta`);
 }
 
 function getUserInitials(name) {
