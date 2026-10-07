@@ -1,4 +1,9 @@
 project_id = "evblnxgeyelatdmloydl"
 
+# Consulta ANT: solo usuarios con sesion de Supabase Auth.
+[functions.datacil-consulta]
+verify_jwt = true
+
+# Nombre anterior, se mantiene con el mismo codigo seguro.
 [functions.datacil-vehiculo]
-verify_jwt = false
+verify_jwt = true

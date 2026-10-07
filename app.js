@@ -30,15 +30,14 @@ const CONSIGNMENT_TEMPLATE_PATHS = {
   casado: "assets/contracts/prestacion-consignacion-casado.pdf",
   juridica: "assets/contracts/prestacion-consignacion-persona-juridica.pdf"
 };
+// El guardado compartido del PC (server.js) solo existe cuando la app se abre en este equipo.
+const SHARED_PC_ENABLED = location.protocol === "file:" || ["127.0.0.1", "localhost"].includes(location.hostname);
 const SHARED_PC_STATE_URL = location.protocol === "file:"
   ? "http://127.0.0.1:8787/api/state"
   : `${location.origin}/api/state`;
 const SHARED_PC_BACKUPS_URL = location.protocol === "file:"
   ? "http://127.0.0.1:8787/api/backups"
   : `${location.origin}/api/backups`;
-const DEFAULT_ADMIN_PASSWORD_HASH = "pbkdf2-sha256$150000$CnSvkQxXrXVqbFjx/N6suA==$Etoo9hMzWvy/8Vsy11z+XtkEOcE/ZYgEW7D30loSfY8=";
-const PASSWORD_HASH_PREFIX = "pbkdf2-sha256$";
-const PASSWORD_HASH_ITERATIONS = 150000;
 const ACCESS_USER_COLLECTIONS = ["commercialAdvisors", "legalUsers", "managerUsers", "processingUsers"];
 const SESSION_TIMEOUT_MS = 2 * 60 * 60 * 1000;
 const MAX_FILE_LIBRARY_SIZE = 50 * 1024 * 1024;
@@ -476,6 +475,7 @@ let supabaseTaskDeleteCursor = localStorage.getItem(TASK_DELETE_CURSOR_KEY) || "
 let supabaseLastRefreshAt = 0;
 let initialRemoteSyncInFlight = false;
 const state = loadState();
+stripAccessPasswordsFromState(state);
 hydrateCommercialOwners();
 persistAccessUsers(state);
 let lastActivityAt = Date.now();
@@ -483,6 +483,8 @@ let lastSessionPersistAt = 0;
 let sessionAnnouncementShownKey = "";
 let session = loadPersistedSession();
 let currentViewId = loadPersistedView();
+window.AutocorAuth.onChange(handleAuthSessionChange);
+if (session.role !== "public") window.AutocorAuth.ensureFresh();
 document.body.dataset.session = session.role;
 let activeFilter = "todos";
 let searchTerm = "";
@@ -884,7 +886,6 @@ function loadState() {
         id: crypto.randomUUID(),
         name,
         username: `legal${index + 1}`,
-        password: "Legal123",
         mailboxes: ["saneamientos"],
         legalAvailable: true
       }));
@@ -961,18 +962,16 @@ function applyCachedAccessUsers(snapshot) {
   if (Array.isArray(cached.processingUsers) && cached.processingUsers.length) {
     snapshot.processingUsers = cached.processingUsers;
   }
-  if (isHashedPassword(cached.adminPasswordHash)) snapshot.adminPasswordHash = cached.adminPasswordHash;
   return snapshot;
 }
 
 function persistAccessUsers(snapshot = state) {
   try {
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
-      commercialAdvisors: snapshot.commercialAdvisors || [],
-      legalUsers: snapshot.legalUsers || [],
-      managerUsers: snapshot.managerUsers || [],
-      processingUsers: snapshot.processingUsers || [],
-      adminPasswordHash: isHashedPassword(snapshot.adminPasswordHash) ? snapshot.adminPasswordHash : "",
+      commercialAdvisors: stripAccessPasswords(snapshot.commercialAdvisors || []),
+      legalUsers: stripAccessPasswords(snapshot.legalUsers || []),
+      managerUsers: stripAccessPasswords(snapshot.managerUsers || []),
+      processingUsers: stripAccessPasswords(snapshot.processingUsers || []),
       updatedAt: new Date().toISOString()
     }));
   } catch (error) {
@@ -991,6 +990,7 @@ function readBrowserStoredState() {
 }
 
 function readSharedPcState() {
+  if (!SHARED_PC_ENABLED) return null;
   try {
     const request = new XMLHttpRequest();
     request.open("GET", SHARED_PC_STATE_URL, false);
@@ -1017,8 +1017,7 @@ async function leerUltimoEstadoSupabase() {
     const response = await fetch(`${SUPABASE_URL}/REGISTROS?modulo=eq.sistema&tipo=eq.estado_completo&select=datos,created_at&order=created_at.desc&limit=1`, {
       method: "GET",
       headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`
+        ...(await window.AutocorAuth.headers())
       }
     });
     if (!response.ok) return null;
@@ -1038,8 +1037,7 @@ async function leerUltimoBrandingSupabase() {
     const response = await fetch(`${SUPABASE_URL}/REGISTROS?modulo=eq.sistema&tipo=eq.branding&select=datos,created_at&order=created_at.desc&limit=1`, {
       method: "GET",
       headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`
+        ...(await window.AutocorAuth.headers())
       }
     });
     if (!response.ok) return null;
@@ -1058,8 +1056,7 @@ async function leerUltimoModuloSupabase(modulo, tipo = "base") {
     const response = await fetch(query, {
       method: "GET",
       headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`
+        ...(await window.AutocorAuth.headers())
       }
     });
     if (!response.ok) return null;
@@ -1078,16 +1075,15 @@ async function leerVersionModuloSupabase(modulo, tipo = "base") {
     const response = await fetch(query, {
       method: "GET",
       headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`
+        ...(await window.AutocorAuth.headers())
       }
     });
-    if (!response.ok) return "";
+    if (!response.ok) return null;
     const rows = await response.json();
     return Array.isArray(rows) && rows.length ? String(rows[0].created_at || "") : "";
   } catch (error) {
     console.warn(`No se pudo revisar la version de ${modulo}:`, error);
-    return "";
+    return null;
   }
 }
 
@@ -1099,11 +1095,10 @@ async function leerVersionesModulosSupabase(modules = ["usuarios", "catalogos", 
     const response = await fetch(query, {
       method: "GET",
       headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`
+        ...(await window.AutocorAuth.headers())
       }
     });
-    if (!response.ok) return {};
+    if (!response.ok) return null;
     const rows = await response.json();
     return (Array.isArray(rows) ? rows : []).reduce((versions, row) => {
       if (row?.modulo && !versions[row.modulo]) versions[row.modulo] = String(row.created_at || "");
@@ -1111,7 +1106,7 @@ async function leerVersionesModulosSupabase(modules = ["usuarios", "catalogos", 
     }, {});
   } catch (error) {
     console.warn("No se pudieron revisar las versiones de Supabase:", error);
-    return {};
+    return null;
   }
 }
 
@@ -1140,8 +1135,7 @@ async function leerTareasSupabase(forceFull = false) {
     const response = await fetch(query, {
       method: "GET",
       headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`
+        ...(await window.AutocorAuth.headers())
       }
     });
     if (!response.ok) return [];
@@ -1172,8 +1166,7 @@ async function leerEliminacionesTareasSupabase(forceFull = false) {
     const response = await fetch(query, {
       method: "GET",
       headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`
+        ...(await window.AutocorAuth.headers())
       }
     });
     if (!response.ok) return [];
@@ -1200,8 +1193,7 @@ async function obtenerEliminacionRemotaTarea(taskId) {
     const response = await fetch(query, {
       method: "GET",
       headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`
+        ...(await window.AutocorAuth.headers())
       }
     });
     if (!response.ok) return null;
@@ -1219,8 +1211,7 @@ async function obtenerUltimaTareaRemota(taskId) {
     const response = await fetch(query, {
       method: "GET",
       headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`
+        ...(await window.AutocorAuth.headers())
       }
     });
     if (!response.ok) return null;
@@ -1333,6 +1324,7 @@ async function runInitialRemoteSyncAfterLogin(reason = "login") {
   initialRemoteSyncInFlight = true;
   try {
     await restoreModulesFromSupabaseIfNeeded();
+    void migrateEmbeddedFilesToStorage();
     void sincronizarTareasPendientesSupabase();
     void syncUafeClientRequestsFromSupabase(true);
     supabaseLastRefreshAt = Date.now();
@@ -1343,15 +1335,17 @@ async function runInitialRemoteSyncAfterLogin(reason = "login") {
   }
 }
 
-async function guardarRegistroSupabase(modulo, tipo, datos, usuario = "sistema") {
+async function guardarRegistroSupabase(modulo, tipo, datos, usuario = "sistema", options = {}) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return false;
+  // Sin sesion de Supabase no se publica nada (evita registros anonimos).
+  if (!window.AutocorAuth?.hasSession() || session.role === "public") return false;
   try {
-    const response = await fetch(`${SUPABASE_URL}/REGISTROS`, {
+    const response = await fetch(options.returnCreatedAt ? `${SUPABASE_URL}/REGISTROS?select=created_at` : `${SUPABASE_URL}/REGISTROS`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`
+        Prefer: options.returnCreatedAt ? "return=representation" : "return=minimal",
+        ...(await window.AutocorAuth.headers())
       },
       body: JSON.stringify({ modulo, tipo, datos, usuario })
     });
@@ -1359,6 +1353,10 @@ async function guardarRegistroSupabase(modulo, tipo, datos, usuario = "sistema")
       const detail = await response.text().catch(() => "");
       console.warn("Supabase rechazo el guardado:", response.status, detail);
       return false;
+    }
+    if (options.returnCreatedAt) {
+      const rows = await response.json().catch(() => []);
+      return String(rows?.[0]?.created_at || "") || true;
     }
     return true;
   } catch (error) {
@@ -1446,11 +1444,10 @@ function getSupabaseModuleSnapshots() {
   const processing = state.dataProcessing || {};
   return {
     usuarios: {
-      commercialAdvisors: structuredClone(state.commercialAdvisors || []),
-      legalUsers: structuredClone(normalizeLegalUsers(state.legalUsers || [])),
-      managerUsers: structuredClone(state.managerUsers || []),
-      processingUsers: structuredClone(state.processingUsers || []),
-      adminPasswordHash: isHashedPassword(state.adminPasswordHash) ? state.adminPasswordHash : ""
+      commercialAdvisors: stripAccessPasswords(structuredClone(state.commercialAdvisors || [])),
+      legalUsers: stripAccessPasswords(structuredClone(normalizeLegalUsers(state.legalUsers || []))),
+      managerUsers: stripAccessPasswords(structuredClone(state.managerUsers || [])),
+      processingUsers: stripAccessPasswords(structuredClone(state.processingUsers || []))
     },
     catalogos: {
       agencies: structuredClone(state.agencies || []),
@@ -1530,6 +1527,7 @@ function hasIntentionalSmallerModulePublish(modulo) {
 
 async function shouldSkipUnsafeModulePublish(modulo, datos) {
   if (!shouldProtectSupabaseModule(modulo)) return false;
+  if (supabaseModuleBases[modulo]) return false;
   if (hasIntentionalSmallerModulePublish(modulo)) return false;
   const localCount = getProtectedSupabaseModuleCount(modulo, datos);
   const knownRemoteCount = supabaseProtectedRemoteCounts[modulo] || 0;
@@ -1549,43 +1547,68 @@ async function shouldSkipUnsafeModulePublish(modulo, datos) {
   return false;
 }
 
+function canPublishSupabaseModule(modulo) {
+  if (modulo === "usuarios") return session.role === "admin" || session.role === "legal";
+  return session.role !== "public";
+}
+
+let publishingSupabaseModules = false;
+
 async function guardarModulosSupabase() {
   if (!SUPABASE_MODULE_SYNC || !SUPABASE_URL || !SUPABASE_KEY) return;
-  await secureStoredPasswords();
-  const snapshots = getSupabaseModuleSnapshots();
-  const usuario = session?.name || session?.role || "sistema";
-  for (const [modulo, datos] of Object.entries(snapshots)) {
-    const hash = getSupabaseSnapshotHash(datos);
-    if (supabasePublishedHashes[modulo] === hash) continue;
-    if (await shouldSkipUnsafeModulePublish(modulo, datos)) continue;
-    const ok = await guardarRegistroSupabase(modulo, "base", { ...datos, updatedAt: new Date().toISOString() }, usuario);
-    if (ok) {
-      supabasePublishedHashes[modulo] = hash;
-      const count = getProtectedSupabaseModuleCount(modulo, datos);
-      if (count) supabaseProtectedRemoteCounts[modulo] = Math.max(supabaseProtectedRemoteCounts[modulo] || 0, count);
-    }
+  if (publishingSupabaseModules) {
+    scheduleSupabaseModuleSync();
+    return;
   }
+  publishingSupabaseModules = true;
+  try {
+    for (const modulo of Object.keys(getSupabaseModuleSnapshots())) {
+      await publicarModuloSupabase(modulo);
+    }
+  } finally {
+    publishingSupabaseModules = false;
+  }
+}
+
+async function publicarModuloSupabase(modulo) {
+  if (!canPublishSupabaseModule(modulo)) return false;
+  let datos = getSupabaseModuleSnapshots()[modulo];
+  if (!datos) return false;
+  if (MERGEABLE_SUPABASE_MODULES.has(modulo)) {
+    if (!supabaseModuleBases[modulo]) {
+      const loaded = await loadModuleBaseBeforeFirstPublish(modulo);
+      if (loaded === "error") return false;
+      if (loaded === "loaded" && !hasLocalModuleChanges(modulo)) return true;
+    } else {
+      if (!hasLocalModuleChanges(modulo)) return true;
+      if (!(await reconcileModuleBeforePublish(modulo))) return false;
+      if (!hasLocalModuleChanges(modulo)) return true;
+    }
+    datos = getSupabaseModuleSnapshots()[modulo];
+  } else {
+    if (supabasePublishedHashes[modulo] === getSupabaseSnapshotHash(datos)) return true;
+    if (await shouldSkipUnsafeModulePublish(modulo, datos)) return false;
+  }
+  const hash = getSupabaseSnapshotHash(datos);
+  const result = await guardarRegistroSupabase(
+    modulo,
+    "base",
+    { ...datos, updatedAt: new Date().toISOString() },
+    session?.name || session?.role || "sistema",
+    { returnCreatedAt: true }
+  );
+  if (!result) return false;
+  supabasePublishedHashes[modulo] = hash;
+  if (typeof result === "string") supabaseRemoteVersions[modulo] = result;
+  rememberSupabaseModuleBase(modulo, datos, datos);
+  const count = getProtectedSupabaseModuleCount(modulo, datos);
+  if (count) supabaseProtectedRemoteCounts[modulo] = Math.max(supabaseProtectedRemoteCounts[modulo] || 0, count);
+  return true;
 }
 
 async function guardarModuloSupabaseAhora(modulo) {
   if (!SUPABASE_MODULE_SYNC || !SUPABASE_URL || !SUPABASE_KEY || !modulo) return false;
-  const datos = getSupabaseModuleSnapshots()[modulo];
-  if (!datos) return false;
-  const hash = getSupabaseSnapshotHash(datos);
-  if (supabasePublishedHashes[modulo] === hash) return true;
-  if (await shouldSkipUnsafeModulePublish(modulo, datos)) return false;
-  const ok = await guardarRegistroSupabase(
-    modulo,
-    "base",
-    { ...datos, updatedAt: new Date().toISOString() },
-    session?.name || session?.role || "sistema"
-  );
-  if (ok) {
-    supabasePublishedHashes[modulo] = hash;
-    const count = getProtectedSupabaseModuleCount(modulo, datos);
-    if (count) supabaseProtectedRemoteCounts[modulo] = Math.max(supabaseProtectedRemoteCounts[modulo] || 0, count);
-  }
-  return ok;
+  return publicarModuloSupabase(modulo);
 }
 
 function guardarProveedoresSupabaseAhora() {
@@ -1600,17 +1623,8 @@ function sincronizarProveedoresCriticosAhora() {
 
 async function guardarUsuariosSupabaseAhora() {
   if (!SUPABASE_MODULE_SYNC || !SUPABASE_URL || !SUPABASE_KEY) return false;
-  await secureStoredPasswords();
-  const datos = getSupabaseModuleSnapshots().usuarios;
-  const hash = getSupabaseSnapshotHash(datos);
-  const ok = await guardarRegistroSupabase(
-    "usuarios",
-    "base",
-    { ...datos, updatedAt: new Date().toISOString() },
-    session?.name || session?.role || "sistema"
-  );
-  if (ok) supabasePublishedHashes.usuarios = hash;
-  return ok;
+  supabasePublishedHashes.usuarios = "";
+  return publicarModuloSupabase("usuarios");
 }
 
 async function actualizarUsuariosDesdeSupabaseParaLogin() {
@@ -1655,6 +1669,7 @@ async function restoreModulesFromSupabaseIfNeeded() {
   try {
     modulesToSync = getSupabaseModulesForCurrentView();
     const remoteVersions = await leerVersionesModulosSupabase(modulesToSync);
+    if (remoteVersions === null) return;
     const [usuariosResult, catalogosResult, saneamientosResult, tareasIndividuales, eliminacionesIndividuales, comprasResult, contratosResult, proveedoresResult, archivosResult] = await Promise.all([
       modulesToSync.includes("usuarios") ? leerModuloSupabaseSiCambio("usuarios", remoteVersions) : Promise.resolve({ snapshot: null, exists: false, changed: false }),
       modulesToSync.includes("catalogos") ? leerModuloSupabaseSiCambio("catalogos", remoteVersions) : Promise.resolve({ snapshot: null, exists: false, changed: false }),
@@ -1750,6 +1765,7 @@ function startSupabaseModulePolling() {
       await restoreModulesFromSupabaseIfNeeded();
       await sincronizarTareasPendientesSupabase();
       await syncUafeClientRequestsFromSupabase(true);
+      await migrateEmbeddedFilesToStorage();
     }
     startSupabaseModulePolling();
   }, interval);
@@ -1765,10 +1781,238 @@ function getSupabasePollInterval() {
 }
 
 function canSyncCurrentView() {
-  return session.role !== "public";
+  return session.role !== "public" && Boolean(window.AutocorAuth?.hasSession());
+}
+
+// ===== Fusion de cambios entre usuarios =====
+// Cada modulo se publica como una foto completa. Para no pisar el trabajo de otro usuario,
+// antes de publicar (y al recibir datos nuevos) se hace una fusion de tres vias:
+// base (lo ultimo que este navegador vio en el servidor), local y remoto.
+const MERGEABLE_SUPABASE_MODULES = new Set(["usuarios", "catalogos", "compras", "contratos", "proveedores", "archivos"]);
+const supabaseModuleBases = {};
+
+function stableJson(value) {
+  return JSON.stringify(value === undefined ? null : value);
+}
+
+function isPlainMergeObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function mergeRecordKey(item) {
+  if (isPlainMergeObject(item) && item.id !== undefined && item.id !== null && item.id !== "") return `id:${item.id}`;
+  return `v:${stableJson(item)}`;
+}
+
+function getMergeTimestamp(value) {
+  if (!isPlainMergeObject(value)) return 0;
+  return new Date(value.updatedAt || value.savedAt || value.createdAt || 0).getTime() || 0;
+}
+
+function mergeThreeWay(base, local, remote) {
+  const baseJson = stableJson(base);
+  const localJson = stableJson(local);
+  const remoteJson = stableJson(remote);
+  if (localJson === remoteJson) return local;
+  if (localJson === baseJson) return remote;
+  if (remoteJson === baseJson) return local;
+  if (Array.isArray(local) && Array.isArray(remote)) {
+    return mergeThreeWayArrays(Array.isArray(base) ? base : [], local, remote);
+  }
+  if (isPlainMergeObject(local) && isPlainMergeObject(remote)) {
+    const baseObject = isPlainMergeObject(base) ? base : {};
+    const result = {};
+    const keys = new Set([...Object.keys(remote), ...Object.keys(local), ...Object.keys(baseObject)]);
+    keys.forEach((key) => {
+      const inLocal = Object.prototype.hasOwnProperty.call(local, key);
+      const inRemote = Object.prototype.hasOwnProperty.call(remote, key);
+      const inBase = Object.prototype.hasOwnProperty.call(baseObject, key);
+      if (!inLocal && !inRemote) return;
+      if (inBase && !inLocal) {
+        if (stableJson(remote[key]) === stableJson(baseObject[key])) return;
+        result[key] = remote[key];
+        return;
+      }
+      if (inBase && !inRemote) {
+        if (stableJson(local[key]) === stableJson(baseObject[key])) return;
+        result[key] = local[key];
+        return;
+      }
+      if (!inRemote) {
+        result[key] = local[key];
+        return;
+      }
+      if (!inLocal) {
+        result[key] = remote[key];
+        return;
+      }
+      result[key] = mergeThreeWay(baseObject[key], local[key], remote[key]);
+    });
+    return result;
+  }
+  // Mismo dato cambiado en ambos lados: gana el mas reciente; si no se sabe, el de este usuario.
+  const localTime = getMergeTimestamp(local);
+  const remoteTime = getMergeTimestamp(remote);
+  if (remoteTime && localTime && remoteTime > localTime) return remote;
+  return local;
+}
+
+function mergeThreeWayArrays(base, local, remote) {
+  const toMap = (items) => {
+    const map = new Map();
+    items.forEach((item) => {
+      const key = mergeRecordKey(item);
+      if (!map.has(key)) map.set(key, item);
+    });
+    return map;
+  };
+  const baseMap = toMap(base);
+  const localMap = toMap(local);
+  const remoteMap = toMap(remote);
+  const order = [];
+  const seen = new Set();
+  [...remote, ...local].forEach((item) => {
+    const key = mergeRecordKey(item);
+    if (seen.has(key)) return;
+    seen.add(key);
+    order.push(key);
+  });
+  const result = [];
+  order.forEach((key) => {
+    const inBase = baseMap.has(key);
+    const inLocal = localMap.has(key);
+    const inRemote = remoteMap.has(key);
+    const baseItem = baseMap.get(key);
+    const localItem = localMap.get(key);
+    const remoteItem = remoteMap.get(key);
+    if (inBase && !inLocal) {
+      // Este usuario lo elimino: se respeta salvo que otro lo haya modificado despues.
+      if (inRemote && stableJson(remoteItem) !== stableJson(baseItem)) result.push(remoteItem);
+      return;
+    }
+    if (inBase && !inRemote) {
+      // Otro usuario lo elimino: se respeta salvo que este usuario lo haya modificado.
+      if (inLocal && stableJson(localItem) !== stableJson(baseItem)) result.push(localItem);
+      return;
+    }
+    if (inLocal && inRemote) {
+      result.push(mergeThreeWay(baseItem, localItem, remoteItem));
+      return;
+    }
+    result.push(inLocal ? localItem : remoteItem);
+  });
+  return result;
+}
+
+function getLocalModuleSnapshot(modulo) {
+  const snapshot = getSupabaseModuleSnapshots()[modulo];
+  return snapshot ? JSON.parse(JSON.stringify(snapshot)) : null;
+}
+
+function cloneSnapshotWithoutVersion(snapshot) {
+  if (!snapshot || typeof snapshot !== "object") return null;
+  const copy = JSON.parse(JSON.stringify(snapshot));
+  delete copy.updatedAt;
+  delete copy.savedAt;
+  return copy;
+}
+
+// base.norm: como queda en este navegador; base.raw: tal como esta guardado en el servidor.
+function rememberSupabaseModuleBase(modulo, normSnapshot = null, rawSnapshot = null) {
+  if (!MERGEABLE_SUPABASE_MODULES.has(modulo)) return;
+  const norm = cloneSnapshotWithoutVersion(normSnapshot || getLocalModuleSnapshot(modulo));
+  const raw = cloneSnapshotWithoutVersion(rawSnapshot || norm);
+  supabaseModuleBases[modulo] = norm ? { norm, raw } : null;
+}
+
+function hasLocalModuleChanges(modulo) {
+  const base = supabaseModuleBases[modulo];
+  if (!base) return false;
+  return stableJson(cloneSnapshotWithoutVersion(getLocalModuleSnapshot(modulo))) !== stableJson(base.norm);
+}
+
+// Al normalizar, algunos campos vacios reciben valores nuevos (por ejemplo fechas).
+// Si un registro no cambio en el servidor, se usa la version ya conocida para no confundir ese ruido con un cambio.
+function alignRemoteWithBase(base, remoteNorm, remoteRaw) {
+  if (!base || !remoteNorm) return remoteNorm;
+  const aligned = { ...remoteNorm };
+  Object.keys(remoteNorm).forEach((field) => {
+    const rawBaseValue = base.raw?.[field];
+    const rawRemoteValue = remoteRaw?.[field];
+    if (stableJson(rawBaseValue) === stableJson(rawRemoteValue) && field in (base.norm || {})) {
+      aligned[field] = base.norm[field];
+      return;
+    }
+    if (!Array.isArray(remoteNorm[field]) || !Array.isArray(base.norm?.[field]) || !Array.isArray(rawBaseValue) || !Array.isArray(rawRemoteValue)) return;
+    const rawBaseByKey = new Map(rawBaseValue.map((item) => [mergeRecordKey(item), item]));
+    const normBaseByKey = new Map(base.norm[field].map((item) => [mergeRecordKey(item), item]));
+    const unchangedKeys = new Set(rawRemoteValue
+      .filter((item) => {
+        const key = mergeRecordKey(item);
+        return rawBaseByKey.has(key) && stableJson(rawBaseByKey.get(key)) === stableJson(item);
+      })
+      .map(mergeRecordKey));
+    aligned[field] = remoteNorm[field].map((item) => {
+      const key = mergeRecordKey(item);
+      return unchangedKeys.has(key) && normBaseByKey.has(key) ? normBaseByKey.get(key) : item;
+    });
+  });
+  return aligned;
 }
 
 function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
+  if (!MERGEABLE_SUPABASE_MODULES.has(modulo)) return applySupabaseModuleSnapshotRaw(modulo, snapshot, options);
+  const remoteRaw = cloneSnapshotWithoutVersion(parseMaybeJson(snapshot));
+  const base = supabaseModuleBases[modulo];
+  const localBefore = base ? cloneSnapshotWithoutVersion(getLocalModuleSnapshot(modulo)) : null;
+  const localChanged = Boolean(base && localBefore && stableJson(localBefore) !== stableJson(base.norm));
+  const applied = applySupabaseModuleSnapshotRaw(modulo, snapshot, base ? { ...options, allowSmaller: true } : options);
+  if (!applied) return false;
+  const remoteNorm = cloneSnapshotWithoutVersion(getLocalModuleSnapshot(modulo));
+  if (!remoteNorm) return true;
+  const aligned = base ? alignRemoteWithBase(base, remoteNorm, remoteRaw) : remoteNorm;
+  const target = localChanged ? mergeThreeWay(base.norm, localBefore, aligned) : aligned;
+  if (stableJson(target) !== stableJson(remoteNorm)) {
+    applySupabaseModuleSnapshotRaw(modulo, target, { allowOlderVersion: true, allowSmaller: true, merging: true });
+  }
+  // La base pasa a ser lo que hay en el servidor; si hubo fusion, queda pendiente de publicar.
+  supabaseModuleVersions[modulo] = getSupabaseSnapshotVersion(snapshot) || supabaseModuleVersions[modulo];
+  supabaseModuleBases[modulo] = { norm: localChanged ? aligned : cloneSnapshotWithoutVersion(getLocalModuleSnapshot(modulo)), raw: remoteRaw };
+  if (localChanged) scheduleSupabaseModuleSync();
+  return true;
+}
+
+// Antes de publicar un modulo, si otro usuario publico algo nuevo, se trae y se fusiona.
+async function reconcileModuleBeforePublish(modulo) {
+  if (!MERGEABLE_SUPABASE_MODULES.has(modulo)) return true;
+  const remoteVersion = await leerVersionModuloSupabase(modulo);
+  if (remoteVersion === null) return false;
+  if (!remoteVersion || remoteVersion === supabaseRemoteVersions[modulo]) return true;
+  const remoteSnapshot = await leerUltimoModuloSupabase(modulo);
+  if (!remoteSnapshot) return false;
+  supabaseRemoteVersions[modulo] = remoteVersion;
+  supabasePublishedHashes[modulo] = getSupabaseSnapshotHash(remoteSnapshot);
+  applySupabaseModuleSnapshot(modulo, remoteSnapshot, { allowOlderVersion: true });
+  return true;
+}
+
+// Si este navegador nunca cargo el modulo desde el servidor, su copia puede estar vieja:
+// primero se trae lo del servidor y no se publica nada encima.
+async function loadModuleBaseBeforeFirstPublish(modulo) {
+  const remoteVersion = await leerVersionModuloSupabase(modulo);
+  if (remoteVersion === null) return "error";
+  if (!remoteVersion) return "empty";
+  const remoteSnapshot = await leerUltimoModuloSupabase(modulo);
+  if (!remoteSnapshot) return "error";
+  supabaseRemoteVersions[modulo] = remoteVersion;
+  supabasePublishedHashes[modulo] = getSupabaseSnapshotHash(remoteSnapshot);
+  applySupabaseModuleSnapshot(modulo, remoteSnapshot, { allowOlderVersion: true, allowSmaller: true });
+  saveState();
+  safeRenderAll();
+  return "loaded";
+}
+
+function applySupabaseModuleSnapshotRaw(modulo, snapshot, options = {}) {
   snapshot = parseMaybeJson(snapshot);
   if (!snapshot || typeof snapshot !== "object") return false;
   const version = getSupabaseSnapshotVersion(snapshot);
@@ -1781,7 +2025,7 @@ function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
       state.legalUsers = normalizeLegalUsers(Array.isArray(snapshot.legalUsers) ? snapshot.legalUsers : (state.legalUsers || []));
       state.managerUsers = Array.isArray(snapshot.managerUsers) ? snapshot.managerUsers : (state.managerUsers || []);
       state.processingUsers = Array.isArray(snapshot.processingUsers) ? snapshot.processingUsers : (state.processingUsers || structuredClone(defaultState.processingUsers));
-      if (isHashedPassword(snapshot.adminPasswordHash)) state.adminPasswordHash = snapshot.adminPasswordHash;
+      stripAccessPasswordsFromState(state);
       persistAccessUsers(state);
       return true;
     case "catalogos":
@@ -1837,7 +2081,7 @@ function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
         const remoteCount = getProtectedSupabaseModuleCount("proveedores", snapshot);
         const localCount = (processing.proveedores || []).length;
         supabaseProtectedRemoteCounts.proveedores = Math.max(supabaseProtectedRemoteCounts.proveedores || 0, remoteCount);
-        if (!options.allowSmaller && localCount > remoteCount && remoteCount > 0) {
+        if (!options.allowSmaller && !supabaseModuleBases.proveedores && localCount > remoteCount && remoteCount > 0) {
           showToast("Supabase tenia una copia menor de proveedores; se mantuvo la base local completa.");
           return false;
         }
@@ -2063,6 +2307,7 @@ function mergeTaskChanges(baseItems = [], extraItems = [], existingDeletions = [
 }
 
 function writeSharedPcState(snapshot) {
+  if (!SHARED_PC_ENABLED) return;
   try {
     const request = new XMLHttpRequest();
     request.open("POST", SHARED_PC_STATE_URL, true);
@@ -2095,6 +2340,7 @@ function createPcBackup(reason = "manual") {
 }
 
 function readPcBackups() {
+  if (!SHARED_PC_ENABLED) return [];
   try {
     const request = new XMLHttpRequest();
     request.open("GET", SHARED_PC_BACKUPS_URL, false);
@@ -2166,14 +2412,13 @@ function normalizeStatusOptions(options) {
 function normalizeCommercialAdvisors(advisors) {
   return advisors.map((advisor, index) => {
     if (typeof advisor === "string") {
-      return { id: `advisor-${index}-${advisor}`, name: advisor, agency: "", username: `comercial${index + 1}`, password: "Comercial123", datacilEnabled: false };
+      return { id: `advisor-${index}-${advisor}`, name: advisor, agency: "", username: `comercial${index + 1}`, datacilEnabled: false };
     }
     return {
       id: advisor.id || crypto.randomUUID(),
       name: advisor.name || "",
       agency: advisor.agency || "",
       username: advisor.username || `comercial${index + 1}`,
-      password: advisor.password || "Comercial123",
       datacilEnabled: advisor.datacilEnabled === true
     };
   }).filter((advisor) => advisor.name);
@@ -2205,7 +2450,6 @@ function normalizeLegalUsers(users = []) {
         id: `legal-${index + 1}`,
         name: user,
         username: `legal${index + 1}`,
-        password: "Legal123",
         mailboxes: ["saneamientos"],
         contractAgencies: [],
         legalAvailable: true,
@@ -2216,7 +2460,6 @@ function normalizeLegalUsers(users = []) {
       id: user.id || crypto.randomUUID(),
       name: user.name || `Asistente legal ${index + 1}`,
       username: user.username || `legal${index + 1}`,
-      password: user.password || "Legal123",
       mailboxes: normalizeLegalMailboxes(user.mailboxes || user.profiles || user.buzones || user.profile),
       contractAgencies: normalizeContractAgencies(user.contractAgencies || user.contractAgency || user.agenciasContratos),
       legalAvailable: user.legalAvailable !== false,
@@ -2403,7 +2646,8 @@ function normalizeTask(task) {
     cuvObservations: task.cuvObservations || "",
     cuvDeposits: task.cuvDeposits || "",
     cuvPdfName: task.cuvPdfName || "",
-    cuvPdfDataUrl: task.cuvPdfDataUrl || "",
+    cuvPdfDataUrl: task.cuvPdfPath ? "" : (task.cuvPdfDataUrl || ""),
+    cuvPdfPath: task.cuvPdfPath || "",
     cuvPdfUploadedAt: task.cuvPdfUploadedAt || "",
     sourceTaskId: task.sourceTaskId || ""
   };
@@ -2673,7 +2917,8 @@ function normalizeStoredFile(file) {
     type: file.type || "application/octet-stream",
     size: Number(file.size || 0),
     storageKey: file.storageKey || file.id || "",
-    dataUrl: file.dataUrl || "",
+    storagePath: file.storagePath || "",
+    dataUrl: file.storagePath ? "" : (file.dataUrl || ""),
     uploadedAt: file.uploadedAt || new Date().toISOString(),
     uploadedBy: file.uploadedBy || "USUARIO LOCAL"
   };
@@ -2735,7 +2980,7 @@ function migrateVisualDefaults(merged, source = {}) {
 }
 
 function saveState() {
-  const snapshot = structuredClone(state);
+  const snapshot = stripAccessPasswordsFromState(structuredClone(state));
   snapshot.schemaVersion = STATE_SCHEMA_VERSION;
   persistAccessUsers(snapshot);
   try {
@@ -2929,7 +3174,7 @@ async function restoreStateFromInternalBackupIfNeeded() {
 }
 
 async function migrateIndexedDbFilesToSharedPc() {
-  if (!sharedPcStorageAvailable) return;
+  if (!sharedPcStorageAvailable || !SHARED_PC_ENABLED) return;
   const files = state.dataProcessing?.files || [];
   const pendingFiles = files.filter((file) => file.storageKey && !file.dataUrl);
   if (!pendingFiles.length) return;
@@ -3164,7 +3409,21 @@ function replaceState(nextState) {
 
 function loadRememberedAccess() {
   try {
-    return JSON.parse(localStorage.getItem(REMEMBER_ACCESS_KEY)) || {};
+    const remembered = JSON.parse(localStorage.getItem(REMEMBER_ACCESS_KEY)) || {};
+    // Versiones anteriores guardaban la clave: se elimina.
+    let changed = false;
+    Object.values(remembered).forEach((entry) => {
+      if (entry && typeof entry === "object" && "password" in entry) {
+        delete entry.password;
+        changed = true;
+      }
+    });
+    if (remembered.admin) {
+      delete remembered.admin;
+      changed = true;
+    }
+    if (changed) localStorage.setItem(REMEMBER_ACCESS_KEY, JSON.stringify(remembered));
+    return remembered;
   } catch {
     return {};
   }
@@ -3195,7 +3454,10 @@ function loadPersistedSession() {
       return getPublicSession();
     }
     lastActivityAt = new Date(saved.savedAt).getTime();
-    return sanitizePersistedSession(saved.session);
+    const restored = sanitizePersistedSession(saved.session);
+    // La sesion solo es valida si coincide con el token firmado por Supabase.
+    if (restored.role !== "public" && !authClaimsMatchSession(restored)) return getPublicSession();
+    return restored;
   } catch {
     return getPublicSession();
   }
@@ -3216,6 +3478,7 @@ function sanitizePersistedSession(savedSession) {
 
 function isPersistedSessionValid(savedSession) {
   if (!savedSession || savedSession.role === "public") return false;
+  if (!authClaimsMatchSession(savedSession)) return false;
   if (savedSession.role === "admin") return savedSession.userId === "admin";
   if (savedSession.role === "legal") return state.legalUsers.some((user) => user.id === savedSession.userId);
   if (savedSession.role === "commercial") return state.commercialAdvisors.some((user) => user.id === savedSession.userId);
@@ -3287,8 +3550,7 @@ function rememberAccessFromLogin(area, formElement, data) {
     return;
   }
   saveRememberedAccess(area, {
-    username: data.username || "",
-    password: data.password || ""
+    username: data.username || ""
   });
 }
 
@@ -3552,7 +3814,7 @@ function openCommercialLeadFicha(taskId) {
     </section>
     ${renderLegalObservationList(task)}
     <div class="lead-ficha-actions span-2">
-      ${isCuv && task.cuvPdfDataUrl ? `<button class="btn primary" type="button" data-pdf-download="${escapeHtml(task.id)}">Descargar PDF CUV</button>` : ""}
+      ${isCuv && hasCuvPdf(task) ? `<button class="btn primary" type="button" data-pdf-download="${escapeHtml(task.id)}">Descargar PDF CUV</button>` : ""}
       ${task.processType === "venta" && task.commercialUserId === session.userId ? `<button class="btn secondary" type="button" data-edit-uafe-task="${escapeHtml(task.id)}">${task.uafe ? "Editar UAFE" : "Crear UAFE"}</button>` : ""}
       ${task.processType === "venta" && task.uafe?.pdfHtml ? `<button class="btn primary" type="button" data-uafe-pdf="${escapeHtml(task.id)}">Ver PDF UAFE</button>` : ""}
       ${buildSignatureActionButtons(task)}
@@ -3844,6 +4106,7 @@ function setSession(nextSession) {
   if (session.role === "public") {
     sessionAnnouncementShownKey = "";
     resetCommercialTopbarChrome();
+    if (window.AutocorAuth?.hasSession()) window.AutocorAuth.signOut();
   }
   logoutBtn.hidden = session.role === "public";
   document.body.dataset.session = session.role;
@@ -5402,7 +5665,7 @@ function removeStatusOption(id) {
   showToast("Estatus eliminado.");
 }
 
-function addCommercialAdvisor(data) {
+async function addCommercialAdvisor(data) {
   const name = data.name.trim();
   const agency = data.agency.trim();
   const username = data.username.trim();
@@ -5417,7 +5680,9 @@ function addCommercialAdvisor(data) {
     return;
   }
 
-  state.commercialAdvisors.push({ id: crypto.randomUUID(), name, agency, username, password, datacilEnabled: data.datacilEnabled === "on" });
+  const advisor = { id: crypto.randomUUID(), name, agency, username, datacilEnabled: data.datacilEnabled === "on" };
+  if (!(await registerAccessAccount("commercial", advisor, password))) return;
+  state.commercialAdvisors.push(advisor);
   saveState();
   guardarUsuariosSupabaseAhora();
   renderAll();
@@ -5425,6 +5690,7 @@ function addCommercialAdvisor(data) {
 }
 
 function removeCommercialAdvisor(id) {
+  blockAccessAccount("commercial", id);
   state.commercialAdvisors = state.commercialAdvisors.filter((advisor) => advisor.id !== id);
   saveState();
   guardarUsuariosSupabaseAhora();
@@ -5619,7 +5885,7 @@ function removeAnnouncement(id) {
   showToast(`Comunicado eliminado${announcement?.title ? `: ${announcement.title}` : ""}.`);
 }
 
-function createUser(data) {
+async function createUser(data) {
   const username = data.username.trim();
   const password = cleanPasswordValue(data.password);
   const mailboxes = normalizeLegalMailboxes(data.mailboxes);
@@ -5630,16 +5896,17 @@ function createUser(data) {
     return;
   }
 
-  state.legalUsers.push({
+  const legalUser = {
     id: crypto.randomUUID(),
     name: data.name.trim(),
     username,
-    password,
     mailboxes,
     contractAgencies,
     legalAvailable: true,
     datacilEnabled: data.datacilEnabled === "on"
-  });
+  };
+  if (!(await registerAccessAccount("legal", legalUser, password))) return;
+  state.legalUsers.push(legalUser);
   saveState();
   autoAssignOpenSaneamientos();
   sincronizarTareasPendientesSupabase();
@@ -5668,6 +5935,7 @@ function removeUser(id) {
     };
   });
   state.legalUsers = state.legalUsers.filter((user) => user.id !== id);
+  blockAccessAccount("legal", id);
   saveState();
   autoAssignOpenSaneamientos();
   sincronizarTareasPendientesSupabase();
@@ -6021,23 +6289,36 @@ function toggleLegalAvailability() {
   );
 }
 
-function changePassword(collection, id, password) {
+async function changePassword(collection, id, password) {
   const cleanPassword = cleanPasswordValue(password);
-  if (!cleanPassword) {
-    showToast("Ingrese una nueva contrasena.");
-    return;
+  if (cleanPassword.length < 8) {
+    showToast("La nueva contrasena debe tener al menos 8 caracteres.");
+    return false;
   }
-  const user = state[collection].find((item) => item.id === id);
-  if (!user) return;
-  user.password = cleanPassword;
-  saveState();
-  guardarUsuariosSupabaseAhora().then((ok) => {
-    if (!ok) showToast("Clave guardada en este equipo. Supabase no esta disponible para compartirla todavia.");
-  });
-  showToast("Contrasena actualizada.");
+  const role = roleForCollection(collection);
+  const user = (state[collection] || []).find((item) => item.id === id);
+  if (!role || !user) return false;
+  try {
+    if (session.role === "admin") {
+      await window.AutocorAuth.rpc("autocor_guardar_acceso", {
+        p_role: role,
+        p_id: String(user.id),
+        p_username: String(user.username || ""),
+        p_name: String(user.name || ""),
+        p_password: cleanPassword
+      });
+    } else {
+      await window.AutocorAuth.rpc("autocor_cambiar_clave", { p_role: role, p_id: String(id), p_password: cleanPassword });
+    }
+    showToast("Contrasena actualizada.");
+    return true;
+  } catch (error) {
+    showToast(error.message || "No se pudo cambiar la contrasena.");
+    return false;
+  }
 }
 
-function createManagerUser(data) {
+async function createManagerUser(data) {
   const username = data.username.trim();
   const password = cleanPasswordValue(data.password);
   const exists = state.managerUsers.some((user) => user.username.toLowerCase() === username.toLowerCase());
@@ -6045,12 +6326,13 @@ function createManagerUser(data) {
     showToast("Ese usuario gerencial ya existe.");
     return;
   }
-  state.managerUsers.push({
+  const managerUser = {
     id: crypto.randomUUID(),
     name: data.name.trim(),
-    username,
-    password
-  });
+    username
+  };
+  if (!(await registerAccessAccount("manager", managerUser, password))) return;
+  state.managerUsers.push(managerUser);
   saveState();
   guardarUsuariosSupabaseAhora();
   renderAll();
@@ -6063,6 +6345,7 @@ function removeManagerUser(id) {
     return;
   }
   state.managerUsers = state.managerUsers.filter((user) => user.id !== id);
+  blockAccessAccount("manager", id);
   saveState();
   guardarUsuariosSupabaseAhora();
   renderAll();
@@ -6096,7 +6379,7 @@ function renderManagerUsers() {
   });
 }
 
-function createProcessingUser(data) {
+async function createProcessingUser(data) {
   const name = String(data.name || "").trim();
   const username = String(data.username || "").trim();
   const password = cleanPasswordValue(data.password);
@@ -6112,12 +6395,13 @@ function createProcessingUser(data) {
     showToast("Ese usuario de procesamiento ya existe.");
     return;
   }
-  state.processingUsers.push({
+  const processingUser = {
     id: crypto.randomUUID(),
     name,
-    username,
-    password
-  });
+    username
+  };
+  if (!(await registerAccessAccount("processing", processingUser, password))) return;
+  state.processingUsers.push(processingUser);
   saveState();
   guardarUsuariosSupabaseAhora();
   renderAll();
@@ -6131,6 +6415,7 @@ function removeProcessingUser(id) {
     return;
   }
   state.processingUsers = state.processingUsers.filter((user) => user.id !== id);
+  blockAccessAccount("processing", id);
   if (session.role === "processing" && session.userId === id) {
     setSession(getPublicSession());
     setView("acceso");
@@ -7778,12 +8063,11 @@ function getDatacilAdvisorIdentity() {
 }
 
 async function callDatacilFunction(body = {}) {
-  const apiResponse = await fetch(`${SUPABASE_FUNCTIONS_URL}/datacil-vehiculo`, {
+  const apiResponse = await fetch(`${SUPABASE_FUNCTIONS_URL}/datacil-consulta`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`
+      ...(await window.AutocorAuth.headers())
     },
     body: JSON.stringify({ ...body, advisor: getDatacilAdvisorIdentity() })
   });
@@ -8255,7 +8539,7 @@ function renderLegalTaskFullDetails(task) {
           </div>
         `).join("")}
       </div>
-      ${task.cuvPdfDataUrl ? `<div class="legal-modal-download"><button class="btn primary" type="button" data-pdf-download="${escapeHtml(task.id)}">Descargar PDF CUV</button></div>` : ""}
+      ${hasCuvPdf(task) ? `<div class="legal-modal-download"><button class="btn primary" type="button" data-pdf-download="${escapeHtml(task.id)}">Descargar PDF CUV</button></div>` : ""}
     `;
   }
   if (isSignatureTask(task)) {
@@ -8492,8 +8776,10 @@ async function saveCuvLegalTask(formElement) {
     task.cuvObservations = normalizeLooseText(data.cuvObservations);
     task.cuvDeposits = normalizeLooseText(data.cuvDeposits);
     if (pdfDataUrl) {
-      task.cuvPdfDataUrl = pdfDataUrl;
-      task.cuvPdfName = file.name || `${task.placa || "CUV"}.pdf`;
+      const pdfName = file.name || `${task.placa || "CUV"}.pdf`;
+      task.cuvPdfPath = await uploadBlobToStorage(`cuv/${task.id}/${Date.now()}-${safeStorageFileName(pdfName)}`, file, "application/pdf");
+      task.cuvPdfDataUrl = "";
+      task.cuvPdfName = pdfName;
       task.cuvPdfUploadedAt = now;
       task.cuvStatus = "ENVIADO ASESOR";
       task.status = "saneamiento realizado y subido a pilot";
@@ -8675,113 +8961,113 @@ function cleanPasswordValue(value = "") {
   return String(value || "").trim();
 }
 
-function isHashedPassword(value = "") {
-  return String(value || "").startsWith(PASSWORD_HASH_PREFIX);
+const AUTH_ROLE_COLLECTIONS = {
+  commercial: "commercialAdvisors",
+  legal: "legalUsers",
+  manager: "managerUsers",
+  processing: "processingUsers"
+};
+
+function roleForCollection(collection) {
+  return Object.keys(AUTH_ROLE_COLLECTIONS).find((role) => AUTH_ROLE_COLLECTIONS[role] === collection) || "";
 }
 
-function canHashPasswords() {
-  return Boolean(window.crypto?.subtle && window.TextEncoder);
-}
-
-function bytesToBase64(bytes) {
-  let binary = "";
-  new Uint8Array(bytes).forEach((byte) => {
-    binary += String.fromCharCode(byte);
+// Las claves nunca se guardan en la base de datos ni en el navegador:
+// las administra Supabase Auth.
+function stripAccessPasswords(users = []) {
+  return (Array.isArray(users) ? users : []).map((user) => {
+    if (!user || typeof user !== "object") return user;
+    const { password, ...rest } = user;
+    return rest;
   });
-  return btoa(binary);
 }
 
-function base64ToBytes(value = "") {
-  const binary = atob(value);
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
-  return bytes;
+function stripAccessPasswordsFromState(target = state) {
+  ACCESS_USER_COLLECTIONS.forEach((collection) => {
+    if (Array.isArray(target?.[collection])) target[collection] = stripAccessPasswords(target[collection]);
+  });
+  if (target && "adminPasswordHash" in target) delete target.adminPasswordHash;
+  return target;
 }
 
-async function derivePasswordBits(password, salt, iterations) {
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
-  return crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations }, key, 256);
+function authClaimsMatchSession(savedSession) {
+  const claims = window.AutocorAuth?.getClaims();
+  if (!claims || !savedSession || savedSession.role === "public") return false;
+  if (claims.role !== savedSession.role) return false;
+  if (savedSession.role === "admin") return true;
+  return String(claims.userId) === String(savedSession.userId || "");
 }
 
-async function hashPassword(password) {
-  const clean = cleanPasswordValue(password);
-  if (!clean || !canHashPasswords()) return clean;
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const bits = await derivePasswordBits(clean, salt, PASSWORD_HASH_ITERATIONS);
-  return `${PASSWORD_HASH_PREFIX}${PASSWORD_HASH_ITERATIONS}$${bytesToBase64(salt)}$${bytesToBase64(bits)}`;
+async function refreshAccessUsersAfterLogin() {
+  if (!navigator.onLine) return false;
+  return Promise.race([
+    actualizarUsuariosDesdeSupabaseParaLogin(),
+    new Promise((resolve) => window.setTimeout(() => resolve(false), 8000))
+  ]);
 }
 
-async function verifyPassword(password, stored) {
-  const clean = cleanPasswordValue(password);
-  const storedValue = String(stored || "");
-  if (!clean || !storedValue) return false;
-  if (!isHashedPassword(storedValue)) return cleanPasswordValue(storedValue) === clean;
-  if (!canHashPasswords()) return false;
+let loginInFlight = false;
+
+async function completeAuthLogin(role, data = {}) {
+  if (loginInFlight) return null;
+  const username = role === "admin" ? "admin" : cleanUsernameValue(data.username);
+  const password = cleanPasswordValue(data.password);
+  if (!username || !password) {
+    showToast("Ingrese usuario y contrasena.");
+    return null;
+  }
+  loginInFlight = true;
   try {
-    const [, iterationsText, saltText, hashText] = storedValue.split("$");
-    const iterations = Number(iterationsText) || PASSWORD_HASH_ITERATIONS;
-    const bits = new Uint8Array(await derivePasswordBits(clean, base64ToBytes(saltText), iterations));
-    const expected = base64ToBytes(hashText);
-    if (bits.length !== expected.length) return false;
-    let difference = 0;
-    for (let index = 0; index < bits.length; index += 1) difference |= bits[index] ^ expected[index];
-    return difference === 0;
-  } catch {
+    const result = await window.AutocorAuth.signIn(role, username, password);
+    if (!result.ok) {
+      showToast(result.error || "Usuario o contrasena incorrectos.");
+      return null;
+    }
+    if (role === "admin") return { id: "admin", name: "Administrador" };
+    await refreshAccessUsersAfterLogin();
+    const collection = AUTH_ROLE_COLLECTIONS[role];
+    const user = (state[collection] || []).find((item) => String(item.id) === String(result.userId));
+    if (!user) {
+      await window.AutocorAuth.signOut();
+      showToast("Su usuario no esta activo en el sistema. Consulte al administrador.");
+      return null;
+    }
+    return user;
+  } finally {
+    loginInFlight = false;
+  }
+}
+
+// Crea o actualiza la cuenta de acceso de un usuario (solo administrador).
+async function registerAccessAccount(role, user = {}, password = "") {
+  if (session.role !== "admin") {
+    showToast("Solo el administrador puede crear accesos.");
+    return false;
+  }
+  const cleanPassword = cleanPasswordValue(password);
+  if (cleanPassword && cleanPassword.length < 8) {
+    showToast("La contrasena debe tener al menos 8 caracteres.");
+    return false;
+  }
+  try {
+    await window.AutocorAuth.rpc("autocor_guardar_acceso", {
+      p_role: role,
+      p_id: String(user.id || ""),
+      p_username: String(user.username || ""),
+      p_name: String(user.name || ""),
+      p_password: cleanPassword || null
+    });
+    return true;
+  } catch (error) {
+    showToast(error.message || "No se pudo crear el acceso en Supabase.");
     return false;
   }
 }
 
-async function findUserByCredentials(users = [], username, password) {
-  const cleanUser = cleanUsernameValue(username);
-  const candidates = (users || []).filter((item) => cleanUsernameValue(item.username) === cleanUser);
-  for (const candidate of candidates) {
-    if (await verifyPassword(password, candidate.password)) return candidate;
-  }
-  return null;
-}
-
-// Convierte a hash cualquier clave que todavia este guardada en texto plano.
-let securingPasswordsPromise = null;
-function secureStoredPasswords() {
-  if (!canHashPasswords()) return Promise.resolve(false);
-  if (securingPasswordsPromise) return securingPasswordsPromise;
-  securingPasswordsPromise = (async () => {
-    let changed = false;
-    for (const collection of ACCESS_USER_COLLECTIONS) {
-      for (const user of state[collection] || []) {
-        if (!user || !user.password || isHashedPassword(user.password)) continue;
-        const plain = user.password;
-        const hashed = await hashPassword(plain);
-        if (user.password === plain) {
-          user.password = hashed;
-          changed = true;
-        }
-      }
-    }
-    if (changed) {
-      persistAccessUsers(state);
-      saveState();
-    }
-    return changed;
-  })().finally(() => {
-    securingPasswordsPromise = null;
-  });
-  return securingPasswordsPromise;
-}
-
-// Si el usuario entro con una clave antigua en texto plano, se guarda en hash
-// partiendo de la lista de usuarios mas reciente para no pisar cambios de otros equipos.
-function upgradeLegacyPasswordAfterLogin(user) {
-  if (!user || isHashedPassword(user.password) || !canHashPasswords()) return;
-  (async () => {
-    if (navigator.onLine) await actualizarUsuariosDesdeSupabaseParaLogin().catch(() => false);
-    const changed = await secureStoredPasswords();
-    if (changed) await guardarUsuariosSupabaseAhora();
-  })().catch((error) => console.warn("No se pudo proteger la clave:", error));
-}
-
-function getAdminPasswordHash() {
-  return isHashedPassword(state.adminPasswordHash) ? state.adminPasswordHash : DEFAULT_ADMIN_PASSWORD_HASH;
+function blockAccessAccount(role, id) {
+  if (session.role !== "admin" || !role || !id) return;
+  window.AutocorAuth.rpc("autocor_bloquear_acceso", { p_role: role, p_id: String(id), p_bloquear: true })
+    .catch((error) => showToast(error.message || "No se pudo desactivar el acceso."));
 }
 
 async function changeAdminPassword(formElement) {
@@ -8790,10 +9076,6 @@ async function changeAdminPassword(formElement) {
   const current = cleanPasswordValue(data.currentPassword);
   const next = cleanPasswordValue(data.newPassword);
   const confirmation = cleanPasswordValue(data.confirmPassword);
-  if (!(await verifyPassword(current, getAdminPasswordHash()))) {
-    showToast("La clave actual no es correcta.");
-    return;
-  }
   if (next.length < 10) {
     showToast("La nueva clave debe tener al menos 10 caracteres.");
     return;
@@ -8802,50 +9084,36 @@ async function changeAdminPassword(formElement) {
     showToast("La confirmacion no coincide con la nueva clave.");
     return;
   }
-  if (!canHashPasswords()) {
-    showToast("Este navegador no permite cambiar la clave de forma segura.");
+  const check = await window.AutocorAuth.signIn("admin", "admin", current);
+  if (!check.ok) {
+    showToast("La clave actual no es correcta.");
     return;
   }
-  state.adminPasswordHash = await hashPassword(next);
-  clearRememberedAccess("admin");
-  persistAccessUsers(state);
-  saveState();
-  formElement.reset();
-  renderAdminPasswordNotice();
-  const ok = await guardarUsuariosSupabaseAhora();
-  showToast(ok ? "Clave de administrador actualizada." : "Clave guardada en este equipo. Pendiente de sincronizar.");
+  try {
+    await window.AutocorAuth.rpc("autocor_cambiar_clave", { p_role: "admin", p_id: "admin", p_password: next });
+    formElement.reset();
+    showToast("Clave de administrador actualizada.");
+  } catch (error) {
+    showToast(error.message || "No se pudo cambiar la clave.");
+  }
 }
 
 function renderAdminPasswordNotice() {
   const notice = document.querySelector("#adminPasswordDefaultNotice");
-  if (notice) notice.hidden = isHashedPassword(state.adminPasswordHash);
+  if (notice) notice.hidden = true;
 }
 
-async function refreshAccessUsersAfterFailedLogin() {
-  if (!navigator.onLine) return false;
-  return Promise.race([
-    actualizarUsuariosDesdeSupabaseParaLogin(),
-    new Promise((resolve) => window.setTimeout(() => resolve(false), 3500))
-  ]);
+function handleAuthSessionChange(nextAuthSession) {
+  if (nextAuthSession || session.role === "public") return;
+  setSession(getPublicSession());
+  setView("acceso");
+  showToast("Su sesion termino. Ingrese nuevamente.");
 }
 
 async function loginLegal(data) {
-  await refreshAccessUsersAfterFailedLogin();
-  const username = cleanUsernameValue(data.username);
-  const password = cleanPasswordValue(data.password);
-  let user = await findUserByCredentials(state.legalUsers, username, password);
-
-  if (!user) {
-    await refreshAccessUsersAfterFailedLogin();
-    user = await findUserByCredentials(state.legalUsers, username, password);
-    if (!user) {
-      showToast("Usuario o contrasena incorrectos.");
-      return;
-    }
-  }
-
+  const user = await completeAuthLogin("legal", data);
+  if (!user) return;
   rememberAccessFromLogin("legal", legalLoginForm, data);
-  upgradeLegacyPasswordAfterLogin(user);
   setSession({ role: "legal", userId: user.id, name: user.name });
   legalLoginForm.reset();
   setView("tareas");
@@ -8854,21 +9122,9 @@ async function loginLegal(data) {
 }
 
 async function loginCommercial(data) {
-  const username = cleanUsernameValue(data.username);
-  const password = cleanPasswordValue(data.password);
-  let user = await findUserByCredentials(state.commercialAdvisors, username, password);
-
-  if (!user) {
-    await refreshAccessUsersAfterFailedLogin();
-    user = await findUserByCredentials(state.commercialAdvisors, username, password);
-    if (!user) {
-      showToast("Usuario comercial o contrasena incorrectos.");
-      return;
-    }
-  }
-
+  const user = await completeAuthLogin("commercial", data);
+  if (!user) return;
   rememberAccessFromLogin("commercial", commercialLoginForm, data);
-  upgradeLegacyPasswordAfterLogin(user);
   setSession({ role: "commercial", userId: user.id, name: user.name, agency: user.agency });
   commercialLoginForm.reset();
   setView("formulario");
@@ -8879,42 +9135,19 @@ async function loginCommercial(data) {
 }
 
 async function loginAdmin(data) {
-  await refreshAccessUsersAfterFailedLogin();
-  if (!(await verifyPassword(data.password, getAdminPasswordHash()))) {
-    showToast("Clave de administrador incorrecta.");
-    return;
-  }
-
-  rememberAccessFromLogin("admin", adminLoginForm, { password: data.password });
+  const user = await completeAuthLogin("admin", data);
+  if (!user) return;
   setSession({ role: "admin", userId: "admin", name: "Administrador" });
   adminLoginForm.reset();
   setView("admin");
   runInitialRemoteSyncAfterLogin("login-admin");
-  renderAdminPasswordNotice();
-  showToast(isHashedPassword(state.adminPasswordHash)
-    ? "Administrador activo."
-    : "Administrador activo. Cambie la clave inicial en Usuarios.");
-  secureStoredPasswords().then((changed) => {
-    if (changed) guardarUsuariosSupabaseAhora();
-  });
+  showToast("Administrador activo.");
 }
 
 async function loginManager(data) {
-  const username = cleanUsernameValue(data.username);
-  const password = cleanPasswordValue(data.password);
-  let user = await findUserByCredentials(state.managerUsers, username, password);
-
-  if (!user) {
-    await refreshAccessUsersAfterFailedLogin();
-    user = await findUserByCredentials(state.managerUsers, username, password);
-    if (!user) {
-      showToast("Usuario gerencial o contrasena incorrectos.");
-      return;
-    }
-  }
-
+  const user = await completeAuthLogin("manager", data);
+  if (!user) return;
   rememberAccessFromLogin("manager", managerLoginForm, data);
-  upgradeLegacyPasswordAfterLogin(user);
   setSession({ role: "manager", userId: user.id, name: user.name, agency: "" });
   managerLoginForm.reset();
   setView("gerencial");
@@ -8923,21 +9156,9 @@ async function loginManager(data) {
 }
 
 async function loginProcessing(data) {
-  const username = cleanUsernameValue(data.username);
-  const password = cleanPasswordValue(data.password);
-  let user = await findUserByCredentials(state.processingUsers, username, password);
-
-  if (!user) {
-    await refreshAccessUsersAfterFailedLogin();
-    user = await findUserByCredentials(state.processingUsers, username, password);
-    if (!user) {
-      showToast("Usuario de procesamiento o contrasena incorrectos.");
-      return;
-    }
-  }
-
+  const user = await completeAuthLogin("processing", data);
+  if (!user) return;
   rememberAccessFromLogin("processing", processingLoginForm, data);
-  upgradeLegacyPasswordAfterLogin(user);
   setSession({ role: "processing", userId: user.id, name: user.name, agency: "" });
   processingLoginForm.reset();
   setView("procesamiento");
@@ -9692,6 +9913,7 @@ async function createCuvTask(data) {
     cuvDeposits: "",
     cuvPdfName: "",
     cuvPdfDataUrl: "",
+    cuvPdfPath: "",
     observaciones: `SOLICITUD CUV | Placa: ${normalizePlate(data.placa)} | Titular: ${normalizeLooseText(data.cliente)}`,
     duplicateWarnings: [],
     syncStatus: "pending"
@@ -10463,9 +10685,9 @@ function renderCommercialCuvList() {
         <small>Orden: ${escapeHtml(task.cuvOrderNumber || "Pendiente")} | Solicitado: ${escapeHtml(formatDateTime(task.createdAt))}</small>
       </div>
       <div class="commercial-lead-actions">
-        <span class="info-request-pending ${task.cuvPdfDataUrl ? "is-approved" : ""}">${escapeHtml(task.cuvStatus || "SOLICITADO")}</span>
+        <span class="info-request-pending ${hasCuvPdf(task) ? "is-approved" : ""}">${escapeHtml(task.cuvStatus || "SOLICITADO")}</span>
         <button class="btn tiny secondary" type="button" data-commercial-ficha="${escapeHtml(task.id)}">Ver ficha</button>
-        ${task.cuvPdfDataUrl ? `<button class="btn tiny primary" type="button" data-pdf-download="${escapeHtml(task.id)}">Descargar PDF</button>` : ""}
+        ${hasCuvPdf(task) ? `<button class="btn tiny primary" type="button" data-pdf-download="${escapeHtml(task.id)}">Descargar PDF</button>` : ""}
       </div>
     </article>
   `).join("");
@@ -17399,13 +17621,144 @@ function openOrDownloadDataUrl(dataUrl = "", filename = "archivo.pdf") {
   if (blob) window.setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
-function downloadCuvPdf(taskId = "") {
+function hasCuvPdf(task = {}) {
+  return Boolean(task?.cuvPdfPath || task?.cuvPdfDataUrl);
+}
+
+async function downloadCuvPdf(taskId = "") {
   const task = (state.tasks || []).find((item) => String(item.id) === String(taskId));
-  if (!task?.cuvPdfDataUrl) {
+  if (!hasCuvPdf(task)) {
     showToast("Este CUV aun no tiene PDF disponible.");
     return;
   }
-  openOrDownloadDataUrl(task.cuvPdfDataUrl, task.cuvPdfName || `${task.placa || "CUV"}.pdf`);
+  const fileName = task.cuvPdfName || `${task.placa || "CUV"}.pdf`;
+  if (task.cuvPdfDataUrl) {
+    openOrDownloadDataUrl(task.cuvPdfDataUrl, fileName);
+    return;
+  }
+  try {
+    const blob = await window.AutocorAuth.downloadFile(task.cuvPdfPath);
+    openOrDownloadDataUrl(await blobToDataUrl(blob), fileName);
+  } catch {
+    showToast("No se pudo descargar el PDF del CUV. Revise su conexion.");
+  }
+}
+
+// ===== Archivos en Supabase Storage =====
+function safeStorageFileName(name = "archivo") {
+  const clean = String(name || "archivo")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return clean.slice(-120) || "archivo";
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(reader.result));
+    reader.addEventListener("error", () => reject(reader.error));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function uploadBlobToStorage(path, blob, contentType = "") {
+  if (!window.AutocorAuth?.hasSession()) throw new Error("Inicie sesion para subir archivos.");
+  return window.AutocorAuth.uploadFile(path, blob, contentType || blob?.type || "application/octet-stream");
+}
+
+function fileLibraryStoragePath(file = {}) {
+  return `archivos/${file.id}/${safeStorageFileName(file.name)}`;
+}
+
+let migratingEmbeddedFiles = false;
+
+// Los archivos que antes viajaban dentro de los registros se pasan a Storage una sola vez.
+async function migrateEmbeddedFilesToStorage() {
+  if (migratingEmbeddedFiles || !["admin", "processing"].includes(session.role) || !navigator.onLine) return;
+  if (!window.AutocorAuth?.hasSession()) return;
+  const files = state.dataProcessing?.files || [];
+  const pending = files.filter((file) => file.dataUrl && !file.storagePath);
+  const pendingTasks = (state.tasks || []).filter((task) => task.cuvPdfDataUrl && !task.cuvPdfPath);
+  if (!pending.length && !pendingTasks.length) return;
+  migratingEmbeddedFiles = true;
+  let migrated = 0;
+  try {
+    for (const file of pending) {
+      const blob = dataUrlToBlob(file.dataUrl);
+      if (!blob) continue;
+      const path = fileLibraryStoragePath(file);
+      await uploadBlobToStorage(path, blob, file.type);
+      try {
+        await putFilePayload(file.storageKey || file.id, file.dataUrl);
+      } catch {}
+      file.storagePath = path;
+      file.dataUrl = "";
+      migrated += 1;
+    }
+    for (const task of pendingTasks) {
+      const blob = dataUrlToBlob(task.cuvPdfDataUrl);
+      if (!blob) continue;
+      task.cuvPdfPath = await uploadBlobToStorage(`cuv/${task.id}/${safeStorageFileName(task.cuvPdfName || "cuv.pdf")}`, blob, "application/pdf");
+      task.cuvPdfDataUrl = "";
+      task.updatedAt = new Date().toISOString();
+      task.syncStatus = "pending";
+      await guardarTareaSupabase(task, "cuv-pdf-storage");
+      migrated += 1;
+    }
+  } catch (error) {
+    console.warn("No se pudieron migrar archivos a Storage:", error);
+  } finally {
+    migratingEmbeddedFiles = false;
+  }
+  if (migrated) {
+    saveState();
+    await guardarModuloSupabaseAhora("archivos");
+    renderFileLibrary();
+  }
+}
+
+// Recupera archivos que existian en versiones anteriores del repositorio y ya no aparecen.
+async function recoverFilesFromHistory() {
+  if (!["admin", "processing"].includes(session.role)) return;
+  try {
+    const query = `${SUPABASE_URL}/REGISTROS?modulo=eq.archivos&tipo=eq.base&select=id,created_at,datos&order=id.desc&limit=1&datos-%3Efiles-%3E0=not.is.null`;
+    const response = await fetch(query, { headers: { ...(await window.AutocorAuth.headers()) } });
+    if (!response.ok) throw new Error("consulta");
+    const rows = await response.json();
+    const snapshot = parseMaybeJson(rows?.[0]?.datos) || {};
+    const currentIds = new Set((state.dataProcessing.files || []).map((file) => file.id));
+    const missing = (Array.isArray(snapshot.files) ? snapshot.files : [])
+      .map(normalizeStoredFile)
+      .filter((file) => !currentIds.has(file.id) && (file.dataUrl || file.storagePath));
+    if (!missing.length) {
+      showToast("No hay archivos para recuperar.");
+      return;
+    }
+    const savedAt = rows[0].created_at ? formatDateTime(rows[0].created_at) : "una version anterior";
+    if (!window.confirm(`Se encontraron ${missing.length} archivo(s) de ${savedAt} que ya no aparecen. ¿Desea recuperarlos?`)) return;
+    let recovered = 0;
+    for (const file of missing) {
+      if (!file.storagePath && file.dataUrl) {
+        const blob = dataUrlToBlob(file.dataUrl);
+        if (!blob) continue;
+        file.storagePath = fileLibraryStoragePath(file);
+        await uploadBlobToStorage(file.storagePath, blob, file.type);
+        file.dataUrl = "";
+      }
+      file.notes = normalizeLooseText(`${file.notes || ""} RECUPERADO`);
+      state.dataProcessing.files.push(file);
+      recovered += 1;
+    }
+    saveState();
+    await guardarModuloSupabaseAhora("archivos");
+    renderFileLibrary();
+    showToast(`${recovered} archivo(s) recuperado(s).`);
+  } catch {
+    showToast("No se pudieron recuperar los archivos. Revise su conexion.");
+  }
 }
 
 function formatFileSize(size) {
@@ -17432,7 +17785,7 @@ function readFileForLibrary(file, category, notes, folderId = "folder-general") 
         type: file.type || "application/octet-stream",
         size: file.size,
         folderId: folderId || "folder-general",
-        dataUrl: sharedPcStorageAvailable ? reader.result : "",
+        dataUrl: "",
         uploadedAt: new Date().toISOString(),
         uploadedBy: session.name || "USUARIO LOCAL"
         })
@@ -17458,24 +17811,41 @@ async function saveSelectedFiles() {
   const previousFiles = state.dataProcessing.files || [];
   try {
     const stored = await Promise.all(selected.map((file) => readFileForLibrary(file, data.category, data.notes, data.folderId)));
-    await Promise.all(stored.map((item) => putFilePayload(item.metadata.storageKey, item.payload)));
+    for (let index = 0; index < stored.length; index += 1) {
+      const item = stored[index];
+      item.metadata.storagePath = fileLibraryStoragePath(item.metadata);
+      await uploadBlobToStorage(item.metadata.storagePath, selected[index], item.metadata.type);
+    }
+    await Promise.all(stored.map((item) => putFilePayload(item.metadata.storageKey, item.payload).catch(() => {})));
     state.dataProcessing.files = [...previousFiles, ...stored.map((item) => item.metadata)];
     saveState();
     fileLibraryForm.reset();
     updateFilePickerLabel();
     renderFileLibrary();
     showToast(`${stored.length} ${stored.length === 1 ? "archivo guardado" : "archivos guardados"}.`);
-  } catch {
+    guardarModuloSupabaseAhora("archivos");
+  } catch (error) {
     state.dataProcessing.files = previousFiles;
-    showToast("No se pudieron guardar los archivos. Revise el peso o formato.");
+    showToast(error?.message && /sesion/i.test(error.message)
+      ? error.message
+      : "No se pudieron guardar los archivos. Revise su conexion, el peso o el formato.");
   }
 }
 
 async function getStoredFileDataUrl(file) {
   if (file?.dataUrl) return file.dataUrl;
-  if (!file?.storageKey) return "";
+  if (file?.storageKey) {
+    try {
+      const cached = await getFilePayload(file.storageKey);
+      if (cached) return cached;
+    } catch {}
+  }
+  if (!file?.storagePath) return "";
   try {
-    return await getFilePayload(file.storageKey);
+    const blob = await window.AutocorAuth.downloadFile(file.storagePath);
+    const dataUrl = await blobToDataUrl(blob);
+    if (file.storageKey) putFilePayload(file.storageKey, dataUrl).catch(() => {});
+    return dataUrl;
   } catch {
     return "";
   }
@@ -17689,6 +18059,13 @@ async function deleteStoredFile(id) {
   if (!file) return;
   const confirmed = window.confirm(`Desea borrar el archivo "${file.name}"?`);
   if (!confirmed) return;
+  if (file.storagePath && window.AutocorAuth?.hasSession()) {
+    const removed = await window.AutocorAuth.removeFile(file.storagePath);
+    if (!removed) {
+      showToast("No tiene permiso para borrar este archivo o no hay conexion.");
+      return;
+    }
+  }
   state.dataProcessing.files = (state.dataProcessing.files || []).filter((item) => item.id !== id);
   if (file.storageKey) {
     try {
@@ -17698,6 +18075,7 @@ async function deleteStoredFile(id) {
     }
   }
   saveState();
+  guardarModuloSupabaseAhora("archivos");
   renderFileLibrary();
   showToast("Archivo borrado.");
 }
@@ -19101,6 +19479,10 @@ userForm.addEventListener("submit", (event) => {
   });
   userForm.reset();
   userForm.querySelector("[name='mailboxes'][value='saneamientos']").checked = true;
+});
+
+document.querySelector("#recoverFilesBtn")?.addEventListener("click", () => {
+  recoverFilesFromHistory();
 });
 
 document.querySelector("#adminPasswordForm")?.addEventListener("submit", (event) => {

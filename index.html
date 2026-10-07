@@ -534,6 +534,7 @@
             <p>Centraliza soportes, bases, contratos, respaldos y documentos operativos para consultarlos despues.</p>
           </div>
           <span id="fileLibraryCount" class="soft-badge">0 archivos</span>
+          <button id="recoverFilesBtn" class="btn secondary" type="button">Recuperar archivos anteriores</button>
         </div>
 
         <section class="file-vault-shell">
@@ -541,7 +542,7 @@
             <div>
               <p class="eyebrow">Nueva carga</p>
               <h3>Guardar archivo</h3>
-              <p class="compact-note">Se guarda localmente en este navegador. Limite recomendado: 50 MB por archivo.</p>
+              <p class="compact-note">Se guarda en linea de forma privada y lo ven los usuarios autorizados. Limite: 50 MB por archivo.</p>
             </div>
             <label class="file-action file-vault-picker">
               <span id="fileLibraryPickerText">Seleccionar archivos</span>
@@ -660,7 +661,7 @@
         <form id="commercialLoginForm" class="panel login-form">
           <input name="username" autocomplete="username" placeholder="Usuario" required>
           <input name="password" type="password" autocomplete="current-password" placeholder="Contrasena" required>
-          <label class="remember-row"><input name="rememberAccess" type="checkbox"> Recordar acceso en este equipo</label>
+          <label class="remember-row"><input name="rememberAccess" type="checkbox"> Recordar mi usuario en este equipo</label>
           <button class="btn primary" type="submit">Ingresar</button>
           <button class="btn secondary" type="button" data-view="acceso">Volver</button>
         </form>
@@ -677,7 +678,7 @@
         <form id="legalLoginForm" class="panel login-form">
           <input name="username" autocomplete="username" placeholder="Usuario" required>
           <input name="password" type="password" autocomplete="current-password" placeholder="Contrasena" required>
-          <label class="remember-row"><input name="rememberAccess" type="checkbox"> Recordar acceso en este equipo</label>
+          <label class="remember-row"><input name="rememberAccess" type="checkbox"> Recordar mi usuario en este equipo</label>
           <button class="btn primary" type="submit">Ingresar</button>
           <button class="btn secondary" type="button" data-view="acceso">Volver</button>
         </form>
@@ -693,7 +694,6 @@
         </div>
         <form id="adminLoginForm" class="panel login-form">
           <input name="password" type="password" autocomplete="current-password" placeholder="Clave de administrador" required>
-          <label class="remember-row"><input name="rememberAccess" type="checkbox"> Recordar acceso en este equipo</label>
           <button class="btn primary" type="submit">Ingresar</button>
           <button class="btn secondary" type="button" data-view="acceso">Volver</button>
         </form>
@@ -710,7 +710,7 @@
         <form id="managerLoginForm" class="panel login-form">
           <input name="username" autocomplete="username" placeholder="Usuario gerente" required>
           <input name="password" type="password" autocomplete="current-password" placeholder="Contrasena" required>
-          <label class="remember-row"><input name="rememberAccess" type="checkbox"> Recordar acceso en este equipo</label>
+          <label class="remember-row"><input name="rememberAccess" type="checkbox"> Recordar mi usuario en este equipo</label>
           <button class="btn primary" type="submit">Ingresar</button>
           <button class="btn secondary" type="button" data-view="acceso">Volver</button>
         </form>
@@ -727,7 +727,7 @@
         <form id="processingLoginForm" class="panel login-form">
           <input name="username" autocomplete="username" placeholder="Usuario de datos" required>
           <input name="password" type="password" autocomplete="current-password" placeholder="Contrasena" required>
-          <label class="remember-row"><input name="rememberAccess" type="checkbox"> Recordar acceso en este equipo</label>
+          <label class="remember-row"><input name="rememberAccess" type="checkbox"> Recordar mi usuario en este equipo</label>
           <button class="btn primary" type="submit">Ingresar</button>
           <button class="btn secondary" type="button" data-view="acceso">Volver</button>
         </form>
@@ -1333,7 +1333,7 @@
             <h2>Resumen operativo</h2>
           </div>
           <form id="legalPasswordForm" class="password-form" data-legal-anchor="legalPasswordBlock">
-            <input name="password" type="password" placeholder="Nueva contrasena" required>
+            <input name="password" type="password" placeholder="Nueva contrasena (minimo 8)" minlength="8" autocomplete="new-password" required>
             <button class="btn secondary" type="submit">Cambiar mi clave</button>
           </form>
           <div id="legalAvailabilityBlock" class="availability-panel">
@@ -1908,7 +1908,7 @@
             <select name="agency" id="advisorAgencyInput" required></select>
             <input name="name" placeholder="Nombre del asesor comercial" required>
             <input name="username" placeholder="Usuario" required>
-            <input name="password" type="password" placeholder="Contrasena" required>
+            <input name="password" type="password" placeholder="Contrasena (minimo 8)" minlength="8" autocomplete="new-password" required>
             <label class="check-row admin-datacil-create"><input name="datacilEnabled" type="checkbox"> Consulta ANT</label>
             <button class="btn primary" type="submit">Agregar</button>
           </form>
@@ -1917,7 +1917,6 @@
 
         <section class="panel span-admin admin-module-section" data-admin-section="admin-users-module">
           <h2>Clave de administrador</h2>
-          <p id="adminPasswordDefaultNotice" class="helper-text"><strong>Atencion:</strong> el administrador sigue usando la clave inicial. Cambiela ahora.</p>
           <form id="adminPasswordForm" class="user-form">
             <input name="currentPassword" type="password" placeholder="Clave actual" autocomplete="current-password" required>
             <input name="newPassword" type="password" placeholder="Nueva clave (minimo 10 caracteres)" autocomplete="new-password" minlength="10" required>
@@ -1939,7 +1938,7 @@
             </div>
             <div class="admin-user-field">
               <span>Clave</span>
-              <input name="password" type="password" placeholder="Contrasena" required>
+              <input name="password" type="password" placeholder="Contrasena (minimo 8)" minlength="8" autocomplete="new-password" required>
             </div>
             <div class="mailbox-picker admin-mailbox-picker" aria-label="Buzones de tareas">
               <label><input type="checkbox" name="mailboxes" value="saneamientos" checked> Saneamientos</label>
@@ -1961,7 +1960,7 @@
           <form id="managerUserForm" class="user-form">
             <input name="name" placeholder="Nombre del gerente" required>
             <input name="username" placeholder="Usuario" required>
-            <input name="password" type="password" placeholder="Contrasena" required>
+            <input name="password" type="password" placeholder="Contrasena (minimo 8)" minlength="8" autocomplete="new-password" required>
             <button class="btn primary" type="submit">Crear gerente</button>
           </form>
           <div id="managerUsersList" class="users-list"></div>
@@ -1978,7 +1977,7 @@
           <form id="processingUserForm" class="user-form">
             <input name="name" placeholder="Nombre del usuario de datos" required>
             <input name="username" placeholder="Usuario" required>
-            <input name="password" type="password" placeholder="Contrasena" required>
+            <input name="password" type="password" placeholder="Contrasena (minimo 8)" minlength="8" autocomplete="new-password" required>
             <button class="btn primary" type="submit">Crear usuario de datos</button>
           </form>
           <div id="processingUsersList" class="users-list"></div>
@@ -2027,7 +2026,7 @@
         <button class="commercial-modal-close" type="button" data-close-commercial-password aria-label="Cerrar">x</button>
       </div>
       <form id="commercialPasswordForm" class="password-form">
-        <input name="password" type="password" placeholder="Nueva contrasena" required>
+        <input name="password" type="password" placeholder="Nueva contrasena (minimo 8)" minlength="8" autocomplete="new-password" required>
         <button class="btn primary" type="submit">&#128273; Guardar nueva clave</button>
       </form>
     </section>
@@ -2926,6 +2925,7 @@
     }, true);
   </script>
   <script src="js/core/autocor-core.js?v=20260803-modular-phase1"></script>
+  <script src="js/core/autocor-auth.js?v=20261007-auth-v1"></script>
   <script src="js/components/modal.component.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/comercial.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
