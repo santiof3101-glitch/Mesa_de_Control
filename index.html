@@ -19,8 +19,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Roboto+Condensed:wght@300;400;500;600;700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261007-compra-v1">
-  <link rel="stylesheet" href="layout-fix.css?v=20261007-compra-v1">
+  <link rel="stylesheet" href="styles.css?v=20261007-formularios-v1">
+  <link rel="stylesheet" href="layout-fix.css?v=20261007-formularios-v1">
 </head>
 <body>
   <header class="topbar">
@@ -1113,23 +1113,26 @@
       </section>
 
       <section id="commercial-ant-process" class="commercial-process-panel" data-commercial-process-section="commercial-ant-process" hidden>
-        <div class="panel ant-lookup-workspace">
-          <div class="panel-title-row ant-lookup-heading">
+        <div class="panel ant-lookup-workspace cf-form cf-ant">
+          <header class="cf-head span-2">
+            <span class="cf-head-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.5-4.5"></path></svg></span>
             <div>
-              <p class="eyebrow">Consulta ANT</p>
-              <h2>Validación vehicular por placa</h2>
-              <span>La consulta queda guardada. Volver a abrirla no consume créditos.</span>
+              <h3>Consulta ANT</h3>
+              <p>Validación vehicular por placa: propietario, vehículo y valores pendientes. La consulta queda guardada y volver a abrirla no consume créditos.</p>
             </div>
             <span class="soft-badge">Datacil conectado</span>
-          </div>
-          <form id="antLookupForm" class="ant-lookup-form">
-            <label>
-              Placa del vehículo
-              <input id="antLookupPlate" name="placa" autocomplete="off" maxlength="8" placeholder="ABC1234" required>
-            </label>
-            <button id="datacilLookupBtn" class="btn primary" type="submit">Consultar ANT</button>
-          </form>
-          <p id="datacilLookupStatus" class="ant-lookup-status">La primera consulta consume un crédito. Las siguientes usan la copia guardada.</p>
+          </header>
+          <fieldset class="cf-section">
+            <legend><span class="cf-step">1</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16V12l2-5h10l2 5v4"></path><path d="M3 16h18v2H3z"></path><path d="M6 18v2M18 18v2"></path></svg>Placa a consultar</legend>
+            <form id="antLookupForm" class="ant-lookup-form cf-ant-form">
+              <label class="cf-plate">
+                Placa del vehículo
+                <input id="antLookupPlate" name="placa" autocomplete="off" maxlength="8" placeholder="ABC1234" required>
+              </label>
+              <button id="datacilLookupBtn" class="btn primary" type="submit">Consultar ANT</button>
+            </form>
+            <p id="datacilLookupStatus" class="ant-lookup-status">La primera consulta consume un crédito. Las siguientes usan la copia guardada.</p>
+          </fieldset>
           <section id="datacilLookupResult" class="datacil-result" hidden></section>
           <div class="ant-saved-heading">
             <div>
@@ -1145,103 +1148,132 @@
       </section>
 
       <section id="commercial-consignment-process" class="commercial-process-panel" data-commercial-process-section="commercial-consignment-process" hidden>
-        <form id="consignmentContractForm" class="panel form-grid consignment-contract-form">
+        <form id="consignmentContractForm" class="panel form-grid consignment-contract-form cf-form">
           <input name="recordId" type="hidden">
-          <div class="span-2 form-intro consignment-form-intro">
+          <header class="cf-head span-2">
+            <span class="cf-head-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7h11l-3-3M16 17H5l3 3"></path></svg></span>
             <div>
-              <p class="eyebrow">Consignación</p>
-              <h2>Contrato de prestación de servicios</h2>
-              <span>Complete la ficha y genere el formato oficial de tres páginas. Cada corrección quedará guardada como una nueva versión.</span>
+              <h3>Contrato de consignación</h3>
+              <p>Contrato de prestación de servicios. Se genera el formato oficial de tres páginas y cada corrección queda guardada como una nueva versión.</p>
             </div>
             <span class="consignment-template-badge">Formato legal DILILEG</span>
-          </div>
-
-          <label class="span-2">
-            Tipo de cliente y contrato
-            <select name="contractType" id="consignmentContractType" required>
-              <option value="soltero">Persona natural - soltero/a</option>
-              <option value="casado">Persona natural - casado/a</option>
-              <option value="juridica">Persona jurídica</option>
-            </select>
-          </label>
-
-          <div class="consignment-field-group span-2" data-consignment-client="natural">
-            <label>
-              Nombre completo del cliente titular
-              <input name="clientName" autocomplete="name" required>
-            </label>
-            <label data-consignment-spouse hidden>
-              Nombre completo del cónyuge
-              <input name="spouseName" autocomplete="name">
-            </label>
-          </div>
-
-          <div class="consignment-field-group span-2" data-consignment-client="juridica" hidden>
-            <label>
-              Nombre completo del representante legal
-              <input name="representativeName">
-            </label>
-            <label>
-              Estado civil del representante
-              <select name="representativeCivilStatus">
-                <option value="SOLTERO(A)">Soltero/a</option>
-                <option value="CASADO(A)">Casado/a</option>
-                <option value="UNIÓN LIBRE">Unión libre</option>
-                <option value="DIVORCIADO(A)">Divorciado/a</option>
-                <option value="VIUDO(A)">Viudo/a</option>
-              </select>
-            </label>
-            <label>
-              Razón social de la empresa
-              <input name="companyName">
-            </label>
-            <label>
-              RUC
-              <input name="companyRuc" inputmode="numeric" maxlength="13">
-            </label>
-          </div>
-
-          <div class="form-section-title span-2">
-            <strong>Fecha y notificaciones</strong>
-            <span>Datos que se insertarán en la comparecencia y en la cláusula décima primera.</span>
-          </div>
-          <label>
-            Ciudad
-            <input name="city" value="Quito" required>
-          </label>
-          <label>
-            Fecha del contrato
-            <input name="contractDate" type="date" required>
-          </label>
-          <label class="span-2">
-            Dirección del cliente
-            <input name="clientAddress" required>
-          </label>
-          <label class="span-2">
-            Correo electrónico del cliente
-            <input name="clientEmail" type="email" required>
-          </label>
-
-          <div class="form-section-title span-2">
-            <strong>Datos del vehículo</strong>
-            <span>Se escribirán en la tabla original del contrato.</span>
-          </div>
-          <label>Placa<input name="plate" maxlength="10" required></label>
-          <label>Color<input name="color" required></label>
-          <label>Marca<input name="brand" required></label>
-          <label>Año<input name="year" type="number" min="1900" max="2100" required></label>
-          <label>Modelo<input name="model" required></label>
-          <label>Chasis<input name="chassis" required></label>
-          <label>Motor<input name="engine" required></label>
-          <label>Kilometraje<input name="mileage" type="number" min="0" step="1" required></label>
-          <label class="span-2">
-            Valor estimado de venta (USD)
-            <input name="salePrice" type="number" min="0.01" step="0.01" required>
-            <small>El valor también se colocará automáticamente en letras.</small>
-          </label>
+          </header>
+          <fieldset class="cf-section span-2">
+            <legend><span class="cf-step">1</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Cliente y tipo de contrato</legend>
+            <div class="cf-grid cf-grid-2">
+              <label class="span-2">
+                Tipo de cliente y contrato
+                <select name="contractType" id="consignmentContractType" required>
+                  <option value="soltero">Persona natural - soltero/a</option>
+                  <option value="casado">Persona natural - casado/a</option>
+                  <option value="juridica">Persona jurídica</option>
+                </select>
+              </label>
+              <div class="consignment-field-group span-2" data-consignment-client="natural">
+                <label>
+                  Nombre completo del cliente titular
+                  <input name="clientName" autocomplete="name" required>
+                </label>
+                <label data-consignment-spouse hidden>
+                  Nombre completo del cónyuge
+                  <input name="spouseName" autocomplete="name">
+                </label>
+              </div>
+              <div class="consignment-field-group span-2" data-consignment-client="juridica" hidden>
+                <label>
+                  Nombre completo del representante legal
+                  <input name="representativeName">
+                </label>
+                <label>
+                  Estado civil del representante
+                  <select name="representativeCivilStatus">
+                    <option value="SOLTERO(A)">Soltero/a</option>
+                    <option value="CASADO(A)">Casado/a</option>
+                    <option value="UNIÓN LIBRE">Unión libre</option>
+                    <option value="DIVORCIADO(A)">Divorciado/a</option>
+                    <option value="VIUDO(A)">Viudo/a</option>
+                  </select>
+                </label>
+                <label>
+                  Razón social de la empresa
+                  <input name="companyName">
+                </label>
+                <label>
+                  RUC
+                  <input name="companyRuc" inputmode="numeric" maxlength="13">
+                </label>
+              </div>
+            </div>
+          </fieldset>
+          <fieldset class="cf-section span-2">
+            <legend><span class="cf-step">2</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg>Fecha y notificaciones</legend>
+            <p class="cf-section-note">Se insertan en la comparecencia y en la cláusula décima primera.</p>
+            <div class="cf-grid cf-grid-2">
+              <label>
+                Ciudad
+                <input name="city" value="Quito" required>
+              </label>
+              <label>
+                Fecha del contrato
+                <input name="contractDate" type="date" required>
+              </label>
+              <label>
+                Dirección del cliente
+                <input name="clientAddress" required>
+              </label>
+              <label>
+                Correo electrónico del cliente
+                <input name="clientEmail" type="email" required>
+              </label>
+            </div>
+          </fieldset>
+          <fieldset class="cf-section span-2">
+            <legend><span class="cf-step">3</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16V12l2-5h10l2 5v4"></path><path d="M3 16h18v2H3z"></path><path d="M6 18v2M18 18v2"></path></svg>Datos del vehículo</legend>
+            <p class="cf-section-note">Se escriben en la tabla original del contrato.</p>
+            <div class="cf-grid cf-grid-4">
+              <label class="cf-plate">
+                Placa
+                <input name="plate" maxlength="10" required>
+              </label>
+              <label>
+                Marca
+                <input name="brand" required>
+              </label>
+              <label>
+                Modelo
+                <input name="model" required>
+              </label>
+              <label>
+                Año
+                <input name="year" type="number" min="1900" max="2100" required>
+              </label>
+              <label>
+                Color
+                <input name="color" required>
+              </label>
+              <label>
+                Kilometraje
+                <input name="mileage" type="number" min="0" step="1" required>
+              </label>
+              <label>
+                Chasis
+                <input name="chassis" required>
+              </label>
+              <label>
+                Motor
+                <input name="engine" required>
+              </label>
+              <label class="span-2 cf-affix" data-prefix="$">
+                Valor estimado de venta (USD)
+                <input name="salePrice" type="number" min="0.01" step="0.01" required>
+                <small>El valor también se colocará automáticamente en letras.</small>
+              </label>
+            </div>
+          </fieldset>
 
           <div id="consignmentFormStatus" class="consignment-form-status span-2" hidden></div>
-          <div class="form-actions span-2">
+          <div class="form-actions cf-actions span-2">
+            <span class="cf-actions-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.3-3 8-7 9.5-4-1.5-7-5.2-7-9.5V6z"></path><path d="M9 12l2 2 4-4"></path></svg>El PDF se descarga al guardar y queda en las fichas de abajo.</span>
             <button type="reset" class="btn secondary">Limpiar</button>
             <button type="submit" class="btn primary">Guardar y generar PDF</button>
           </div>
@@ -1260,46 +1292,59 @@
       </section>
 
       <section id="commercial-sale-process" class="commercial-process-panel" data-commercial-process-section="commercial-sale-process" hidden>
-        <form id="saleContractForm" class="panel form-grid">
-          <div class="span-2 form-intro">
-            <p class="eyebrow">Venta</p>
-            <h2>Tracking de contratos de compraventa</h2>
-            <span>La tarea llegara a mesa de control con estatus Por asignar.</span>
-          </div>
-          <label>
-            Placa
-            <input name="placa" required>
-          </label>
-          <label>
-            Agencia
-            <select name="agencia" id="saleAgencySelect" required></select>
-          </label>
-          <label>
-            Vendedor
-            <input name="vendedor" required>
-          </label>
-          <label>
-            Precio de contrato
-            <input name="precioContrato" type="number" min="0" step="0.01" required>
-          </label>
-          <label>
-            Cedula del vendedor
-            <input name="cedulaVendedor" inputmode="numeric" required>
-          </label>
-          <label>
-            Telefono
-            <input name="telefono" inputmode="tel" required>
-          </label>
-          <label class="span-2">
-            Direccion
-            <input name="direccion" required>
-          </label>
-          <label class="span-2">
-            Correo
-            <input name="correo" type="email" required>
-          </label>
-          <div id="saleCustomFields" class="form-custom-fields span-2"></div>
-          <div class="form-actions span-2">
+        <form id="saleContractForm" class="panel form-grid cf-form">
+          <header class="cf-head span-2">
+            <span class="cf-head-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5M9 13h6M9 17h4"></path></svg></span>
+            <div>
+              <h3>Nuevo contrato de venta</h3>
+              <p>Tracking del contrato de compraventa. La tarea llega a la mesa de control con estatus Por asignar.</p>
+            </div>
+          </header>
+          <fieldset class="cf-section span-2">
+            <legend><span class="cf-step">1</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16V12l2-5h10l2 5v4"></path><path d="M3 16h18v2H3z"></path><path d="M6 18v2M18 18v2"></path></svg>Datos del vehículo y contrato</legend>
+            <div class="cf-grid cf-grid-3">
+              <label class="cf-plate">
+                Placa
+                <input name="placa" required>
+              </label>
+              <label>
+                Agencia
+                <select name="agencia" id="saleAgencySelect" required></select>
+              </label>
+              <label class="cf-affix" data-prefix="$">
+                Precio de contrato
+                <input name="precioContrato" type="number" min="0" step="0.01" required>
+              </label>
+            </div>
+          </fieldset>
+          <fieldset class="cf-section span-2">
+            <legend><span class="cf-step">2</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Datos del vendedor</legend>
+            <div class="cf-grid cf-grid-2">
+              <label>
+                Vendedor
+                <input name="vendedor" required>
+              </label>
+              <label>
+                Cedula del vendedor
+                <input name="cedulaVendedor" inputmode="numeric" required>
+              </label>
+              <label>
+                Telefono
+                <input name="telefono" inputmode="tel" required>
+              </label>
+              <label>
+                Correo
+                <input name="correo" type="email" required>
+              </label>
+              <label class="span-2">
+                Direccion
+                <input name="direccion" required>
+              </label>
+              <div id="saleCustomFields" class="form-custom-fields span-2"></div>
+            </div>
+          </fieldset>
+          <div class="form-actions cf-actions span-2">
+            <span class="cf-actions-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.3-3 8-7 9.5-4-1.5-7-5.2-7-9.5V6z"></path><path d="M9 12l2 2 4-4"></path></svg>Antes de enviar se abre la ficha UAFE del cliente.</span>
             <button type="reset" class="btn secondary">Limpiar</button>
             <button type="submit" class="btn primary">Enviar contrato a mesa</button>
           </div>
@@ -1307,29 +1352,37 @@
       </section>
 
       <section id="commercial-cuv-process" class="commercial-process-panel" data-commercial-process-section="commercial-cuv-process" hidden>
-        <form id="cuvRequestForm" class="panel form-grid">
-          <div class="span-2 form-intro">
-            <p class="eyebrow">CUV</p>
-            <h2>Solicitar CUV</h2>
-            <span>La solicitud llega al buzon CUV de Mesa de Control y retorna con PDF descargable.</span>
-          </div>
-          <label>
-            Fecha de solicitud
-            <input name="fechaSolicitud" type="date" readonly required>
-          </label>
-          <label>
-            Placa del auto
-            <input name="placa" required>
-          </label>
-          <label>
-            Cedula del titular
-            <input name="cedula" inputmode="numeric" required>
-          </label>
-          <label>
-            Nombre del titular
-            <input name="cliente" autocomplete="name" required>
-          </label>
-          <div class="form-actions span-2">
+        <form id="cuvRequestForm" class="panel form-grid cf-form">
+          <header class="cf-head span-2">
+            <span class="cf-head-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16V12l2-5h10l2 5v4"></path><path d="M3 16h18v2H3z"></path><path d="M6 18v2M18 18v2"></path></svg></span>
+            <div>
+              <h3>Solicitar CUV</h3>
+              <p>Certificado único vehicular. La solicitud llega al buzón CUV de la mesa de control y regresa con el PDF descargable.</p>
+            </div>
+          </header>
+          <fieldset class="cf-section span-2">
+            <legend><span class="cf-step">1</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5M9 13h6M9 17h4"></path></svg>Datos de la solicitud</legend>
+            <div class="cf-grid cf-grid-2">
+              <label>
+                Fecha de solicitud
+                <input name="fechaSolicitud" type="date" readonly required>
+              </label>
+              <label class="cf-plate">
+                Placa del auto
+                <input name="placa" required>
+              </label>
+              <label>
+                Cedula del titular
+                <input name="cedula" inputmode="numeric" required>
+              </label>
+              <label>
+                Nombre del titular
+                <input name="cliente" autocomplete="name" required>
+              </label>
+            </div>
+          </fieldset>
+          <div class="form-actions cf-actions span-2">
+            <span class="cf-actions-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.3-3 8-7 9.5-4-1.5-7-5.2-7-9.5V6z"></path><path d="M9 12l2 2 4-4"></path></svg>El PDF aparecerá en Mis CUV cuando esté listo.</span>
             <button type="reset" class="btn secondary">Limpiar</button>
             <button type="submit" class="btn primary">Enviar solicitud CUV</button>
           </div>
@@ -2998,6 +3051,6 @@
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20261007-compra-v1"></script>
+  <script src="app.js?v=20261007-formularios-v1"></script>
 </body>
 </html>
