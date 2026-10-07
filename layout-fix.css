@@ -4500,3 +4500,555 @@ body {
     align-self: stretch;
   }
 }
+
+/* ===== Formularios comerciales corporativos (2026-10-07) ===== */
+#formulario .commercial-content .cf-form {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 16px !important;
+  padding: 22px !important;
+  border: 1px solid var(--cc-borde) !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+#formulario .commercial-content .cf-form .cf-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #eef0f3;
+}
+
+#formulario .commercial-content .cf-form .cf-head-ico {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--cc-rojo-claro);
+  color: var(--cc-rojo-osc);
+}
+
+#formulario .commercial-content .cf-form .cf-head-ico svg,
+#formulario .commercial-content .cf-form legend svg,
+#formulario .commercial-content .cf-form .cf-actions svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#formulario .commercial-content .cf-form .cf-head h3 {
+  margin: 0 !important;
+  color: var(--cc-tinta) !important;
+  font-family: "Roboto Condensed", "Arial Narrow", sans-serif !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+}
+
+#formulario .commercial-content .cf-form .cf-head p {
+  margin: 2px 0 0 !important;
+  color: var(--cc-suave) !important;
+  font-size: 14px !important;
+}
+
+#formulario .commercial-content .cf-form .alert-box[hidden],
+#formulario .commercial-content .cf-form .alert-box:empty {
+  display: none !important;
+}
+
+#formulario .commercial-content .cf-form .cf-section {
+  min-width: 0;
+  margin: 0;
+  padding: 16px 18px 18px;
+  border: 1px solid #e9ebef;
+  border-radius: 12px;
+  background: #fafbfc;
+}
+
+#formulario .commercial-content .cf-form .cf-section legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 0 4px;
+  color: var(--cc-tinta);
+  font-family: "Roboto Condensed", "Arial Narrow", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+#formulario .commercial-content .cf-form .cf-section legend svg {
+  width: 18px;
+  height: 18px;
+  color: #6d6e71;
+}
+
+#formulario .commercial-content .cf-form .cf-step {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--cc-rojo);
+  color: #ffffff;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+#formulario .commercial-content .cf-form .cf-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+
+#formulario .commercial-content .cf-form .cf-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+#formulario .commercial-content .cf-form .cf-grid > .span-2 {
+  grid-column: 1 / -1;
+}
+
+#formulario .commercial-content .cf-form label {
+  position: relative;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  min-width: 0;
+  margin: 0 !important;
+  color: #3d3f45 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+#formulario .commercial-content .cf-form label[hidden] {
+  display: none !important;
+}
+
+#formulario .commercial-content .cf-form input,
+#formulario .commercial-content .cf-form select,
+#formulario .commercial-content .cf-form textarea {
+  width: 100% !important;
+  min-height: 46px !important;
+  padding: 0 14px !important;
+  border: 1px solid #d5d8de !important;
+  border-radius: 8px !important;
+  background-color: #ffffff !important;
+  color: var(--cc-tinta) !important;
+  font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  box-shadow: none !important;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+#formulario .commercial-content .cf-form textarea {
+  min-height: 104px !important;
+  padding: 12px 14px !important;
+  resize: vertical;
+}
+
+#formulario .commercial-content .cf-form input::placeholder,
+#formulario .commercial-content .cf-form textarea::placeholder {
+  color: #9a9ca1;
+  font-weight: 400;
+}
+
+#formulario .commercial-content .cf-form input:hover,
+#formulario .commercial-content .cf-form select:hover,
+#formulario .commercial-content .cf-form textarea:hover {
+  border-color: #b9bcc3 !important;
+}
+
+#formulario .commercial-content .cf-form input:focus,
+#formulario .commercial-content .cf-form select:focus,
+#formulario .commercial-content .cf-form textarea:focus {
+  border-color: var(--cc-rojo) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(215, 25, 32, .14) !important;
+}
+
+#formulario .commercial-content .cf-form .cf-plate input {
+  font-family: "Plus Jakarta Sans", sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase;
+}
+
+#formulario .commercial-content .cf-form .cf-affix[data-prefix] input {
+  padding-left: 30px !important;
+}
+
+#formulario .commercial-content .cf-form .cf-affix[data-suffix] input {
+  padding-right: 42px !important;
+}
+
+#formulario .commercial-content .cf-form .cf-affix::after {
+  position: absolute;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  height: 46px;
+  color: var(--cc-suave);
+  font-size: 14px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+#formulario .commercial-content .cf-form .cf-affix[data-prefix]::after {
+  content: attr(data-prefix);
+  left: 14px;
+}
+
+#formulario .commercial-content .cf-form .cf-affix[data-suffix]::after {
+  content: attr(data-suffix);
+  right: 14px;
+}
+
+#formulario .commercial-content .cf-form .form-custom-fields:empty {
+  display: none;
+}
+
+#formulario .commercial-content .cf-form .cf-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+  margin: 0 !important;
+  padding-top: 16px !important;
+  border-top: 1px solid #eef0f3 !important;
+}
+
+#formulario .commercial-content .cf-form .cf-actions-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  color: var(--cc-suave);
+  font-size: 13.5px;
+}
+
+#formulario .commercial-content .cf-form .cf-actions-note svg {
+  width: 18px;
+  height: 18px;
+  color: #15803d;
+}
+
+#formulario .commercial-content .cf-form .cf-actions .btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 46px !important;
+  padding: 0 20px !important;
+  border-radius: 8px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+}
+
+#formulario .commercial-content .cf-form .cf-actions .btn.secondary {
+  border: 1px solid #d5d7dc !important;
+  background: #ffffff !important;
+  color: var(--cc-texto) !important;
+}
+
+#formulario .commercial-content .cf-form .cf-actions .btn.primary {
+  border: 0 !important;
+  background: var(--cc-rojo) !important;
+  color: #ffffff !important;
+}
+
+#formulario .commercial-content .cf-form .cf-actions .btn.primary:hover {
+  background: var(--cc-rojo-osc) !important;
+}
+
+#formulario .commercial-content .cf-form .cf-actions .btn svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.2;
+}
+
+@media (max-width: 900px) {
+  #formulario .commercial-content .cf-form .cf-grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #formulario .commercial-content .cf-form .cf-grid-3 > .cf-plate {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  #formulario .commercial-content .cf-form {
+    padding: 16px !important;
+  }
+
+  #formulario .commercial-content .cf-form .cf-section {
+    padding: 12px 12px 14px;
+  }
+
+  #formulario .commercial-content .cf-form .cf-grid,
+  #formulario .commercial-content .cf-form .cf-grid-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #formulario .commercial-content .cf-form .cf-actions {
+    flex-wrap: wrap !important;
+  }
+
+  #formulario .commercial-content .cf-form .cf-actions-note {
+    flex: 1 1 100%;
+  }
+
+  #formulario .commercial-content .cf-form .cf-actions .btn {
+    flex: 1 1 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #formulario .commercial-content .cf-form input,
+  #formulario .commercial-content .cf-form select,
+  #formulario .commercial-content .cf-form textarea {
+    transition: none;
+  }
+}
+
+@media (max-width: 640px) {
+  #formulario .commercial-content .cf-form .form-actions.cf-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    position: static !important;
+  }
+
+  #formulario .commercial-content .cf-form .form-actions.cf-actions .cf-actions-note {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+
+  #formulario .commercial-content .cf-form .form-actions.cf-actions .btn {
+    position: static !important;
+    width: 100% !important;
+    padding: 0 12px !important;
+    transform: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  #formulario .commercial-content .cf-form .form-actions.cf-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr) !important;
+  }
+
+  #formulario .commercial-content .cf-form .form-actions.cf-actions .btn {
+    font-size: 14px !important;
+    white-space: nowrap !important;
+  }
+
+  #formulario .commercial-content .cf-form .form-actions.cf-actions .btn svg {
+    display: none;
+  }
+}
+
+#formulario .commercial-content .cf-form .cf-actions .btn.primary::after {
+  content: "→";
+  font-size: 17px;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  #formulario .commercial-content .cf-form .cf-actions .btn.primary::after {
+    content: none;
+  }
+}
+
+/* Formularios comerciales: piezas compartidas */
+#formulario .commercial-content .cf-form .cf-grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+#formulario .commercial-content .cf-form .cf-grid > .consignment-field-group {
+  display: contents !important;
+}
+
+#formulario .commercial-content .cf-form .cf-grid > .consignment-field-group[hidden],
+#formulario .commercial-content .cf-form [hidden] {
+  display: none !important;
+}
+
+#formulario .commercial-content .cf-form .cf-head > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#formulario .commercial-content .cf-form .cf-head .soft-badge,
+#formulario .commercial-content .cf-form .cf-head .consignment-template-badge {
+  flex: 0 0 auto;
+  align-self: center;
+  padding: 5px 12px !important;
+  border: 1px solid #e2e4e9 !important;
+  border-radius: 999px !important;
+  background: #f4f5f7 !important;
+  color: var(--cc-texto) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: .02em !important;
+  white-space: nowrap;
+}
+
+#formulario .commercial-content .cf-form .cf-section-note {
+  margin: -4px 0 12px !important;
+  color: var(--cc-suave) !important;
+  font-size: 13px !important;
+}
+
+#formulario .commercial-content .cf-form label small {
+  color: var(--cc-gris) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+#formulario .commercial-content .cf-form .cf-affix small {
+  order: 3;
+}
+
+#formulario .commercial-content .cf-form .cf-affix:has(small)::after {
+  bottom: 22px;
+}
+
+#formulario .commercial-content .cf-form input[readonly] {
+  background-color: #f4f5f7 !important;
+  color: var(--cc-suave) !important;
+}
+
+#formulario .commercial-content .cf-form input:disabled,
+#formulario .commercial-content .cf-form select:disabled {
+  background-color: #f4f5f7 !important;
+  opacity: .7;
+}
+
+#formulario .commercial-content .cf-form .consignment-form-status {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #ecfdf3;
+  color: #166534;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+#formulario .commercial-content .cf-form .consignment-form-status.is-error {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+#formulario .commercial-content .cf-form .consignment-records,
+#formulario .commercial-content .cf-form .cuv-commercial-list {
+  margin-top: 6px !important;
+  padding-top: 18px !important;
+  border-top: 1px solid #eef0f3 !important;
+}
+
+/* Consulta ANT: placa y boton en una sola fila */
+#formulario .commercial-content .cf-ant {
+  display: grid !important;
+  gap: 16px !important;
+}
+
+#formulario .commercial-content .cf-ant .cf-ant-form {
+  display: grid !important;
+  grid-template-columns: minmax(0, 360px) auto !important;
+  align-items: end !important;
+  gap: 12px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+#formulario .commercial-content .cf-ant .cf-ant-form .btn {
+  min-height: 46px !important;
+  padding: 0 22px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: var(--cc-rojo) !important;
+  color: #ffffff !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+}
+
+#formulario .commercial-content .cf-ant .cf-ant-form .btn:hover {
+  background: var(--cc-rojo-osc) !important;
+}
+
+#formulario .commercial-content .cf-ant .ant-lookup-status {
+  margin: 10px 0 0 !important;
+  color: var(--cc-suave) !important;
+  font-size: 13px !important;
+}
+
+@media (max-width: 1100px) {
+  #formulario .commercial-content .cf-form .cf-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  #formulario .commercial-content .cf-form .cf-grid-4 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #formulario .commercial-content .cf-form .cf-head {
+    flex-wrap: wrap;
+  }
+
+  #formulario .commercial-content .cf-ant .cf-ant-form {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+#formulario .commercial-content .cf-ant .cf-ant-form .btn {
+  width: auto !important;
+  justify-self: start !important;
+}
+
+@media (max-width: 640px) {
+  #formulario .commercial-content .cf-ant .cf-ant-form .btn {
+    width: 100% !important;
+  }
+}
+
+/* Simbolos $ y km alineados con la caja aunque haya texto de ayuda debajo */
+#formulario .commercial-content .cf-form .cf-affix::after,
+#formulario .commercial-content .cf-form .cf-affix:has(small)::after {
+  top: 23px;
+  bottom: auto;
+}
+
+@media (max-width: 640px) {
+  #formulario .commercial-content .cf-form .cf-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #formulario .commercial-content .cf-form .cf-grid-4 > .cf-plate {
+    grid-column: 1 / -1;
+  }
+}
+
+#formulario .commercial-content .cf-form .cf-grid > .span-2 {
+  grid-column: 1 / -1 !important;
+}
