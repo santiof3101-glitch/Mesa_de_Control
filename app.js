@@ -7995,33 +7995,30 @@ function renderDatacilSnapshot(snapshot = {}, options = {}) {
   const year = yearKey ? vehicle[yearKey] : "";
   const yesNo = (value) => value === true ? "Sí" : value === false ? "No" : "";
   const hasValue = ([, value]) => value !== "" && value !== null && value !== undefined;
-  const isBlocked = owner.tieneBloqueo === true;
+  // Datacil devuelve tieneBloqueo y tieneDeuda en true para casi todos los propietarios,
+  // incluso sin deuda; no se muestran porque no son confiables.
   const isRestricted = vehicle.prohibidoEnajenar === true;
-  const ownerDebtFlag = owner.tieneDeuda === true && debtTotal <= 0;
 
   // Semaforo: lo que impide o condiciona la compra va primero.
   const checks = [
     { label: "Deuda del vehículo", value: formatDatacilMoney(debtTotal), level: debtTotal > 0 ? "warn" : "ok" },
     { label: "Multas pendientes", value: String(pendingFines), level: pendingFines > 0 ? "warn" : "ok" },
-    { label: "Bloqueo", value: yesNo(owner.tieneBloqueo) || "Sin dato", level: isBlocked ? "bad" : owner.tieneBloqueo === false ? "ok" : "na" },
     { label: "Prohibición de enajenar", value: yesNo(vehicle.prohibidoEnajenar) || "Sin dato", level: isRestricted ? "bad" : vehicle.prohibidoEnajenar === false ? "ok" : "na" }
   ];
   const alerts = [];
-  if (isBlocked) alerts.push("el vehículo tiene bloqueo");
-  if (isRestricted) alerts.push("tiene prohibición de enajenar");
+  if (isRestricted) alerts.push("el vehículo tiene prohibición de enajenar");
   if (debtTotal > 0) alerts.push(`registra deuda de ${formatDatacilMoney(debtTotal)}`);
   if (pendingFines > 0) alerts.push(`tiene ${pendingFines} multa${pendingFines === 1 ? "" : "s"} pendiente${pendingFines === 1 ? "" : "s"}`);
-  const verdictLevel = isBlocked || isRestricted ? "bad" : alerts.length ? "warn" : "ok";
+  const verdictLevel = isRestricted ? "bad" : alerts.length ? "warn" : "ok";
   const verdictText = alerts.length
     ? `Revisar antes de continuar: ${alerts.join(", ")}.`
-    : "Sin deudas, multas, bloqueos ni prohibiciones reportadas.";
+    : "Sin deudas, multas ni prohibición de enajenar reportadas.";
   const verdictTitle = verdictLevel === "bad" ? "Atención" : verdictLevel === "warn" ? "Con pendientes" : "Vehículo sin novedades";
 
   const ownerRows = [
     ["Nombre completo", owner.nombre || "No disponible"],
     ["Cédula / identificación", owner.cedula || "No disponible"],
-    ["Correo electrónico", owner.email || "No disponible"],
-    ["Deudas a su nombre en ANT", ownerDebtFlag ? "Sí" : yesNo(owner.tieneDeuda)]
+    ["Correo electrónico", owner.email || "No disponible"]
   ].filter(hasValue);
   const vehicleRows = [
     ["Marca", vehicle.marca],
@@ -8067,7 +8064,6 @@ function renderDatacilSnapshot(snapshot = {}, options = {}) {
         <section class="dx-panel">
           <h4>Propietario registrado</h4>
           <dl>${renderRows(ownerRows)}</dl>
-          ${ownerDebtFlag ? `<p class="dx-note">ANT marca deudas a nombre del propietario, pero este vehículo no tiene rubros pendientes. Pueden corresponder a otros vehículos o trámites.</p>` : ""}
         </section>
         <section class="dx-panel">
           <h4>Datos del vehículo</h4>
