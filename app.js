@@ -7992,67 +7992,106 @@ function renderDatacilSnapshot(snapshot = {}, options = {}) {
   const debtTotal = Number(payments.totalPendiente || 0);
   const pendingFines = Number(citations.pendientes || 0);
   const yearKey = Object.keys(vehicle).find((key) => /^(año|anio|a.o)$/i.test(key)) || "";
-  const vehicleEntries = [
+  const year = yearKey ? vehicle[yearKey] : "";
+  const yesNo = (value) => value === true ? "Sí" : value === false ? "No" : "";
+  const hasValue = ([, value]) => value !== "" && value !== null && value !== undefined;
+  const isBlocked = owner.tieneBloqueo === true;
+  const isRestricted = vehicle.prohibidoEnajenar === true;
+  const ownerDebtFlag = owner.tieneDeuda === true && debtTotal <= 0;
+
+  // Semaforo: lo que impide o condiciona la compra va primero.
+  const checks = [
+    { label: "Deuda del vehículo", value: formatDatacilMoney(debtTotal), level: debtTotal > 0 ? "warn" : "ok" },
+    { label: "Multas pendientes", value: String(pendingFines), level: pendingFines > 0 ? "warn" : "ok" },
+    { label: "Bloqueo", value: yesNo(owner.tieneBloqueo) || "Sin dato", level: isBlocked ? "bad" : owner.tieneBloqueo === false ? "ok" : "na" },
+    { label: "Prohibición de enajenar", value: yesNo(vehicle.prohibidoEnajenar) || "Sin dato", level: isRestricted ? "bad" : vehicle.prohibidoEnajenar === false ? "ok" : "na" }
+  ];
+  const alerts = [];
+  if (isBlocked) alerts.push("el vehículo tiene bloqueo");
+  if (isRestricted) alerts.push("tiene prohibición de enajenar");
+  if (debtTotal > 0) alerts.push(`registra deuda de ${formatDatacilMoney(debtTotal)}`);
+  if (pendingFines > 0) alerts.push(`tiene ${pendingFines} multa${pendingFines === 1 ? "" : "s"} pendiente${pendingFines === 1 ? "" : "s"}`);
+  const verdictLevel = isBlocked || isRestricted ? "bad" : alerts.length ? "warn" : "ok";
+  const verdictText = alerts.length
+    ? `Revisar antes de continuar: ${alerts.join(", ")}.`
+    : "Sin deudas, multas, bloqueos ni prohibiciones reportadas.";
+  const verdictTitle = verdictLevel === "bad" ? "Atención" : verdictLevel === "warn" ? "Con pendientes" : "Vehículo sin novedades";
+
+  const ownerRows = [
+    ["Nombre completo", owner.nombre || "No disponible"],
+    ["Cédula / identificación", owner.cedula || "No disponible"],
+    ["Correo electrónico", owner.email || "No disponible"],
+    ["Deudas a su nombre en ANT", ownerDebtFlag ? "Sí" : yesNo(owner.tieneDeuda)]
+  ].filter(hasValue);
+  const vehicleRows = [
     ["Marca", vehicle.marca],
     ["Modelo", vehicle.modelo],
-    ["Año", yearKey ? vehicle[yearKey] : ""],
+    ["Año", year],
     ["Color", vehicle.color],
     ["Clase", vehicle.clase],
     ["Servicio", vehicle.servicio],
-    ["RAM", vehicle.chasis],
-    ["Último año pagado", vehicle.ultimoAnioPagado],
-    ["Prohibición de enajenar", vehicle.prohibidoEnajenar === true ? "Sí" : vehicle.prohibidoEnajenar === false ? "No" : ""],
-    ["Bloqueo", owner.tieneBloqueo === true ? "Sí" : owner.tieneBloqueo === false ? "No" : ""]
-  ].filter(([, value]) => value !== "" && value !== null && value !== undefined);
+    ["RAM / chasis", vehicle.chasis],
+    ["Último año pagado", vehicle.ultimoAnioPagado]
+  ].filter(hasValue);
+  const renderRows = (rows) => rows.map(([label, value]) => `<div class="dx-row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(String(value))}</dd></div>`).join("");
+  const vehicleLine = [vehicle.marca, vehicle.modelo, year].filter(Boolean).join(" · ");
   const cachedLabel = options.cached ? "Consulta guardada" : "Consulta nueva guardada";
+  const citationParts = [["Pagadas", citations.pagadas], ["Anuladas", citations.anuladas], ["Convenio", citations.convenio], ["Impugnación", citations.impugnacion]];
+
   return `
-    <div class="datacil-result-head">
-      <div>
-        <span class="eyebrow">ANT / Datacil</span>
-        <strong>${escapeHtml(snapshot.placa || "Sin placa")}</strong>
-        <small>${escapeHtml(cachedLabel)}${snapshot.queriedAt ? ` | ${escapeHtml(formatDateTime(snapshot.queriedAt))}` : ""}</small>
+    <div class="dx-card">
+      <header class="dx-head">
+        <div class="dx-plate-wrap">
+          <span class="dx-plate" aria-label="Placa">${escapeHtml(snapshot.placa || "Sin placa")}</span>
+          <div class="dx-head-text">
+            <strong>${escapeHtml(vehicleLine || "Vehículo consultado en ANT")}</strong>
+            <small>ANT / Datacil · ${escapeHtml(cachedLabel)}${snapshot.queriedAt ? ` · ${escapeHtml(formatDateTime(snapshot.queriedAt))}` : ""}</small>
+          </div>
+        </div>
+        <div class="datacil-result-actions dx-actions">
+          ${options.allowRefresh ? `<button class="btn tiny secondary" type="button" data-datacil-refresh="${escapeHtml(options.taskId || "module")}">Actualizar consulta</button>` : ""}
+          ${options.allowMigrate ? `<button class="btn tiny primary" type="button" data-datacil-migrate="${escapeHtml(snapshot.placa || "")}">Usar en saneamiento</button>` : ""}
+        </div>
+      </header>
+
+      <div class="dx-verdict is-${verdictLevel}" role="status">
+        <strong>${escapeHtml(verdictTitle)}</strong>
+        <span>${escapeHtml(verdictText)}</span>
       </div>
-      <div class="datacil-result-actions">
-        ${options.allowMigrate ? `<button class="btn tiny primary" type="button" data-datacil-migrate="${escapeHtml(snapshot.placa || "")}">Usar en saneamiento</button>` : ""}
-        ${options.allowRefresh ? `<button class="btn tiny secondary" type="button" data-datacil-refresh="${escapeHtml(options.taskId || "module")}">Actualizar consulta</button>` : ""}
+
+      <div class="dx-checks">
+        ${checks.map((check) => `<div class="dx-check is-${check.level}"><span>${escapeHtml(check.label)}</span><strong>${escapeHtml(check.value)}</strong></div>`).join("")}
       </div>
+
+      <div class="dx-columns">
+        <section class="dx-panel">
+          <h4>Propietario registrado</h4>
+          <dl>${renderRows(ownerRows)}</dl>
+          ${ownerDebtFlag ? `<p class="dx-note">ANT marca deudas a nombre del propietario, pero este vehículo no tiene rubros pendientes. Pueden corresponder a otros vehículos o trámites.</p>` : ""}
+        </section>
+        <section class="dx-panel">
+          <h4>Datos del vehículo</h4>
+          <dl>${renderRows(vehicleRows)}</dl>
+        </section>
+      </div>
+
+      <section class="dx-panel dx-debt">
+        <div class="dx-debt-head">
+          <h4>Desglose de deuda</h4>
+          <strong>${escapeHtml(formatDatacilMoney(debtTotal))}</strong>
+        </div>
+        ${pendingEntries.length ? `
+          <div class="datacil-debt-table-wrap"><table class="datacil-debt-table dx-table">
+            <thead><tr><th>Concepto</th><th>Beneficiario</th><th>Periodo</th><th>Valor</th></tr></thead>
+            <tbody>${pendingEntries.map((entry) => `<tr><td>${escapeHtml(entry.concepto || "Sin concepto")}</td><td>${escapeHtml(entry.beneficiario || "-")}</td><td>${escapeHtml([...new Set([entry.anioDesde, entry.anioHasta].filter(Boolean).map(String))].join(" - ") || "-")}</td><td>${escapeHtml(formatDatacilMoney(entry.valor))}</td></tr>`).join("")}</tbody>
+          </table></div>
+        ` : `<p class="dx-empty">No se reportaron rubros pendientes en esta consulta.</p>`}
+        <div class="dx-citations">
+          <span class="dx-citations-label">Historial de multas</span>
+          ${citationParts.map(([label, value]) => `<span>${escapeHtml(label)} <b>${escapeHtml(String(value ?? 0))}</b></span>`).join("")}
+        </div>
+      </section>
     </div>
-    <section class="datacil-owner-summary">
-      <div class="datacil-section-title"><span>Propietario registrado</span></div>
-      <div class="datacil-owner-grid">
-        ${renderDatacilMetric("Nombre completo", owner.nombre || "No disponible", "is-wide")}
-        ${renderDatacilMetric("Cédula / identificación", owner.cedula || "No disponible")}
-        ${renderDatacilMetric("Correo electrónico", owner.email || "No disponible")}
-      </div>
-    </section>
-    <section class="datacil-financial-summary">
-      <div class="datacil-section-title"><span>Obligaciones y citaciones</span></div>
-      <div class="datacil-financial-grid">
-        ${renderDatacilMetric("Deuda total", formatDatacilMoney(debtTotal), debtTotal > 0 ? "is-alert" : "is-clear")}
-        ${renderDatacilMetric("Tiene deuda", owner.tieneDeuda === true || debtTotal > 0 ? "Sí" : "No")}
-        ${renderDatacilMetric("Tiene multas pendientes", pendingFines > 0 ? "Sí" : "No", pendingFines > 0 ? "is-alert" : "is-clear")}
-        ${renderDatacilMetric("Cantidad de multas", String(pendingFines))}
-      </div>
-      <div class="datacil-citation-strip">
-        <span>Pagadas <b>${escapeHtml(String(citations.pagadas ?? 0))}</b></span>
-        <span>Anuladas <b>${escapeHtml(String(citations.anuladas ?? 0))}</b></span>
-        <span>Convenio <b>${escapeHtml(String(citations.convenio ?? 0))}</b></span>
-        <span>Impugnación <b>${escapeHtml(String(citations.impugnacion ?? 0))}</b></span>
-      </div>
-    </section>
-    <section class="datacil-debt-detail">
-      <div class="datacil-section-title"><span>Desglose de deuda</span><strong>${escapeHtml(formatDatacilMoney(debtTotal))}</strong></div>
-      ${pendingEntries.length ? `
-        <div class="datacil-debt-table-wrap"><table class="datacil-debt-table">
-          <thead><tr><th>Concepto</th><th>Beneficiario</th><th>Periodo</th><th>Valor</th></tr></thead>
-          <tbody>${pendingEntries.map((entry) => `<tr><td>${escapeHtml(entry.concepto || "Sin concepto")}</td><td>${escapeHtml(entry.beneficiario || "-")}</td><td>${escapeHtml([entry.anioDesde, entry.anioHasta].filter(Boolean).join(" - ") || "-")}</td><td>${escapeHtml(formatDatacilMoney(entry.valor))}</td></tr>`).join("")}</tbody>
-        </table></div>
-      ` : `<div class="datacil-empty-state">No se reportaron rubros pendientes en esta consulta.</div>`}
-    </section>
-    <section class="datacil-vehicle-summary">
-      <div class="datacil-section-title"><span>Datos del vehículo</span></div>
-      <div class="datacil-vehicle-grid">${vehicleEntries.map(([label, value]) => renderDatacilMetric(label, value)).join("")}</div>
-    </section>
   `;
 }
 
