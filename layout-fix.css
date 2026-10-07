@@ -4301,3 +4301,378 @@ body {
     padding: 14px 16px 18px !important;
   }
 }
+
+/* ===== Formulario de compra corporativo (2026-10-07) ===== */
+#formulario #requestForm.cf-form {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 16px !important;
+  padding: 22px !important;
+  border: 1px solid var(--cc-borde) !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+#formulario #requestForm .cf-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #eef0f3;
+}
+
+#formulario #requestForm .cf-head-ico {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--cc-rojo-claro);
+  color: var(--cc-rojo-osc);
+}
+
+#formulario #requestForm .cf-head-ico svg,
+#formulario #requestForm legend svg,
+#formulario #requestForm .cf-actions svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#formulario #requestForm .cf-head h3 {
+  margin: 0 !important;
+  color: var(--cc-tinta) !important;
+  font-family: "Roboto Condensed", "Arial Narrow", sans-serif !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+}
+
+#formulario #requestForm .cf-head p {
+  margin: 2px 0 0 !important;
+  color: var(--cc-suave) !important;
+  font-size: 14px !important;
+}
+
+#formulario #requestForm .alert-box[hidden],
+#formulario #requestForm .alert-box:empty {
+  display: none !important;
+}
+
+#formulario #requestForm .cf-section {
+  min-width: 0;
+  margin: 0;
+  padding: 16px 18px 18px;
+  border: 1px solid #e9ebef;
+  border-radius: 12px;
+  background: #fafbfc;
+}
+
+#formulario #requestForm .cf-section legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 0 4px;
+  color: var(--cc-tinta);
+  font-family: "Roboto Condensed", "Arial Narrow", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+#formulario #requestForm .cf-section legend svg {
+  width: 18px;
+  height: 18px;
+  color: #6d6e71;
+}
+
+#formulario #requestForm .cf-step {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--cc-rojo);
+  color: #ffffff;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+#formulario #requestForm .cf-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+
+#formulario #requestForm .cf-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+#formulario #requestForm .cf-grid > .span-2 {
+  grid-column: 1 / -1;
+}
+
+#formulario #requestForm label {
+  position: relative;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  min-width: 0;
+  margin: 0 !important;
+  color: #3d3f45 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+#formulario #requestForm label[hidden] {
+  display: none !important;
+}
+
+#formulario #requestForm input,
+#formulario #requestForm select,
+#formulario #requestForm textarea {
+  width: 100% !important;
+  min-height: 46px !important;
+  padding: 0 14px !important;
+  border: 1px solid #d5d8de !important;
+  border-radius: 8px !important;
+  background-color: #ffffff !important;
+  color: var(--cc-tinta) !important;
+  font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  box-shadow: none !important;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+#formulario #requestForm textarea {
+  min-height: 104px !important;
+  padding: 12px 14px !important;
+  resize: vertical;
+}
+
+#formulario #requestForm input::placeholder,
+#formulario #requestForm textarea::placeholder {
+  color: #9a9ca1;
+  font-weight: 400;
+}
+
+#formulario #requestForm input:hover,
+#formulario #requestForm select:hover,
+#formulario #requestForm textarea:hover {
+  border-color: #b9bcc3 !important;
+}
+
+#formulario #requestForm input:focus,
+#formulario #requestForm select:focus,
+#formulario #requestForm textarea:focus {
+  border-color: var(--cc-rojo) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(215, 25, 32, .14) !important;
+}
+
+#formulario #requestForm .cf-plate input {
+  font-family: "Plus Jakarta Sans", sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase;
+}
+
+#formulario #requestForm .cf-affix[data-prefix] input {
+  padding-left: 30px !important;
+}
+
+#formulario #requestForm .cf-affix[data-suffix] input {
+  padding-right: 42px !important;
+}
+
+#formulario #requestForm .cf-affix::after {
+  position: absolute;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  height: 46px;
+  color: var(--cc-suave);
+  font-size: 14px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+#formulario #requestForm .cf-affix[data-prefix]::after {
+  content: attr(data-prefix);
+  left: 14px;
+}
+
+#formulario #requestForm .cf-affix[data-suffix]::after {
+  content: attr(data-suffix);
+  right: 14px;
+}
+
+#formulario #requestForm .form-custom-fields:empty {
+  display: none;
+}
+
+#formulario #requestForm .cf-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+  margin: 0 !important;
+  padding-top: 16px !important;
+  border-top: 1px solid #eef0f3 !important;
+}
+
+#formulario #requestForm .cf-actions-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  color: var(--cc-suave);
+  font-size: 13.5px;
+}
+
+#formulario #requestForm .cf-actions-note svg {
+  width: 18px;
+  height: 18px;
+  color: #15803d;
+}
+
+#formulario #requestForm .cf-actions .btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 46px !important;
+  padding: 0 20px !important;
+  border-radius: 8px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+}
+
+#formulario #requestForm .cf-actions .btn.secondary {
+  border: 1px solid #d5d7dc !important;
+  background: #ffffff !important;
+  color: var(--cc-texto) !important;
+}
+
+#formulario #requestForm .cf-actions .btn.primary {
+  border: 0 !important;
+  background: var(--cc-rojo) !important;
+  color: #ffffff !important;
+}
+
+#formulario #requestForm .cf-actions .btn.primary:hover {
+  background: var(--cc-rojo-osc) !important;
+}
+
+#formulario #requestForm .cf-actions .btn svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.2;
+}
+
+@media (max-width: 900px) {
+  #formulario #requestForm .cf-grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #formulario #requestForm .cf-grid-3 > .cf-plate {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  #formulario #requestForm.cf-form {
+    padding: 16px !important;
+  }
+
+  #formulario #requestForm .cf-section {
+    padding: 12px 12px 14px;
+  }
+
+  #formulario #requestForm .cf-grid,
+  #formulario #requestForm .cf-grid-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #formulario #requestForm .cf-actions {
+    flex-wrap: wrap !important;
+  }
+
+  #formulario #requestForm .cf-actions-note {
+    flex: 1 1 100%;
+  }
+
+  #formulario #requestForm .cf-actions .btn {
+    flex: 1 1 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #formulario #requestForm input,
+  #formulario #requestForm select,
+  #formulario #requestForm textarea {
+    transition: none;
+  }
+}
+
+@media (max-width: 640px) {
+  #formulario #requestForm .form-actions.cf-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    position: static !important;
+  }
+
+  #formulario #requestForm .form-actions.cf-actions .cf-actions-note {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+
+  #formulario #requestForm .form-actions.cf-actions .btn {
+    position: static !important;
+    width: 100% !important;
+    padding: 0 12px !important;
+    transform: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  #formulario #requestForm .form-actions.cf-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr) !important;
+  }
+
+  #formulario #requestForm .form-actions.cf-actions .btn {
+    font-size: 14px !important;
+    white-space: nowrap !important;
+  }
+
+  #formulario #requestForm .form-actions.cf-actions .btn svg {
+    display: none;
+  }
+}
+
+#formulario #requestForm .cf-actions .btn.primary::after {
+  content: "→";
+  font-size: 17px;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  #formulario #requestForm .cf-actions .btn.primary::after {
+    content: none;
+  }
+}

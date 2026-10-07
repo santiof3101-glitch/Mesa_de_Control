@@ -19,8 +19,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Roboto+Condensed:wght@300;400;500;600;700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261007-comercial-v2">
-  <link rel="stylesheet" href="layout-fix.css?v=20261007-comercial-v2">
+  <link rel="stylesheet" href="styles.css?v=20261007-compra-v1">
+  <link rel="stylesheet" href="layout-fix.css?v=20261007-compra-v1">
 </head>
 <body>
   <header class="topbar">
@@ -1024,55 +1024,88 @@
         </section>
 
       <section id="commercial-purchase-process" class="commercial-process-panel" data-commercial-process-section="commercial-purchase-process" hidden>
-        <form id="requestForm" class="panel form-grid">
+        <form id="requestForm" class="panel form-grid cf-form">
+          <header class="cf-head span-2">
+            <span class="cf-head-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l-1 12H7z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path></svg></span>
+            <div>
+              <h3>Nueva compra</h3>
+              <p>Toma de vehículo y saneamiento. Revisa los datos antes de enviar a la mesa de control legal.</p>
+            </div>
+          </header>
           <div id="duplicateAlert" class="alert-box span-2" hidden></div>
-          <label>
-            Nombre del cliente completo
-            <input name="cliente" autocomplete="name" required>
-          </label>
-          <label>
-            Numero de cedula del titular
-            <input name="cedula" inputmode="numeric" required>
-          </label>
-          <label>
-            Placa
-            <input id="purchasePlateInput" name="placa" autocomplete="off" maxlength="8" required>
-            <small id="datacilMigrationNotice" class="datacil-migration-notice" hidden></small>
-          </label>
-          <label>
-            Valor de toma
-            <input name="valorToma" type="number" min="0" step="0.01" required>
-          </label>
-          <label>
-            Kilometraje
-            <input name="kilometraje" type="number" min="0" step="1" required>
-          </label>
-          <label>
-            Agencia
-            <select name="agencia" id="agenciaSelect" required></select>
-          </label>
-          <label>
-            Ciudad
-            <input name="ciudad" required>
-          </label>
-          <label>
-            Nombre del asesor
-            <select name="asesor" id="asesorSelect" required></select>
-          </label>
-          <label>
-            Tipo de compra - solo Guayaquil
-            <select name="tipoCompra" id="tipoCompraSelect" required></select>
-          </label>
-          <label>
-            Tipo de saneamiento
-            <select name="tipoSaneamiento" id="tipoSaneamientoSelect" required></select>
-          </label>
-          <label class="span-2">
-            Observaciones
-            <textarea name="observaciones" rows="4" required></textarea>
-          </label>
-          <div id="purchaseCustomFields" class="form-custom-fields span-2"></div>
-          <div class="form-actions span-2">
+
+          <fieldset class="cf-section span-2">
+            <legend><span class="cf-step">1</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Datos del cliente</legend>
+            <div class="cf-grid cf-grid-2">
+              <label>
+                Nombre del cliente completo
+                <input name="cliente" autocomplete="name" required>
+              </label>
+              <label>
+                Numero de cedula del titular
+                <input name="cedula" inputmode="numeric" required>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset class="cf-section span-2">
+            <legend><span class="cf-step">2</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16V12l2-5h10l2 5v4"></path><path d="M3 16h18v2H3z"></path><path d="M6 18v2M18 18v2"></path></svg>Datos del vehículo</legend>
+            <div class="cf-grid cf-grid-3">
+              <label class="cf-plate">
+                Placa
+                <input id="purchasePlateInput" name="placa" autocomplete="off" maxlength="8" required>
+                <small id="datacilMigrationNotice" class="datacil-migration-notice" hidden></small>
+              </label>
+              <label class="cf-affix" data-suffix="km">
+                Kilometraje
+                <input name="kilometraje" type="number" min="0" step="1" required>
+              </label>
+              <label class="cf-affix" data-prefix="$">
+                Valor de toma
+                <input name="valorToma" type="number" min="0" step="0.01" required>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset class="cf-section span-2">
+            <legend><span class="cf-step">3</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>Datos de la gestión</legend>
+            <div class="cf-grid cf-grid-2">
+              <label>
+                Agencia
+                <select name="agencia" id="agenciaSelect" required></select>
+              </label>
+              <label>
+                Nombre del asesor
+                <select name="asesor" id="asesorSelect" required></select>
+              </label>
+              <label>
+                Ciudad
+                <input name="ciudad" required>
+              </label>
+              <label>
+                Tipo de compra - solo Guayaquil
+                <select name="tipoCompra" id="tipoCompraSelect" required></select>
+              </label>
+              <label class="span-2">
+                Tipo de saneamiento
+                <select name="tipoSaneamiento" id="tipoSaneamientoSelect" required></select>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset class="cf-section span-2">
+            <legend><span class="cf-step">4</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"></path></svg>Notas para la mesa legal</legend>
+            <div class="cf-grid">
+              <label class="span-2 cf-notes">
+                Observaciones
+                <textarea name="observaciones" rows="4" required placeholder="Detalle cualquier novedad del vehículo o del cliente"></textarea>
+              </label>
+              <div id="purchaseCustomFields" class="form-custom-fields span-2"></div>
+            </div>
+          </fieldset>
+
+          <div class="form-actions cf-actions span-2">
+            <span class="cf-actions-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.3-3 8-7 9.5-4-1.5-7-5.2-7-9.5V6z"></path><path d="M9 12l2 2 4-4"></path></svg>La solicitud llega a la mesa de control legal al enviarla.</span>
             <button type="reset" class="btn secondary">Limpiar</button>
             <button type="submit" class="btn primary">Enviar a control legal</button>
           </div>
@@ -2965,6 +2998,6 @@
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20261007-comercial-v2"></script>
+  <script src="app.js?v=20261007-compra-v1"></script>
 </body>
 </html>
