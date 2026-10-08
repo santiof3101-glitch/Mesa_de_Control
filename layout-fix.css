@@ -5230,3 +5230,258 @@ body {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ===== Historial de consultas ANT (2026-10-07) ===== */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+}
+
+.ant-saved-list:has(.dx-list-body),
+#legalDatacilSavedList:has(.dx-list-body) {
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.dx-list-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.dx-list-search {
+  position: relative;
+  flex: 1 1 220px;
+  max-width: 320px;
+}
+
+.dx-list-search svg {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  width: 17px;
+  height: 17px;
+  transform: translateY(-50%);
+  fill: none;
+  stroke: #8a8c8f;
+  stroke-width: 2;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.dx-list-search input,
+.dx-list-tools select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px 0 36px;
+  border: 1px solid #d5d8de;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #15171d;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.dx-list-search input {
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.dx-list-search input::placeholder {
+  color: #9a9ca1;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.dx-list-tools select {
+  width: auto;
+  min-width: 180px;
+  padding-left: 12px;
+}
+
+.dx-list-search input:focus,
+.dx-list-tools select:focus {
+  border-color: #d71920;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(215, 25, 32, .14);
+}
+
+.dx-list-scope {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #f4f5f7;
+  color: #5f6168;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dx-list-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e2e4e9;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.dx-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.dx-list-table th {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e4e9;
+  color: #5f6168;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.dx-list-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #eef0f3;
+  color: #2f3035;
+  vertical-align: middle;
+}
+
+.dx-list-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.dx-list-table tbody tr:hover {
+  background: #fafbfc;
+}
+
+.dx-list-plate {
+  color: #15171d !important;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-weight: 800;
+  letter-spacing: .06em;
+  white-space: nowrap;
+}
+
+.dx-list-owner {
+  min-width: 180px;
+}
+
+.dx-list-debt {
+  color: #92400e !important;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.dx-list-clear {
+  color: #15803d !important;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.dx-list-date {
+  color: #5f6168 !important;
+  white-space: nowrap;
+}
+
+.dx-list-action {
+  text-align: right;
+}
+
+.dx-list-action .btn,
+.dx-list-foot .btn {
+  min-height: 34px !important;
+  padding: 0 14px !important;
+  border: 1px solid #d5d7dc !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  color: #2f3035 !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+}
+
+.dx-list-action .btn:hover,
+.dx-list-foot .btn:hover {
+  border-color: #d71920 !important;
+  color: #b3121a !important;
+}
+
+.dx-list-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #5f6168;
+  font-size: 13px;
+}
+
+.dx-list-foot:empty {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .dx-list-search,
+  .dx-list-tools select {
+    flex: 1 1 100%;
+    max-width: none;
+    width: 100%;
+  }
+
+  .dx-list-table thead {
+    display: none;
+  }
+
+  .dx-list-table,
+  .dx-list-table tbody,
+  .dx-list-table tr,
+  .dx-list-table td {
+    display: block;
+  }
+
+  .dx-list-table tr {
+    position: relative;
+    padding: 10px 12px;
+    border-bottom: 1px solid #eef0f3;
+  }
+
+  .dx-list-table td {
+    padding: 1px 0;
+    border: 0;
+  }
+
+  .dx-list-table td:nth-child(4) {
+    display: none;
+  }
+
+  .dx-list-action {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+  }
+}
+
+.dx-list-tools .dx-list-search input {
+  padding-left: 36px !important;
+}
+
+@media (max-width: 640px) {
+  .dx-list-table td:not(.dx-list-action) {
+    padding-right: 64px;
+    overflow-wrap: anywhere;
+  }
+
+  .dx-list-foot .btn {
+    width: auto !important;
+  }
+}
+
+#formulario .commercial-content .cf-form .dx-list-search input {
+  min-height: 42px !important;
+  padding-left: 36px !important;
+}

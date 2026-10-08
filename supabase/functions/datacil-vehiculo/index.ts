@@ -110,29 +110,120 @@ Deno.serve(async (req) => {
     return response(origin, 503, { ok: false, error: "No se pudieron validar los permisos de Consulta ANT." });
   }
 
+  type LookupSummary = { placa: string; queriedAt: string; byId: string; byName: string };
+
+  // Resumen liviano de consultas (sin el detalle de Datacil).
+  async function fetchSummaries(filters: Record<string, string>, tipo = "vehiculo"): Promise<LookupSummary[]> {
+    const query = new URL(`${supabaseUrl}/rest/v1/REGISTROS`);
+    query.searchParams.set(
+      "select",
+      tipo === "vehiculo"
+        ? "placa:datos->>placa,queriedAt:datos->>queriedAt,byId:datos->queriedBy->>id,byName:datos->queriedBy->>name"
+        : "placa:datos->>placa,queriedAt:datos->>at,byId:datos->>userId,byName:datos->>userName",
+    );
+    query.searchParams.set("modulo", "eq.datacil");
+    query.searchParams.set("tipo", `eq.${tipo}`);
+    query.searchParams.set("order", "id.desc");
+    query.searchParams.set("limit", "2000");
+    Object.entries(filters).forEach(([key, value]) => query.searchParams.set(key, value));
+    const result = await fetch(query, { headers: dbHeaders });
+    if (!result.ok) throw new Error("summaries");
+    const rows = await result.json();
+    return (Array.isArray(rows) ? rows : []).map((row) => ({
+      placa: normalizePlate(row?.placa),
+      queriedAt: String(row?.queriedAt || ""),
+      byId: String(row?.byId || ""),
+      byName: String(row?.byName || ""),
+    })).filter((row) => row.placa);
+  }
+
+  async function fetchLatestSnapshots(plates: string[]) {
+    if (!plates.length) return new Map<string, unknown>();
+    const query = new URL(`${supabaseUrl}/rest/v1/REGISTROS`);
+    query.searchParams.set("select", "datos");
+    query.searchParams.set("modulo", "eq.datacil");
+    query.searchParams.set("tipo", "eq.vehiculo");
+    query.searchParams.set("datos->>placa", `in.(${plates.join(",")})`);
+    query.searchParams.set("order", "id.desc");
+    const result = await fetch(query, { headers: dbHeaders });
+    if (!result.ok) throw new Error("snapshots");
+    const rows = await result.json();
+    const latest = new Map<string, unknown>();
+    (Array.isArray(rows) ? rows : []).forEach((row) => {
+      const snapshotPlate = normalizePlate(row?.datos?.placa);
+      if (snapshotPlate && !latest.has(snapshotPlate)) latest.set(snapshotPlate, row.datos);
+    });
+    return latest;
+  }
+
+  // Deja constancia de que el usuario uso una consulta guardada de otra persona,
+  // para que tambien aparezca en su historial (no consume credito).
+  async function recordAccess(snapshotPlate: string, ownerId: string) {
+    if (!snapshotPlate || ownerId === advisor!.id) return;
+    await fetch(`${supabaseUrl}/rest/v1/REGISTROS`, {
+      method: "POST",
+      headers: { ...dbHeaders, Prefer: "return=minimal" },
+      body: JSON.stringify({
+        modulo: "datacil",
+        tipo: "acceso",
+        datos: { placa: snapshotPlate, userId: advisor!.id, userName: advisor!.name, agency: advisor!.agency, at: new Date().toISOString() },
+        usuario: `${advisor!.name || "Asesor"} | ${getClientIp(req)}`,
+      }),
+    }).catch(() => null);
+  }
+
   if (action === "list") {
-    const listQuery = new URL(`${supabaseUrl}/rest/v1/REGISTROS`);
-    listQuery.searchParams.set("select", "datos");
-    listQuery.searchParams.set("modulo", "eq.datacil");
-    listQuery.searchParams.set("tipo", "eq.vehiculo");
-    listQuery.searchParams.set("order", "id.desc");
-    listQuery.searchParams.set("limit", "200");
+    // Un asesor comercial solo ve sus consultas; la mesa de control puede ver todas.
+    const canSeeAll = advisor.role === "legal";
+    const scope = canSeeAll && body.scope !== "mine" ? "all" : "mine";
+    const search = normalizePlate(body.search);
+    const advisorFilter = canSeeAll ? String(body.advisorId || "").trim() : "";
+    const limit = Math.min(Math.max(Number(body.limit) || 10, 1), 50);
+    const offset = Math.max(Number(body.offset) || 0, 0);
     try {
-      const listResponse = await fetch(listQuery, { headers: dbHeaders });
-      if (!listResponse.ok) return response(origin, 502, { ok: false, error: "No se pudo cargar el historial de consultas." });
-      const rows = await listResponse.json();
+      let summaries: LookupSummary[];
+      if (scope === "mine") {
+        const [own, accessed] = await Promise.all([
+          fetchSummaries({ "datos->queriedBy->>id": `eq.${advisor.id}` }),
+          fetchSummaries({ "datos->>userId": `eq.${advisor.id}` }, "acceso"),
+        ]);
+        summaries = [...own, ...accessed];
+      } else {
+        summaries = await fetchSummaries(advisorFilter ? { "datos->queriedBy->>id": `eq.${advisorFilter}` } : {});
+      }
+      summaries.sort((x, y) => y.queriedAt.localeCompare(x.queriedAt));
+      const advisorsMap = new Map<string, string>();
+      if (scope === "all" && !advisorFilter) summaries.forEach((row) => row.byId && advisorsMap.set(row.byId, row.byName || row.byId));
       const seen = new Set<string>();
-      const lookups = (Array.isArray(rows) ? rows : [])
-        .map((row) => row?.datos)
-        .filter((snapshot) => {
-          const snapshotPlate = normalizePlate(snapshot?.placa);
-          if (!snapshotPlate || seen.has(snapshotPlate)) return false;
-          seen.add(snapshotPlate);
-          return true;
-        });
-      return response(origin, 200, { ok: true, lookups });
+      const unique = summaries.filter((row) => {
+        if (seen.has(row.placa)) return false;
+        seen.add(row.placa);
+        return !search || row.placa.includes(search);
+      });
+      const page = unique.slice(offset, offset + limit);
+      const snapshots = await fetchLatestSnapshots(page.map((row) => row.placa));
+      const lookups = page.map((row) => snapshots.get(row.placa)).filter(Boolean);
+      return response(origin, 200, {
+        ok: true,
+        scope,
+        lookups,
+        total: unique.length,
+        hasMore: offset + limit < unique.length,
+        advisors: [...advisorsMap].map(([id, name]) => ({ id, name })).sort((x, y) => x.name.localeCompare(y.name)),
+      });
     } catch {
       return response(origin, 502, { ok: false, error: "No se pudo cargar el historial de consultas." });
+    }
+  }
+
+  if (action === "find") {
+    // Busca una consulta guardada por placa sin llamar a Datacil.
+    if (!/^[A-Z]{3}[0-9]{3,4}$/.test(placa)) return response(origin, 200, { ok: true, snapshot: null });
+    try {
+      const snapshots = await fetchLatestSnapshots([placa]);
+      return response(origin, 200, { ok: true, snapshot: snapshots.get(placa) || null });
+    } catch {
+      return response(origin, 502, { ok: false, error: "No se pudo buscar la consulta guardada." });
     }
   }
 
@@ -154,6 +245,7 @@ Deno.serve(async (req) => {
       const cachedRows = await cachedResponse.json();
       const cached = Array.isArray(cachedRows) ? cachedRows[0]?.datos : null;
       if (cached && !forceRefresh) {
+        await recordAccess(placa, String(cached?.queriedBy?.id || ""));
         return response(origin, 200, { ok: true, cached: true, snapshot: cached });
       }
     }
