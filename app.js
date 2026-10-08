@@ -543,6 +543,7 @@ let activeCommercialProcess = "compra";
 let activeCommercialTrackingProcess = "compra";
 let activeCommercialArea = "process";
 let activeCommercialRequestFilter = "todos";
+let activeCommercialRequestType = "todos";
 let commercialTrackingFilter = "todos";
 let commercialTrackingSearch = "";
 let commercialTrackingDateFrom = "";
@@ -6975,6 +6976,70 @@ const COMMERCIAL_UAFE_REQUIRED_FIELDS = [
   ["receptor_fecha", "Fecha del responsable"]
 ];
 
+// Indice lateral del formulario UAFE: secciones visibles con su avance.
+function getUafeRequiredNames() {
+  return new Set(COMMERCIAL_UAFE_REQUIRED_FIELDS.map(([name]) => name));
+}
+
+function isUafeFieldFilled(field) {
+  if (field.type === "checkbox") return field.checked;
+  return String(field.value || "").trim() !== "";
+}
+
+function renderUafeIndex() {
+  const nav = document.querySelector("#uafeIndex");
+  if (!nav || !commercialUafeForm) return;
+  const requiredNames = getUafeRequiredNames();
+  const sections = [...commercialUafeForm.querySelectorAll(".uafe-section")].filter((section) => !section.hidden && !section.classList.contains("is-uafe-hidden"));
+  let done = 0;
+  nav.innerHTML = sections.map((section, index) => {
+    if (!section.id) section.id = `uafe-section-${index + 1}`;
+    const number = section.querySelector(".uafe-section-title > span");
+    if (number) number.textContent = String(index + 1);
+    const label = section.querySelector(".uafe-section-title strong")?.textContent?.trim() || `Sección ${index + 1}`;
+    const fields = [...section.querySelectorAll("input:not([type=hidden]), select, textarea")].filter((field) => !field.disabled);
+    fields.forEach((field) => {
+      const isRequired = field.required || requiredNames.has(field.name);
+      field.closest("label")?.classList.toggle("is-uafe-required", isRequired && field.type !== "checkbox");
+    });
+    const required = fields.filter((field) => field.required || requiredNames.has(field.name));
+    const filledRequired = required.filter(isUafeFieldFilled).length;
+    const anyFilled = fields.some(isUafeFieldFilled);
+    const complete = required.length ? filledRequired === required.length : anyFilled;
+    if (complete) done += 1;
+    const stateClass = complete ? "is-done" : (required.length ? "is-pending" : "is-optional");
+    const detail = required.length ? `${filledRequired}/${required.length} obligatorios` : "Opcional";
+    section.classList.toggle("is-uafe-done", complete);
+    return `<button type="button" class="uafe-index-item ${stateClass}" data-uafe-goto="${section.id}"><span class="uafe-index-num">${complete ? "✓" : index + 1}</span><span class="uafe-index-text"><strong>${escapeHtml(label)}</strong><small>${detail}</small></span></button>`;
+  }).join("");
+  const doneEl = document.querySelector("#uafeProgressDone");
+  const totalEl = document.querySelector("#uafeProgressTotal");
+  const fill = document.querySelector("#uafeProgressFill");
+  if (doneEl) doneEl.textContent = String(done);
+  if (totalEl) totalEl.textContent = String(sections.length);
+  if (fill) fill.style.width = sections.length ? `${Math.round((done / sections.length) * 100)}%` : "0%";
+}
+
+let uafeIndexTimer = 0;
+function scheduleUafeIndex() {
+  window.clearTimeout(uafeIndexTimer);
+  uafeIndexTimer = window.setTimeout(renderUafeIndex, 120);
+}
+
+document.addEventListener("input", (event) => {
+  if (event.target.closest?.("#commercialUafeForm")) scheduleUafeIndex();
+});
+document.addEventListener("change", (event) => {
+  if (event.target.closest?.("#commercialUafeForm")) scheduleUafeIndex();
+});
+document.addEventListener("click", (event) => {
+  const item = event.target.closest?.("[data-uafe-goto]");
+  if (!item) return;
+  event.preventDefault();
+  document.getElementById(item.dataset.uafeGoto)?.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+
 function focusCommercialUafeField(name = "") {
   const field = commercialUafeForm?.elements?.[name];
   if (!field) return;
@@ -7626,6 +7691,7 @@ async function openCommercialUafeModal(contractData = null, taskId = "") {
     : (task ? "Formulario UAFE listo para editar por el asesor comercial." : "Complete el formulario UAFE antes de enviar el contrato a Mesa de Control.");
   setCommercialUafeStatus(statusMessage);
   openCommercialModal(commercialUafeModal);
+  scheduleUafeIndex();
   return true;
 }
 
@@ -7776,6 +7842,7 @@ async function openUafeClientRequestFromUrl() {
     setUafeClientFormLocked(true);
     setCommercialUafeStatus("No se encontro este formulario UAFE. Solicite un nuevo enlace al asesor comercial.", true);
     openCommercialModal(commercialUafeModal);
+  scheduleUafeIndex();
     return false;
   }
   activeUafeClientRequestId = request.id;
@@ -7811,6 +7878,7 @@ async function openUafeClientRequestFromUrl() {
     ? "Este formulario ya fue enviado. Si necesita corregir informacion, contacte a su asesor comercial."
     : "Complete el formulario. Sus datos quedaran conectados con el asesor comercial.");
   openCommercialModal(commercialUafeModal);
+  scheduleUafeIndex();
   return true;
 }
 
@@ -11090,6 +11158,14 @@ function renderCommercialHomeSummary() {
       element.textContent = total;
     });
   });
+  const breakdown = getCommercialRequestBreakdown();
+  document.querySelectorAll("[data-cc-stat=\"todos\"]").forEach((element) => {
+    element.textContent = String(breakdown.total);
+  });
+  document.querySelectorAll("[data-cc-breakdown]").forEach((element) => {
+    const parts = breakdown.items.filter((item) => item.count > 0).map((item) => `${item.count} ${item.count === 1 ? item.singular : item.plural}`);
+    element.textContent = parts.length ? parts.join(" · ") : "Registradas por ti";
+  });
   const body = document.querySelector("#ccRecentBody");
   if (!body) return;
   const recent = getCommercialOperationalTasks(getCommercialOwnedTasks())
@@ -11630,8 +11706,9 @@ function openCommercialNotificationsModal() {
   updateCommercialNotificationCount();
 }
 
-function getCommercialRequestFilteredTasks(statusView = activeCommercialRequestFilter) {
-  const tasks = getCommercialOwnedTasks().filter((task) => ["compra", "venta"].includes(getTaskProcess(task)));
+function getCommercialRequestFilteredTasks(statusView = activeCommercialRequestFilter, type = "todos") {
+  const allowed = type === "todos" ? ["compra", "venta", "cuv"] : [type];
+  const tasks = getCommercialOwnedTasks().filter((task) => allowed.includes(getTaskProcess(task)));
   if (statusView === "pendientes") {
     return tasks.filter((task) => ["pendiente", "por asignar"].includes(task.status));
   }
@@ -11752,6 +11829,33 @@ function openCommercialSidebarModal(area = "requests", options = {}) {
   return true;
 }
 
+function getCommercialRequestBreakdown(statusView = "todos") {
+  const count = (type) => getCommercialRequestFilteredTasks(statusView, type).length;
+  const consignments = statusView === "todos" ? getVisibleCommercialConsignments().length : 0;
+  const items = [
+    { type: "compra", label: "Saneamientos", singular: "saneamiento", plural: "saneamientos", count: count("compra") },
+    { type: "venta", label: "Contratos de venta", singular: "contrato", plural: "contratos", count: count("venta") },
+    { type: "cuv", label: "CUV", singular: "CUV", plural: "CUV", count: count("cuv") },
+    { type: "consignacion", label: "Consignaciones", singular: "consignación", plural: "consignaciones", count: consignments }
+  ];
+  return { items, total: items.reduce((sum, item) => sum + item.count, 0) };
+}
+
+function renderCommercialConsignmentRequestRows() {
+  const records = getVisibleCommercialConsignments().sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  if (!records.length) return `<div class="empty compact-empty">Sin consignaciones registradas.</div>`;
+  return `<div class="cc-type-list">${records.map((record) => {
+    const client = record.contractType === "juridica" ? record.data?.companyName : record.data?.clientName;
+    return `
+      <article class="cc-type-row">
+        <strong>${escapeHtml(record.data?.plate || record.plate || "Sin placa")}</strong>
+        <span>${escapeHtml(client || "Cliente sin nombre")}</span>
+        <span>${escapeHtml(record.updatedAt ? formatDateTime(record.updatedAt) : "-")}</span>
+        <button class="btn tiny secondary" type="button" data-cc-open-process="commercial-consignment-process">Abrir</button>
+      </article>`;
+  }).join("")}</div>`;
+}
+
 function renderCommercialRequests() {
   const kpiContainer = document.querySelector("#commercialRequestsKpis");
   const listContainer = document.querySelector("#commercialRequestsList");
@@ -11759,36 +11863,63 @@ function renderCommercialRequests() {
   const badge = document.querySelector("#commercialRequestsBadge");
   if (!kpiContainer || !listContainer) return;
 
-  const tasks = getCommercialTasks();
-  const filteredTasks = getCommercialRequestFilteredTasks();
-  const purchaseTasks = filterTasksByCommercialProcess(filteredTasks, "compra");
-  const saleTasks = filterTasksByCommercialProcess(filteredTasks, "venta");
-  const kpis = getKpis(filteredTasks);
-  if (title) title.textContent = activeCommercialRequestFilter === "todos" ? "Registro completo del asesor" : getCommercialRequestFilterLabel();
-  if (badge) badge.textContent = `${filteredTasks.length} registro${filteredTasks.length === 1 ? "" : "s"}`;
-  renderKpiCards("#commercialRequestsKpis", [
-    ["Registros", filteredTasks.length, "Segun filtro seleccionado"],
-    ["Pendientes", kpis.pending + kpis.unassigned, "Aun sin cierre"],
-    ["En proceso", kpis.inProgress, "Tomadas por mesa"],
-    ["Cerradas", kpis.completed, "Finalizadas"]
-  ]);
-  listContainer.innerHTML = `
-    <div class="commercial-request-group">
-      <div class="mini-list-head">
-        <strong>SANEAMIENTOS</strong>
-        <span>${purchaseTasks.length} registro${purchaseTasks.length === 1 ? "" : "s"}</span>
-      </div>
-      ${renderCommercialRows(purchaseTasks, { detailed: activeCommercialRequestFilter === "todos" })}
-    </div>
-    <div class="commercial-request-group">
-      <div class="mini-list-head">
-        <strong>CONTRATOS DE COMPRAVENTA</strong>
-        <span>${saleTasks.length} registro${saleTasks.length === 1 ? "" : "s"}</span>
-      </div>
-      ${renderCommercialRows(saleTasks, { detailed: activeCommercialRequestFilter === "todos" })}
+  const statusView = activeCommercialRequestFilter;
+  const breakdown = getCommercialRequestBreakdown(statusView);
+  const type = activeCommercialRequestType;
+  const visibleTypes = breakdown.items.filter((item) => item.type !== "consignacion" || statusView === "todos");
+  if (type !== "todos" && !visibleTypes.some((item) => item.type === type)) activeCommercialRequestType = "todos";
+  const currentType = activeCommercialRequestType;
+  const shownTotal = currentType === "todos" ? breakdown.total : (breakdown.items.find((item) => item.type === currentType)?.count || 0);
+  if (title) title.textContent = statusView === "todos" ? "Registro completo del asesor" : getCommercialRequestFilterLabel();
+  if (badge) badge.textContent = `${shownTotal} registro${shownTotal === 1 ? "" : "s"}`;
+
+  kpiContainer.innerHTML = `
+    <div class="cc-type-tabs" role="tablist" aria-label="Tipo de solicitud">
+      <button type="button" role="tab" class="cc-type-tab ${currentType === "todos" ? "is-active" : ""}" aria-selected="${currentType === "todos"}" data-cc-request-type="todos"><strong>${breakdown.total}</strong><span>Todas</span></button>
+      ${visibleTypes.map((item) => `
+        <button type="button" role="tab" class="cc-type-tab ${currentType === item.type ? "is-active" : ""}" aria-selected="${currentType === item.type}" data-cc-request-type="${item.type}"><strong>${item.count}</strong><span>${escapeHtml(item.label)}</span></button>
+      `).join("")}
     </div>
   `;
+
+  const groups = [
+    { type: "compra", heading: "SANEAMIENTOS" },
+    { type: "venta", heading: "CONTRATOS DE COMPRAVENTA" },
+    { type: "cuv", heading: "CUV" },
+    { type: "consignacion", heading: "CONSIGNACIONES" }
+  ].filter((group) => (currentType === "todos" || currentType === group.type) && (group.type !== "consignacion" || statusView === "todos"));
+
+  listContainer.innerHTML = groups.map((group) => {
+    const count = breakdown.items.find((item) => item.type === group.type)?.count || 0;
+    if (currentType === "todos" && !count) return "";
+    const rows = group.type === "consignacion"
+      ? renderCommercialConsignmentRequestRows()
+      : renderCommercialRows(getCommercialRequestFilteredTasks(statusView, group.type), { detailed: statusView === "todos" });
+    return `
+      <div class="commercial-request-group">
+        <div class="mini-list-head">
+          <strong>${group.heading}</strong>
+          <span>${count} registro${count === 1 ? "" : "s"}</span>
+        </div>
+        ${rows}
+      </div>
+    `;
+  }).join("") || `<div class="empty compact-empty">Sin registros para mostrar.</div>`;
 }
+
+document.addEventListener("click", (event) => {
+  const typeButton = event.target.closest?.("[data-cc-request-type]");
+  if (typeButton) {
+    activeCommercialRequestType = typeButton.dataset.ccRequestType || "todos";
+    renderCommercialRequests();
+    return;
+  }
+  const openProcess = event.target.closest?.("[data-cc-open-process]");
+  if (openProcess) {
+    event.preventDefault();
+    setCommercialProcessFromTarget(openProcess.dataset.ccOpenProcess);
+  }
+});
 
 function renderCommercialControlSummary() {
   const kpiContainer = document.querySelector("#commercialControlKpis");

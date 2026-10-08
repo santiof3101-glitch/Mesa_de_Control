@@ -5485,3 +5485,673 @@ body {
   min-height: 42px !important;
   padding-left: 36px !important;
 }
+
+/* ===== Mis solicitudes: desglose por tipo (2026-10-07) ===== */
+#formulario button.cc-stat.is-link {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+#formulario button.cc-stat.is-link:hover,
+#formulario button.cc-stat.is-link:focus-visible {
+  border-color: var(--cc-rojo);
+  box-shadow: 0 6px 18px rgba(21, 23, 29, .08);
+  outline: none;
+}
+
+#formulario .cc-stat span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+#formulario .cc-stat-go {
+  color: var(--cc-rojo-osc);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+#formulario .cc-stat small[data-cc-breakdown] {
+  color: var(--cc-texto);
+  font-weight: 600;
+}
+
+#formulario .cc-type-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  grid-column: 1 / -1;
+}
+
+#formulario .cc-type-tab {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--cc-borde);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--cc-texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+#formulario .cc-type-tab strong {
+  color: var(--cc-tinta);
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+#formulario .cc-type-tab span {
+  color: var(--cc-suave);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+#formulario .cc-type-tab:hover {
+  border-color: #b9bcc3;
+}
+
+#formulario .cc-type-tab.is-active {
+  border-color: var(--cc-rojo);
+  background: var(--cc-rojo-claro);
+}
+
+#formulario .cc-type-tab.is-active strong,
+#formulario .cc-type-tab.is-active span {
+  color: var(--cc-rojo-osc);
+}
+
+#formulario .cc-type-list {
+  display: grid;
+  gap: 8px;
+}
+
+#formulario .cc-type-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--cc-borde);
+  border-radius: 10px;
+  background: #ffffff;
+  font-size: 14px;
+}
+
+#formulario .cc-type-row strong {
+  color: var(--cc-tinta);
+  font-family: "Plus Jakarta Sans", sans-serif;
+  letter-spacing: .05em;
+}
+
+@media (max-width: 640px) {
+  #formulario .cc-type-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #formulario .cc-type-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+/* ===== Formulario UAFE corporativo (2026-10-07) ===== */
+#commercialUafeModal .commercial-uafe-card {
+  width: min(1180px, calc(100vw - 32px)) !important;
+  max-height: min(92vh, 980px) !important;
+  display: grid !important;
+  grid-template-columns: 250px minmax(0, 1fr) !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid #e2e4e9 !important;
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  color: #2f3035;
+  font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+}
+
+#commercialUafeModal .uafe-head {
+  grid-column: 1 / -1;
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  margin: 0 !important;
+  padding: 18px 22px !important;
+  border-bottom: 1px solid #eef0f3 !important;
+}
+
+#commercialUafeModal .uafe-head-ico {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #fdecec;
+  color: #b3121a;
+}
+
+#commercialUafeModal .uafe-head-ico svg,
+#commercialUafeModal .commercial-modal-close svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#commercialUafeModal .uafe-head-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#commercialUafeModal .uafe-head .eyebrow {
+  margin: 0 !important;
+  color: #b3121a !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: .12em !important;
+}
+
+#commercialUafeModal .uafe-head h2 {
+  margin: 0 !important;
+  color: #15171d !important;
+  font-family: "Roboto Condensed", "Arial Narrow", sans-serif !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+}
+
+#commercialUafeModal .uafe-head .commercial-modal-subtitle {
+  color: #5f6168 !important;
+  font-size: 13.5px !important;
+}
+
+#commercialUafeModal .uafe-progress {
+  display: grid;
+  gap: 6px;
+  flex: 0 0 210px;
+  color: #5f6168;
+  font-size: 12.5px;
+}
+
+#commercialUafeModal .uafe-progress b {
+  color: #15171d;
+}
+
+#commercialUafeModal .uafe-progress-bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eceef1;
+}
+
+#commercialUafeModal .uafe-progress-bar i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #d71920, #15803d);
+  transition: width .25s ease;
+}
+
+#commercialUafeModal .commercial-modal-close {
+  position: static !important;
+  display: grid !important;
+  place-items: center !important;
+  flex: 0 0 38px;
+  width: 38px !important;
+  height: 38px !important;
+  padding: 0 !important;
+  border: 1px solid #e2e4e9 !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  color: #2f3035 !important;
+}
+
+#commercialUafeModal .commercial-modal-close:hover {
+  border-color: #d71920 !important;
+  color: #b3121a !important;
+}
+
+/* Indice de secciones */
+#commercialUafeModal .uafe-index {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 10px;
+  border-right: 1px solid #eef0f3;
+  background: #fafbfc;
+}
+
+#commercialUafeModal .uafe-index-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #2f3035;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+#commercialUafeModal .uafe-index-item:hover {
+  background: #f1f2f4;
+}
+
+#commercialUafeModal .uafe-index-num {
+  display: grid;
+  place-items: center;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: #e6e8ec;
+  color: #3d3f45;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+#commercialUafeModal .uafe-index-item.is-pending .uafe-index-num {
+  background: #d71920;
+  color: #ffffff;
+}
+
+#commercialUafeModal .uafe-index-item.is-done .uafe-index-num {
+  background: #15803d;
+  color: #ffffff;
+}
+
+#commercialUafeModal .uafe-index-text {
+  display: grid;
+  min-width: 0;
+}
+
+#commercialUafeModal .uafe-index-text strong {
+  overflow: hidden;
+  color: #15171d;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+#commercialUafeModal .uafe-index-text small {
+  color: #8a8c8f;
+  font-size: 11.5px;
+}
+
+/* Formulario */
+#commercialUafeModal .commercial-uafe-form {
+  display: grid !important;
+  gap: 14px !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  padding: 18px 22px 0 !important;
+  scroll-padding-top: 12px;
+}
+
+#commercialUafeModal .uafe-section {
+  padding: 16px 18px 18px !important;
+  border: 1px solid #e9ebef !important;
+  border-radius: 12px !important;
+  background: #fafbfc !important;
+  box-shadow: none !important;
+  scroll-margin-top: 12px;
+}
+
+#commercialUafeModal .uafe-section.is-uafe-done {
+  border-color: #c7e9d3 !important;
+}
+
+#commercialUafeModal .uafe-section-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin: 0 0 14px !important;
+}
+
+#commercialUafeModal .uafe-section-title > span {
+  display: grid !important;
+  place-items: center !important;
+  flex: 0 0 26px !important;
+  width: 26px !important;
+  height: 26px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: #d71920 !important;
+  color: #ffffff !important;
+  font-family: "Plus Jakarta Sans", sans-serif !important;
+  font-size: 12.5px !important;
+  font-weight: 800 !important;
+}
+
+#commercialUafeModal .uafe-section.is-uafe-done .uafe-section-title > span {
+  background: #15803d !important;
+}
+
+#commercialUafeModal .uafe-section-title strong {
+  color: #15171d !important;
+  font-family: "Roboto Condensed", "Arial Narrow", sans-serif !important;
+  font-size: 17px !important;
+  font-weight: 700 !important;
+}
+
+#commercialUafeModal .uafe-section-title small {
+  color: #5f6168 !important;
+  font-size: 12.5px !important;
+}
+
+#commercialUafeModal .uafe-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 14px 16px !important;
+}
+
+#commercialUafeModal .uafe-grid label {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+  color: #3d3f45 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+#commercialUafeModal label.is-uafe-required::after {
+  content: none;
+}
+
+#commercialUafeModal .uafe-grid label.is-uafe-required {
+  position: relative;
+}
+
+#commercialUafeModal .uafe-grid label.is-uafe-required::before {
+  content: "*";
+  position: absolute;
+  top: -1px;
+  right: 2px;
+  color: #d71920;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+#commercialUafeModal .uafe-grid input,
+#commercialUafeModal .uafe-grid select,
+#commercialUafeModal .uafe-grid textarea {
+  width: 100% !important;
+  min-height: 44px !important;
+  padding: 0 12px !important;
+  border: 1px solid #d5d8de !important;
+  border-radius: 8px !important;
+  background-color: #ffffff !important;
+  color: #15171d !important;
+  font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  box-shadow: none !important;
+}
+
+#commercialUafeModal .uafe-grid textarea {
+  min-height: 90px !important;
+  padding: 10px 12px !important;
+}
+
+#commercialUafeModal .uafe-grid input:focus,
+#commercialUafeModal .uafe-grid select:focus,
+#commercialUafeModal .uafe-grid textarea:focus {
+  border-color: #d71920 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(215, 25, 32, .14) !important;
+}
+
+#commercialUafeModal .uafe-grid input[readonly],
+#commercialUafeModal .uafe-grid input:disabled,
+#commercialUafeModal .uafe-grid select:disabled {
+  background-color: #f4f5f7 !important;
+  color: #5f6168 !important;
+}
+
+#commercialUafeModal .uafe-checkbox-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)) !important;
+  gap: 8px !important;
+  margin-top: 12px;
+}
+
+#commercialUafeModal .uafe-checkbox-grid label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 42px !important;
+  padding: 0 12px !important;
+  border: 1px solid #e2e4e9 !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  color: #2f3035 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+}
+
+#commercialUafeModal .uafe-checkbox-grid label:has(input:checked) {
+  border-color: #86c79d !important;
+  background: #ecfdf3 !important;
+  color: #14532d !important;
+}
+
+#commercialUafeModal .uafe-checkbox-grid input {
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 !important;
+  accent-color: #d71920;
+}
+
+#commercialUafeModal .uafe-status {
+  margin: 0 !important;
+  padding: 10px 14px !important;
+  border: 0 !important;
+  border-left: 4px solid #d97706 !important;
+  border-radius: 8px !important;
+  background: #fffbeb !important;
+  color: #78350f !important;
+  font-size: 14px !important;
+}
+
+#commercialUafeModal .uafe-status.is-error {
+  border-left-color: #d71920 !important;
+  background: #fef2f2 !important;
+  color: #7f1d1d !important;
+}
+
+/* Botones fijos al final */
+#commercialUafeModal .uafe-actions {
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 3;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  margin: 0 -22px !important;
+  padding: 14px 22px !important;
+  border-top: 1px solid #eef0f3 !important;
+  background: rgba(255, 255, 255, .97) !important;
+}
+
+#commercialUafeModal .uafe-actions .btn {
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 8px !important;
+  font-size: 14.5px !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+}
+
+#commercialUafeModal .uafe-actions .btn.secondary {
+  border: 1px solid #d5d7dc !important;
+  background: #ffffff !important;
+  color: #2f3035 !important;
+}
+
+#commercialUafeModal .uafe-actions .btn.primary {
+  border: 0 !important;
+  background: #d71920 !important;
+  color: #ffffff !important;
+}
+
+#commercialUafeModal .uafe-actions .btn.primary:hover {
+  background: #b3121a !important;
+}
+
+#commercialUafeModal .uafe-actions [data-uafe-whatsapp] {
+  margin-right: auto;
+}
+
+@media (max-width: 900px) {
+  #commercialUafeModal .commercial-uafe-card {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: auto auto minmax(0, 1fr) !important;
+  }
+
+  #commercialUafeModal .uafe-head {
+    flex-wrap: wrap !important;
+  }
+
+  #commercialUafeModal .uafe-progress {
+    order: 4;
+    flex: 1 1 100%;
+  }
+
+  #commercialUafeModal .uafe-index {
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px 12px;
+    border-right: 0;
+    border-bottom: 1px solid #eef0f3;
+  }
+
+  #commercialUafeModal .uafe-index-item {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  #commercialUafeModal .uafe-index-text small {
+    display: none;
+  }
+
+  #commercialUafeModal .uafe-index-text strong {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 640px) {
+  #commercialUafeModal .commercial-uafe-card {
+    width: calc(100vw - 16px) !important;
+    max-height: calc(100dvh - 16px) !important;
+  }
+
+  #commercialUafeModal .uafe-head {
+    padding: 14px !important;
+  }
+
+  #commercialUafeModal .uafe-head-ico,
+  #commercialUafeModal .uafe-head .commercial-modal-subtitle {
+    display: none !important;
+  }
+
+  #commercialUafeModal .commercial-uafe-form {
+    padding: 12px 12px 0 !important;
+  }
+
+  #commercialUafeModal .uafe-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #commercialUafeModal .uafe-actions {
+    margin: 0 -12px !important;
+    padding: 12px !important;
+  }
+
+  #commercialUafeModal .uafe-actions .btn {
+    flex: 1 1 calc(50% - 5px);
+    padding: 0 10px !important;
+  }
+
+  #commercialUafeModal .uafe-actions [data-uafe-whatsapp] {
+    margin-right: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #commercialUafeModal .uafe-progress-bar i {
+    transition: none;
+  }
+}
+
+@media (max-width: 900px) {
+  #commercialUafeModal .uafe-head-text {
+    flex: 1 1 0 !important;
+  }
+
+  #commercialUafeModal .uafe-head .commercial-modal-close {
+    order: 3;
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  #commercialUafeModal .uafe-head h2 {
+    font-size: 19px !important;
+  }
+
+  #commercialUafeModal .uafe-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  #commercialUafeModal .uafe-actions .btn {
+    min-height: 42px !important;
+    font-size: 13.5px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  #commercialUafeModal .uafe-head {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    grid-template-areas: "ico text close" "prog prog prog";
+    row-gap: 10px !important;
+  }
+
+  #commercialUafeModal .uafe-head-ico { grid-area: ico; }
+  #commercialUafeModal .uafe-head-text { grid-area: text; }
+  #commercialUafeModal .uafe-head .commercial-modal-close { grid-area: close; }
+  #commercialUafeModal .uafe-progress { grid-area: prog; flex: none; }
+}
+
+@media (max-width: 640px) {
+  #commercialUafeModal .uafe-head {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-areas: "text close" "prog prog";
+  }
+}

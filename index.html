@@ -19,8 +19,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Roboto+Condensed:wght@300;400;500;600;700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261007-antlista-v1">
-  <link rel="stylesheet" href="layout-fix.css?v=20261007-antlista-v1">
+  <link rel="stylesheet" href="styles.css?v=20261007-uafe-v1">
+  <link rel="stylesheet" href="layout-fix.css?v=20261007-uafe-v1">
 </head>
 <body>
   <header class="topbar">
@@ -963,7 +963,7 @@
         </div>
 
         <section class="cc-stats" aria-label="Resumen de tus solicitudes">
-          <div class="cc-stat"><span>Mis solicitudes</span><strong data-cc-stat="todos">0</strong><small>Registradas por ti</small></div>
+          <button class="cc-stat is-link" type="button" data-commercial-area="requests" data-commercial-status-view="todos" title="Ver el desglose de tus solicitudes"><span>Mis solicitudes <em class="cc-stat-go">Ver desglose →</em></span><strong data-cc-stat="todos">0</strong><small data-cc-breakdown>Registradas por ti</small></button>
           <div class="cc-stat is-pending"><span>Pendientes</span><strong data-cc-stat="pendientes">0</strong><small>Aún sin tomar</small></div>
           <div class="cc-stat is-progress"><span>En proceso</span><strong data-cc-stat="en-proceso">0</strong><small>Tomadas por mesa</small></div>
           <div class="cc-stat is-closed"><span>Cerradas</span><strong data-cc-stat="cerradas">0</strong><small>Finalizadas</small></div>
@@ -2290,14 +2290,20 @@
   <div id="commercialUafeModal" class="commercial-modal" hidden>
     <div class="commercial-modal-backdrop" data-close-commercial-modal></div>
     <section class="commercial-modal-card commercial-uafe-card" role="dialog" aria-modal="true" aria-labelledby="commercialUafeTitle">
-      <div class="modal-title-row">
-        <div>
+      <div class="modal-title-row uafe-head">
+        <span class="uafe-head-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5.5c0 4.3-3 8-7 9.5-4-1.5-7-5.2-7-9.5V6z"></path><path d="M9 12l2 2 4-4"></path></svg></span>
+        <div class="uafe-head-text">
           <p class="eyebrow">Formulario UAFE</p>
           <h2 id="commercialUafeTitle">Formulario Conozca a su Cliente</h2>
           <span class="commercial-modal-subtitle">Completa la debida diligencia del contrato antes de enviar la solicitud a Mesa de Control.</span>
         </div>
-        <button class="commercial-modal-close" type="button" data-close-commercial-modal aria-label="Cerrar">x</button>
+        <div class="uafe-progress" aria-live="polite">
+          <span><b id="uafeProgressDone">0</b> de <b id="uafeProgressTotal">0</b> secciones completas</span>
+          <span class="uafe-progress-bar"><i id="uafeProgressFill"></i></span>
+        </div>
+        <button class="commercial-modal-close" type="button" data-close-commercial-modal aria-label="Cerrar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
       </div>
+      <nav id="uafeIndex" class="uafe-index" aria-label="Secciones del formulario"></nav>
       <form id="commercialUafeForm" class="commercial-uafe-form">
         <input type="hidden" name="taskId">
         <input type="hidden" name="draftId">
@@ -2860,7 +2866,7 @@
         </section>
 
         <div id="commercialUafeStatus" class="uafe-status" hidden></div>
-        <div class="commercial-modal-actions">
+        <div class="commercial-modal-actions uafe-actions">
           <button class="btn secondary" type="button" data-uafe-whatsapp>Copiar mensaje WhatsApp</button>
           <button class="btn secondary" type="button" data-uafe-pdf-preview>Vista PDF</button>
           <button class="btn secondary" type="button" data-close-commercial-modal>Cancelar</button>
@@ -3051,6 +3057,6 @@
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20261007-antlista-v1"></script>
+  <script src="app.js?v=20261007-uafe-v1"></script>
 </body>
 </html>
