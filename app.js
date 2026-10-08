@@ -8149,26 +8149,80 @@ function getDatacilValue(snapshot = {}, patterns = []) {
   return "";
 }
 
+// Historial de consultas ANT: el servidor filtra por usuario y entrega de 10 en 10.
+const datacilListState = { scope: "all", search: "", advisorId: "", offset: 0, limit: 10, total: 0, hasMore: false, advisors: [], loading: false };
+
+function renderDatacilListTools(target) {
+  const canSeeAll = session.role === "legal";
+  const advisorOptions = datacilListState.advisors
+    .map((advisor) => `<option value="${escapeHtml(advisor.id)}" ${advisor.id === datacilListState.advisorId ? "selected" : ""}>${escapeHtml(advisor.name)}</option>`)
+    .join("");
+  return `
+    <div class="dx-list-tools">
+      <label class="dx-list-search">
+        <span class="sr-only">Buscar por placa</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.5-4.5"></path></svg>
+        <input type="search" data-dx-search="${escapeHtml(target)}" placeholder="Buscar por placa" value="${escapeHtml(datacilListState.search)}" autocomplete="off" maxlength="8">
+      </label>
+      ${canSeeAll ? `
+        <select data-dx-scope aria-label="Consultas a mostrar">
+          <option value="all" ${datacilListState.scope === "all" ? "selected" : ""}>Todas las consultas</option>
+          <option value="mine" ${datacilListState.scope === "mine" ? "selected" : ""}>Mis consultas</option>
+        </select>
+        <select data-dx-advisor aria-label="Filtrar por asesor" ${datacilListState.scope === "mine" ? "disabled" : ""}>
+          <option value="">Todos los asesores</option>
+          ${advisorOptions}
+        </select>
+      ` : `<span class="dx-list-scope">Solo tus consultas</span>`}
+    </div>
+    <div class="dx-list-body"></div>
+    <div class="dx-list-foot"></div>
+  `;
+}
+
 function renderDatacilStoredLookupsTo(container, target = "commercial") {
   if (!container) return;
+  if (!container.querySelector(".dx-list-body") || container.dataset.dxRole !== session.role) {
+    container.dataset.dxRole = session.role;
+    container.innerHTML = renderDatacilListTools(target);
+  } else {
+    const advisorSelect = container.querySelector("[data-dx-advisor]");
+    if (advisorSelect && advisorSelect.options.length - 1 !== datacilListState.advisors.length) {
+      container.innerHTML = renderDatacilListTools(target);
+    }
+  }
+  const body = container.querySelector(".dx-list-body");
+  const foot = container.querySelector(".dx-list-foot");
   if (!datacilStoredLookups.length) {
-    container.innerHTML = `<div class="empty compact-empty">Todavía no existen consultas ANT guardadas.</div>`;
+    body.innerHTML = `<div class="empty compact-empty">${datacilListState.search ? "No hay consultas guardadas con esa placa." : "Todavía no tienes consultas ANT guardadas."}</div>`;
+    foot.innerHTML = "";
     return;
   }
-  container.innerHTML = datacilStoredLookups.map((snapshot) => {
-    const payload = getDatacilPayload(snapshot);
-    const owner = payload.propietario?.nombre || "Propietario sin identificar";
-    const debtTotal = Number(payload.pagos?.totalPendiente || 0);
-    const pendingFines = Number(payload.citaciones?.pendientes || 0);
-    return `
-      <article class="ant-saved-row">
-        <div class="ant-saved-plate"><strong>${escapeHtml(snapshot.placa || "Sin placa")}</strong><span>${escapeHtml(formatDateTime(snapshot.queriedAt) || "Sin fecha")}</span></div>
-        <div><span>Propietario</span><strong>${escapeHtml(owner)}</strong></div>
-        <div><span>Deuda total</span><strong>${escapeHtml(formatDatacilMoney(debtTotal))} · ${pendingFines} multa(s)</strong></div>
-        <button class="btn tiny secondary" type="button" data-datacil-open="${escapeHtml(snapshot.placa || "")}" data-datacil-target="${escapeHtml(target)}">Ver consulta</button>
-      </article>
-    `;
-  }).join("");
+  body.innerHTML = `
+    <div class="dx-list-table-wrap"><table class="dx-list-table">
+      <thead><tr><th>Placa</th><th>Propietario</th><th>Deuda</th><th>Consultado por</th><th>Fecha</th><th><span class="sr-only">Acción</span></th></tr></thead>
+      <tbody>${datacilStoredLookups.map((snapshot) => {
+        const payload = getDatacilPayload(snapshot);
+        const owner = payload.propietario?.nombre || "Sin identificar";
+        const debtTotal = Number(payload.pagos?.totalPendiente || 0);
+        const pendingFines = Number(payload.citaciones?.pendientes || 0);
+        const debtLabel = `${formatDatacilMoney(debtTotal)}${pendingFines ? ` · ${pendingFines} multa${pendingFines === 1 ? "" : "s"}` : ""}`;
+        return `
+          <tr>
+            <td class="dx-list-plate">${escapeHtml(snapshot.placa || "Sin placa")}</td>
+            <td class="dx-list-owner">${escapeHtml(owner)}</td>
+            <td class="${debtTotal > 0 || pendingFines > 0 ? "dx-list-debt" : "dx-list-clear"}">${escapeHtml(debtLabel)}</td>
+            <td>${escapeHtml(snapshot.queriedBy?.name || "-")}</td>
+            <td class="dx-list-date">${escapeHtml(snapshot.queriedAt ? formatDateTime(snapshot.queriedAt) : "-")}</td>
+            <td class="dx-list-action"><button class="btn tiny secondary" type="button" data-datacil-open="${escapeHtml(snapshot.placa || "")}" data-datacil-target="${escapeHtml(target)}">Ver</button></td>
+          </tr>`;
+      }).join("")}</tbody>
+    </table></div>
+  `;
+  foot.innerHTML = `
+    <span>Mostrando ${datacilStoredLookups.length} de ${datacilListState.total}</span>
+    ${datacilListState.hasMore ? `<button class="btn tiny secondary" type="button" data-dx-more ${datacilListState.loading ? "disabled" : ""}>${datacilListState.loading ? "Cargando..." : "Ver más"}</button>` : ""}
+  `;
 }
 
 function renderDatacilStoredLookups() {
@@ -8176,25 +8230,92 @@ function renderDatacilStoredLookups() {
   renderDatacilStoredLookupsTo(legalDatacilSavedList, "legal");
 }
 
-async function loadDatacilStoredLookups(force = false) {
-  if (!force && datacilLookupsLoadedAt && Date.now() - datacilLookupsLoadedAt < 60000) {
+async function loadDatacilStoredLookups(force = false, append = false) {
+  if (!force && !append && datacilLookupsLoadedAt && Date.now() - datacilLookupsLoadedAt < 60000) {
     renderDatacilStoredLookups();
     return datacilStoredLookups;
   }
-  if (datacilSavedList) datacilSavedList.innerHTML = `<div class="empty compact-empty">Cargando consultas guardadas...</div>`;
-  if (legalDatacilSavedList) legalDatacilSavedList.innerHTML = `<div class="empty compact-empty">Cargando consultas guardadas...</div>`;
+  if (!append) datacilListState.offset = 0;
+  datacilListState.loading = true;
+  if (!append) {
+    [datacilSavedList, legalDatacilSavedList].forEach((container) => {
+      const body = container?.querySelector(".dx-list-body");
+      if (body) body.innerHTML = `<div class="empty compact-empty">Cargando consultas guardadas...</div>`;
+      else if (container) container.innerHTML = `<div class="empty compact-empty">Cargando consultas guardadas...</div>`;
+    });
+  } else {
+    renderDatacilStoredLookups();
+  }
   try {
-    const payload = await callDatacilFunction({ action: "list" });
-    datacilStoredLookups = Array.isArray(payload.lookups) ? payload.lookups : [];
+    const payload = await callDatacilFunction({
+      action: "list",
+      scope: datacilListState.scope,
+      search: datacilListState.search,
+      advisorId: datacilListState.advisorId,
+      offset: datacilListState.offset,
+      limit: datacilListState.limit
+    });
+    const lookups = Array.isArray(payload.lookups) ? payload.lookups : [];
+    datacilStoredLookups = append ? [...datacilStoredLookups, ...lookups] : lookups;
+    datacilListState.total = Number(payload.total) || datacilStoredLookups.length;
+    datacilListState.hasMore = payload.hasMore === true;
+    if (Array.isArray(payload.advisors) && payload.advisors.length) datacilListState.advisors = payload.advisors;
     datacilLookupsLoadedAt = Date.now();
+    datacilListState.loading = false;
     renderDatacilStoredLookups();
   } catch (error) {
+    datacilListState.loading = false;
     const message = `<div class="empty compact-empty">${escapeHtml(error?.message || "No se pudo cargar el historial.")}</div>`;
-    if (datacilSavedList) datacilSavedList.innerHTML = message;
-    if (legalDatacilSavedList) legalDatacilSavedList.innerHTML = message;
+    [datacilSavedList, legalDatacilSavedList].forEach((container) => {
+      const body = container?.querySelector(".dx-list-body");
+      if (body) body.innerHTML = message;
+      else if (container) container.innerHTML = message;
+    });
   }
   return datacilStoredLookups;
 }
+
+// Busca en el servidor una consulta guardada por placa (no consume creditos).
+async function findDatacilLookupRemote(plate) {
+  try {
+    const payload = await callDatacilFunction({ action: "find", placa: plate });
+    return payload.snapshot || null;
+  } catch {
+    return null;
+  }
+}
+
+let datacilSearchTimer = 0;
+document.addEventListener("input", (event) => {
+  const input = event.target.closest?.("[data-dx-search]");
+  if (!input) return;
+  window.clearTimeout(datacilSearchTimer);
+  datacilSearchTimer = window.setTimeout(() => {
+    datacilListState.search = normalizePlate(input.value);
+    loadDatacilStoredLookups(true);
+  }, 350);
+});
+
+document.addEventListener("change", (event) => {
+  const scopeSelect = event.target.closest?.("[data-dx-scope]");
+  const advisorSelect = event.target.closest?.("[data-dx-advisor]");
+  if (!scopeSelect && !advisorSelect) return;
+  if (scopeSelect) {
+    datacilListState.scope = scopeSelect.value === "mine" ? "mine" : "all";
+    datacilListState.advisorId = "";
+    document.querySelectorAll("[data-dx-advisor]").forEach((select) => { select.disabled = datacilListState.scope === "mine"; select.value = ""; });
+  }
+  if (advisorSelect) datacilListState.advisorId = advisorSelect.value;
+  loadDatacilStoredLookups(true);
+});
+
+document.addEventListener("click", (event) => {
+  const moreButton = event.target.closest?.("[data-dx-more]");
+  if (!moreButton || datacilListState.loading) return;
+  event.preventDefault();
+  datacilListState.offset += datacilListState.limit;
+  loadDatacilStoredLookups(true, true);
+});
 
 function migrateDatacilLookupToPurchase(snapshot = {}) {
   if (!snapshot?.placa || !form) return false;
@@ -8217,8 +8338,7 @@ function migrateDatacilLookupToPurchase(snapshot = {}) {
 async function offerDatacilMigrationForPlate() {
   const plate = normalizePlate(purchasePlateInput?.value || "");
   if (!/^[A-Z]{3}[0-9]{3,4}$/.test(plate) || pendingVehicleLookup?.placa === plate) return;
-  await loadDatacilStoredLookups();
-  const snapshot = findSavedVehicleLookup(plate);
+  const snapshot = findSavedVehicleLookup(plate) || await findDatacilLookupRemote(plate);
   if (!snapshot) return;
   if (window.confirm(`Existe una validación ANT guardada para ${plate}. ¿Desea migrar sus datos a esta solicitud de saneamiento?`)) {
     migrateDatacilLookupToPurchase(snapshot);
