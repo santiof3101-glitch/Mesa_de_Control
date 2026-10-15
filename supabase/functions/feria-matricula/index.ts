@@ -71,21 +71,37 @@ Deno.serve(async (req) => {
   try {
     let text = "";
     if (geminiKey) {
-      const model = Deno.env.get("GEMINI_MODEL") || "gemini-3.6-flash";
-      const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-        method: "POST",
-        headers: { "x-goog-api-key": geminiKey, "content-type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ inline_data: { mime_type: mediaType, data: image } }, { text: PROMPT }] }],
-          generationConfig: { temperature: 0, responseMimeType: "application/json" },
-        }),
-        signal: AbortSignal.timeout(45000),
-      });
-      const payload = await aiResponse.json().catch(() => null);
-      if (!aiResponse.ok) {
-        return response(origin, 502, { ok: false, error: "El servicio de lectura no respondio. Llene los datos o use Consulta ANT." });
+      // Si un modelo esta saturado (503/429) se prueba con el siguiente.
+      const models = (Deno.env.get("GEMINI_MODEL") || "gemini-3.6-flash,gemini-3.5-flash,gemini-flash-latest")
+        .split(",").map((item) => item.trim()).filter(Boolean);
+      let lastStatus = 0;
+      for (const model of models) {
+        const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+          method: "POST",
+          headers: { "x-goog-api-key": geminiKey, "content-type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ inline_data: { mime_type: mediaType, data: image } }, { text: PROMPT }] }],
+            generationConfig: { temperature: 0, responseMimeType: "application/json" },
+          }),
+          signal: AbortSignal.timeout(40000),
+        });
+        lastStatus = aiResponse.status;
+        const payload = await aiResponse.json().catch(() => null);
+        if (aiResponse.ok) {
+          text = (payload?.candidates?.[0]?.content?.parts || []).map((part: { text?: string }) => part?.text || "").join("");
+          break;
+        }
+        if (![429, 500, 503].includes(aiResponse.status)) break;
       }
-      text = (payload?.candidates?.[0]?.content?.parts || []).map((part: { text?: string }) => part?.text || "").join("");
+      if (!text) {
+        const busy = [429, 503].includes(lastStatus);
+        return response(origin, 502, {
+          ok: false,
+          error: busy
+            ? "El servicio de lectura esta saturado en este momento. Intente en unos segundos o use Consulta ANT."
+            : "El servicio de lectura no respondio. Llene los datos o use Consulta ANT.",
+        });
+      }
     } else {
       const model = Deno.env.get("ANTHROPIC_MODEL") || "claude-sonnet-5-5";
       const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
