@@ -317,7 +317,6 @@
     if (!(Number(data.precioToma) > 0)) missing.push("precio de toma");
     if (String(data.kilometraje || "") === "" || Number(data.kilometraje) < 0) missing.push("kilometraje");
     if (String(data.telefono || "").replace(/\D/g, "").length < 7) missing.push("teléfono");
-    if (!pendingPhoto) missing.push("foto de la matrícula");
     if (missing.length) {
       setFormStatus(`Falta completar: ${missing.join(", ")}.`, true);
       return;
@@ -331,7 +330,7 @@
     try {
       const user = currentUser();
       const id = `feria-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
-      const matricula = await uploadFeriaFile(pendingPhoto, "matriculas", id);
+      const matricula = pendingPhoto ? await uploadFeriaFile(pendingPhoto, "matriculas", id) : null;
       const now = new Date().toISOString();
       const task = {
         id,
@@ -363,7 +362,7 @@
       resetPhoto();
       pendingLookup = null;
       $$(".is-autofilled", form).forEach((field) => field.classList.remove("is-autofilled"));
-      setHint("Con la placa, ANT llena el propietario y el vehículo. La foto queda adjunta para la mesa de control.", "info");
+      setHint("Con la placa, ANT llena el propietario y el vehículo. La foto de la matrícula es opcional.", "info");
       toast(`${TYPE_LABELS[task.tipo]} de ${plate} enviada a la mesa de control.`);
       renderCommercial();
     } catch (error) {

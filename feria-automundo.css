@@ -913,3 +913,4 @@
 .fx-legal-nav {
   color: #b3121a !important;
 }
+\n.fx-photo-empty strong em { color: var(--fx-suave); font-style: normal; font-weight: 600; }
