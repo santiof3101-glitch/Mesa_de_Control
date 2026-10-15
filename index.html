@@ -19,11 +19,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Roboto+Condensed:wght@300;400;500;600;700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261015-adm-v1">
-  <link rel="stylesheet" href="layout-fix.css?v=20261015-adm-v1">
-  <link rel="stylesheet" href="feria-automundo.css?v=20261015-adm-v1">
-  <link rel="stylesheet" href="mesa-control.css?v=20261015-adm-v1">
-  <link rel="stylesheet" href="admin-panel.css?v=20261015-adm-v1">
+  <link rel="stylesheet" href="styles.css?v=20261015-pag-v1">
+  <link rel="stylesheet" href="layout-fix.css?v=20261015-pag-v1">
+  <link rel="stylesheet" href="feria-automundo.css?v=20261015-pag-v1">
+  <link rel="stylesheet" href="mesa-control.css?v=20261015-pag-v1">
+  <link rel="stylesheet" href="admin-panel.css?v=20261015-pag-v1">
 </head>
 <body>
   <header class="topbar">
@@ -1042,7 +1042,9 @@
             <h3 id="fxMineTitle">Mis solicitudes de la feria</h3>
             <button type="button" class="btn tiny secondary" data-fx-reload>Actualizar</button>
           </div>
+          <label class="fx-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><input type="search" placeholder="Buscar por placa, propietario, cédula o asesor" data-fx-search="mine" aria-label="Buscar solicitud"></label>
           <div id="fxMineList" class="fx-list"></div>
+          <nav class="fx-pager" data-fx-pager="mine" aria-label="Páginas de mis solicitudes"></nav>
         </section>
       </section>
 
@@ -1628,7 +1630,9 @@
             <button type="button" class="fx-tab" data-fx-filter="observada"><strong data-fx-legal-count="observada">0</strong><span>Observadas</span></button>
             <button type="button" class="fx-tab" data-fx-filter="finalizada"><strong data-fx-legal-count="finalizada">0</strong><span>Realizadas</span></button>
           </div>
+          <label class="fx-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><input type="search" placeholder="Buscar por placa, propietario, cédula o asesor" data-fx-search="legal" aria-label="Buscar solicitud"></label>
           <div id="fxLegalList" class="fx-list"></div>
+          <nav class="fx-pager" data-fx-pager="legal" aria-label="Páginas de solicitudes"></nav>
           </section>
         </div>
 
@@ -3280,14 +3284,14 @@
     }, true);
   </script>
   <script src="js/core/autocor-core.js?v=20260803-modular-phase1"></script>
-  <script src="js/core/autocor-auth.js?v=20261015-adm-v1"></script>
+  <script src="js/core/autocor-auth.js?v=20261015-pag-v1"></script>
   <script src="js/components/modal.component.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/comercial.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20261015-adm-v1"></script>
-  <script src="js/feria-automundo.js?v=20261015-adm-v1"></script>
-  <script src="js/version-check.js?v=20261015-adm-v1"></script>
+  <script src="app.js?v=20261015-pag-v1"></script>
+  <script src="js/feria-automundo.js?v=20261015-pag-v1"></script>
+  <script src="js/version-check.js?v=20261015-pag-v1"></script>
 </body>
 </html>

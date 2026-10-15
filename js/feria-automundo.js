@@ -66,6 +66,9 @@
   let feriaLoadedAt = 0;
   let feriaLoading = null;
   let legalFilter = "activas";
+  // Listas paginadas de 5 en 5 con buscador (asesor y mesa de control).
+  const PAGE_SIZE = 5;
+  const listState = { mine: { page: 1, term: "" }, legal: { page: 1, term: "" } };
   const pendingPhotos = { anverso: null, reverso: null };
   let pendingLookup = null;
   let refreshTimer = 0;
@@ -873,6 +876,45 @@
     return counts;
   }
 
+  function matchesTerm(task, term) {
+    if (!term) return true;
+    const ficha = fichaOf(task);
+    const plain = (value) => String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const haystack = plain([task.placa, ficha.propietario, ficha.cedula, task.telefono, ficha.marca, ficha.modelo, task.asesor?.name, task.tomadaPor?.name].join(" "));
+    return plain(term).split(/\s+/).filter(Boolean).every((word) => haystack.includes(word));
+  }
+
+  // Devuelve solo la pagina actual y dibuja los botones de paginas.
+  function paginate(key, items) {
+    const info = listState[key];
+    const pages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+    info.page = Math.min(Math.max(1, info.page), pages);
+    const pager = $(`[data-fx-pager="${key}"]`);
+    if (pager) {
+      if (items.length <= PAGE_SIZE) {
+        pager.innerHTML = items.length ? `<span class="fx-pager-info">${items.length} solicitud${items.length === 1 ? "" : "es"}</span>` : "";
+      } else {
+        const from = (info.page - 1) * PAGE_SIZE + 1;
+        const to = Math.min(items.length, info.page * PAGE_SIZE);
+        const numbers = [];
+        for (let page = 1; page <= pages; page += 1) {
+          if (page === 1 || page === pages || Math.abs(page - info.page) <= 1) numbers.push(page);
+          else if (numbers[numbers.length - 1] !== "…") numbers.push("…");
+        }
+        pager.innerHTML = `
+          <span class="fx-pager-info">${from}–${to} de ${items.length}</span>
+          <div class="fx-pager-buttons">
+            <button type="button" data-fx-page="${key}:${info.page - 1}" ${info.page === 1 ? "disabled" : ""} aria-label="Página anterior">‹</button>
+            ${numbers.map((page) => page === "…"
+              ? `<span class="fx-pager-gap">…</span>`
+              : `<button type="button" class="${page === info.page ? "is-active" : ""}" data-fx-page="${key}:${page}" ${page === info.page ? 'aria-current="page"' : ""}>${page}</button>`).join("")}
+            <button type="button" data-fx-page="${key}:${info.page + 1}" ${info.page === pages ? "disabled" : ""} aria-label="Página siguiente">›</button>
+          </div>`;
+      }
+    }
+    return items.slice((info.page - 1) * PAGE_SIZE, info.page * PAGE_SIZE);
+  }
+
   function renderCommercial() {
     const list = $("#fxMineList");
     if (!list) return;
@@ -882,9 +924,11 @@
     $$("[data-fx-stat]").forEach((element) => {
       element.textContent = String(counts[element.dataset.fxStat] || 0);
     });
-    list.innerHTML = mine.length
-      ? mine.map((task) => renderCard(task, "commercial")).join("")
-      : `<div class="fx-empty">Aún no has enviado fichas en la feria.</div>`;
+    const found = mine.filter((task) => matchesTerm(task, listState.mine.term));
+    const page = paginate("mine", found);
+    list.innerHTML = page.length
+      ? page.map((task) => renderCard(task, "commercial")).join("")
+      : `<div class="fx-empty">${mine.length ? "No hay solicitudes que coincidan con la búsqueda." : "Aún no has enviado fichas en la feria."}</div>`;
   }
 
   // Lo que ve cada asistente: el administrador todo; el asistente disponible todo; el no disponible solo lo suyo.
@@ -909,9 +953,11 @@
     const ordered = legalFilter === "activas"
       ? [...filtered].sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)))
       : filtered;
-    list.innerHTML = ordered.length
-      ? ordered.map((task) => renderCard(task, "legal")).join("")
-      : `<div class="fx-empty">No hay solicitudes en este estado.</div>`;
+    const found = ordered.filter((task) => matchesTerm(task, listState.legal.term));
+    const page = paginate("legal", found);
+    list.innerHTML = page.length
+      ? page.map((task) => renderCard(task, "legal")).join("")
+      : `<div class="fx-empty">${ordered.length ? "No hay solicitudes que coincidan con la búsqueda." : "No hay solicitudes en este estado."}</div>`;
   }
 
   async function refreshAll(force = true) {
@@ -1336,6 +1382,16 @@
         refreshAll(true);
         return;
       }
+      const pageButton = target.closest?.("[data-fx-page]");
+      if (pageButton) {
+        const [key, page] = pageButton.dataset.fxPage.split(":");
+        listState[key].page = Number(page) || 1;
+        if (key === "mine") renderCommercial();
+        else renderLegal();
+        const list = $(key === "mine" ? "#fxMineList" : "#fxLegalList");
+        if (list && list.getBoundingClientRect().top < 80) list.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
       if (target.closest?.("[data-fxa-close]")) {
         closeEditor();
         return;
@@ -1360,6 +1416,7 @@
         if (button.matches("[data-fxa-reload]")) return await refreshAll(true);
         if (button.matches("[data-fx-filter]")) {
           legalFilter = button.dataset.fxFilter;
+          listState.legal.page = 1;
           return renderLegal();
         }
         if (button.matches("[data-fx-download]")) {
@@ -1403,6 +1460,15 @@
           submit.textContent = "Guardar cambios";
         }
       }
+    });
+    $$("[data-fx-search]").forEach((input) => {
+      input.addEventListener("input", () => {
+        const key = input.dataset.fxSearch;
+        listState[key].term = input.value || "";
+        listState[key].page = 1;
+        if (key === "mine") renderCommercial();
+        else renderLegal();
+      });
     });
     $("[data-fxa-search]")?.addEventListener("input", (event) => {
       adminSearch = event.target.value || "";
