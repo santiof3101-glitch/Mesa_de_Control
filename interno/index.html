@@ -1,954 +1,317 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta name="autocor-version" content="20261015T090000Z">
-<script src="js/auto-update.js?v=20261015T090000Z"></script>
+<meta name="autocor-version" content="20261015T091800Z">
+<script src="js/auto-update.js?v=20261015T091800Z"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AUTOCOR | Inicio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Roboto+Condensed:wght@500;600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --black:#000000;
-    --gray-1:#727274;
-    --gray-2:#949195;
-    --red-1:#E53F2E;
-    --red-2:#E83D2E;
-    --white:#ffffff;
-    --shadow:0 24px 70px rgba(0,0,0,.18);
-    --radius-xl:34px;
+    --red:#d71920; --red-dark:#b3121a; --red-soft:#fdecec;
+    --ink:#15171d; --graphite:#2c2e33; --graphite-2:#3d3f45;
+    --text:#2f3035; --muted:#5f6168; --line:#e2e4e9; --soft:#f6f7f9; --bg:#eef0f3;
+    --ok:#15803d; --ok-soft:#ecfdf3; --warn:#b45309; --warn-soft:#fffbeb; --err:#b91c1c; --err-soft:#fef2f2;
+    --display:"Roboto Condensed","Arial Narrow",Arial,sans-serif;
+    --body:"Source Sans 3","Segoe UI",Arial,sans-serif;
+    --num:"Plus Jakarta Sans",Arial,sans-serif;
   }
-
   *{box-sizing:border-box}
-  body{
-    margin:0;
-    min-height:100vh;
-    font-family:Arial, Helvetica, sans-serif;
-    color:var(--black);
-    background:
-      radial-gradient(circle at top left, rgba(232,61,46,.10), transparent 28%),
-      radial-gradient(circle at bottom right, rgba(114,114,116,.12), transparent 26%),
-      linear-gradient(135deg, #f4f4f4 0%, #ffffff 50%, #f1f1f1 100%);
-  }
+  html,body{margin:0}
+  body{min-height:100vh;font-family:var(--body);color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased}
+  button{font-family:inherit}
+  [hidden]{display:none !important}
 
-  .page{
-    width:min(1380px, calc(100% - 32px));
-    margin:16px auto;
-    background:var(--white);
-    border-radius:var(--radius-xl);
-    overflow:hidden;
-    box-shadow:var(--shadow);
-    border:1px solid rgba(148,145,149,.25);
-  }
+  /* Barra superior */
+  .tb{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:16px;padding:0 28px;height:64px;background:var(--graphite);border-bottom:3px solid var(--red)}
+  .tb-brand{display:flex;align-items:center;gap:14px;min-width:0}
+  .tb-logo{display:grid;place-items:center;height:40px;padding:0 10px;border-radius:8px;background:#fff}
+  .tb-logo img{height:30px;width:auto;display:block}
+  .tb-name{display:grid;line-height:1.1;color:#fff}
+  .tb-name strong{font-family:var(--display);font-size:17px;letter-spacing:.06em;text-transform:uppercase}
+  .tb-name span{font-size:12.5px;color:rgba(255,255,255,.62);letter-spacing:.04em}
+  .tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .tb-user{display:flex;align-items:center;gap:10px;padding:5px 6px 5px 5px;border-radius:999px;background:rgba(255,255,255,.08);color:#fff}
+  .tb-avatar{display:grid;place-items:center;width:30px;height:30px;border-radius:999px;background:var(--red);font:800 12px/1 var(--num)}
+  .tb-user b{font-size:14px;font-weight:700;white-space:nowrap}
+  .tb-btn{min-height:34px;padding:0 14px;white-space:nowrap;border:1px solid rgba(255,255,255,.24);border-radius:999px;background:transparent;color:#fff;font-size:13px;font-weight:700;cursor:pointer}
+  .tb-btn:hover{border-color:#fff}
+  .tb-btn.solid{border-color:var(--red);background:var(--red)}
+  .tb-btn.solid:hover{background:var(--red-dark)}
 
-  .hero{
-    position:relative;
-    min-height:auto;
-    display:grid;
-    grid-template-columns:1fr;
-    background:
-      linear-gradient(180deg, rgba(255,255,255,.86) 0%, rgba(255,255,255,.78) 60%, rgba(255,255,255,.86) 100%),
-      url('assets/fondo.png') center/cover no-repeat;
-    isolation:isolate;
-  }
-  .right{display:none !important}
+  .wrap{width:min(1180px,100% - 48px);margin:0 auto}
 
-  .hero::before{
-    content:none;
-  }
+  /* Banner principal */
+  .hero{position:relative;overflow:hidden;margin-top:24px;border-radius:18px;background:linear-gradient(115deg,#1d1f24 0%,#2c2e33 52%,#3d3f45 100%);color:#fff;box-shadow:0 18px 44px rgba(21,23,29,.18)}
+  .hero::before{content:"";position:absolute;inset:0 0 auto;height:5px;background:linear-gradient(90deg,var(--red) 0 68%,#8a8c8f 68% 100%)}
+  .hero-photo{position:absolute;inset:0 0 0 auto;width:52%;background:url("assets/fondo.png") center/cover no-repeat;opacity:.38;-webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 55%);mask-image:linear-gradient(90deg,transparent 0%,#000 55%)}
+  .hero-in{position:relative;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:28px;align-items:end;padding:40px 40px 34px}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;margin:0 0 12px;color:#ff8a8e;font:800 12px/1 var(--num);letter-spacing:.2em;text-transform:uppercase}
+  .eyebrow::before{content:"";width:22px;height:2px;background:var(--red)}
+  .hero h1{margin:0;font-family:var(--display);font-size:clamp(30px,4vw,44px);font-weight:800;line-height:1.05;letter-spacing:.01em}
+  .hero p.lead{margin:12px 0 0;max-width:520px;color:rgba(255,255,255,.78);font-size:17px;line-height:1.45}
 
-  .hero::after{
-    content:none;
-    inset:auto -8% -24% 47%;
-    width:58%;
-    height:60%;
-    background:linear-gradient(180deg, rgba(0,0,0,.84), rgba(114,114,116,.92));
-    border-radius:50%;
-    z-index:0;
-  }
+  /* Buscador de placa */
+  .search{padding:20px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(255,255,255,.07);backdrop-filter:blur(6px)}
+  .search label{display:block;margin-bottom:10px;color:#fff;font:700 15px/1.2 var(--display);letter-spacing:.06em;text-transform:uppercase}
+  .search-row{display:flex;gap:8px}
+  .search input{flex:1 1 auto;min-width:0;height:52px;padding:0 16px;border:2px solid transparent;border-radius:10px;background:#fff;color:var(--ink);font:800 20px/1 var(--num);letter-spacing:.14em;text-transform:uppercase;outline:none}
+  .search input::placeholder{color:#a3a6ad;font-weight:700;letter-spacing:.08em;font-size:15px}
+  .search input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(215,25,32,.25)}
+  .exp-btn{display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 20px;border:0;border-radius:10px;background:var(--red);color:#fff;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .exp-btn:hover{background:var(--red-dark)}
+  .exp-btn svg{width:18px;height:18px}
+  .exp-btn-ghost{width:52px;height:52px;border:1px solid rgba(255,255,255,.3);border-radius:10px;background:transparent;color:#fff;font-size:22px;cursor:pointer}
+  .search small{display:block;margin-top:10px;color:rgba(255,255,255,.6);font-size:13px}
 
-  .left{
-    position:relative;
-    z-index:2;
-    padding:42px 48px 28px;
-    display:flex;
-    flex-direction:column;
-    gap:18px;
-    max-width:1200px;
-    margin:0 auto;
-    width:100%;
-  }
-  .intro{max-width:none;margin:0;text-align:left}
-  .intro p{margin:0;max-width:520px}
-  /* Fila con texto a la izquierda y logo grande a la derecha */
-  .welcome-row{
-    display:grid;
-    grid-template-columns:1fr auto;
-    gap:36px;align-items:center;
-    margin-bottom:6px;
-  }
-  .welcome-logo{
-    height:140px;width:auto;max-width:340px;object-fit:contain;
-    filter:drop-shadow(0 8px 20px rgba(0,0,0,.18));
-  }
-  @media(max-width:900px){
-    .welcome-row{grid-template-columns:1fr;text-align:center;gap:18px}
-    .intro{text-align:center}
-    .intro p{margin:0 auto}
-    .welcome-logo{height:110px;margin:0 auto}
-  }
-
-  .intro{
-    margin-top:6px;
-    max-width:620px;
-  }
-
-  .eyebrow{
-    font-size:17px;
-    letter-spacing:9px;
-    color:var(--gray-1);
-    margin:8px 0 18px;
-    text-transform:uppercase;
-  }
-
-  .headline-logo{display:none}
-  .welcome-title{
-    font-size:clamp(28px, 3.4vw, 44px);
-    font-weight:800;letter-spacing:-.5px;
-    margin:0 0 14px 0;color:var(--black);
-  }
-
-  .intro p{
-    margin:0;
-    font-size:clamp(19px, 2vw, 24px);
-    line-height:1.36;
-    color:#4f5054;
-    max-width:520px;
-  }
-
-  .cards{
-    margin-top:18px;
-    display:grid;
-    grid-template-columns:repeat(2, minmax(0, 1fr));
-    gap:22px;
-    max-width:1100px;
-  }
-  @media(min-width:1280px){
-    .cards{grid-template-columns:repeat(2, minmax(0, 1fr));max-width:none}
-  }
-
-  .card{
-    position:relative;
-    border-radius:20px;
-    padding:22px 20px 20px;
-    min-height:310px;
-    box-shadow:0 14px 26px rgba(0,0,0,.14);
-    display:flex;
-    flex-direction:column;
-    overflow:hidden;
-  }
-
-  .card::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    background:linear-gradient(180deg, rgba(255,255,255,.06), transparent 42%);
-    pointer-events:none;
-  }
-
-  .card.dark{
-    background:linear-gradient(180deg, #17181b 0%, #060606 100%);
-    color:#fff;
-  }
-
-  .card.gray{
-    background:linear-gradient(180deg, #6b6b6f 0%, #57575b 100%);
-    color:#fff;
-  }
-
-  .card.red{
-    background:linear-gradient(180deg, var(--red-1) 0%, #b82d1e 100%);
-    color:#fff;
-  }
-
-  /* Tercer card: centrado y mismo tamaño que los demás */
-  .card-centered{
-    grid-column:1 / -1;
-    justify-self:center;
-    width:260px;
-  }
-
-  .btn.dark{
-    background:linear-gradient(135deg, #17181b, #060606);
-    color:#fff;
-    box-shadow:0 10px 24px rgba(0,0,0,.36);
-  }
-
-  .card.navy{
-    background:linear-gradient(180deg, #ffffff 0%, #f6f6f6 100%);
-    color:var(--black);
-    border:1.5px solid rgba(0,0,0,.08);
-  }
-  .card.navy h2, .card.navy p{color:var(--black)}
-
-  .btn.navy{
-    background:linear-gradient(135deg, #ffffff, #f0f0f0);
-    color:var(--black);
-    border:1.5px solid rgba(0,0,0,.12);
-    box-shadow:0 8px 20px rgba(0,0,0,.10);
-  }
-  .btn.navy .arrow{color:var(--red-1)}
-
-  .icon-contratos .stroke-main{stroke:#0f172a;stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round}
-  .icon-contratos .accent{fill:rgba(229,63,46,.85)}
-  .card.navy .icon-ring{
-    border:1.5px solid rgba(0,0,0,.10);
-    background:radial-gradient(circle at center, rgba(0,0,0,.03), rgba(0,0,0,.01));
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,.03);
-  }
-
-  .icon-ventas .stroke-main{stroke:#ffffff;stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round}
-  .icon-ventas .accent{fill:rgba(255,255,255,.25)}
-  .icon-ventas .accent-dark{fill:rgba(0,0,0,.35)}
-
-  /* ── Modal Ventas ─────────────────────────────────────────── */
-  .mv-overlay{
-    display:none;position:fixed;inset:0;
-    background:rgba(0,0,0,.58);z-index:9999;
-    align-items:center;justify-content:center;
-  }
-  .mv-overlay.open{display:flex}
-  .mv-box{
-    background:#fff;border-radius:22px;
-    padding:32px 28px 26px;
-    max-width:360px;width:calc(100% - 32px);
-    box-shadow:0 28px 64px rgba(0,0,0,.24);
-    display:flex;flex-direction:column;gap:14px;
-    position:relative;
-  }
-  .mv-icon-head{
-    width:64px;height:64px;border-radius:50%;
-    background:linear-gradient(135deg,var(--red-1),#b82d1e);
-    display:flex;align-items:center;justify-content:center;
-    margin:0 auto 4px;
-    box-shadow:0 8px 22px rgba(229,63,46,.30);
-  }
-  .mv-icon-head svg{width:32px;height:32px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .mv-box h3{
-    margin:0;font-size:20px;text-align:center;
-    font-weight:800;color:#111;letter-spacing:.2px;
-  }
-  .mv-box .mv-sub{
-    margin:0;font-size:14px;color:#6b7280;
-    text-align:center;line-height:1.45;
-  }
-  .mv-divider{border:none;border-top:1px solid #f0f0f0;margin:2px 0}
-  .mv-label{
-    font-size:12px;font-weight:700;color:#374151;
-    letter-spacing:.4px;text-transform:uppercase;
-    margin-bottom:4px;
-  }
-  .mv-input{
-    width:100%;height:44px;
-    border:1.5px solid #d1d5db;border-radius:10px;
-    padding:0 14px;font-size:15px;font-family:inherit;
-    outline:none;box-sizing:border-box;
-    transition:border-color .15s;
-  }
-  .mv-input:focus{border-color:var(--red-1)}
-  .mv-btn{
-    height:46px;width:100%;border:none;border-radius:999px;
-    background:linear-gradient(135deg,var(--red-1),var(--red-2));
-    color:#fff;font-weight:800;font-size:17px;
-    cursor:pointer;font-family:inherit;
-    box-shadow:0 10px 24px rgba(232,61,46,.28);
-    transition:transform .15s ease;
-  }
-  .mv-btn:hover{transform:translateY(-1px)}
-  .mv-close{
-    position:absolute;top:14px;right:16px;
-    background:none;border:none;cursor:pointer;
-    font-size:22px;color:#9ca3af;line-height:1;
-    padding:2px 6px;border-radius:6px;
-    transition:color .12s;
-  }
-  .mv-close:hover{color:#374151}
-  .mv-error{
-    color:#b91c1c;font-size:13px;
-    text-align:center;min-height:16px;
-    font-weight:600;
-  }
-  /* Notificación "en desarrollo" */
-  .mv-dev-badge{
-    background:linear-gradient(135deg,#f59e0b,#d97706);
-    color:#fff;border-radius:999px;
-    padding:8px 18px;font-size:13px;font-weight:800;
-    text-align:center;letter-spacing:.5px;
-    text-transform:uppercase;
-  }
-  .mv-dev-body{
-    font-size:14px;color:#4b5563;
-    text-align:center;line-height:1.5;
-    margin:0;
-  }
-
-  .icon-ring{
-    width:108px;
-    height:108px;
-    border-radius:50%;
-    margin:0 auto 20px;
-    border:1.5px solid rgba(255,255,255,.16);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background:radial-gradient(circle at center, rgba(255,255,255,.03), rgba(255,255,255,.01));
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
-  }
-
-  .icon-svg{
-    width:54px;
-    height:54px;
-    display:block;
-  }
-
-  .icon-liquidaciones .stroke-main{stroke:#ffffff;stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round}
-  .icon-liquidaciones .accent{fill:var(--red-1)}
-
-  /* ── Iconos: color depende del fondo de la card (no del icono) ── */
-  .card.dark .icon-svg .stroke-main,
-  .card.gray .icon-svg .stroke-main,
-  .card.red  .icon-svg .stroke-main{stroke:#ffffff;stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round}
-  .card.navy .icon-svg .stroke-main{stroke:#0f172a;stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round}
-  .card.dark .icon-svg .accent,
-  .card.gray .icon-svg .accent,
-  .card.red  .icon-svg .accent{fill:rgba(255,255,255,.25)}
-  .card.navy .icon-svg .accent{fill:rgba(229,63,46,.85)}
-  .card .icon-svg .accent-dark{fill:rgba(0,0,0,.35)}
-  /* Pagos shield/check sigue siendo negro+rojo (no usa stroke-main) */
-  .icon-pagos .shield{fill:#000}
-  .icon-pagos .check{stroke:var(--red-1);stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
-
-  /* ── Icono Firmas (nuevo) ───────────────────────────────────── */
-  .icon-firmas .stroke-main{stroke-linecap:round;stroke-linejoin:round}
-
-  .card h2{
-    margin:0 0 10px;
-    text-align:center;
-    font-size:25px;
-    line-height:1.02;
-    text-transform:uppercase;
-    font-weight:800;
-    letter-spacing:.2px;
-  }
-
-  .card p{
-    margin:0 0 18px;
-    text-align:center;
-    font-size:16px;
-    line-height:1.36;
-    color:rgba(255,255,255,.94);
-  }
-
-  .card .actions{
-    margin-top:auto;
-    display:flex;
-    justify-content:center;
-  }
-
-  .btn{
-    min-width:220px;
-    height:46px;
-    padding:0 16px;
-    border:none;
-    border-radius:999px;
-    text-decoration:none;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:12px;
-    font-weight:800;
-    font-size:18px;
-    transition:transform .18s ease;
-    cursor:pointer;
-  }
-
-  .btn:hover{transform:translateY(-2px)}
-  .btn.red{
-    background:linear-gradient(135deg, var(--red-1), var(--red-2));
-    color:#fff;
-    box-shadow:0 10px 24px rgba(232,61,46,.32);
-  }
-  .btn.silver{
-    background:linear-gradient(135deg, #b7b7b8, #a1a1a3);
-    color:#fff;
-    box-shadow:0 10px 24px rgba(148,145,149,.22);
-  }
-  .btn .arrow{
-    font-size:28px;
-    line-height:1;
-    transform:translateY(-1px);
-  }
-
-  .features{
-    margin:32px auto 0;
-    width:100%;
-    max-width:1200px;
-    background:linear-gradient(90deg, #151516 0%, #1a1a1d 45%, #111111 100%);
-    color:#fff;
-    border-radius:22px;
-    padding:18px 24px;
-    display:grid;
-    grid-template-columns:repeat(4, minmax(0,1fr));
-    gap:0;
-    box-shadow:0 16px 34px rgba(0,0,0,.18);
-  }
-
-  .feature{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:14px;
-    min-height:64px;
-    padding:0 16px;
-  }
-
-  .feature + .feature{
-    border-left:1px solid rgba(255,255,255,.16);
-  }
-
-  .mini{
-    width:58px;
-    height:58px;
-    border-radius:50%;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    border:1px solid rgba(255,255,255,.08);
-    background:radial-gradient(circle at center, rgba(255,255,255,.02), rgba(255,255,255,.01));
-    flex:0 0 auto;
-  }
-
-  .mini svg{
-    width:28px;
-    height:28px;
-    stroke:var(--red-1);
-    fill:none;
-    stroke-width:2.1;
-    stroke-linecap:round;
-    stroke-linejoin:round;
-  }
-
-  .feature span{
-    font-size:16px;
-    line-height:1.22;
-    color:#fff;
-    max-width:165px;
-  }
-
-  .right{
-    position:relative;
-    z-index:1;
-    min-height:760px;
-    overflow:hidden;
-  }
-
-  .photo-shell{
-    position:absolute;
-    inset:0;
-    display:flex;
-    align-items:center;
-    justify-content:flex-end;
-    padding:0 0 0 20px;
-  }
-
-  .photo-mask{
-    width:100%;
-    height:100%;
-    position:relative;
-    overflow:hidden;
-    clip-path:ellipse(82% 82% at 86% 48%);
-  }
-
-  .photo-mask img{
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    object-position:center center;
-    display:block;
-    filter:saturate(1.03) contrast(1.02);
-  }
-
-  .photo-overlay{
-    position:absolute;
-    inset:0;
-    background:
-      linear-gradient(90deg, rgba(255,255,255,.03) 0%, transparent 18%),
-      linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.08));
-  }
-
-  .footer-note{
-    padding:14px 28px 18px;
-    font-size:12px;
-    color:#7a7a7d;
-    text-align:right;
-    background:#fff;
-  }
-
-  @media (max-width: 1180px){
-    .hero{grid-template-columns:1fr}
-    .hero::before{
-      inset:42% -8% auto auto;
-      width:44%;
-      height:38%;
-    }
-    .hero::after{
-      inset:auto -8% -18% auto;
-      width:60%;
-      height:34%;
-    }
-    .left{padding:34px 24px 20px}
-    .right{min-height:430px}
-    .features{
-      width:100%;
-      margin-right:0;
-    }
-  }
-
-  @media (max-width: 760px){
-    body{background:#fff}
-    .page{
-      width:100%;
-      margin:0;
-      border-radius:0;
-      box-shadow:none;
-      border:none;
-    }
-    .left{padding:24px 16px 16px}
-    .eyebrow{font-size:14px;letter-spacing:6px}
-    .cards{grid-template-columns:1fr;gap:18px}
-    .card{min-height:290px}
-    .card-centered{width:100%;justify-self:stretch}
-    .btn{width:100%;min-width:unset}
-    .features{
-      grid-template-columns:1fr;
-      border-radius:22px;
-      padding:10px 6px;
-    }
-    .feature{
-      justify-content:flex-start;
-      padding:12px 10px;
-    }
-    .feature + .feature{
-      border-left:none;
-      border-top:1px solid rgba(255,255,255,.14);
-    }
-    .right{min-height:300px}
-    .photo-mask{clip-path:ellipse(92% 78% at 50% 50%)}
-    .footer-note{text-align:center;padding:14px 16px 20px}
-  }
-
-  /* ── Top header bar con logo y buscador compacto ──────────── */
-  .top-header{
-    display:flex;align-items:center;justify-content:space-between;
-    gap:24px;padding:14px 28px;
-    border-bottom:1px solid rgba(148,145,149,.18);
-    background:#fff;
-  }
-  .top-header .logo-mini{height:38px;width:auto;display:block}
-  .header-title{
-    flex:1;text-align:center;
-    font-size:clamp(14px,1.6vw,18px);font-weight:800;
-    color:var(--black);letter-spacing:1.2px;text-transform:uppercase;
-    padding:0 12px;line-height:1.2;
-  }
-  @media(max-width:720px){
-    .header-title{flex:none;text-align:left;font-size:13px;letter-spacing:.8px;width:100%}
-  }
-  .top-search{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
-  .top-search input{
-    padding:10px 14px;border:2px solid #e5e7eb;border-radius:10px;
-    font-size:14px;font-weight:800;letter-spacing:2px;text-transform:uppercase;
-    width:200px;transition:border-color .12s, box-shadow .12s;
-  }
-  .top-search input:focus{outline:none;border-color:var(--red-1);box-shadow:0 0 0 3px rgba(229,63,46,.12)}
-  .top-search .exp-btn{padding:10px 18px;font-size:13px;border:none;border-radius:10px;cursor:pointer;background:linear-gradient(135deg,var(--red-1),var(--red-2));color:#fff;font-weight:800;letter-spacing:.5px;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px;box-shadow:0 6px 14px rgba(229,63,46,.22)}
-  .top-search .exp-btn:hover{transform:translateY(-1px)}
-  .top-search .exp-btn-ghost{padding:9px 12px;border:1.5px solid #d1d5db;border-radius:10px;background:#fff;color:#6b7280;font-weight:700;font-size:12px;cursor:pointer}
-  @media(max-width:720px){
-    .top-header{flex-direction:column;gap:12px;padding:12px 16px}
-    .top-search input{width:100%}
-  }
-
-  /* ── Panel de resultados (desplegable bajo el header) ──────── */
-  .expediente-search{
-    margin:0 28px;
-    padding:18px 22px 16px;
-    background:linear-gradient(135deg,#ffffff 0%,#fafafa 100%);
-    border:1.5px solid #e5e7eb;border-top:none;
-    border-radius:0 0 18px 18px;
-    box-shadow:0 8px 20px rgba(0,0,0,.06);
-  }
-  @media(max-width:720px){
-    .expediente-search{margin:0 14px;padding:14px 16px}
-  }
-  .exp-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  #expPlaca{
-    flex:1;min-width:200px;
-    padding:13px 16px;
-    border:2px solid #e5e7eb;border-radius:12px;
-    font-size:18px;font-weight:800;letter-spacing:3px;
-    text-transform:uppercase;
-    transition:border-color .14s, box-shadow .14s;
-  }
-  #expPlaca:focus{outline:none;border-color:var(--red-1);box-shadow:0 0 0 4px rgba(229,63,46,.12)}
-  .exp-btn{
-    padding:13px 22px;border:none;border-radius:12px;cursor:pointer;
-    background:linear-gradient(135deg,var(--red-1),var(--red-2));color:#fff;
-    font-weight:800;font-size:14px;letter-spacing:.5px;text-transform:uppercase;
-    display:inline-flex;align-items:center;gap:8px;
-    transition:transform .12s, box-shadow .12s;
-    box-shadow:0 8px 20px rgba(229,63,46,.25);
-  }
-  .exp-btn:hover{transform:translateY(-1px);box-shadow:0 12px 26px rgba(229,63,46,.32)}
-  .exp-btn-ghost{
-    padding:11px 16px;border:1.5px solid #d1d5db;border-radius:12px;cursor:pointer;
-    background:#fff;color:#6b7280;font-weight:700;font-size:13px;
-  }
-  .exp-btn-ghost:hover{background:#f9fafb;color:#111}
-  .exp-status-grid{
-    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:10px;margin-top:14px;
-  }
-  /* En pantallas medianas: las 4 etapas en fila, ventas debajo */
-  @media(min-width:900px){
-    .exp-status-grid{grid-template-columns:repeat(4,minmax(0,1fr));}
-    .exp-pill-aside{grid-column:1/-1}
-  }
-  /* En pantallas anchas: las 5 pills en una sola fila */
-  @media(min-width:1280px){
-    .exp-status-grid{grid-template-columns:repeat(5,minmax(0,1fr));}
-    .exp-pill-aside{grid-column:auto}
-  }
-  .exp-pill{
-    display:flex;align-items:center;gap:12px;
-    padding:12px 14px;border-radius:14px;
-    background:#fff;border:1.5px solid #e5e7eb;
-    cursor:pointer;transition:all .14s;
-    position:relative;overflow:hidden;
-  }
-  .exp-pill:hover{border-color:#9ca3af;transform:translateY(-1px);box-shadow:0 8px 18px rgba(0,0,0,.06)}
-  .exp-pill[data-disabled="1"]{opacity:.55;cursor:not-allowed}
-  .exp-pill[data-disabled="1"]:hover{transform:none;box-shadow:none}
-  .exp-pill-num{
-    flex-shrink:0;width:30px;height:30px;border-radius:50%;
-    background:#f3f4f6;color:#6b7280;
-    display:inline-flex;align-items:center;justify-content:center;
-    font-weight:800;font-size:14px;
-  }
-  .exp-pill-title{font-weight:800;font-size:13px;color:#111;letter-spacing:.2px}
-  .exp-pill-sub{font-size:11px;color:#6b7280;margin-top:2px}
-  .exp-pill-state{
-    margin-left:auto;flex-shrink:0;
-    font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
-    padding:4px 9px;border-radius:999px;background:#f3f4f6;color:#9ca3af;
-  }
-  .exp-pill.ok{border-color:#86efac;background:#f0fdf4}
-  .exp-pill.ok .exp-pill-num{background:#16a34a;color:#fff}
+  /* Resultado del expediente */
+  .expediente-search{margin-top:18px;padding:20px 22px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 8px 24px rgba(21,23,29,.06)}
+  .exp-state-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+  .exp-state-label{color:var(--muted);font:800 12px/1 var(--num);letter-spacing:.14em;text-transform:uppercase}
+  .exp-state-badge{padding:6px 14px;border:1px solid #d1d5db;border-radius:999px;font-weight:800;font-size:13px;letter-spacing:.04em}
+  .exp-state-meta{color:var(--muted);font-size:13px}
+  .exp-status-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,.9fr);gap:12px}
+  .exp-pill{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;gap:4px 12px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--soft);cursor:pointer;transition:border-color .15s,transform .15s}
+  .exp-pill:hover{border-color:var(--red);transform:translateY(-1px)}
+  .exp-pill-num{display:grid;place-items:center;width:30px;height:30px;border-radius:999px;background:#9ca3af;color:#fff;font:800 13px/1 var(--num)}
+  .exp-pill-title{color:var(--ink);font-weight:700;font-size:15px}
+  .exp-pill-sub{margin-top:2px;color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+  .exp-pill-state{grid-column:2;justify-self:start;margin-top:6px;padding:3px 10px;border-radius:999px;background:#eceef1;color:var(--muted);font-size:12px;font-weight:800}
+  .exp-pill-aside{border-style:dashed}
+  .exp-pill.ok{border-color:#86efac;background:var(--ok-soft)}
+  .exp-pill.ok .exp-pill-num{background:#16a34a}
   .exp-pill.ok .exp-pill-state{background:#dcfce7;color:#166534}
-  .exp-pill.pending{border-color:#e5e7eb;background:#f9fafb}
-  .exp-pill.pending .exp-pill-num{background:#9ca3af;color:#fff}
-  .exp-pill.pending .exp-pill-state{background:#f3f4f6;color:#6b7280}
-  .exp-pill.warn{border-color:#fde68a;background:#fffbeb}
-  .exp-pill.warn .exp-pill-num{background:#f59e0b;color:#fff}
+  .exp-pill.pending .exp-pill-num{background:#9ca3af}
+  .exp-pill.warn{border-color:#fcd34d;background:var(--warn-soft)}
+  .exp-pill.warn .exp-pill-num{background:#d97706}
   .exp-pill.warn .exp-pill-state{background:#fef3c7;color:#92400e}
-  .exp-pill.err{border-color:#fca5a5;background:#fef2f2}
-  .exp-pill.err .exp-pill-num{background:#dc2626;color:#fff}
+  .exp-pill.err{border-color:#fca5a5;background:var(--err-soft)}
+  .exp-pill.err .exp-pill-num{background:#dc2626}
   .exp-pill.err .exp-pill-state{background:#fee2e2;color:#991b1b}
-  .exp-error{
-    margin-top:12px;padding:10px 14px;border-radius:10px;
-    background:#fef2f2;border:1px solid #fecaca;color:#991b1b;font-size:13px;
+  .exp-loading{display:inline-block;width:12px;height:12px;border:2px solid #d1d5db;border-top-color:var(--red);border-radius:999px;animation:spin .8s linear infinite;vertical-align:middle}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .exp-error{margin-top:12px;padding:10px 14px;border-left:4px solid var(--red);border-radius:8px;background:var(--err-soft);color:#7f1d1d;font-size:14px;font-weight:600}
+
+  /* Modulos */
+  .sec-head{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:8px;margin:34px 0 14px}
+  .sec-head h2{margin:0;color:var(--ink);font:800 24px/1.1 var(--display);letter-spacing:.02em}
+  .sec-head p{margin:0;color:var(--muted);font-size:15px}
+  .flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1fr);gap:16px}
+  .mod{position:relative;display:flex;flex-direction:column;min-height:236px;padding:22px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 6px 18px rgba(21,23,29,.05);transition:box-shadow .18s,transform .18s,border-color .18s;cursor:pointer;text-align:left;color:inherit}
+  .mod:hover{transform:translateY(-3px);border-color:#e6c9cb;box-shadow:0 16px 34px rgba(21,23,29,.1)}
+  .mod:focus-visible{outline:3px solid rgba(215,25,32,.35);outline-offset:2px}
+  .mod::before{content:"";position:absolute;inset:0 0 auto;height:4px;border-radius:16px 16px 0 0;background:var(--red);opacity:0;transition:opacity .18s}
+  .mod:hover::before{opacity:1}
+  .mod-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .mod-ico{display:grid;place-items:center;width:52px;height:52px;border-radius:14px;background:var(--red-soft);color:var(--red)}
+  .mod-ico svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .mod-step{color:var(--muted);font:800 11.5px/1 var(--num);letter-spacing:.16em;text-transform:uppercase}
+  .mod h3{margin:0 0 6px;color:var(--ink);font:800 21px/1.15 var(--display);letter-spacing:.01em}
+  .mod p{margin:0;color:var(--muted);font-size:15px;line-height:1.45}
+  .mod-go{display:inline-flex;align-items:center;gap:6px;margin-top:auto;padding-top:18px;color:var(--red);font-weight:800;font-size:14.5px;letter-spacing:.02em}
+  .mod-go svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .18s}
+  .mod:hover .mod-go svg{transform:translateX(3px)}
+  .mod.alt{background:var(--soft);border-style:dashed}
+  .mod.alt .mod-ico{background:#e9eaee;color:var(--graphite-2)}
+  .flow .arrow{display:none}
+  .flow-note{display:flex;align-items:center;gap:8px;margin-top:12px;color:var(--muted);font-size:13.5px}
+  .flow-note i{display:inline-block;width:26px;height:2px;background:var(--red)}
+
+  .foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin:36px 0 28px;padding-top:16px;border-top:1px solid #dfe2e6;color:#7a7d84;font-size:13px}
+
+  /* Ventanas (login y aviso) */
+  .mv-overlay{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(21,23,29,.6);backdrop-filter:blur(3px)}
+  .mv-overlay.open{display:flex}
+  .mv-box{position:relative;width:min(420px,100%);padding:28px 26px 24px;border-radius:16px;background:#fff;box-shadow:0 30px 70px rgba(0,0,0,.3);display:grid;gap:12px;overflow:hidden}
+  .mv-box::before{content:"";position:absolute;inset:0 0 auto;height:5px;background:linear-gradient(90deg,var(--red) 0 68%,var(--graphite) 68% 100%)}
+  .mv-close{position:absolute;top:12px;right:12px;width:34px;height:34px;border:0;border-radius:999px;background:var(--soft);color:var(--muted);font-size:20px;cursor:pointer}
+  .mv-icon-head{display:grid;place-items:center;width:52px;height:52px;border-radius:14px;background:var(--red-soft);color:var(--red)}
+  .mv-icon-head svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .mv-box h3{margin:0;color:var(--ink);font:800 24px/1.1 var(--display)}
+  .mv-sub{margin:-4px 0 0;color:var(--muted);font-size:15px}
+  .mv-divider{width:100%;margin:2px 0;border:0;border-top:1px solid var(--line)}
+  .mv-label{margin-bottom:6px;color:#3d3f45;font-size:13px;font-weight:700}
+  .mv-input{width:100%;height:46px;padding:0 14px;border:1px solid #d5d8de;border-radius:8px;background:#fff;color:var(--ink);font-size:15px;font-family:inherit;outline:none}
+  .mv-input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(215,25,32,.14)}
+  .mv-error{min-height:18px;color:var(--err);font-size:13.5px;font-weight:600}
+  .mv-btn{height:48px;border:0;border-radius:10px;background:var(--red);color:#fff;font-size:15px;font-weight:800;letter-spacing:.06em;cursor:pointer}
+  .mv-btn:hover{background:var(--red-dark)}
+  .mv-btn:disabled{opacity:.6;cursor:wait}
+  .mv-dev-badge{justify-self:start;padding:5px 12px;border-radius:999px;background:var(--warn-soft);color:var(--warn);font-weight:700;font-size:13px}
+  .mv-dev-body{margin:0;color:var(--muted);font-size:15px;line-height:1.45}
+
+  @media (max-width:1020px){
+    .hero-in{grid-template-columns:minmax(0,1fr);align-items:start}
+    .hero-photo{width:100%;opacity:.22;-webkit-mask-image:none;mask-image:none}
+    .flow{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .exp-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   }
-  .exp-loading{display:inline-block;width:14px;height:14px;border:2px solid #e5e7eb;border-top-color:var(--red-1);border-radius:50%;animation:expspin 0.7s linear infinite;vertical-align:middle;margin-right:6px}
-  @keyframes expspin{to{transform:rotate(360deg)}}
-  .exp-state-row{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
-  .exp-state-label{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#6b7280}
-  .exp-state-badge{
-    display:inline-flex;align-items:center;gap:8px;
-    padding:6px 14px;border-radius:999px;
-    font-size:13px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;
-    background:#f3f4f6;color:#6b7280;border:1.5px solid #d1d5db;
+  @media (max-width:640px){
+    .tb{padding:0 14px;height:58px}
+    .tb-name span,.tb-user b{display:none}
+    .wrap{width:calc(100% - 32px)}
+    .hero{margin-top:16px;border-radius:14px}
+    .hero-in{padding:28px 18px 20px}
+    .search{padding:14px}
+    .search-row{flex-wrap:wrap}
+    .search input{flex-basis:100%}
+    .exp-btn{flex:1 1 auto;justify-content:center}
+    .flow,.exp-status-grid{grid-template-columns:minmax(0,1fr)}
+    .mod{min-height:0}
   }
-  .exp-state-meta{font-size:12px;color:#6b7280}
-  .exp-pill.pipe-done{border-color:#86efac;background:#f0fdf4}
-  .exp-pill.pipe-done .exp-pill-num{background:#16a34a;color:#fff}
-  .exp-pill.pipe-done .exp-pill-state{background:#dcfce7;color:#166534}
-  .exp-pill.pipe-active{border-color:#fbbf24;background:#fffbeb;box-shadow:0 0 0 3px rgba(251,191,36,.18)}
-  .exp-pill.pipe-active .exp-pill-num{background:#f59e0b;color:#fff}
-  .exp-pill.pipe-active .exp-pill-state{background:#fef3c7;color:#92400e}
-  .exp-pill.pipe-future{opacity:.6}
 </style>
-<script src="js/api-config.js?v=20261015T090000Z"></script>
-<script src="js/apps-script-transport.js?v=20261015T090000Z"></script>
-<script src="js/api-client.js?v=20261015T090000Z"></script>
-<script src="js/expediente.js?v=20261015T090000Z"></script>
+
+<script src="js/api-config.js?v=20261015T091800Z"></script>
+<script src="js/apps-script-transport.js?v=20261015T091800Z"></script>
+<script src="js/api-client.js?v=20261015T091800Z"></script>
+<script src="js/expediente.js?v=20261015T091800Z"></script>
 </head>
 <body>
-  <main class="page">
-    <!-- ── Top header: logo + título + buscador compacto ──────── -->
-    <header class="top-header">
-      <img class="logo-mini" src="assets/logo.png" alt="AUTOCOR">
-      <div class="header-title">Ver el estado del vehículo</div>
-      <div class="top-search">
-        <input id="expPlaca" type="text" placeholder="PLACA (EJ. PDY6688)"
-               autocomplete="off" maxlength="10"
-               oninput="this.value=this.value.toUpperCase()"
-               onkeydown="if(event.key==='Enter') buscarExpediente()">
-        <button type="button" class="exp-btn" onclick="buscarExpediente()">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="7"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          Buscar
-        </button>
-        <button type="button" class="exp-btn-ghost" onclick="limpiarExpediente()" id="expBtnLimpiar" style="display:none">×</button>
-      </div>
-    </header>
+  <header class="tb">
+    <div class="tb-brand">
+      <span class="tb-logo"><img src="assets/logo.png" alt="AUTOCOR"></span>
+      <span class="tb-name"><strong>Mesa de Control</strong><span>Sistema interno</span></span>
+    </div>
+    <div class="tb-right">
+      <div class="tb-user" id="tbUser" hidden><span class="tb-avatar" id="tbAvatar">—</span><b id="tbUserName">—</b></div>
+      <button type="button" class="tb-btn" id="tbLogout" onclick="cerrarSesionInicio()" hidden>Cerrar sesión</button>
+      <button type="button" class="tb-btn solid" id="tbLogin" onclick="abrirLogin('liquidacion',{soloSesion:true})">Iniciar sesión</button>
+    </div>
+  </header>
 
-    <!-- ── Panel resultados (se despliega bajo el header) ──────── -->
+  <main class="wrap">
+    <section class="hero" aria-labelledby="heroTitle">
+      <div class="hero-photo" aria-hidden="true"></div>
+      <div class="hero-in">
+        <div>
+          <div class="eyebrow">AUTOCOR · Siempre nuevos</div>
+          <h1 id="heroTitle">Bienvenido</h1>
+          <p class="lead">Valida documentos, prepara liquidaciones, aprueba pagos y controla las ventas desde un solo lugar.</p>
+        </div>
+        <div class="search" role="search">
+          <label for="expPlaca">Ver el estado del vehículo</label>
+          <div class="search-row">
+            <input id="expPlaca" type="text" placeholder="Placa, ej. PDY6688"
+                   autocomplete="off" maxlength="10"
+                   oninput="this.value=this.value.toUpperCase()"
+                   onkeydown="if(event.key==='Enter') buscarExpediente()">
+            <button type="button" class="exp-btn" onclick="buscarExpediente()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              Buscar
+            </button>
+            <button type="button" class="exp-btn-ghost" onclick="limpiarExpediente()" id="expBtnLimpiar" style="display:none" aria-label="Limpiar búsqueda">×</button>
+          </div>
+          <small>Muestra en qué etapa está: validación, liquidación, pagos y venta.</small>
+        </div>
+      </div>
+    </section>
+
     <section class="expediente-search" id="expSearch" aria-label="Resultados del expediente" style="display:none">
       <div class="exp-state-row" id="expStateRow">
-        <span class="exp-state-label">Estado actual:</span>
+        <span class="exp-state-label">Estado actual</span>
         <span class="exp-state-badge" id="expStateBadge">—</span>
         <span class="exp-state-meta" id="expStateMeta"></span>
       </div>
       <div class="exp-status-grid" id="expStatus">
         <div class="exp-pill" data-step="validacion" data-target="contratos">
           <span class="exp-pill-num">1</span>
-          <div>
-            <div class="exp-pill-title">Validación documental</div>
-            <div class="exp-pill-sub">—</div>
-          </div>
+          <div><div class="exp-pill-title">Validación documental</div><div class="exp-pill-sub">—</div></div>
           <span class="exp-pill-state">·</span>
         </div>
         <div class="exp-pill" data-step="liquidacion" data-target="liquidacion">
           <span class="exp-pill-num">2</span>
-          <div>
-            <div class="exp-pill-title">Liquidación</div>
-            <div class="exp-pill-sub">—</div>
-          </div>
+          <div><div class="exp-pill-title">Liquidación</div><div class="exp-pill-sub">—</div></div>
           <span class="exp-pill-state">·</span>
         </div>
         <div class="exp-pill" data-step="pagos" data-target="pagos">
           <span class="exp-pill-num">3</span>
-          <div>
-            <div class="exp-pill-title">Pagos (aprobación final)</div>
-            <div class="exp-pill-sub">—</div>
-          </div>
+          <div><div class="exp-pill-title">Pagos (aprobación final)</div><div class="exp-pill-sub">—</div></div>
           <span class="exp-pill-state">·</span>
         </div>
         <div class="exp-pill exp-pill-aside" data-step="ventas" data-target="ventas">
           <span class="exp-pill-num">↗</span>
-          <div>
-            <div class="exp-pill-title">Ventas (externo al saneamiento)</div>
-            <div class="exp-pill-sub">—</div>
-          </div>
+          <div><div class="exp-pill-title">Ventas</div><div class="exp-pill-sub">—</div></div>
           <span class="exp-pill-state">·</span>
         </div>
       </div>
       <div class="exp-error" id="expError" style="display:none"></div>
     </section>
 
-    <section class="hero">
-      <div class="left">
-        <div>
-          <div class="welcome-row">
-            <div class="intro">
-              <div class="eyebrow">Bienvenido a AUTOCOR</div>
-              <h1 class="welcome-title">Siempre nuevos.</h1>
-              <p>Selecciona una opción para continuar con el proceso que necesites.</p>
-            </div>
-            <img class="welcome-logo" src="assets/logo.png" alt="AUTOCOR">
-          </div>
-
-          <div class="cards">
-            <!-- 1) Validación de Documentación → contratos.html -->
-            <section class="card dark">
-              <div class="icon-ring">
-                <svg class="icon-svg icon-contratos" viewBox="0 0 64 64" aria-hidden="true">
-                  <path d="M10 22h44v28a4 4 0 0 1-4 4H14a4 4 0 0 1-4-4V22z" class="stroke-main"></path>
-                  <path d="M10 22v-4a4 4 0 0 1 4-4h10l4 6h22a4 4 0 0 1 4 4" class="stroke-main"></path>
-                  <line x1="22" y1="34" x2="42" y2="34" class="stroke-main"></line>
-                  <line x1="22" y1="41" x2="42" y2="41" class="stroke-main"></line>
-                  <line x1="22" y1="48" x2="34" y2="48" class="stroke-main"></line>
-                  <circle cx="46" cy="46" r="9" class="accent"></circle>
-                  <path d="M42 46l3 3 5-5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
-                </svg>
-              </div>
-              <h2>Validación de Documentación</h2>
-              <p>Valida los documentos y genera los contratos correspondientes.</p>
-              <div class="actions">
-                <button type="button" class="btn red" onclick="abrirLogin('contratos')">
-                  <span>INGRESAR</span>
-                  <span class="arrow">›</span>
-                </button>
-              </div>
-            </section>
-
-            <!-- 2) Liquidaciones → liquidacion.html -->
-            <section class="card gray">
-              <div class="icon-ring">
-                <svg class="icon-svg icon-liquidaciones" viewBox="0 0 64 64" aria-hidden="true">
-                  <rect x="12" y="8" width="40" height="48" rx="5" class="stroke-main"></rect>
-                  <line x1="20" y1="22" x2="44" y2="22" class="stroke-main"></line>
-                  <line x1="20" y1="32" x2="38" y2="32" class="stroke-main"></line>
-                  <circle cx="42" cy="43" r="9" class="accent"></circle>
-                  <path d="M39 43h6M42 39v8" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"></path>
-                </svg>
-              </div>
-              <h2>Liquidaciones</h2>
-              <p>Prepara, revisa y guarda la liquidación del vehículo.</p>
-              <div class="actions">
-                <button type="button" class="btn silver" onclick="abrirLogin('liquidacion')">
-                  <span>INGRESAR</span>
-                  <span class="arrow">›</span>
-                </button>
-              </div>
-            </section>
-
-            <!-- 3) Pagos → pagos.html -->
-            <section class="card red">
-              <div class="icon-ring">
-                <svg class="icon-svg icon-pagos" viewBox="0 0 64 64" aria-hidden="true">
-                  <path class="shield" d="M32 10l14 6v10c0 11-6.5 18.5-14 22-7.5-3.5-14-11-14-22V16l14-6z"></path>
-                  <path class="check" d="M24 31l6 6 10-12"></path>
-                </svg>
-              </div>
-              <h2>Pagos</h2>
-              <p>Valida toda la información generada para poder pagar el vehículo.</p>
-              <div class="actions">
-                <button type="button" class="btn dark" onclick="abrirLogin('pagos')">
-                  <span>INGRESAR</span>
-                  <span class="arrow">›</span>
-                </button>
-              </div>
-            </section>
-
-            <!-- 4) Ventas → ventas.html -->
-            <section class="card navy">
-              <div class="icon-ring">
-                <svg class="icon-svg icon-ventas" viewBox="0 0 64 64" aria-hidden="true">
-                  <rect x="7" y="34" width="42" height="13" rx="4" class="stroke-main"></rect>
-                  <path d="M13 34l7-13h18l7 13" class="stroke-main"></path>
-                  <circle cx="18" cy="47" r="6" class="stroke-main"></circle>
-                  <circle cx="42" cy="47" r="6" class="stroke-main"></circle>
-                  <circle cx="18" cy="47" r="2" class="accent-dark"></circle>
-                  <circle cx="42" cy="47" r="2" class="accent-dark"></circle>
-                  <circle cx="46" cy="18" r="11" class="accent"></circle>
-                  <text x="46" y="23" text-anchor="middle" font-size="15" font-weight="900" fill="#fff">$</text>
-                </svg>
-              </div>
-              <h2>Ventas</h2>
-              <p>Valida toda la información de la venta para poder entregar el vehículo.</p>
-              <div class="actions">
-                <button type="button" class="btn navy" onclick="abrirLogin('ventas')">
-                  <span>INGRESAR</span>
-                  <span class="arrow">›</span>
-                </button>
-              </div>
-            </section>
-          </div>
+    <div class="sec-head">
+      <h2>Módulos</h2>
+      <p>Elige el paso del proceso en el que vas a trabajar.</p>
+    </div>
+    <section class="flow" aria-label="Módulos del sistema interno">
+      <button type="button" class="mod" onclick="abrirLogin('contratos')">
+        <div class="mod-top">
+          <span class="mod-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 14l2 2 4-4"/></svg></span>
+          <span class="mod-step">Paso 1</span>
         </div>
-
-        <section class="features" aria-label="Características principales">
-          <div class="feature">
-            <div class="mini">
-              <svg viewBox="0 0 24 24">
-                <path d="M12 3l7 3v5c0 5.2-3 8.6-7 10-4-1.4-7-4.8-7-10V6l7-3z"></path>
-                <path d="M9 12.5l2 2 4-4"></path>
-              </svg>
-            </div>
-            <span>Procesos seguros y confiables</span>
-          </div>
-
-          <div class="feature">
-            <div class="mini">
-              <svg viewBox="0 0 24 24">
-                <path d="M12 6v6l4 2"></path>
-                <circle cx="12" cy="12" r="8"></circle>
-              </svg>
-            </div>
-            <span>Información en tiempo real</span>
-          </div>
-
-          <div class="feature">
-            <div class="mini">
-              <svg viewBox="0 0 24 24">
-                <path d="M8 6h10"></path>
-                <path d="M8 12h10"></path>
-                <path d="M8 18h10"></path>
-                <path d="M4 6h.01"></path>
-                <path d="M4 12h.01"></path>
-                <path d="M4 18h.01"></path>
-              </svg>
-            </div>
-            <span>Control y validación precisa</span>
-          </div>
-
-          <div class="feature">
-            <div class="mini">
-              <svg viewBox="0 0 24 24">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9.5" cy="7" r="3"></circle>
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 4.13a3 3 0 0 1 0 5.74"></path>
-              </svg>
-            </div>
-            <span>Equipo comprometido contigo</span>
-          </div>
-        </section>
-      </div>
-
-      <div class="right">
-        <div class="photo-shell">
-          <div class="photo-mask">
-            <img src="assets/fondo.png" alt="Showroom AUTOCOR">
-            <div class="photo-overlay"></div>
-          </div>
+        <h3>Validación de documentación</h3>
+        <p>Valida los documentos del vehículo y genera los contratos correspondientes.</p>
+        <span class="mod-go">Ingresar <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </button>
+      <button type="button" class="mod" onclick="abrirLogin('liquidacion')">
+        <div class="mod-top">
+          <span class="mod-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span>
+          <span class="mod-step">Paso 2</span>
         </div>
-      </div>
+        <h3>Liquidaciones</h3>
+        <p>Prepara, revisa y guarda la liquidación o cartilla de descuentos del vehículo.</p>
+        <span class="mod-go">Ingresar <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </button>
+      <button type="button" class="mod" onclick="abrirLogin('pagos')">
+        <div class="mod-top">
+          <span class="mod-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.3-3 8-7 9.5-4-1.5-7-5.2-7-9.5V6z"/><path d="M9 12l2 2 4-4"/></svg></span>
+          <span class="mod-step">Paso 3</span>
+        </div>
+        <h3>Pagos</h3>
+        <p>Revisa toda la información generada y da la aprobación final para pagar el vehículo.</p>
+        <span class="mod-go">Ingresar <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </button>
+      <button type="button" class="mod alt" onclick="abrirLogin('ventas')">
+        <div class="mod-top">
+          <span class="mod-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16V12l2-5h10l2 5v4"/><path d="M3 16h18v2H3z"/><path d="M6 18v2M18 18v2"/></svg></span>
+          <span class="mod-step">Aparte</span>
+        </div>
+        <h3>Ventas</h3>
+        <p>Valida la información de la venta para poder entregar el vehículo.</p>
+        <span class="mod-go">Ingresar <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </button>
     </section>
+    <div class="flow-note"><i></i>Los pasos 1, 2 y 3 forman el proceso de saneamiento. Ventas se maneja por separado.</div>
 
-    <div class="footer-note">AUTOCOR · Inicio de módulos &nbsp;·&nbsp; <span style="opacity:.6;">v4.9</span></div>
+    <footer class="foot">
+      <span>AUTOCOR · Mesa de Control · Sistema interno</span>
+      <span>v4.9</span>
+    </footer>
   </main>
 
-  <!-- ── Modal login compartido ───────────────────────────────── -->
+  <!-- Inicio de sesion -->
   <div id="modalLogin" class="mv-overlay" role="dialog" aria-modal="true" aria-labelledby="mlTitle">
     <div class="mv-box">
       <button type="button" class="mv-close" onclick="cerrarLogin()" aria-label="Cerrar">×</button>
-      <div class="mv-icon-head">
-        <svg viewBox="0 0 24 24">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-          <path d="M9 12l2 2 4-4"></path>
-        </svg>
-      </div>
+      <div class="mv-icon-head"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg></div>
       <h3 id="mlTitle">Iniciar sesión</h3>
       <p id="mlSub" class="mv-sub"></p>
       <hr class="mv-divider">
       <div>
         <div class="mv-label">Usuario</div>
-        <input id="mlUsuario" class="mv-input" type="text"
-               placeholder="Ej: YROMERO" autocomplete="off"
+        <input id="mlUsuario" class="mv-input" type="text" placeholder="Ej: YROMERO" autocomplete="off"
                onkeydown="if(event.key==='Enter') document.getElementById('mlPassword').focus()">
       </div>
       <div>
         <div class="mv-label">Clave</div>
         <div style="position:relative;display:flex;align-items:center;">
-          <input id="mlPassword" class="mv-input" type="password"
-                 placeholder="Tu contraseña" autocomplete="new-password"
-                 style="padding-right:42px;"
-                 onkeydown="if(event.key==='Enter') confirmarLogin()">
-          <button type="button" onclick="mlTogglePass()" aria-label="Mostrar/ocultar clave"
-                  style="position:absolute;right:10px;background:none;border:none;cursor:pointer;
-                         color:#9ca3af;font-size:17px;padding:0;line-height:1;">👁</button>
+          <input id="mlPassword" class="mv-input" type="password" placeholder="Tu clave" autocomplete="new-password"
+                 style="padding-right:46px;" onkeydown="if(event.key==='Enter') confirmarLogin()">
+          <button type="button" onclick="mlTogglePass()" aria-label="Mostrar u ocultar clave"
+                  style="position:absolute;right:8px;width:32px;height:32px;background:none;border:none;cursor:pointer;color:#8a8c8f;">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
         </div>
       </div>
       <div id="mlError" class="mv-error"></div>
@@ -956,29 +319,15 @@
     </div>
   </div>
 
-  <!-- ── Modal módulo en desarrollo (Ventas) ──────────────────── -->
+  <!-- Modulo en desarrollo -->
   <div id="modalVentasDev" class="mv-overlay" role="dialog" aria-modal="true">
     <div class="mv-box">
       <button type="button" class="mv-close" onclick="cerrarModalDev()" aria-label="Cerrar">×</button>
-      <div class="mv-icon-head" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
-        <svg viewBox="0 0 24 24">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
-        </svg>
-      </div>
+      <div class="mv-icon-head"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
       <h3>Módulo en desarrollo</h3>
-      <div class="mv-dev-badge">🚧 Próximamente disponible</div>
-      <p class="mv-dev-body">
-        El módulo de <strong>Ventas</strong> está siendo desarrollado.<br>
-        Pronto estará disponible con todas sus funciones.
-      </p>
-      <hr class="mv-divider">
-      <p class="mv-dev-body" style="font-size:13px;color:#9ca3af">
-        Si necesitas acceso anticipado, contacta al administrador del sistema.
-      </p>
-      <button type="button" class="mv-btn" onclick="cerrarModalDev()"
-              style="background:linear-gradient(135deg,#374151,#111827);box-shadow:0 10px 24px rgba(0,0,0,.24)">
-        CERRAR
-      </button>
+      <div class="mv-dev-badge">Próximamente disponible</div>
+      <p class="mv-dev-body">Este módulo se está preparando. Si necesitas acceso anticipado, contacta al administrador del sistema.</p>
+      <button type="button" class="mv-btn" onclick="cerrarModalDev()">CERRAR</button>
     </div>
   </div>
 
@@ -995,6 +344,7 @@
 
     let moduloActivo = null; // clave del módulo que inició el login
     let loginSoloBusqueda = false; // si true, tras login NO navega — sólo reintenta la búsqueda
+    let loginSoloSesion = false; // si true, tras login se queda en el inicio
 
     async function apiCall(action, payload){
       const body = Object.assign({ action: action }, payload);
@@ -1011,12 +361,14 @@
     function abrirLogin(modulo, opts){
       moduloActivo = modulo;
       loginSoloBusqueda = !!(opts && opts.soloBusqueda);
+      loginSoloSesion = !!(opts && opts.soloSesion);
       const cfg = MODULOS[modulo];
 
       // Si ya hay sesión activa, acceder directo (pero no si es solo búsqueda)
       try{
         const auth = JSON.parse(localStorage.getItem('autocor_auth') || 'null');
         if(auth && auth.token){
+          if(loginSoloSesion){ loginSoloSesion = false; pintarSesion(); return; }
           if(loginSoloBusqueda){
             loginSoloBusqueda = false;
             buscarExpediente();
@@ -1028,8 +380,9 @@
       }catch(e){}
 
       // Sin sesión: mostrar modal de login
-      document.getElementById('mlSub').textContent =
-        'Ingresa tu usuario y clave para acceder a ' + cfg.nombre + '.';
+      document.getElementById('mlSub').textContent = loginSoloSesion
+        ? 'Ingresa tu usuario y clave del sistema interno.'
+        : 'Ingresa tu usuario y clave para acceder a ' + cfg.nombre + '.';
       document.getElementById('mlUsuario').value = '';
       document.getElementById('mlPassword').value = '';
       document.getElementById('mlError').textContent = '';
@@ -1079,7 +432,11 @@
           isAdmin:     !!(resp.user && resp.user.isAdmin),
           token:       resp.sessionToken || ''
         }));
-        if(loginSoloBusqueda){
+        pintarSesion();
+        if(loginSoloSesion){
+          loginSoloSesion = false;
+          cerrarLogin();
+        } else if(loginSoloBusqueda){
           loginSoloBusqueda = false;
           cerrarLogin();
           buscarExpediente();
@@ -1110,6 +467,35 @@
         cerrarModalDev();
       }
     });
+
+
+    /* Sesion en la barra superior y saludo */
+    function leerSesion(){
+      try{ return JSON.parse(localStorage.getItem('autocor_auth') || 'null'); }catch(_){ return null; }
+    }
+    function pintarSesion(){
+      const auth = leerSesion();
+      const logged = !!(auth && auth.token);
+      const nombre = logged ? String(auth.displayName || auth.user || '').trim() : '';
+      document.getElementById('tbUser').hidden = !logged;
+      document.getElementById('tbLogout').hidden = !logged;
+      document.getElementById('tbLogin').hidden = logged;
+      if(logged){
+        document.getElementById('tbUserName').textContent = nombre;
+        const ini = nombre.split(/\s+/).filter(Boolean).slice(0,2).map(function(p){ return p[0]; }).join('').toUpperCase();
+        document.getElementById('tbAvatar').textContent = ini || '·';
+      }
+      const primer = nombre ? nombre.split(/\s+/)[0] : '';
+      document.getElementById('heroTitle').textContent = primer
+        ? 'Hola, ' + primer.charAt(0).toUpperCase() + primer.slice(1).toLowerCase()
+        : 'Bienvenido';
+    }
+    function cerrarSesionInicio(){
+      try{ localStorage.removeItem('autocor_auth'); }catch(_){}
+      limpiarExpediente();
+      pintarSesion();
+    }
+    pintarSesion();
 
     /* ── Dashboard expediente: búsqueda por placa ──────────────── */
     async function buscarExpediente(){
