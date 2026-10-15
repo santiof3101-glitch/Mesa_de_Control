@@ -1372,3 +1372,95 @@ body.fx-modal-open {
   color: #92400e;
   font-weight: 700;
 }
+
+/* Buscador y paginas de las listas de la feria */
+.fx-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  margin: 0 0 12px;
+  padding: 0 12px;
+  border: 1px solid #d5d8de;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #9a9ca1;
+}
+
+.fx-search svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.fx-search input {
+  flex: 1;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0;
+  border: 0 !important;
+  background: transparent;
+  box-shadow: none !important;
+  color: #15171d;
+  font: inherit;
+  font-size: 14px;
+  outline: 0;
+}
+
+.fx-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.fx-pager:empty {
+  display: none;
+}
+
+.fx-pager-info {
+  color: #6d6e71;
+  font-size: 13px;
+}
+
+.fx-pager-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.fx-pager-buttons button {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid #e2e4e9;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #2f3035;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fx-pager-buttons button.is-active {
+  border-color: #d71920;
+  background: #d71920;
+  color: #ffffff;
+}
+
+.fx-pager-buttons button:disabled {
+  opacity: .4;
+  cursor: default;
+}
+
+.fx-pager-gap {
+  align-self: center;
+  padding: 0 4px;
+  color: #8a8c8f;
+}
