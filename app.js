@@ -2427,10 +2427,14 @@ function normalizeCommercialAdvisors(advisors) {
 
 function normalizeLegalMailboxes(mailboxes = []) {
   const valid = new Set(LEGAL_MAILBOXES.map((item) => item.id));
-  const normalized = (Array.isArray(mailboxes) ? mailboxes : String(mailboxes || "").split(","))
+  const explicit = Array.isArray(mailboxes);
+  const normalized = (explicit ? mailboxes : String(mailboxes || "").split(","))
     .map((item) => String(item || "").trim().toLowerCase())
     .filter((item) => valid.has(item));
-  return normalized.length ? [...new Set(normalized)] : ["saneamientos"];
+  // Una lista vacia guardada por el administrador significa "no recibe tareas";
+  // solo los usuarios antiguos sin buzones quedan con saneamientos.
+  if (normalized.length || explicit) return [...new Set(normalized)];
+  return ["saneamientos"];
 }
 
 function normalizeContractAgencies(value = []) {
@@ -6067,11 +6071,11 @@ function renderUsers() {
 
   const alert = document.querySelector("[data-ux-alert]");
   if (alert) {
-    const uncovered = columns.filter((column) => !["feria", "firmas"].includes(column.id) && !users.some((user) =>
+    const uncovered = columns.filter((column) => !users.some((user) =>
       user.legalAvailable !== false && normalizeLegalMailboxes(user.mailboxes).includes(column.id)));
     alert.hidden = !uncovered.length;
     alert.textContent = uncovered.length
-      ? `Sin nadie disponible para: ${uncovered.map((column) => column.label).join(", ")}. Esas tareas quedarán por asignar.`
+      ? `Sin nadie disponible para: ${uncovered.map((column) => column.label).join(", ")}. Esas solicitudes quedan pendientes (las ves como administrador) hasta que actives a alguien.`
       : "";
   }
 
@@ -6158,11 +6162,6 @@ function handleUsersMatrixChange(event) {
     const mailbox = input.dataset.uxMailbox;
     const current = normalizeLegalMailboxes(user.mailboxes);
     const next = input.checked ? [...new Set([...current, mailbox])] : current.filter((item) => item !== mailbox);
-    if (!next.length) {
-      input.checked = true;
-      showToast("Cada asistente debe recibir al menos un tipo de tarea. Si no debe recibir nada, desactiva Disponible.");
-      return;
-    }
     updateLegalUserAccess(id, next);
   }
 }
@@ -9575,20 +9574,23 @@ function currentLegalUser() {
   return state.legalUsers.find((user) => user.id === session.userId) || null;
 }
 
-// Firmas: si el administrador no activo Firmas a nadie, las ven todos (como antes).
+// Firmas: solo para quien el administrador tenga con Firmas activado.
 function legalUserReceivesFirmas(user = {}) {
-  if (userHasMailbox(user, "firmas")) return true;
-  return !(state.legalUsers || []).some((item) => userHasMailbox(item, "firmas"));
+  return userHasMailbox(user, "firmas");
 }
 
 function canLegalUserSeeTask(task = {}, user = currentLegalUser()) {
   if (session.role === "admin") return true;
   if (!user) return false;
   const mailbox = getTaskMailbox(task);
-  if (mailbox === "firmas") {
-    if (task.legalUserId) return task.legalUserId === user.id;
-    return legalUserReceivesFirmas(user);
+  // Las tareas propias siempre se ven; las nuevas solo si esta disponible para recibir.
+  if (task.legalUserId) {
+    if (task.legalUserId === user.id) return true;
+    if (mailbox === "firmas" || mailbox === "contratos") return false;
+  } else if (user.legalAvailable === false) {
+    return false;
   }
+  if (mailbox === "firmas") return legalUserReceivesFirmas(user);
   if (!userHasMailbox(user, mailbox)) return false;
   if (mailbox === "contratos") {
     if (task.legalUserId) return task.legalUserId === user.id;
@@ -10247,9 +10249,6 @@ async function submitConsignmentContract(event) {
 
 function getEligibleLegalUsersForTask(task = {}) {
   const mailbox = getTaskMailbox(task);
-  if (mailbox === "firmas") {
-    return normalizeLegalUsers(state.legalUsers || []).filter((user) => user.legalAvailable !== false);
-  }
   return normalizeLegalUsers(state.legalUsers || []).filter((user) =>
     userHasMailbox(user, mailbox) &&
     canLegalUserReceiveNewTask(user, task)
@@ -10364,7 +10363,7 @@ function getLegalUserActiveLoad(userId, mailbox = "") {
 
 function canLegalUserReceiveNewTask(user = {}, task = {}) {
   const mailbox = getTaskMailbox(task);
-  if (mailbox === "firmas") return user.legalAvailable !== false;
+  if (user.legalAvailable === false) return false;
   if (!userHasMailbox(user, mailbox)) return false;
   if (mailbox === "contratos") return legalUserHandlesContractAgency(user, task.agencia || task.commercialAgency);
   if (mailbox !== "saneamientos") return true;
