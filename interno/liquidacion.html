@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta name="autocor-version" content="20261015T085500Z">
-<script src="js/auto-update.js?v=20261015T085500Z"></script>
+<meta name="autocor-version" content="20261015T090000Z">
+<script src="js/auto-update.js?v=20261015T090000Z"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cartilla de Descuentos AUTOCOR</title>
@@ -670,9 +670,9 @@ body.doc-corp .totalbox .trow.total .label{color:#fff !important;font-size:14px 
 body.doc-corp .totalbox .trow.total .value{color:#fff !important;font-size:20px !important;}
 body.doc-corp .glossary h3{color:var(--fx-red) !important;font-size:10.5px !important;letter-spacing:.16em;text-transform:uppercase;}
 body.doc-corp .glossary + div{border-top:1px solid var(--fx-line) !important;}
-body.doc-corp .disclaimer{position:relative;padding:22px 12px 10px !important;border:1px solid var(--fx-line);border-left:3px solid var(--fx-red);border-radius:0 6px 6px 0;background:#fafbfc;color:#374151 !important;}
+body.doc-corp .disclaimer{position:relative;padding:20px 12px 8px !important;border:1px solid var(--fx-line);border-left:3px solid var(--fx-red);border-radius:0 6px 6px 0;background:#fafbfc;color:#374151 !important;}
 body.doc-corp .disclaimer::before{content:"CONDICIONES Y AUTORIZACIONES";position:absolute;top:7px;left:12px;color:var(--fx-red);font:800 9px/1 Arial,Helvetica,sans-serif;letter-spacing:.16em;}
-body.doc-corp #pv_decl{white-space:pre-line !important;font-size:9.6px !important;}
+body.doc-corp #pv_decl{white-space:pre-line !important;font-size:9.2px !important;line-height:1.35 !important;}
 body.doc-corp .sigbox{border:0 !important;border-radius:0 !important;background:transparent !important;}
 body.doc-corp .siglabel{color:var(--fx-ink) !important;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:10px !important;}
 body.doc-corp .sigline{border-top:1.5px solid var(--fx-ink) !important;color:var(--fx-muted) !important;width:230px !important;max-width:100%;margin-left:auto !important;margin-right:auto !important;text-align:center;}
@@ -720,11 +720,11 @@ body.doc-corp .document::after{content:attr(data-footer);display:block;margin:14
 }
 #prefCondBox[hidden]{display:none !important;}
 </style>
-<script src="js/api-config.js?v=20261015T085500Z"></script>
-<script src="js/apps-script-transport.js?v=20261015T085500Z"></script>
-<script src="js/api-client.js?v=20261015T085500Z"></script>
-<script src="js/expediente.js?v=20261015T085500Z"></script>
-<link rel="stylesheet" href="js/navigation.css?v=20261015T085500Z">
+<script src="js/api-config.js?v=20261015T090000Z"></script>
+<script src="js/apps-script-transport.js?v=20261015T090000Z"></script>
+<script src="js/api-client.js?v=20261015T090000Z"></script>
+<script src="js/expediente.js?v=20261015T090000Z"></script>
+<link rel="stylesheet" href="js/navigation.css?v=20261015T090000Z">
 </head>
 <body>
 
@@ -1598,21 +1598,14 @@ function buildAuthorizationText(){
     ? fillPrefCondition(getPrefConditionTemplate(), { cliente, cedula, placa, marca, modelo }).trim()
     : "";
   const feriaTexto = condicion ? `${condicion}
-
 ` : "";
 
   return `${feriaTexto}Yo, ${cliente || "________________"}, con CI/RUC ${cedula || "________________"}, declaro que he revisado, conozco y acepto voluntariamente las condiciones comerciales y económicas detalladas en la presente liquidación, correspondientes a la negociación de mi vehículo con AUTOCOR.
-
 1. Autorización de pago: Autorizo que el valor de $${valorVenta || "0.00"}, correspondiente al valor neto a recibir por la venta del vehículo, sea pagado a mi favor o, cuando corresponda al concesionario que intervenga en la operación.
-
 2. Autorización de descuentos: Acepto y autorizo la aplicación del valor de $${valorDescuentos}, correspondiente a descuentos, infracciones, matriculación, revisión vehicular, gastos administrativos y demás obligaciones relacionadas con el vehículo, conforme a los rubros detallados en esta liquidación.
-
 3. Aceptación y compromiso de venta: Mediante mi firma, manifiesto mi voluntad expresa de vender el vehículo bajo las condiciones económicas aquí establecidas y me comprometo a continuar de buena fe con el proceso de negociación, evitando desistimientos injustificados o modificaciones unilaterales de las condiciones aceptadas.
-
 4. Validación final de AUTOCOR: Reconozco y acepto que la firma de este documento constituye mi aceptación de las condiciones de negociación, pero no representa una compra definitiva, obligación de adquisición ni compromiso irrevocable de pago por parte de AUTOCOR. La operación estará sujeta a la aprobación de las verificaciones finales mecánicas, técnicas, legales, documentales, administrativas y de cualquier otra condición relevante para la comercialización del vehículo. AUTOCOR podrá suspender o no concretar la operación cuando existan novedades, inconsistencias o incumplimientos que impidan su aprobación.
-
 5. Conformidad: Declaro que los valores y condiciones de esta liquidación me han sido informados de manera clara y transparente, y que los acepto libremente. Una vez ejecutados los pagos y descuentos conforme a lo autorizado, reconozco su validez, sin perjuicio de los derechos que legalmente me correspondan.
-
 Con mi firma, confirmo mi decisión de vender el vehículo y autorizo a AUTOCOR a continuar con las gestiones necesarias para concretar una negociación segura, ágil y transparente, sujeta a su aprobación final.`;
 }
 
@@ -5004,8 +4997,8 @@ document.addEventListener('paste', function(e){
 </script>
 
 
-<script src="js/session-sync.js?v=20261015T085500Z"></script>
-<script src="js/workflow.js?v=20261015T085500Z"></script>
-<script src="js/workflow-adapters.js?v=20261015T085500Z"></script>
+<script src="js/session-sync.js?v=20261015T090000Z"></script>
+<script src="js/workflow.js?v=20261015T090000Z"></script>
+<script src="js/workflow-adapters.js?v=20261015T090000Z"></script>
 </body>
 </html>
