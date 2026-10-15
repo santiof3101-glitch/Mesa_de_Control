@@ -529,6 +529,21 @@
     return pdfCache.get(task.resultado.path);
   }
 
+  // El enlace se prepara al abrir la ventana para que el chat se abra al instante con el toque.
+  const linkCache = new Map();
+  function prefetchLink(task) {
+    const key = task.resultado.path;
+    if (!linkCache.has(key)) {
+      const entry = { url: "", promise: null };
+      entry.promise = window.AutocorAuth.signedFileUrl(key, 7 * 24 * 60 * 60)
+        .then((url) => { entry.url = url; return url; })
+        .catch((error) => { linkCache.delete(key); throw error; });
+      entry.promise.catch(() => {});
+      linkCache.set(key, entry);
+    }
+    return linkCache.get(key);
+  }
+
   function openWhatsapp(taskId) {
     const task = feriaTasks.find((item) => item.id === taskId);
     if (!task?.resultado?.path) return;
@@ -559,17 +574,18 @@
             <span>${esc(liquidationFileName(task))}</span>
           </div>
           <div class="fx-wa-actions">
-            ${shareFiles ? `<button type="button" class="btn fx-wa-btn" data-fx-wa-share>${WA_ICON}Enviar PDF y mensaje</button>` : ""}
-            ${number ? `<button type="button" class="btn ${shareFiles ? "secondary" : "fx-wa-btn"}" data-fx-wa-chat>${shareFiles ? "" : WA_ICON}Abrir chat con enlace al PDF</button>` : ""}
+            ${number ? `<button type="button" class="btn fx-wa-btn" data-fx-wa-chat>${WA_ICON}Abrir chat de +${esc(number.slice(0, 3))} ${esc(number.slice(3))}</button>` : ""}
+            ${shareFiles ? `<button type="button" class="btn secondary" data-fx-wa-share>Adjuntar el PDF como archivo</button>` : ""}
           </div>
-          <p class="fx-wa-help">${shareFiles
-            ? "<b>Enviar PDF y mensaje</b> adjunta la liquidación: elige el chat del cliente en WhatsApp. <b>Abrir chat</b> va directo a su número con un enlace seguro al PDF (válido 7 días)."
-            : "Se abre el chat del cliente con el mensaje y un enlace seguro para descargar la liquidación (válido 7 días). Desde el celular también puedes adjuntar el PDF directamente."}</p>
+          <p class="fx-wa-help">${number
+            ? `<b>Abrir chat</b> va directo al número del cliente con el mensaje y un enlace seguro a la liquidación (válido 7 días).${shareFiles ? " Si además quieres mandar el PDF como archivo, usa <b>Adjuntar el PDF</b>: WhatsApp no deja elegir el número desde aquí, pero el chat del cliente te aparecerá primero en la lista." : ""}`
+            : "El número registrado no es válido. Usa <b>Adjuntar el PDF</b> y elige el chat del cliente en WhatsApp."}</p>
         </div>
       </section>`;
     document.body.appendChild(dialog);
     document.body.classList.add("fx-modal-open");
     if (shareFiles) prefetchPdf(task);
+    if (number) prefetchLink(task);
     dialog.querySelector("[data-fx-wa-share],[data-fx-wa-chat]")?.focus();
   }
 
@@ -606,19 +622,27 @@
     const task = feriaTasks.find((item) => item.id === box?.dataset.fxWa);
     const number = whatsappNumber(task?.telefono);
     if (!task || !number) return;
-    const popup = window.open("", "_blank");
-    try {
-      const link = await window.AutocorAuth.signedFileUrl(task.resultado.path, 7 * 24 * 60 * 60);
-      const text = `${box.querySelector("[data-fx-wa-text]").value.trim()}\n\n📄 Descarga tu liquidación aquí:\n${link}`;
-      const url = `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
-      if (popup) popup.location.href = url;
-      else window.location.href = url;
-      logWhatsapp(task.id, "Enlace al PDF");
-    } catch (error) {
-      popup?.close();
-      throw error;
+    const message = box.querySelector("[data-fx-wa-text]").value.trim();
+    const buildUrl = (link) => `https://wa.me/${number}?text=${encodeURIComponent(`${message}\n\n📄 Descarga tu liquidación aquí:\n${link}`)}`;
+    const entry = prefetchLink(task);
+    if (entry.url) {
+      // Directo al chat del numero registrado (en el celular abre la app de WhatsApp).
+      const opened = window.open(buildUrl(entry.url), "_blank");
+      if (!opened) window.location.href = buildUrl(entry.url);
+    } else {
+      const popup = window.open("", "_blank");
+      try {
+        const url = buildUrl(await entry.promise);
+        if (popup) popup.location.href = url;
+        else window.location.href = url;
+      } catch (error) {
+        popup?.close();
+        throw error;
+      }
     }
+    logWhatsapp(task.id, "Chat del cliente con enlace al PDF");
   }
+
 
   // ===== Vistas =====
   function statusPill(status) {
