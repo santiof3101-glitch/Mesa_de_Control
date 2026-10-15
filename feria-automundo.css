@@ -1206,3 +1206,126 @@ body.fx-modal-open {
     flex: 1 1 0;
   }
 }
+
+/* Enviar la liquidacion al cliente por WhatsApp */
+.fx-wa-btn,
+.fx-card-side .fx-wa-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #d71920;
+  background: #d71920;
+  color: #ffffff;
+}
+
+.fx-wa-btn:hover {
+  background: #b3121a;
+  border-color: #b3121a;
+}
+
+.fx-wa-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.fx-wa-modal .fx-modal-card {
+  width: min(560px, 100%);
+}
+
+.fx-wa-body {
+  display: grid;
+  gap: 12px;
+  padding: 18px 20px 20px;
+  overflow-y: auto;
+}
+
+.fx-wa-to {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f4f5f7;
+}
+
+.fx-wa-to span {
+  color: #8a8c8f;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.fx-wa-to strong {
+  color: #15171d;
+}
+
+.fx-wa-to em {
+  color: #5f6168;
+  font-style: normal;
+}
+
+.fx-wa-label {
+  color: #5f6168;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.fx-wa-body textarea {
+  width: 100%;
+  min-height: 220px;
+  padding: 12px;
+  border: 1px solid #d5d8de;
+  border-radius: 10px;
+  background: #fbfcfd;
+  color: #15171d;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.fx-wa-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px dashed #e7a3a6;
+  border-radius: 10px;
+  background: #fff7f7;
+  color: #b3121a;
+  font-weight: 700;
+  font-size: 13.5px;
+  word-break: break-all;
+}
+
+.fx-wa-file svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+
+.fx-wa-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fx-wa-actions .btn {
+  flex: 1 1 200px;
+  min-height: 44px;
+  font-weight: 700;
+}
+
+.fx-wa-help {
+  margin: 0;
+  color: #6d6e71;
+  font-size: 12.5px;
+  line-height: 1.45;
+}

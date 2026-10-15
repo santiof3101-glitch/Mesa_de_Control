@@ -471,6 +471,155 @@
     }
   }
 
+
+  // ===== Enviar la liquidacion al cliente por WhatsApp =====
+  const WA_ICON = '<svg class="fx-wa-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2a9.7 9.7 0 0 0-8.4 14.6L2.3 21.8l5.1-1.3A9.7 9.7 0 1 0 12 2.2Zm0 17.7a8 8 0 0 1-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 19.9Zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.8.9c-.1.2-.3.2-.5.1a6.6 6.6 0 0 1-3.3-2.9c-.2-.4.3-.4.8-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5a.9.9 0 0 0-.7.3 2.8 2.8 0 0 0-.9 2.1 4.9 4.9 0 0 0 1 2.6 11.2 11.2 0 0 0 4.3 3.8c1.6.7 2.2.7 3 .6.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1l-.4-.2Z" fill="currentColor"/></svg>';
+
+  function titleCase(value) {
+    return String(value || "").toLowerCase().replace(/(^|[\s-])([a-záéíóúñü])/g, (match, space, letter) => space + letter.toUpperCase()).trim();
+  }
+
+  // Numero de Ecuador en formato internacional: 0991234567 -> 593991234567.
+  function whatsappNumber(value) {
+    let digits = String(value || "").replace(/\D/g, "");
+    if (digits.startsWith("593")) return digits.length >= 11 ? digits : "";
+    if (digits.startsWith("0")) digits = digits.slice(1);
+    return digits.length === 9 ? `593${digits}` : (digits.length >= 10 ? digits : "");
+  }
+
+  function whatsappMessage(task) {
+    const ficha = fichaOf(task);
+    const client = titleCase(ficha.propietario) || "estimado cliente";
+    const advisor = titleCase(task.asesor?.name || currentUser().name);
+    const car = titleCase([ficha.marca, ficha.modelo, ficha.anio].filter(Boolean).join(" ")) || "vehículo";
+    return [
+      `Hola, ${client} 👋`,
+      "",
+      `Te saluda ${advisor}, tu asesor de AUTOCOR. Gracias por confiar en nosotros.`,
+      "",
+      `Te comparto la liquidación de tu ${car}, placas ${task.placa}, para que la revises con calma.`,
+      "",
+      "Recuerda que en AUTOCOR nos encargamos de todo el proceso: revisión legal, trámites y traspaso, de forma segura y transparente. Tú no tienes que preocuparte por nada. ✅",
+      "",
+      "Cualquier duda, escríbeme por aquí. ¡Estoy para ayudarte! 🚗"
+    ].join("\n");
+  }
+
+  function liquidationFileName(task) {
+    return `Liquidacion-AUTOCOR-${task.placa}.pdf`;
+  }
+
+  function canShareFiles() {
+    try {
+      const probe = new File(["x"], "x.pdf", { type: "application/pdf" });
+      return typeof navigator.canShare === "function" && navigator.canShare({ files: [probe] });
+    } catch {
+      return false;
+    }
+  }
+
+  const pdfCache = new Map();
+  function prefetchPdf(task) {
+    if (!pdfCache.has(task.resultado.path)) {
+      const promise = window.AutocorAuth.downloadFile(task.resultado.path)
+        .then((blob) => new File([blob], liquidationFileName(task), { type: "application/pdf" }));
+      promise.catch(() => pdfCache.delete(task.resultado.path));
+      pdfCache.set(task.resultado.path, promise);
+    }
+    return pdfCache.get(task.resultado.path);
+  }
+
+  function openWhatsapp(taskId) {
+    const task = feriaTasks.find((item) => item.id === taskId);
+    if (!task?.resultado?.path) return;
+    const number = whatsappNumber(task.telefono);
+    const shareFiles = canShareFiles();
+    const dialog = document.createElement("div");
+    dialog.className = "fx-modal fx-wa-modal";
+    dialog.innerHTML = `
+      <div class="fx-modal-backdrop" data-fx-close></div>
+      <section class="fx-modal-card" role="dialog" aria-modal="true" aria-labelledby="fxWaTitle">
+        <header class="fx-modal-head">
+          <div>
+            <span class="fx-badge">Liquidación · ${esc(task.placa)}</span>
+            <h3 id="fxWaTitle">Enviar al cliente por WhatsApp</h3>
+          </div>
+          <button type="button" class="fx-modal-close" data-fx-close aria-label="Cerrar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+        </header>
+        <div class="fx-wa-body" data-fx-wa="${esc(task.id)}">
+          <div class="fx-wa-to">
+            <span>Para</span>
+            <strong>${esc(titleCase(fichaOf(task).propietario) || "Cliente")}</strong>
+            <em>${number ? `+${esc(number.slice(0, 3))} ${esc(number.slice(3))}` : "Sin número válido"}</em>
+          </div>
+          <label class="fx-wa-label" for="fxWaText">Mensaje (puedes editarlo)</label>
+          <textarea id="fxWaText" rows="11" data-fx-wa-text>${esc(whatsappMessage(task))}</textarea>
+          <div class="fx-wa-file">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+            <span>${esc(liquidationFileName(task))}</span>
+          </div>
+          <div class="fx-wa-actions">
+            ${shareFiles ? `<button type="button" class="btn fx-wa-btn" data-fx-wa-share>${WA_ICON}Enviar PDF y mensaje</button>` : ""}
+            ${number ? `<button type="button" class="btn ${shareFiles ? "secondary" : "fx-wa-btn"}" data-fx-wa-chat>${shareFiles ? "" : WA_ICON}Abrir chat con enlace al PDF</button>` : ""}
+          </div>
+          <p class="fx-wa-help">${shareFiles
+            ? "<b>Enviar PDF y mensaje</b> adjunta la liquidación: elige el chat del cliente en WhatsApp. <b>Abrir chat</b> va directo a su número con un enlace seguro al PDF (válido 7 días)."
+            : "Se abre el chat del cliente con el mensaje y un enlace seguro para descargar la liquidación (válido 7 días). Desde el celular también puedes adjuntar el PDF directamente."}</p>
+        </div>
+      </section>`;
+    document.body.appendChild(dialog);
+    document.body.classList.add("fx-modal-open");
+    if (shareFiles) prefetchPdf(task);
+    dialog.querySelector("[data-fx-wa-share],[data-fx-wa-chat]")?.focus();
+  }
+
+  async function logWhatsapp(taskId, how) {
+    try {
+      await withFreshTask(taskId, (task) => {
+        task.enviosWhatsapp = [...(task.enviosWhatsapp || []), { at: new Date().toISOString(), by: currentUser().name, how }];
+        task.history = addHistory(task, "Liquidación enviada al cliente por WhatsApp", how);
+        return task;
+      });
+    } catch {}
+  }
+
+  async function shareWhatsappPdf(button) {
+    const box = button.closest("[data-fx-wa]");
+    const task = feriaTasks.find((item) => item.id === box?.dataset.fxWa);
+    if (!task) return;
+    const text = box.querySelector("[data-fx-wa-text]").value.trim();
+    const file = await prefetchPdf(task);
+    // Algunas versiones de WhatsApp ignoran el texto al compartir un archivo: queda copiado para pegarlo.
+    navigator.clipboard?.writeText(text).catch(() => {});
+    try {
+      await navigator.share({ files: [file], text, title: `Liquidación ${task.placa}` });
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+      throw error;
+    }
+    toast("Listo. Si el mensaje no aparece en WhatsApp, pégalo: ya está copiado.");
+    logWhatsapp(task.id, "PDF adjunto");
+  }
+
+  async function openWhatsappChat(button) {
+    const box = button.closest("[data-fx-wa]");
+    const task = feriaTasks.find((item) => item.id === box?.dataset.fxWa);
+    const number = whatsappNumber(task?.telefono);
+    if (!task || !number) return;
+    const popup = window.open("", "_blank");
+    try {
+      const link = await window.AutocorAuth.signedFileUrl(task.resultado.path, 7 * 24 * 60 * 60);
+      const text = `${box.querySelector("[data-fx-wa-text]").value.trim()}\n\n📄 Descarga tu liquidación aquí:\n${link}`;
+      const url = `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
+      if (popup) popup.location.href = url;
+      else window.location.href = url;
+      logWhatsapp(task.id, "Enlace al PDF");
+    } catch (error) {
+      popup?.close();
+      throw error;
+    }
+  }
+
   // ===== Vistas =====
   function statusPill(status) {
     return `<span class="fx-pill is-${esc(status)}">${esc(STATUS_LABELS[status] || status)}</span>`;
@@ -528,7 +677,10 @@
       actions += `<button type="button" class="btn secondary fx-btn" data-fx-resend="${esc(task.id)}">Corregido, reenviar</button>`;
     }
     if (result?.path) {
-      actions += `<button type="button" class="btn primary fx-btn" data-fx-download="${esc(task.id)}">Descargar liquidación</button>`;
+      if (!isLegal) {
+        actions += `<button type="button" class="btn fx-btn fx-wa-btn" data-fx-whatsapp="${esc(task.id)}">${WA_ICON}Enviar al cliente por WhatsApp</button>`;
+      }
+      actions += `<button type="button" class="btn ${isLegal ? "primary" : "secondary"} fx-btn" data-fx-download="${esc(task.id)}">Descargar liquidación</button>`;
     }
     return `
       <article class="fx-card is-${esc(task.status)}">
@@ -1062,7 +1214,7 @@
         refreshAll(true);
         return;
       }
-      const button = target.closest?.("[data-fx-export],[data-fx-datacil],[data-fx-ocr],[data-fx-reload],[data-fx-filter],[data-fx-take],[data-fx-finish],[data-fx-observe],[data-fx-resend],[data-fx-ficha],[data-fx-download],[data-fx-photo],[data-fxa-edit],[data-fxa-delete],[data-fxa-reload]");
+      const button = target.closest?.("[data-fx-export],[data-fx-datacil],[data-fx-ocr],[data-fx-reload],[data-fx-filter],[data-fx-take],[data-fx-finish],[data-fx-observe],[data-fx-resend],[data-fx-ficha],[data-fx-download],[data-fx-photo],[data-fxa-edit],[data-fxa-delete],[data-fxa-reload],[data-fx-whatsapp],[data-fx-wa-share],[data-fx-wa-chat]");
       if (!button) return;
       event.preventDefault();
       try {
@@ -1072,6 +1224,9 @@
         if (button.matches("[data-fx-reload]")) return await refreshAll(true);
         if (button.matches("[data-fx-ficha]")) return openFicha(button.dataset.fxFicha);
         if (button.matches("[data-fxa-edit]")) return openEditor(button.dataset.fxaEdit);
+        if (button.matches("[data-fx-whatsapp]")) return openWhatsapp(button.dataset.fxWhatsapp);
+        if (button.matches("[data-fx-wa-share]")) return await shareWhatsappPdf(button);
+        if (button.matches("[data-fx-wa-chat]")) return await openWhatsappChat(button);
         if (button.matches("[data-fxa-reload]")) return await refreshAll(true);
         if (button.matches("[data-fx-filter]")) {
           legalFilter = button.dataset.fxFilter;
