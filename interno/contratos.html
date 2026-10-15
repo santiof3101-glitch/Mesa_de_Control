@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta name="autocor-version" content="20261015T093500Z">
-<script src="js/auto-update.js?v=20261015T093500Z"></script>
+<meta name="autocor-version" content="20261015T094000Z">
+<script src="js/auto-update.js?v=20261015T094000Z"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AUTOCOR | Contratos</title>
@@ -895,14 +895,14 @@
     .validate-toast.visible{transform:translate(0,0)}
   }
 </style>
-<script src="js/api-config.js?v=20261015T093500Z"></script>
-<script src="js/apps-script-transport.js?v=20261015T093500Z"></script>
-<script src="js/api-client.js?v=20261015T093500Z"></script>
-<script src="js/gemini-client.js?v=20261015T093500Z"></script>
-<script src="js/document-extraction.js?v=20261015T093500Z"></script>
-<script src="js/expediente.js?v=20261015T093500Z"></script>
+<script src="js/api-config.js?v=20261015T094000Z"></script>
+<script src="js/apps-script-transport.js?v=20261015T094000Z"></script>
+<script src="js/api-client.js?v=20261015T094000Z"></script>
+<script src="js/gemini-client.js?v=20261015T094000Z"></script>
+<script src="js/document-extraction.js?v=20261015T094000Z"></script>
+<script src="js/expediente.js?v=20261015T094000Z"></script>
 <style>.vc-needs-review{background:#fff7ed!important;outline:2px solid #f59e0b;border-radius:6px;padding:6px}</style>
-<link rel="stylesheet" href="js/navigation.css?v=20261015T093500Z">
+<link rel="stylesheet" href="js/navigation.css?v=20261015T094000Z">
 </head>
 <body>
 
@@ -1542,9 +1542,9 @@
 <script src="https://unpkg.com/pizzip@3.1.4/dist/pizzip.js"></script>
 <script src="https://unpkg.com/docxtemplater@3.50.0/build/docxtemplater.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="js/cuv-parser.js?v=20261015T093500Z"></script>
-<script src="js/contrato-templates.js?v=20261015T093500Z" onerror="console.warn('[Contratos] contrato-templates.js no encontrado — generación de contratos no disponible')"></script>
-<script src="js/generador-contratos.js?v=20261015T093500Z"></script>
+<script src="js/cuv-parser.js?v=20261015T094000Z"></script>
+<script src="js/contrato-templates.js?v=20261015T094000Z" onerror="console.warn('[Contratos] contrato-templates.js no encontrado — generación de contratos no disponible')"></script>
+<script src="js/generador-contratos.js?v=20261015T094000Z"></script>
 <script>
 /* ════════════════════════════════════════════════════════════════
    CONTRATOS — lógica principal
@@ -2059,16 +2059,19 @@ function* buildOcrCanvases(canvas, tipo){
 async function limitarPrintPegado(dataUrl){
   const img = new Image();
   await new Promise(function(resolve,reject){img.onload=resolve;img.onerror=function(){reject(new Error('No se pudo leer el print.'));};img.src=dataUrl;});
-  const pixels=img.naturalWidth*img.naturalHeight;
-  if(pixels<=8000000 && Math.max(img.naturalWidth,img.naturalHeight)<=12000) return dataUrl;
-  const scale=Math.min(1,Math.sqrt(8000000/pixels),12000/Math.max(img.naturalWidth,img.naturalHeight));
+  // Las fotos se reducen a 2000 px por lado: la IA y el OCR leen igual de bien y la
+  // subida y la lectura son varias veces mas rapidas.
+  const MAX_SIDE=2000;
+  const longest=Math.max(img.naturalWidth,img.naturalHeight);
+  if(longest<=MAX_SIDE && dataUrl.length<=2500000) return dataUrl;
+  const scale=Math.min(1,MAX_SIDE/longest);
   const canvas=document.createElement('canvas');
   try{
     canvas.width=Math.max(1,Math.floor(img.naturalWidth*scale));
     canvas.height=Math.max(1,Math.floor(img.naturalHeight*scale));
     const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.drawImage(img,0,0,canvas.width,canvas.height);
-    return canvas.toDataURL('image/png');
+    return canvas.toDataURL('image/jpeg',0.9);
   }finally{canvas.width=0;canvas.height=0;img.src='';}
 }
 
@@ -3315,7 +3318,8 @@ async function _procesarCedulaPaste(tipo){
     }catch(err){ console.warn('['+tipo+'] IA principal falló; se usará OCR:', err); }
 
     var missing = getMissingFields(d, fields, origins);
-    if(missing.length>0){
+    // El OCR de respaldo (lento) solo corre si la IA no pudo leer la cédula.
+    if(missing.length>0 && aiAplicados.length===0){
       if(imgs.frontal){
         spinnerMsg('OCR de respaldo en frontal...');
         setSpinnerBar(58);
@@ -3428,7 +3432,7 @@ async function _procesarMatriculaPaste(){
         setSpinnerBar(58);
         textoFrontal = await ocrRespaldoSeguro(_dataUrlToFile(imgs.frontal, 'matricula-frontal.png'), 'matricula');
       }
-      if(imgs.reverso){
+      if(imgs.reverso && (aiAplicados.length===0 || !imgs.frontal)){
         spinnerMsg('OCR de respaldo en matrícula reverso...');
         setSpinnerBar(72);
         textoReverso = await ocrRespaldoSeguro(_dataUrlToFile(imgs.reverso, 'matricula-reverso.png'), 'matricula');
@@ -6700,9 +6704,9 @@ window.AutoCorContractDraft = {
 })();
 </script>
 
-<script src="js/auth-ui.js?v=20261015T093500Z"></script>
-<script src="js/session-sync.js?v=20261015T093500Z"></script>
-<script src="js/workflow.js?v=20261015T093500Z"></script>
-<script src="js/workflow-adapters.js?v=20261015T093500Z"></script>
+<script src="js/auth-ui.js?v=20261015T094000Z"></script>
+<script src="js/session-sync.js?v=20261015T094000Z"></script>
+<script src="js/workflow.js?v=20261015T094000Z"></script>
+<script src="js/workflow-adapters.js?v=20261015T094000Z"></script>
 </body>
 </html>
