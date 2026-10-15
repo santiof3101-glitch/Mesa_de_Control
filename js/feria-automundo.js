@@ -30,6 +30,38 @@
     ["motor", "Motor"]
   ];
 
+  // Datos adicionales que la lectura de la matricula llena (no obligatorios).
+  const EXTRA_FIELDS = [
+    ["numeroMatricula", "N.º de matrícula"],
+    ["placaAnterior", "Placa anterior"],
+    ["anioModelo", "Año modelo"],
+    ["ramv", "RAMV / CPN"],
+    ["cilindraje", "Cilindraje"],
+    ["tipoVehiculo", "Tipo de vehículo"],
+    ["combustible", "Combustible"],
+    ["carroceria", "Carrocería"],
+    ["pasajeros", "Pasajeros"],
+    ["tonelaje", "Tonelaje"],
+    ["tipoPeso", "Tipo de peso"],
+    ["paisOrigen", "País de origen"],
+    ["color2", "Color 2"],
+    ["remarcado", "Remarcado"],
+    ["ortopedico", "Ortopédico"],
+    ["tipoTransporte", "Tipo de transporte"],
+    ["ambitoOperacion", "Ámbito de operación"],
+    ["provincia", "Provincia"],
+    ["canton", "Cantón"],
+    ["domicilio", "Domicilio del propietario", true],
+    ["telefonoPropietario", "Teléfono en la matrícula"],
+    ["avaluo", "Avalúo"],
+    ["valorMatricula", "Valor de la matrícula"],
+    ["fechaCompra", "Fecha de compra"],
+    ["fechaEmision", "Fecha de emisión"],
+    ["fechaCaducidad", "Fecha de caducidad"],
+    ["lugarEmision", "Lugar de emisión"],
+    ["observacionesMatricula", "Observaciones de la matrícula", true]
+  ];
+
   let feriaTasks = [];
   let feriaLoadedAt = 0;
   let feriaLoading = null;
@@ -250,11 +282,20 @@
         const fromAnt = ["propietario", "cedula", "marca", "modelo", "anio"].includes(name) && pendingLookup;
         if (setFormField(form, name, data[name], { overwrite: !fromAnt })) filled.push(name);
       });
+      let extras = 0;
+      EXTRA_FIELDS.forEach(([name]) => {
+        if (setFormField(form, name, data[name])) extras += 1;
+      });
+      if (extras) {
+        const more = $("[data-fx-more]", form);
+        if (more) more.open = true;
+      }
+      updateExtraCount(form);
       const mismatch = readPlate && plate && readPlate !== plate;
       if (mismatch) {
         setHint(`Atención: la matrícula dice ${readPlate} y la placa consultada es ${plate}. Revisa antes de enviar.`, "warn");
       } else {
-        setHint(filled.length
+        setHint(filled.length || extras
           ? "Datos extraídos de la matrícula y agregados a la ficha vehicular. Revísalos antes de enviar."
           : "La matrícula no aportó datos nuevos. La ficha conserva los datos de ANT.", filled.length ? "ok" : "info");
       }
@@ -390,6 +431,9 @@
   // Limpia lo que form.reset() no toca (fotos, consulta ANT, marcas de autollenado).
   function clearFormExtras(form) {
     resetPhotos();
+    const more = $("[data-fx-more]", form);
+    if (more) more.open = false;
+    updateExtraCount(form);
     pendingLookup = null;
     $$(".is-autofilled", form).forEach((field) => field.classList.remove("is-autofilled"));
     setFormStatus("");
@@ -451,6 +495,9 @@
         observaciones: String(data.observaciones || "").trim(),
         ant: pendingLookup,
         matricula,
+        matriculaDatos: Object.fromEntries(EXTRA_FIELDS
+          .map(([name]) => [name, String(data[name] || "").trim().toUpperCase()])
+          .filter(([, value]) => value)),
         asesor: { id: user.id, name: user.name, agency: user.agency },
         status: "pendiente",
         createdAt: now,
@@ -775,6 +822,7 @@
             <p class="fx-ant is-${ant.level}">${esc(ant.text)}</p>
             ${task.observaciones ? `<p class="fx-card-note">${esc(task.observaciones)}</p>` : ""}
           </section>
+          ${extraRows(task) ? `<section class="fx-ficha-panel fx-ficha-wide"><h4>Datos de la matrícula</h4><dl class="fx-ficha-extra">${extraRows(task)}</dl></section>` : ""}
           <section class="fx-ficha-panel fx-ficha-wide">
             <h4>Documentos</h4>
             <div class="fx-ficha-files">
@@ -790,6 +838,12 @@
     document.body.appendChild(dialog);
     document.body.classList.add("fx-modal-open");
     dialog.querySelector(".fx-modal-close")?.focus();
+  }
+
+  function extraRows(task) {
+    const extra = task.matriculaDatos || {};
+    return EXTRA_FIELDS.filter(([name]) => extra[name])
+      .map(([name, label]) => `<div class="fx-ficha-row"><dt>${esc(label)}</dt><dd>${esc(extra[name])}</dd></div>`).join("");
   }
 
   function closeFicha() {
@@ -889,7 +943,8 @@
       "Fecha de envío", "Tomada por", "Fecha tomada", "Realizada por", "Fecha realizada",
       "Minutos hasta tomar", "Minutos de atención", "Minutos totales",
       "ANT deuda", "ANT multas", "ANT prohibición de enajenar", "Fotos de matrícula", "Liquidación subida",
-      "Observaciones del asesor", "Comentario de mesa", "Observación de mesa", "Veces devuelta"
+      "Observaciones del asesor", "Comentario de mesa", "Observación de mesa", "Veces devuelta",
+      ...EXTRA_FIELDS.map(([, label]) => label)
     ];
     const ordered = [...feriaTasks].sort((a, b) => String(a.createdAt || "").localeCompare(String(b.createdAt || "")));
     const rows = ordered.map((task) => {
@@ -908,7 +963,8 @@
         minutesBetween(task.createdAt, takenAt), minutesBetween(takenAt, doneAt), minutesBetween(task.createdAt, doneAt),
         task.ant ? String(Number(task.ant.deuda || 0).toFixed(2)).replace(".", ",") : "", task.ant ? task.ant.multas : "",
         task.ant ? (task.ant.prohibicion ? "Sí" : "No") : "", photos, task.resultado?.path ? "Sí" : "No",
-        task.observaciones, task.resultado?.comentario || "", task.observacionMesa || "", returned
+        task.observaciones, task.resultado?.comentario || "", task.observacionMesa || "", returned,
+        ...EXTRA_FIELDS.map(([name]) => (name === "telefonoPropietario" ? asText(task.matriculaDatos?.[name]) : task.matriculaDatos?.[name] || ""))
       ];
     });
     const csv = "﻿" + [headers, ...rows].map((row) => row.map(csvCell).join(";")).join("\r\n");
@@ -1088,6 +1144,9 @@
           ${field("Placa", "placa", task.placa)}
           ${FICHA_FIELDS.map(([name, label]) => field(label, name, ficha[name] || "", { wide: name === "propietario" })).join("")}
         </fieldset>
+        <fieldset><legend>Más datos de la matrícula</legend>
+          ${EXTRA_FIELDS.map(([name, label, wide]) => field(label, `extra_${name}`, task.matriculaDatos?.[name] || "", { wide })).join("")}
+        </fieldset>
         <fieldset><legend>Negociación</legend>
           ${field("Precio de toma", "precioToma", task.precioToma || "", { type: "number" })}
           ${field("Kilometraje", "kilometraje", task.kilometraje ?? "", { type: "number" })}
@@ -1144,6 +1203,13 @@
         ficha[name] = value;
       });
       if (plate !== task.placa) changes.push("Placa");
+      const extras = {};
+      EXTRA_FIELDS.forEach(([name]) => {
+        const value = String(data[`extra_${name}`] || "").trim().toUpperCase();
+        if (value) extras[name] = value;
+      });
+      if (JSON.stringify(extras) !== JSON.stringify(task.matriculaDatos || {})) changes.push("Datos de la matrícula");
+      task.matriculaDatos = extras;
       const price = Number(data.precioToma) || 0;
       const km = Number(data.kilometraje) || 0;
       if (price !== Number(task.precioToma || 0)) changes.push("Precio de toma");
@@ -1198,7 +1264,22 @@
   }
 
   // ===== Eventos =====
+  function buildExtraInputs() {
+    const box = $("[data-fx-extra]");
+    if (!box || box.childElementCount) return;
+    box.innerHTML = EXTRA_FIELDS.map(([name, label, wide]) =>
+      `<label class="${wide ? "fx-span" : ""}">${esc(label)}<input name="${name}" autocomplete="off"></label>`).join("");
+  }
+
+  function updateExtraCount(form = $("#fxForm")) {
+    const counter = $("[data-fx-more-count]");
+    if (!counter || !form) return;
+    const filled = EXTRA_FIELDS.filter(([name]) => String(form.elements[name]?.value || "").trim()).length;
+    counter.textContent = filled ? `${filled} dato${filled === 1 ? "" : "s"} leído${filled === 1 ? "" : "s"} de la matrícula` : "Se llenan al extraer los datos de las fotos";
+  }
+
   function bind() {
+    buildExtraInputs();
     const form = $("#fxForm");
     form?.addEventListener("submit", submitFeriaForm);
     form?.addEventListener("reset", () => {

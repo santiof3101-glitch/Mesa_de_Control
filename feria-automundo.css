@@ -1329,3 +1329,41 @@ body.fx-modal-open {
   font-size: 12.5px;
   line-height: 1.45;
 }
+
+/* Mas datos de la matricula (se llenan con la lectura de las fotos) */
+.fx-more {
+  margin-top: 14px;
+  border: 1px solid #e2e4e9;
+  border-radius: 10px;
+  background: #fafbfc;
+}
+
+.fx-more summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 12px 14px;
+  color: #15171d;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fx-more summary small {
+  color: #8a8c8f;
+  font-weight: 600;
+}
+
+.fx-more[open] summary {
+  border-bottom: 1px solid #eef0f3;
+}
+
+.fx-more > .fx-grid {
+  padding: 12px 14px 14px;
+}
+
+.fx-ficha-extra {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0 18px;
+}
