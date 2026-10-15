@@ -19,12 +19,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Roboto+Condensed:wght@300;400;500;600;700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261015-cs-v1">
-  <link rel="stylesheet" href="layout-fix.css?v=20261015-cs-v1">
-  <link rel="stylesheet" href="feria-automundo.css?v=20261015-cs-v1">
-  <link rel="stylesheet" href="mesa-control.css?v=20261015-cs-v1">
-  <link rel="stylesheet" href="admin-panel.css?v=20261015-cs-v1">
-  <link rel="stylesheet" href="control-seminuevos.css?v=20261015-cs-v1">
+  <link rel="stylesheet" href="styles.css?v=20261015-cx-v1">
+  <link rel="stylesheet" href="layout-fix.css?v=20261015-cx-v1">
+  <link rel="stylesheet" href="feria-automundo.css?v=20261015-cx-v1">
+  <link rel="stylesheet" href="mesa-control.css?v=20261015-cx-v1">
+  <link rel="stylesheet" href="admin-panel.css?v=20261015-cx-v1">
+  <link rel="stylesheet" href="control-seminuevos.css?v=20261015-cx-v1">
+  <link rel="stylesheet" href="compra-form.css?v=20261015-cx-v1">
 </head>
 <body>
   <header class="topbar">
@@ -1192,88 +1193,128 @@
         </section>
 
       <section id="commercial-purchase-process" class="commercial-process-panel" data-commercial-process-section="commercial-purchase-process" hidden>
-        <form id="requestForm" class="panel form-grid cf-form">
-          <header class="cf-head span-2">
-            <span class="cf-head-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l-1 12H7z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path></svg></span>
+        <form id="requestForm" class="cx-form">
+          <header class="cx-head">
             <div>
               <h3>Nueva compra</h3>
-              <p>Toma de vehículo y saneamiento. Revisa los datos antes de enviar a la mesa de control legal.</p>
+              <p>Toma de vehículo y saneamiento.</p>
             </div>
+            <span class="cx-flow">Consulta ANT <i>→</i> documentos <i>→</i> ficha <i>→</i> mesa de control legal</span>
           </header>
-          <div id="duplicateAlert" class="alert-box span-2" hidden></div>
+          <div id="duplicateAlert" class="alert-box" hidden></div>
 
-          <fieldset class="cf-section span-2">
-            <legend><span class="cf-step">1</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Datos del cliente</legend>
-            <div class="cf-grid cf-grid-2">
-              <label>
-                Nombre del cliente completo
-                <input name="cliente" autocomplete="name" required>
-              </label>
-              <label>
-                Numero de cedula del titular
-                <input name="cedula" inputmode="numeric" required>
-              </label>
-            </div>
-          </fieldset>
-
-          <fieldset class="cf-section span-2">
-            <legend><span class="cf-step">2</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16V12l2-5h10l2 5v4"></path><path d="M3 16h18v2H3z"></path><path d="M6 18v2M18 18v2"></path></svg>Datos del vehículo</legend>
-            <div class="cf-grid cf-grid-3">
-              <label class="cf-plate">
+          <fieldset class="cx-block">
+            <legend><span class="cx-step">1</span>Placa y Consulta ANT</legend>
+            <div class="cx-plate-row">
+              <label class="cx-plate">
                 Placa
-                <input id="purchasePlateInput" name="placa" autocomplete="off" maxlength="8" required>
-                <small id="datacilMigrationNotice" class="datacil-migration-notice" hidden></small>
+                <input id="purchasePlateInput" name="placa" autocomplete="off" maxlength="8" placeholder="ABC1234" required>
               </label>
-              <label class="cf-affix" data-suffix="km">
-                Kilometraje
-                <input name="kilometraje" type="number" min="0" step="1" required>
-              </label>
-              <label class="cf-affix" data-prefix="$">
-                Valor de toma
-                <input name="valorToma" type="number" min="0" step="0.01" required>
-              </label>
+              <button type="button" class="btn primary cx-btn" data-cx-ant>Consultar ANT</button>
+            </div>
+            <small id="datacilMigrationNotice" class="datacil-migration-notice" hidden></small>
+            <p class="cx-hint" data-cx-hint>Consulta la placa en ANT para llenar la ficha con los datos del propietario y del vehículo.</p>
+          </fieldset>
+
+          <fieldset class="cx-block">
+            <legend><span class="cx-step">2</span>Documentos del cliente y del vehículo</legend>
+            <div class="cx-docs">
+              <div class="cx-doc-group">
+                <span class="cx-doc-title">Cédula del cliente</span>
+                <div class="cx-photos">
+                  <label class="cx-drop" data-cx-doc="cedulaAnverso">
+                    <input type="file" accept="image/*" capture="environment" hidden>
+                    <span class="cx-drop-empty"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="11" r="2.3"></circle><path d="M5.8 16c.6-1.6 1.8-2.4 3.2-2.4s2.6.8 3.2 2.4M14 10h4M14 13.5h3"></path></svg><strong>Frente</strong><small>Foto o imagen</small></span>
+                    <img class="cx-drop-preview" alt="Frente de la cédula" hidden>
+                    <button type="button" class="cx-drop-clear" data-cx-clear aria-label="Quitar foto" hidden>×</button>
+                  </label>
+                  <label class="cx-drop" data-cx-doc="cedulaReverso">
+                    <input type="file" accept="image/*" capture="environment" hidden>
+                    <span class="cx-drop-empty"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M6 10h12M6 13.5h8M6 16.5h5"></path></svg><strong>Reverso</strong><small>Foto o imagen</small></span>
+                    <img class="cx-drop-preview" alt="Reverso de la cédula" hidden>
+                    <button type="button" class="cx-drop-clear" data-cx-clear aria-label="Quitar foto" hidden>×</button>
+                  </label>
+                </div>
+              </div>
+              <div class="cx-doc-group">
+                <span class="cx-doc-title">Matrícula del vehículo</span>
+                <div class="cx-photos">
+                  <label class="cx-drop" data-cx-doc="matriculaAnverso">
+                    <input type="file" accept="image/*" capture="environment" hidden>
+                    <span class="cx-drop-empty"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16V12l2-5h10l2 5v4"></path><path d="M3 16h18v2H3z"></path><path d="M6 18v2M18 18v2"></path></svg><strong>Frente</strong><small>Foto o imagen</small></span>
+                    <img class="cx-drop-preview" alt="Frente de la matrícula" hidden>
+                    <button type="button" class="cx-drop-clear" data-cx-clear aria-label="Quitar foto" hidden>×</button>
+                  </label>
+                  <label class="cx-drop" data-cx-doc="matriculaReverso">
+                    <input type="file" accept="image/*" capture="environment" hidden>
+                    <span class="cx-drop-empty"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5M9 13h6M9 17h4"></path></svg><strong>Reverso</strong><small>Foto o imagen</small></span>
+                    <img class="cx-drop-preview" alt="Reverso de la matrícula" hidden>
+                    <button type="button" class="cx-drop-clear" data-cx-clear aria-label="Quitar foto" hidden>×</button>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="cx-doc-actions">
+              <button type="button" class="btn secondary cx-btn" data-cx-ocr disabled>Extraer datos de los documentos</button>
+              <span>Las fotos se guardan en la ficha para la mesa de control legal.</span>
             </div>
           </fieldset>
 
-          <fieldset class="cf-section span-2">
-            <legend><span class="cf-step">3</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>Datos de la gestión</legend>
-            <div class="cf-grid cf-grid-2">
-              <label>
-                Agencia
-                <select name="agencia" id="agenciaSelect" required></select>
-              </label>
-              <label>
-                Nombre del asesor
-                <select name="asesor" id="asesorSelect" required></select>
-              </label>
-              <label>
-                Ciudad
-                <input name="ciudad" required>
-              </label>
-              <label>
-                Tipo de compra - solo Guayaquil
-                <select name="tipoCompra" id="tipoCompraSelect" required></select>
-              </label>
-              <label class="span-2">
-                Tipo de saneamiento
-                <select name="tipoSaneamiento" id="tipoSaneamientoSelect" required></select>
-              </label>
+          <fieldset class="cx-block cx-ficha">
+            <legend><span class="cx-step">3</span>Datos del cliente</legend>
+            <div class="cx-grid cx-grid-3">
+              <label class="cx-span-2">Nombre del cliente completo<input name="cliente" autocomplete="off" required></label>
+              <label>Número de cédula del titular<input name="cedula" inputmode="numeric" autocomplete="off" required></label>
+              <label>Teléfono del cliente<input name="telefono" type="tel" inputmode="tel" autocomplete="off"></label>
+            </div>
+            <details class="cx-more" data-cx-more="cliente">
+              <summary>Más datos de la cédula <small data-cx-more-count="cliente">Se llenan al extraer los datos de la cédula</small></summary>
+              <div class="cx-grid cx-grid-3" data-cx-extra="cliente"></div>
+            </details>
+          </fieldset>
+
+          <fieldset class="cx-block cx-ficha">
+            <legend><span class="cx-step">4</span>Datos del vehículo</legend>
+            <div class="cx-grid cx-grid-4">
+              <label>Marca<input name="marca" autocomplete="off"></label>
+              <label>Modelo<input name="modelo" autocomplete="off"></label>
+              <label>Año<input name="anio" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+              <label>Color<input name="color" autocomplete="off"></label>
+              <label>Clase<input name="clase" autocomplete="off"></label>
+              <label>Servicio<input name="servicio" autocomplete="off"></label>
+              <label>Chasis<input name="chasis" autocomplete="off"></label>
+              <label>Motor<input name="motor" autocomplete="off"></label>
+              <label class="cx-affix" data-suffix="km">Kilometraje<input name="kilometraje" type="number" min="0" step="1" required></label>
+              <label class="cx-affix" data-prefix="$">Valor de toma<input name="valorToma" type="number" min="0" step="0.01" required></label>
+            </div>
+            <details class="cx-more" data-cx-more="vehiculo">
+              <summary>Más datos de la matrícula <small data-cx-more-count="vehiculo">Se llenan al extraer los datos de la matrícula</small></summary>
+              <div class="cx-grid cx-grid-3" data-cx-extra="vehiculo"></div>
+            </details>
+          </fieldset>
+
+          <fieldset class="cx-block">
+            <legend><span class="cx-step">5</span>Datos de la gestión</legend>
+            <div class="cx-grid">
+              <label>Agencia<select name="agencia" id="agenciaSelect" required></select></label>
+              <label>Nombre del asesor<select name="asesor" id="asesorSelect" required></select></label>
+              <label>Ciudad<input name="ciudad" required></label>
+              <label>Tipo de compra - solo Guayaquil<select name="tipoCompra" id="tipoCompraSelect" required></select></label>
+              <label class="cx-span">Tipo de saneamiento<select name="tipoSaneamiento" id="tipoSaneamientoSelect" required></select></label>
             </div>
           </fieldset>
 
-          <fieldset class="cf-section span-2">
-            <legend><span class="cf-step">4</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"></path></svg>Notas para la mesa legal</legend>
-            <div class="cf-grid">
-              <label class="span-2 cf-notes">
-                Observaciones
-                <textarea name="observaciones" rows="4" required placeholder="Detalle cualquier novedad del vehículo o del cliente"></textarea>
-              </label>
-              <div id="purchaseCustomFields" class="form-custom-fields span-2"></div>
+          <fieldset class="cx-block">
+            <legend><span class="cx-step">6</span>Notas para la mesa legal</legend>
+            <div class="cx-grid">
+              <label class="cx-span">Observaciones<textarea name="observaciones" rows="4" required placeholder="Detalle cualquier novedad del vehículo o del cliente"></textarea></label>
+              <div id="purchaseCustomFields" class="form-custom-fields cx-span"></div>
             </div>
           </fieldset>
 
-          <div class="form-actions cf-actions span-2">
-            <span class="cf-actions-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.3-3 8-7 9.5-4-1.5-7-5.2-7-9.5V6z"></path><path d="M9 12l2 2 4-4"></path></svg>La solicitud llega a la mesa de control legal al enviarla.</span>
+          <div class="cx-status" data-cx-status hidden></div>
+          <div class="cx-actions">
+            <span class="cx-actions-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.3-3 8-7 9.5-4-1.5-7-5.2-7-9.5V6z"></path><path d="M9 12l2 2 4-4"></path></svg>La solicitud llega a la mesa de control legal al enviarla.</span>
             <button type="reset" class="btn secondary">Limpiar</button>
             <button type="submit" class="btn primary">Enviar a control legal</button>
           </div>
@@ -3331,15 +3372,16 @@
     }, true);
   </script>
   <script src="js/core/autocor-core.js?v=20260803-modular-phase1"></script>
-  <script src="js/core/autocor-auth.js?v=20261015-cs-v1"></script>
+  <script src="js/core/autocor-auth.js?v=20261015-cx-v1"></script>
   <script src="js/components/modal.component.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/comercial.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20261015-cs-v1"></script>
-  <script src="js/feria-automundo.js?v=20261015-cs-v1"></script>
-  <script src="js/control-seminuevos.js?v=20261015-cs-v1"></script>
-  <script src="js/version-check.js?v=20261015-cs-v1"></script>
+  <script src="app.js?v=20261015-cx-v1"></script>
+  <script src="js/feria-automundo.js?v=20261015-cx-v1"></script>
+  <script src="js/control-seminuevos.js?v=20261015-cx-v1"></script>
+  <script src="js/compra-documentos.js?v=20261015-cx-v1"></script>
+  <script src="js/version-check.js?v=20261015-cx-v1"></script>
 </body>
 </html>

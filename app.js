@@ -3793,6 +3793,7 @@ function openCommercialLeadFicha(taskId) {
         <strong>${escapeHtml(value || "Sin registro")}</strong>
       </div>
     `).join("")}
+    ${getTaskProcess(task) === "compra" && window.CompraDocumentos ? `<div class="span-2">${window.CompraDocumentos.renderTaskDocs(task)}</div>` : ""}
     <section class="tracking-stage-panel span-2">
       <p class="eyebrow">Linea de tiempo</p>
       <div class="tracking-stage-list">
@@ -9125,6 +9126,7 @@ function renderLegalTaskFullDetails(task) {
         ["Proceso", "Compra y saneamiento"],
         ["Nombre completo del cliente", task.cliente],
         ["Cedula del titular", task.cedula],
+        ["Telefono del cliente", task.telefono],
         ["Placa", task.placa],
         ["Valor de toma", formatCurrencyValue(task.valorToma)],
         ["Kilometraje", formatIntegerValue(task.kilometraje)],
@@ -9156,6 +9158,7 @@ function renderLegalTaskFullDetails(task) {
         </div>
       `).join("")}
     </div>
+    ${!isSale && window.CompraDocumentos ? window.CompraDocumentos.renderTaskDocs(task) : ""}
   `;
 }
 
@@ -19859,7 +19862,8 @@ form?.addEventListener("reset", () => window.setTimeout(resetDatacilFormSnapshot
 
 form?.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const data = Object.fromEntries(new FormData(form).entries());
+  const rawData = Object.fromEntries(new FormData(form).entries());
+  const data = window.CompraDocumentos ? window.CompraDocumentos.collect(rawData) : rawData;
   const submitButton = form.querySelector("button[type='submit']");
   if (submitButton) {
     submitButton.disabled = true;
@@ -19875,6 +19879,16 @@ form?.addEventListener("submit", async (event) => {
     if (!confirmedPilot) {
       showToast("Envio pausado para revisar documentos en Pilot.");
       return;
+    }
+    if (window.CompraDocumentos?.hasPhotos()) {
+      if (submitButton) submitButton.textContent = "Subiendo documentos...";
+      try {
+        data.documentos = await window.CompraDocumentos.uploadDocuments(data.placa);
+      } catch (error) {
+        console.error("No se pudieron subir los documentos de la compra", error);
+        showToast("No se pudieron subir las fotos de los documentos. Revise la conexion e intente de nuevo.", "error");
+        return;
+      }
     }
     if (submitButton) submitButton.textContent = "Guardando...";
     await createTask(data);
