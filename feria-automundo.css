@@ -1367,3 +1367,88 @@ body.fx-modal-open {
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 0 18px;
 }
+
+.fx-wa-steps {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fx-wa-steps li {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e2e4e9;
+  border-radius: 12px;
+  background: #ffffff;
+  opacity: .7;
+}
+
+.fx-wa-steps li.is-current {
+  border-color: #d71920;
+  background: #fffafa;
+  opacity: 1;
+}
+
+.fx-wa-steps li.is-done {
+  border-color: #c7e9d3;
+  background: #f3fbf6;
+  opacity: 1;
+}
+
+.fx-wa-steps li > div {
+  display: grid;
+  flex: 1;
+  gap: 8px;
+  min-width: 0;
+}
+
+.fx-wa-steps strong {
+  color: #15171d;
+  font-size: 14px;
+}
+
+.fx-wa-steps small {
+  color: #6d6e71;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.fx-wa-steps .btn {
+  min-height: 44px;
+  font-weight: 700;
+}
+
+.fx-wa-num {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #d71920;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.fx-wa-steps li.is-done .fx-wa-num {
+  background: #16a34a;
+}
+
+.fx-wa-body {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.fx-wa-steps li,
+.fx-wa-steps li > div {
+  min-width: 0;
+}
+
+.fx-wa-steps .btn {
+  width: 100%;
+  min-width: 0;
+  white-space: normal;
+}
