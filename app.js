@@ -5511,6 +5511,10 @@ function extractCustomFields(data, process) {
 
 function renderOptionList(containerId, key) {
   const container = document.querySelector(`#${containerId}`);
+  if (key === "agencies") {
+    renderAgencyChips(container);
+    return;
+  }
   container.innerHTML = "";
 
   state[key].forEach((value) => {
@@ -5522,24 +5526,188 @@ function renderOptionList(containerId, key) {
   });
 }
 
+// ===== Agencias y asesores =====
+let advisorSearchTerm = "";
+let advisorAgencyFilter = "";
+
+function renderAgencyChips(container) {
+  if (!container) return;
+  const agencies = state.agencies || [];
+  const counter = document.querySelector("[data-adm-agency-count]");
+  if (counter) counter.textContent = `${agencies.length} ${agencies.length === 1 ? "agencia" : "agencias"}`;
+  container.innerHTML = agencies.map((agency) => {
+    const total = (state.commercialAdvisors || []).filter((advisor) => advisor.agency === agency).length;
+    return `
+      <span class="adm-agency">
+        <b>${escapeHtml(agency)}</b>
+        <em>${total} ${total === 1 ? "asesor" : "asesores"}</em>
+        <button type="button" data-remove-agency="${escapeHtml(agency)}" aria-label="Eliminar ${escapeHtml(agency)}">&#10005;</button>
+      </span>`;
+  }).join("") || `<span class="adm-empty">Todavía no hay agencias.</span>`;
+}
+
+function removeAgency(agency) {
+  const total = (state.commercialAdvisors || []).filter((advisor) => advisor.agency === agency).length;
+  if (total) {
+    showToast(`${agency} tiene ${total} ${total === 1 ? "asesor" : "asesores"}. Cámbialos de agencia o elimínalos antes de borrarla.`);
+    return;
+  }
+  if (!window.confirm(`¿Eliminar la agencia ${agency}?`)) return;
+  removeOption("agencies", agency);
+}
+
+function updateCommercialAdvisorAgency(id, agency) {
+  const advisor = (state.commercialAdvisors || []).find((item) => item.id === id);
+  if (!advisor || !agency || advisor.agency === agency) return;
+  advisor.agency = agency;
+  saveState();
+  guardarUsuariosSupabaseAhora();
+  renderAll();
+  showToast(`${advisor.name} ahora pertenece a ${agency}.`);
+}
+
 function renderCommercialAdvisors() {
   const container = document.querySelector("#commercialAdvisorsList");
-  container.innerHTML = "";
-  state.commercialAdvisors.forEach((advisor) => {
-    const item = document.createElement("span");
-    item.className = "option-item";
-    item.innerHTML = `<span>${escapeHtml(advisor.name)} <small>${escapeHtml(advisor.agency || "Sin agencia")} | Usuario: ${escapeHtml(advisor.username || "")}</small></span><label class="check-row admin-datacil-access"><input class="toggle-datacil-access" type="checkbox" ${advisor.datacilEnabled ? "checked" : ""}> Consulta ANT</label><input type="password" placeholder="Nueva contrasena"><button class="btn secondary change-password" type="button">Cambiar</button><button class="remove-option" type="button" aria-label="Eliminar ${escapeHtml(advisor.name)}">x</button>`;
-    item.querySelector(".remove-option").addEventListener("click", () => removeCommercialAdvisor(advisor.id));
-    item.querySelector(".change-password").addEventListener("click", () => {
-      changePassword("commercialAdvisors", advisor.id, item.querySelector("input").value);
-      item.querySelector("input").value = "";
-    });
-    item.querySelector(".toggle-datacil-access").addEventListener("change", (event) => {
-      updateDatacilUserAccess("commercial", advisor.id, event.target.checked);
-    });
-    container.appendChild(item);
-  });
+  if (!container) return;
+  const agencies = state.agencies || [];
+  const filter = document.querySelector("[data-adv-agency]");
+  if (filter) {
+    if (advisorAgencyFilter && !agencies.includes(advisorAgencyFilter)) advisorAgencyFilter = "";
+    filter.innerHTML = `<option value="">Todas las agencias</option>${agencies.map((agency) => `<option value="${escapeHtml(agency)}" ${agency === advisorAgencyFilter ? "selected" : ""}>${escapeHtml(agency)}</option>`).join("")}`;
+  }
+  const term = advisorSearchTerm.trim().toLowerCase();
+  const advisors = (state.commercialAdvisors || [])
+    .filter((advisor) => !advisorAgencyFilter || advisor.agency === advisorAgencyFilter)
+    .filter((advisor) => !term || `${advisor.name} ${advisor.username} ${advisor.agency}`.toLowerCase().includes(term))
+    .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  const rows = advisors.map((advisor) => `
+    <tr data-advisor="${escapeHtml(advisor.id)}">
+      <td class="adm-who" data-label="Asesor">
+        <b class="adm-avatar">${escapeHtml(userInitials(advisor.name))}</b>
+        <span><strong>${escapeHtml(advisor.name)}</strong><small>${escapeHtml(advisor.username || "")}</small></span>
+      </td>
+      <td data-label="Agencia"><span class="adm-chip">${escapeHtml(advisor.agency || "Sin agencia")}</span></td>
+      <td class="adm-c" data-label="Consulta ANT">${renderUserSwitch("data-adv-ant", advisor.datacilEnabled === true, `Consulta ANT: ${advisor.name}`)}</td>
+      <td class="adm-c adm-more">
+        <details class="ux-menu adm-menu">
+          <summary aria-label="Opciones de ${escapeHtml(advisor.name)}">&#8943;</summary>
+          <div class="ux-menu-card">
+            <span class="ux-menu-title">${escapeHtml(advisor.name)}</span>
+            <label>Cambiar de agencia
+              <select data-adv-agency-input>${agencies.map((agency) => `<option value="${escapeHtml(agency)}" ${agency === advisor.agency ? "selected" : ""}>${escapeHtml(agency)}</option>`).join("")}</select>
+            </label>
+            <button type="button" class="btn secondary" data-adv-save-agency>Guardar agencia</button>
+            <label>Clave temporal
+              <input type="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password" data-adv-password>
+            </label>
+            <button type="button" class="btn secondary" data-adv-change-password>Poner clave temporal</button>
+            <button type="button" class="btn ux-danger" data-adv-delete>Eliminar acceso</button>
+          </div>
+        </details>
+      </td>
+    </tr>`).join("");
+  container.innerHTML = `
+    <table class="adm-table">
+      <thead><tr><th>Asesor</th><th>Agencia</th><th class="adm-c">Consulta ANT</th><th></th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="4" class="adm-empty">No hay asesores con ese filtro.</td></tr>`}</tbody>
+    </table>`;
   initPasswordToggles(container);
+}
+
+function handleAdvisorTableChange(event) {
+  const row = event.target.closest?.("[data-advisor]");
+  if (!row || !event.target.matches("[data-adv-ant]")) return;
+  updateDatacilUserAccess("commercial", row.dataset.advisor, event.target.checked);
+}
+
+function handleAdvisorTableClick(event) {
+  const row = event.target.closest?.("[data-advisor]");
+  if (!row) return;
+  const id = row.dataset.advisor;
+  const advisor = (state.commercialAdvisors || []).find((item) => item.id === id);
+  if (!advisor) return;
+  if (event.target.closest("[data-adv-save-agency]")) {
+    updateCommercialAdvisorAgency(id, row.querySelector("[data-adv-agency-input]")?.value || "");
+    return;
+  }
+  if (event.target.closest("[data-adv-change-password]")) {
+    const input = row.querySelector("[data-adv-password]");
+    changePassword("commercialAdvisors", id, input?.value || "");
+    if (input) input.value = "";
+    return;
+  }
+  if (event.target.closest("[data-adv-delete]")) {
+    if (window.confirm(`¿Eliminar el acceso de ${advisor.name}? Ya no podrá ingresar al sistema.`)) removeCommercialAdvisor(id);
+  }
+}
+
+// ===== Panel de administrador: banner de cada modulo =====
+const ADMIN_MODULE_INFO = {
+  "admin-dashboard-module": { group: "Resumen", title: "KPIs", desc: "Indicadores de la operación con filtros por asesor, agencia, estatus y fechas." },
+  "admin-leads-module": { group: "Resumen", title: "Leads", desc: "Modifica, corrige o borra las solicitudes registradas por comercial." },
+  "admin-users-module": { group: "Personas", title: "Usuarios", desc: "Accesos, claves y qué tareas recibe cada asistente legal.", action: "+ Nuevo usuario" },
+  "admin-commercial-module": { group: "Personas", title: "Agencias y asesores", desc: "Agencias de la red Autocor y los asesores comerciales con su acceso al sistema.", action: "+ Nuevo asesor" },
+  "admin-feria-module": { group: "Operación", title: "Feria Automundo", desc: "Corrige datos, cambia el estado, reasigna o elimina las solicitudes de la feria." },
+  "admin-catalogs-module": { group: "Operación", title: "Catálogos", desc: "Tipos de compra, tipos de saneamiento y estatus de las tareas." },
+  "admin-forms-module": { group: "Operación", title: "Formularios", desc: "Campos de los formularios de compra y venta." },
+  "admin-contract-templates-module": { group: "Operación", title: "Contratos legales", desc: "Textos y plantillas de los contratos que genera mesa de control." },
+  "admin-design-module": { group: "Sistema", title: "Diseño", desc: "Logo, colores y textos de la página de inicio." },
+  "admin-comms-module": { group: "Sistema", title: "Comunicados", desc: "Cartelera interna: avisos para comercial y mesa de control." },
+  "admin-backup-module": { group: "Sistema", title: "Respaldo", desc: "Exporta o restaura los datos del sistema." }
+};
+
+function getActiveAdminModule() {
+  return document.querySelector("#admin [data-admin-module].is-active")?.dataset.adminModule || "admin-dashboard-module";
+}
+
+function getAdminModuleStats(module) {
+  const advisors = state.commercialAdvisors || [];
+  const legal = state.legalUsers || [];
+  if (module === "admin-commercial-module") {
+    return [["agencias", (state.agencies || []).length], ["asesores", advisors.length], ["con Consulta ANT", advisors.filter((item) => item.datacilEnabled).length]];
+  }
+  if (module === "admin-users-module") {
+    return [["asistentes legales", legal.length], ["disponibles", legal.filter((item) => item.legalAvailable !== false).length], ["gerentes", (state.managerUsers || []).length]];
+  }
+  if (module === "admin-leads-module") {
+    const tasks = state.tasks || [];
+    return [["solicitudes", tasks.length], ["abiertas", tasks.filter((task) => !isClosedStatus(task.status)).length]];
+  }
+  if (module === "admin-catalogs-module") {
+    return [["tipos de compra", (state.purchaseTypes || []).length], ["saneamientos", (state.sanitationTypes || []).length], ["estatus", (state.statusOptions || []).length]];
+  }
+  if (module === "admin-comms-module") {
+    return [["comunicados activos", getActiveAnnouncements().length]];
+  }
+  return [];
+}
+
+function renderAdminBanner() {
+  const module = getActiveAdminModule();
+  const info = ADMIN_MODULE_INFO[module] || ADMIN_MODULE_INFO["admin-dashboard-module"];
+  const set = (selector, text) => {
+    const element = document.querySelector(selector);
+    if (element) element.textContent = text;
+  };
+  set("#admin [data-adm-group]", info.group);
+  set("#admin-title", info.title);
+  set("#admin [data-adm-desc]", info.desc);
+  const action = document.querySelector("#admin [data-adm-action]");
+  if (action) {
+    action.hidden = !info.action;
+    action.textContent = info.action || "";
+  }
+  const stats = document.querySelector("#admin [data-adm-stats]");
+  if (stats) {
+    stats.innerHTML = getAdminModuleStats(module)
+      .map(([label, value]) => `<div><strong>${escapeHtml(String(value))}</strong><span>${escapeHtml(label)}</span></div>`).join("");
+  }
+  const me = document.querySelector("#admin .adm-me strong");
+  if (me && session.name) me.textContent = session.name;
+}
+
+function openAdminModule(module) {
+  document.querySelector(`#admin [data-admin-module="${module}"]`)?.click();
 }
 
 function renderStatusOptions() {
@@ -5780,6 +5948,7 @@ async function addCommercialAdvisor(data) {
   guardarUsuariosSupabaseAhora();
   renderAll();
   showToast("Asesor comercial agregado.");
+  return true;
 }
 
 function removeCommercialAdvisor(id) {
@@ -18871,6 +19040,7 @@ function renderAll() {
     renderAdminLeads();
     renderPcBackups();
     renderInternalBackupStatus();
+    renderAdminBanner();
   } else if (isCommercial) {
     applyFormConfiguration();
     renderCommercialDashboard();
@@ -18950,6 +19120,56 @@ adminModuleButtons.forEach((button) => {
     adminModuleSections.forEach((section) => {
       section.classList.toggle("is-active", section.dataset.adminSection === target);
     });
+    renderAdminBanner();
+    const admin = document.querySelector("#admin");
+    if (admin && admin.getBoundingClientRect().top < 0) window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+});
+
+document.querySelector("#admin [data-adm-action]")?.addEventListener("click", () => {
+  const module = getActiveAdminModule();
+  if (module === "admin-commercial-module") {
+    const form = document.querySelector("#commercialAdvisorForm");
+    if (form) {
+      form.hidden = false;
+      form.querySelector("select, input")?.focus();
+    }
+  }
+  if (module === "admin-users-module") document.querySelector("[data-ux-new]")?.click();
+});
+document.querySelector("#admin [data-adm-mykey]")?.addEventListener("click", () => {
+  openAdminModule("admin-users-module");
+  setUsersTab("admin");
+});
+document.querySelector("#admin [data-adm-logout]")?.addEventListener("click", () => logoutBtn?.click());
+document.querySelector("[data-adv-new]")?.addEventListener("click", () => {
+  const form = document.querySelector("#commercialAdvisorForm");
+  if (!form) return;
+  form.hidden = false;
+  form.querySelector("select, input")?.focus();
+});
+document.querySelector("[data-adv-cancel]")?.addEventListener("click", () => {
+  const form = document.querySelector("#commercialAdvisorForm");
+  form?.reset();
+  if (form) form.hidden = true;
+});
+document.querySelector("[data-adv-search]")?.addEventListener("input", (event) => {
+  advisorSearchTerm = event.target.value || "";
+  renderCommercialAdvisors();
+});
+document.querySelector("[data-adv-agency]")?.addEventListener("change", (event) => {
+  advisorAgencyFilter = event.target.value || "";
+  renderCommercialAdvisors();
+});
+document.querySelector("#commercialAdvisorsList")?.addEventListener("change", handleAdvisorTableChange);
+document.querySelector("#commercialAdvisorsList")?.addEventListener("click", handleAdvisorTableClick);
+document.querySelector("#agenciesList")?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-remove-agency]");
+  if (button) removeAgency(button.dataset.removeAgency);
+});
+document.addEventListener("click", (event) => {
+  document.querySelectorAll("#commercialAdvisorsList details.adm-menu[open]").forEach((menu) => {
+    if (!menu.contains(event.target)) menu.open = false;
   });
 });
 
@@ -19972,10 +20192,12 @@ processingUserForm?.addEventListener("submit", (event) => {
   processingUserForm.hidden = true;
 });
 
-commercialAdvisorForm.addEventListener("submit", (event) => {
+commercialAdvisorForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  addCommercialAdvisor(Object.fromEntries(new FormData(commercialAdvisorForm).entries()));
+  const created = await addCommercialAdvisor(Object.fromEntries(new FormData(commercialAdvisorForm).entries()));
+  if (!created) return;
   commercialAdvisorForm.reset();
+  commercialAdvisorForm.hidden = true;
 });
 
 announcementForm.addEventListener("submit", (event) => {

@@ -19,10 +19,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Roboto+Condensed:wght@300;400;500;600;700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261015-asig-v2">
-  <link rel="stylesheet" href="layout-fix.css?v=20261015-asig-v2">
-  <link rel="stylesheet" href="feria-automundo.css?v=20261015-asig-v2">
-  <link rel="stylesheet" href="mesa-control.css?v=20261015-asig-v2">
+  <link rel="stylesheet" href="styles.css?v=20261015-adm-v1">
+  <link rel="stylesheet" href="layout-fix.css?v=20261015-adm-v1">
+  <link rel="stylesheet" href="feria-automundo.css?v=20261015-adm-v1">
+  <link rel="stylesheet" href="mesa-control.css?v=20261015-adm-v1">
+  <link rel="stylesheet" href="admin-panel.css?v=20261015-adm-v1">
 </head>
 <body>
   <header class="topbar">
@@ -1827,60 +1828,57 @@
       </section>
     </section>
 
-    <section id="admin" class="view" aria-labelledby="admin-title">
-      <div class="section-head">
-        <div>
-          <p class="eyebrow">Configuracion</p>
-          <h1 id="admin-title">Panel de administrador</h1>
+    <section id="admin" class="view adm" aria-labelledby="admin-title">
+      <aside class="adm-side" aria-label="Módulos de administrador">
+        <div class="adm-side-in">
+          <div class="adm-side-head">
+            <span>Panel de administrador</span>
+            <strong>Configuración</strong>
+          </div>
+          <span class="adm-label">Resumen</span>
+          <nav class="adm-nav">
+            <button class="is-active" type="button" data-admin-module="admin-dashboard-module"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/></svg><span>KPIs</span></button>
+            <button type="button" data-admin-module="admin-leads-module"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Leads</span></button>
+          </nav>
+          <span class="adm-label">Personas</span>
+          <nav class="adm-nav">
+            <button type="button" data-admin-module="admin-users-module"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></svg><span>Usuarios</span></button>
+            <button type="button" data-admin-module="admin-commercial-module"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10l1.5-5h13L20 10"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/></svg><span>Agencias y asesores</span></button>
+          </nav>
+          <span class="adm-label">Operación</span>
+          <nav class="adm-nav">
+            <button type="button" data-admin-module="admin-feria-module" data-feria-only hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16V12l2-5h10l2 5v4"/><path d="M3 16h18v2H3z"/></svg><span>Feria Automundo</span><em data-fxa-stat="activas">0</em></button>
+            <button type="button" data-admin-module="admin-catalogs-module"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="5" cy="6" r="1"/><circle cx="5" cy="12" r="1"/><circle cx="5" cy="18" r="1"/></svg><span>Catálogos</span></button>
+            <button type="button" data-admin-module="admin-forms-module"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>Formularios</span></button>
+            <button type="button" data-admin-module="admin-contract-templates-module"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg><span>Contratos legales</span></button>
+          </nav>
+          <span class="adm-label">Sistema</span>
+          <nav class="adm-nav">
+            <button type="button" data-admin-module="admin-design-module"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 2-2s-1-1.5-1-2.5S14 15 15 15h2a4 4 0 0 0 4-4c0-4.4-4-8-9-8Z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7.5" r="1"/><circle cx="14.5" cy="7.5" r="1"/></svg><span>Diseño</span></button>
+            <button type="button" data-admin-module="admin-comms-module"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1Z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg><span>Comunicados</span></button>
+            <button type="button" data-admin-module="admin-backup-module"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/></svg><span>Respaldo</span></button>
+          </nav>
+          <div class="adm-side-foot">
+            <div class="adm-me"><b>AD</b><span><strong>Administrador</strong><small>Acceso total</small></span></div>
+            <nav class="adm-nav">
+              <button type="button" data-adm-mykey><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="14" r="4"/><path d="M11 11l9-9M16 6l3 3"/></svg><span>Mi clave</span></button>
+              <button type="button" data-adm-logout><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11"/></svg><span>Cerrar sesión</span></button>
+            </nav>
+          </div>
         </div>
-      </div>
+      </aside>
 
-      <div class="admin-module-grid" aria-label="Modulos de administrador">
-        <button class="admin-module-card is-active" type="button" data-admin-module="admin-dashboard-module">
-          <strong>KPIs</strong>
-          <span>Indicadores y filtros</span>
-        </button>
-        <button class="admin-module-card" type="button" data-admin-module="admin-leads-module">
-          <strong>Leads</strong>
-          <span>Editar o borrar</span>
-        </button>
-        <button class="admin-module-card" type="button" data-admin-module="admin-users-module">
-          <strong>Usuarios</strong>
-          <span>Accesos, claves y tareas</span>
-        </button>
-        <button class="admin-module-card" type="button" data-admin-module="admin-feria-module" data-feria-only hidden>
-          <strong>Feria Automundo</strong>
-          <span>Editar, reasignar o borrar</span>
-        </button>
-        <button class="admin-module-card" type="button" data-admin-module="admin-commercial-module">
-          <strong>Agencias y asesores</strong>
-          <span>Comerciales, usuarios y claves</span>
-        </button>
-        <button class="admin-module-card" type="button" data-admin-module="admin-catalogs-module">
-          <strong>Catalogos</strong>
-          <span>Tipos, saneamientos y estatus</span>
-        </button>
-        <button class="admin-module-card" type="button" data-admin-module="admin-forms-module">
-          <strong>Formularios</strong>
-          <span>Campos de compra y venta</span>
-        </button>
-        <button class="admin-module-card" type="button" data-admin-module="admin-contract-templates-module">
-          <strong>Contratos legales</strong>
-          <span>Textos y plantillas</span>
-        </button>
-        <button class="admin-module-card" type="button" data-admin-module="admin-design-module">
-          <strong>Diseno</strong>
-          <span>Logo, colores y textos</span>
-        </button>
-        <button class="admin-module-card" type="button" data-admin-module="admin-comms-module">
-          <strong>Comunicados</strong>
-          <span>Cartelera interna</span>
-        </button>
-        <button class="admin-module-card" type="button" data-admin-module="admin-backup-module">
-          <strong>Respaldo</strong>
-          <span>Exportar o restaurar datos</span>
-        </button>
-      </div>
+      <div class="adm-main">
+        <section class="adm-banner">
+          <svg class="adm-wheel" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="88"/><circle cx="100" cy="100" r="64"/><circle cx="100" cy="100" r="16"/><path d="M36 100h48M116 100h48M100 116v48"/></svg>
+          <div class="adm-banner-copy">
+            <p class="adm-eyebrow" data-adm-group>Resumen</p>
+            <h1 id="admin-title">KPIs</h1>
+            <p data-adm-desc>Indicadores de la operación con filtros por asesor, agencia y fechas.</p>
+            <button class="btn adm-btn-white" type="button" data-adm-action hidden></button>
+          </div>
+          <div class="adm-banner-stats" data-adm-stats></div>
+        </section>
 
       <div class="admin-layout">
         <section id="admin-dashboard-module" class="panel span-admin admin-module-section is-active" data-admin-section="admin-dashboard-module">
@@ -2175,36 +2173,47 @@
           </form>
         </section>
 
-        <section class="panel span-admin admin-module-section" data-admin-section="admin-commercial-module">
-          <div class="panel-title-row">
+        <section class="panel span-admin admin-module-section adm-panel" data-admin-section="admin-commercial-module">
+          <div class="adm-panel-head">
             <div>
               <p class="eyebrow">Red comercial</p>
-              <h2>Agencias Autocor</h2>
+              <h2>Agencias</h2>
             </div>
+            <span class="adm-count" data-adm-agency-count>0 agencias</span>
           </div>
-          <form class="inline-form" data-option-form="agencies">
-            <input placeholder="Nombre de agencia" required>
+          <form class="adm-inline" data-option-form="agencies">
+            <input placeholder="Nombre de la nueva agencia" required>
             <button class="btn primary" type="submit">Agregar</button>
           </form>
-          <div id="agenciesList" class="option-list"></div>
+          <div id="agenciesList" class="adm-agencies"></div>
         </section>
 
-        <section class="panel span-admin admin-module-section" data-admin-section="admin-commercial-module">
-          <div class="panel-title-row">
+        <section class="panel span-admin admin-module-section adm-panel" data-admin-section="admin-commercial-module">
+          <div class="adm-panel-head">
             <div>
               <p class="eyebrow">Acceso comercial</p>
-              <h2>Asesores comerciales, usuarios y contrase&ntilde;as</h2>
+              <h2>Asesores comerciales</h2>
             </div>
+            <button class="btn primary" type="button" data-adv-new>+ Nuevo asesor</button>
           </div>
-          <form id="commercialAdvisorForm" class="advisor-form">
+          <form id="commercialAdvisorForm" class="adm-new-form" hidden>
+            <strong>Nuevo asesor</strong>
             <select name="agency" id="advisorAgencyInput" required></select>
-            <input name="name" placeholder="Nombre del asesor comercial" required>
-            <input name="username" placeholder="Usuario" required>
-            <input name="password" type="password" placeholder="Contrasena (minimo 8)" minlength="8" autocomplete="new-password" required>
-            <label class="check-row admin-datacil-create"><input name="datacilEnabled" type="checkbox"> Consulta ANT</label>
-            <button class="btn primary" type="submit">Agregar</button>
+            <input name="name" placeholder="Nombre completo" required>
+            <input name="username" placeholder="Usuario (correo)" required autocomplete="off">
+            <input name="password" type="password" placeholder="Clave temporal (mínimo 8)" minlength="8" autocomplete="new-password" required>
+            <label class="adm-check"><input name="datacilEnabled" type="checkbox"> Consulta ANT</label>
+            <div class="adm-new-actions">
+              <button class="btn secondary" type="button" data-adv-cancel>Cancelar</button>
+              <button class="btn primary" type="submit">Crear asesor</button>
+            </div>
+            <small>El asesor ingresa con esta clave temporal y la cambia desde su perfil.</small>
           </form>
-          <div id="commercialAdvisorsList" class="option-list"></div>
+          <div class="adm-tools">
+            <input type="search" placeholder="Buscar asesor" data-adv-search aria-label="Buscar asesor">
+            <select data-adv-agency aria-label="Filtrar por agencia"><option value="">Todas las agencias</option></select>
+          </div>
+          <div id="commercialAdvisorsList" class="adm-table-wrap"></div>
         </section>
 
         <section id="admin-users-module" class="panel span-admin admin-module-section ux" data-admin-section="admin-users-module">
@@ -2321,6 +2330,7 @@
             <aside id="fxaEditor" class="fxa-editor" hidden></aside>
           </div>
         </section>
+      </div>
       </div>
     </section>
   </main>
@@ -3264,14 +3274,14 @@
     }, true);
   </script>
   <script src="js/core/autocor-core.js?v=20260803-modular-phase1"></script>
-  <script src="js/core/autocor-auth.js?v=20261015-asig-v2"></script>
+  <script src="js/core/autocor-auth.js?v=20261015-adm-v1"></script>
   <script src="js/components/modal.component.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/comercial.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20261015-asig-v2"></script>
-  <script src="js/feria-automundo.js?v=20261015-asig-v2"></script>
-  <script src="js/version-check.js?v=20261015-asig-v2"></script>
+  <script src="app.js?v=20261015-adm-v1"></script>
+  <script src="js/feria-automundo.js?v=20261015-adm-v1"></script>
+  <script src="js/version-check.js?v=20261015-adm-v1"></script>
 </body>
 </html>
