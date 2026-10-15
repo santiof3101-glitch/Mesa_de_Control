@@ -97,16 +97,25 @@
   }
 
   // Asistentes legales que el administrador activo para recibir la feria (Usuarios > Feria Automundo).
-  // Si nadie esta activado, la reciben todos para que ninguna solicitud se quede sin atender.
+  // Si nadie esta activado o disponible, las solicitudes quedan pendientes: el administrador las ve
+  // y las puede asignar desde su modulo.
   function feriaLegalUsers() {
     const users = typeof state === "object" && Array.isArray(state?.legalUsers) ? state.legalUsers : [];
     return users.filter((user) => Array.isArray(user.mailboxes) && user.mailboxes.includes("feria"));
   }
 
+  function currentLegalRecord() {
+    return feriaLegalUsers().find((user) => user.id === currentUser().id) || null;
+  }
+
   function legalReceivesFeria() {
-    const assigned = feriaLegalUsers();
-    if (!assigned.length) return true;
-    return assigned.some((user) => user.id === currentUser().id);
+    return Boolean(currentLegalRecord());
+  }
+
+  // Disponible para recibir solicitudes nuevas (las que ya tomo siempre las ve).
+  function legalAvailableForFeria() {
+    const record = currentLegalRecord();
+    return Boolean(record) && record.legalAvailable !== false;
   }
 
   function canUseFeria() {
@@ -130,11 +139,13 @@
     if (closed) closed.hidden = open;
     const note = $("[data-fx-assign-note]");
     if (note) {
-      const names = feriaLegalUsers().map((user) => user.name);
+      const names = feriaLegalUsers().filter((user) => user.legalAvailable !== false).map((user) => user.name);
       note.hidden = !show;
-      note.textContent = names.length
-        ? `Estas solicitudes llegan a: ${names.join(", ")}. Lo define el administrador en Usuarios.`
-        : "Estas solicitudes llegan a toda la mesa de control. El administrador puede elegir quién las recibe en Usuarios.";
+      note.textContent = currentUser().role === "legal" && !legalAvailableForFeria()
+        ? "Estás como no disponible: no recibes solicitudes nuevas. Solo ves las que ya tomaste."
+        : names.length
+          ? `Estas solicitudes llegan a: ${names.join(", ")}. Lo define el administrador en Usuarios.`
+          : "Nadie de mesa de control está disponible para la feria: las solicitudes quedan pendientes hasta que el administrador active a alguien.";
     }
   }
 
@@ -874,15 +885,23 @@
       : `<div class="fx-empty">Aún no has enviado fichas en la feria.</div>`;
   }
 
+  // Lo que ve cada asistente: el administrador todo; el asistente disponible todo; el no disponible solo lo suyo.
+  function legalVisibleTasks() {
+    const user = currentUser();
+    if (user.role !== "legal" || legalAvailableForFeria()) return feriaTasks;
+    return feriaTasks.filter((task) => task.tomadaPor?.id === user.id);
+  }
+
   function renderLegal() {
     const list = $("#fxLegalList");
     if (!list) return;
-    const counts = countBy(feriaTasks);
+    const visible = legalVisibleTasks();
+    const counts = countBy(visible);
     $$("[data-fx-legal-count]").forEach((element) => {
       element.textContent = String(counts[element.dataset.fxLegalCount] || 0);
     });
     $$("[data-fx-filter]").forEach((button) => button.classList.toggle("is-active", button.dataset.fxFilter === legalFilter));
-    const filtered = feriaTasks.filter((task) => legalFilter === "activas"
+    const filtered = visible.filter((task) => legalFilter === "activas"
       ? ["pendiente", "en_revision"].includes(task.status)
       : task.status === legalFilter);
     const ordered = legalFilter === "activas"
@@ -996,6 +1015,10 @@
 
   async function takeTask(taskId) {
     const user = currentUser();
+    if (user.role === "legal" && !legalAvailableForFeria()) {
+      toast("Estás como no disponible o sin la feria activada. Pide al administrador que te la asigne.", "error");
+      return;
+    }
     await withFreshTask(taskId, (task) => {
       if (task.status !== "pendiente") {
         toast(task.tomadaPor ? `Ya la tomó ${task.tomadaPor.name}.` : "La solicitud ya cambió de estado.", "error");
@@ -1399,7 +1422,7 @@
   // La sesion cambia al ingresar o salir: se revisa cada poco si mostrar el modulo.
   let lastRole = "";
   function watchSession() {
-    const role = `${currentUser().role}:${currentUser().id}:${feriaLegalUsers().map((user) => user.id).join(",")}`;
+    const role = `${currentUser().role}:${currentUser().id}:${feriaLegalUsers().map((user) => `${user.id}${user.legalAvailable === false ? "-off" : ""}`).join(",")}`;
     if (role !== lastRole) {
       lastRole = role;
       feriaTasks = [];
