@@ -27,6 +27,7 @@ legal las toma y las cierra, gerencia ve reportes y procesamiento de datos carga
 | `compra-form.css`, `js/compra-documentos.js` | Formulario de compra: Consulta ANT, fotos de cédula y matrícula, lectura automática (función `lectura-documentos`) y la ficha con documentos que ve la mesa de control. |
 | `js/feria-automundo.js`, `feria-automundo.css` | Modulo temporal de la Feria Automundo (asesor, mesa de control y administrador). |
 | `js/consignment-templates.js`, `assets/contracts` | Plantillas PDF de contratos. |
+| `interno/` | Sistema interno de la mesa de control (liquidaciones, pagos, ventas, contratos), publicado en `/interno/`. Usa su propio backend de Google Apps Script (`js/api-config.js`). La liquidación tiene la opción "Cliente Preferencial" con un texto de condición editable. |
 | `server.js`, `iniciar-autocor.bat` | Servidor local opcional para un PC compartido. |
 | `supabase/migrations` | SQL aplicado en Supabase (usuarios, Storage, RLS, limpieza de claves). |
 | `supabase/functions` | Funciones `datacil-consulta` y `datacil-vehiculo` (Consulta ANT), `feria-matricula` (feria) y `lectura-documentos` (cédula y matrícula en compras). |
