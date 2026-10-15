@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta name="autocor-version" content="20261008T223143Z">
-<script src="js/auto-update.js?v=20261008T223143Z"></script>
+<meta name="autocor-version" content="20261015T084000Z">
+<script src="js/auto-update.js?v=20261015T084000Z"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cartilla de Descuentos AUTOCOR</title>
@@ -196,7 +196,7 @@ body.doc-feria .document{border-top:4px solid #E53F2E;}
 /* ── IMPRESIÓN / PDF ──────────────────────────────────── */
 @media print{
   /* Página */
-  @page{size:A4 portrait;margin:9mm 10mm 10mm 10mm;}
+  @page{size:A4 portrait;margin:9mm 10mm 16mm 10mm;}
   html{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
   /* Ocultar el badge de autollenado en impresión y captura PDF */
   .expediente-badge{display:none !important;}
@@ -636,64 +636,95 @@ body.doc-feria .document{border-top:4px solid #E53F2E;}
 
 
 /* ══ Liquidacion Cliente Preferencial: diseno corporativo AUTOCOR ══
-   Solo aplica cuando el tipo de documento es "feria" (body.doc-feria). */
-body.doc-feria{--fx-red:#d71920;--fx-red-dark:#b3121a;--fx-ink:#15171d;--fx-graphite:#2c2e33;--fx-muted:#5f6168;--fx-line:#e2e4e9;--fx-soft:#f6f7f9;}
-body.doc-feria .document{position:relative;border-top:0 !important;padding-top:0 !important;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-body.doc-feria .document::before{content:"";display:block;height:8px;margin:0 -20px 14px;background:linear-gradient(90deg,var(--fx-red) 0 68%,var(--fx-graphite) 68% 100%);}
-body.doc-feria .header{border-bottom:2px solid var(--fx-ink) !important;padding-bottom:12px !important;margin-bottom:12px;}
-body.doc-feria .title{color:var(--fx-ink) !important;letter-spacing:.06em !important;}
-body.doc-feria .title-line2.feria-line{color:var(--fx-red) !important;font-size:12px;letter-spacing:.22em;}
-body.doc-feria .subtitle{color:var(--fx-muted) !important;letter-spacing:.14em;text-transform:uppercase;}
-body.doc-feria .header-right{background:var(--fx-soft);border-left:3px solid var(--fx-red);border-radius:0 6px 6px 0;padding:6px 8px 6px 10px;white-space:normal !important;}
-body.doc-feria .header-right .muted{color:var(--fx-muted) !important;}
-body.doc-feria .form-card,
-body.doc-feria .risk-obs-box{border:1px solid var(--fx-line) !important;border-radius:6px !important;background:#fff !important;box-shadow:none !important;}
-body.doc-feria .form-card label,
-body.doc-feria .risk-obs-box label,
-body.doc-feria .veh-fields label{color:var(--fx-muted) !important;font-size:9.5px !important;font-weight:700 !important;letter-spacing:.12em !important;}
-body.doc-feria .auto-box,
-body.doc-feria .veh-fields{background:var(--fx-soft) !important;border:1px solid var(--fx-line) !important;border-left:3px solid var(--fx-graphite) !important;border-radius:0 6px 6px 0 !important;box-shadow:none !important;}
-body.doc-feria .auto-title{color:var(--fx-red) !important;font-weight:800 !important;letter-spacing:.16em !important;border-bottom:1px solid var(--fx-line) !important;}
-body.doc-feria .auto-label{color:var(--fx-muted) !important;}
-body.doc-feria #tabla{border-collapse:collapse !important;border:0 !important;}
-body.doc-feria #tabla thead th{background:var(--fx-graphite) !important;color:#fff !important;font-size:9.5px !important;letter-spacing:.12em;text-transform:uppercase;border:0 !important;}
-body.doc-feria #tabla tbody td{border:0 !important;border-bottom:1px solid var(--fx-line) !important;}
-body.doc-feria #tabla tbody tr:nth-child(even) td{background:#fafbfc !important;}
-body.doc-feria #tabla tr.has-value td{background:#fff !important;}
-body.doc-feria #tabla tr.has-value td:first-child{border-left:3px solid var(--fx-red) !important;}
-body.doc-feria .totalbox{background:#fff !important;border:1px solid var(--fx-line) !important;border-radius:6px !important;padding:0 !important;overflow:hidden;box-shadow:none !important;}
-body.doc-feria .totalbox .trow{padding:6px 14px;font-size:13px !important;}
-body.doc-feria .totalbox .trow .label{color:var(--fx-muted) !important;font-weight:700 !important;letter-spacing:.06em;}
-body.doc-feria .totalbox .trow .value{color:var(--fx-ink) !important;}
-body.doc-feria .totalbox .trow.total{margin-top:0 !important;padding:10px 14px !important;border-top:0 !important;background:var(--fx-graphite) !important;}
-body.doc-feria .totalbox .trow.total .label{color:#fff !important;font-size:14px !important;letter-spacing:.12em;}
-body.doc-feria .totalbox .trow.total .value{color:#fff !important;font-size:20px !important;}
-body.doc-feria .glossary h3{color:var(--fx-red) !important;font-size:10.5px !important;letter-spacing:.16em;text-transform:uppercase;}
-body.doc-feria .glossary + div{border-top:1px solid var(--fx-line) !important;}
-body.doc-feria .disclaimer{position:relative;padding:22px 12px 10px !important;border:1px solid var(--fx-line);border-left:3px solid var(--fx-red);border-radius:0 6px 6px 0;background:#fafbfc;color:#374151 !important;}
-body.doc-feria .disclaimer::before{content:"CONDICIONES Y AUTORIZACIONES";position:absolute;top:7px;left:12px;color:var(--fx-red);font:800 9px/1 Arial,Helvetica,sans-serif;letter-spacing:.16em;}
-body.doc-feria #pv_decl{white-space:pre-line !important;font-size:9.6px !important;}
-body.doc-feria .sigbox{border:0 !important;border-radius:0 !important;background:transparent !important;}
-body.doc-feria .siglabel{color:var(--fx-ink) !important;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:10px !important;}
-body.doc-feria .sigline{border-top:1.5px solid var(--fx-ink) !important;color:var(--fx-muted) !important;}
-body.doc-feria .qr-seal{color:var(--fx-red) !important;}
-body.doc-feria .document::after{content:"AUTOCOR  ·  Siempre nuevos  ·  Cliente Preferencial";display:block;margin:14px -20px 0;padding:8px 20px;background:var(--fx-graphite);color:#fff;font:700 9px/1.2 Arial,Helvetica,sans-serif;letter-spacing:.14em;text-align:center;}
+   Solo aplica cuando el tipo de documento es "feria" (body.doc-corp). */
+body.doc-corp{--fx-red:#d71920;--fx-red-dark:#b3121a;--fx-ink:#15171d;--fx-graphite:#2c2e33;--fx-muted:#5f6168;--fx-line:#e2e4e9;--fx-soft:#f6f7f9;}
+body.doc-corp .document{position:relative;border-top:0 !important;padding-top:0 !important;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+body.doc-corp .document::before{content:"";display:block;height:8px;margin:0 -20px 14px;background:linear-gradient(90deg,var(--fx-red) 0 68%,var(--fx-graphite) 68% 100%);}
+body.doc-corp .header{border-bottom:2px solid var(--fx-ink) !important;padding-bottom:12px !important;margin-bottom:12px;}
+body.doc-corp .title{color:var(--fx-ink) !important;letter-spacing:.06em !important;}
+body.doc-corp .title-line2.feria-line{color:var(--fx-red) !important;font-size:12px;letter-spacing:.22em;}
+body.doc-corp .subtitle{color:var(--fx-muted) !important;letter-spacing:.14em;text-transform:uppercase;}
+body.doc-corp .header-right{background:var(--fx-soft);border-left:3px solid var(--fx-red);border-radius:0 6px 6px 0;padding:6px 8px 6px 10px;white-space:normal !important;}
+body.doc-corp .header-right .muted{color:var(--fx-muted) !important;}
+body.doc-corp .form-card,
+body.doc-corp .risk-obs-box{border:1px solid var(--fx-line) !important;border-radius:6px !important;background:#fff !important;box-shadow:none !important;}
+body.doc-corp .form-card label,
+body.doc-corp .risk-obs-box label,
+body.doc-corp .veh-fields label{color:var(--fx-muted) !important;font-size:9.5px !important;font-weight:700 !important;letter-spacing:.12em !important;}
+body.doc-corp .auto-box,
+body.doc-corp .veh-fields{background:var(--fx-soft) !important;border:1px solid var(--fx-line) !important;border-left:3px solid var(--fx-graphite) !important;border-radius:0 6px 6px 0 !important;box-shadow:none !important;}
+body.doc-corp .auto-title{color:var(--fx-red) !important;font-weight:800 !important;letter-spacing:.16em !important;border-bottom:1px solid var(--fx-line) !important;}
+body.doc-corp .auto-label{color:var(--fx-muted) !important;}
+body.doc-corp #tabla{border-collapse:collapse !important;border:0 !important;}
+body.doc-corp #tabla thead th{background:var(--fx-graphite) !important;color:#fff !important;font-size:9.5px !important;letter-spacing:.12em;text-transform:uppercase;border:0 !important;}
+body.doc-corp #tabla tbody td{border:0 !important;border-bottom:1px solid var(--fx-line) !important;}
+body.doc-corp #tabla tbody tr:nth-child(even) td{background:#fafbfc !important;}
+body.doc-corp #tabla tr.has-value td{background:#fff !important;}
+body.doc-corp #tabla tr.has-value td:first-child{border-left:3px solid var(--fx-red) !important;}
+body.doc-corp .totalbox{background:#fff !important;border:1px solid var(--fx-line) !important;border-radius:6px !important;padding:0 !important;overflow:hidden;box-shadow:none !important;}
+body.doc-corp .totalbox .trow{padding:6px 14px;font-size:13px !important;}
+body.doc-corp .totalbox .trow .label{color:var(--fx-muted) !important;font-weight:700 !important;letter-spacing:.06em;}
+body.doc-corp .totalbox .trow .value{color:var(--fx-ink) !important;}
+body.doc-corp .totalbox .trow.total{margin-top:0 !important;padding:10px 14px !important;border-top:0 !important;background:var(--fx-graphite) !important;}
+body.doc-corp .totalbox .trow.total .label{color:#fff !important;font-size:14px !important;letter-spacing:.12em;}
+body.doc-corp .totalbox .trow.total .value{color:#fff !important;font-size:20px !important;}
+body.doc-corp .glossary h3{color:var(--fx-red) !important;font-size:10.5px !important;letter-spacing:.16em;text-transform:uppercase;}
+body.doc-corp .glossary + div{border-top:1px solid var(--fx-line) !important;}
+body.doc-corp .disclaimer{position:relative;padding:22px 12px 10px !important;border:1px solid var(--fx-line);border-left:3px solid var(--fx-red);border-radius:0 6px 6px 0;background:#fafbfc;color:#374151 !important;}
+body.doc-corp .disclaimer::before{content:"CONDICIONES Y AUTORIZACIONES";position:absolute;top:7px;left:12px;color:var(--fx-red);font:800 9px/1 Arial,Helvetica,sans-serif;letter-spacing:.16em;}
+body.doc-corp #pv_decl{white-space:pre-line !important;font-size:9.6px !important;}
+body.doc-corp .sigbox{border:0 !important;border-radius:0 !important;background:transparent !important;}
+body.doc-corp .siglabel{color:var(--fx-ink) !important;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:10px !important;}
+body.doc-corp .sigline{border-top:1.5px solid var(--fx-ink) !important;color:var(--fx-muted) !important;width:230px !important;max-width:100%;margin-left:auto !important;margin-right:auto !important;text-align:center;}
+body.doc-corp .qr-seal{color:var(--fx-red) !important;}
+body.doc-corp .document::after{content:attr(data-footer);display:block;margin:14px -20px 0;padding:8px 20px;background:var(--fx-graphite);color:#fff;font:700 9px/1.2 Arial,Helvetica,sans-serif;letter-spacing:.14em;text-align:center;}
 @media print{
-  body.doc-feria .document::before{margin:0 -14px 10px !important;}
-  body.doc-feria .document::after{margin:10px -14px 0 !important;}
-  body.doc-feria .auto-box{background:var(--fx-soft) !important;border:1px solid var(--fx-line) !important;border-left:3px solid var(--fx-graphite) !important;}
-  body.doc-feria .header{grid-template-columns:150px minmax(0,1fr) 175px !important;}
-  body.doc-feria .header-right{padding:6px 8px 6px 10px !important;font-size:8.6px !important;}
-  body.doc-feria .header-right .meta-piece{display:block;}
-  body.doc-feria .title{font-size:15px !important;letter-spacing:.03em !important;}
+  body.doc-corp .risk-obs-box select{-webkit-appearance:none !important;appearance:none !important;background-image:none !important;width:auto !important;min-width:110px;padding:6px 14px !important;border-radius:999px !important;text-align:center;font-weight:800 !important;letter-spacing:.08em;}
+  body.doc-corp .document::before{margin:0 -14px 10px !important;}
+  body.doc-corp .document::after{display:none !important;}
+  body.doc-corp .auto-box{background:var(--fx-soft) !important;border:1px solid var(--fx-line) !important;border-left:3px solid var(--fx-graphite) !important;}
+  body.doc-corp .header{grid-template-columns:150px minmax(0,1fr) 175px !important;}
+  body.doc-corp .header-right{padding:6px 8px 6px 10px !important;font-size:8.6px !important;}
+  body.doc-corp .header-right .meta-piece{display:block;}
+  body.doc-corp .title{font-size:15px !important;letter-spacing:.03em !important;}
+}
+/* ══ Pantalla corporativa AUTOCOR (solo en pantalla, no cambia el PDF) ══ */
+@media screen{
+  body.doc-corp{background:#f1f2f4 !important;}
+  body.doc-corp .autocor-topbar{background:#2c2e33 !important;border-bottom:3px solid #d71920 !important;}
+  body.doc-corp .toolbar-wrap{background:#3d3f45 !important;border-bottom:1px solid rgba(255,255,255,.08);}
+  body.doc-corp .toolbar-wrap button{border-radius:8px !important;font-weight:700 !important;}
+  body.doc-corp .toolbar-wrap button.green{background:#d71920 !important;border-color:#b3121a !important;box-shadow:0 3px 10px rgba(215,25,32,.3) !important;}
+  body.doc-corp .toolbar-wrap button.green:hover{background:#b3121a !important;}
+  body.doc-corp .toolbar-wrap select{border-radius:8px !important;font-weight:700;}
+  body.doc-corp .page-body{max-width:1040px !important;}
+  body.doc-corp #statusBar{border-left-color:#d71920 !important;}
+  body.doc-corp .document{border:1px solid #e2e4e9 !important;border-radius:14px !important;box-shadow:0 12px 32px rgba(21,23,29,.08) !important;padding:0 24px 0 !important;}
+  body.doc-corp .document::before{margin:0 -24px 18px !important;height:6px !important;}
+  body.doc-corp .document::after{margin:18px -24px 0 !important;border-radius:0 0 13px 13px;}
+  body.doc-corp .veh-grid{display:grid !important;grid-template-columns:repeat(4,minmax(0,1fr)) !important;gap:12px 14px !important;}
+  body.doc-corp .veh-grid .field > div{min-width:0;}
+  body.doc-corp .veh-grid .field{display:flex !important;flex-direction:column;gap:4px;min-width:0;}
+  body.doc-corp .veh-fields{padding:14px 16px !important;}
+  body.doc-corp .screen-input{border:1px solid #d5d8de !important;border-radius:8px !important;background:#fff !important;min-height:38px;box-shadow:none !important;}
+  body.doc-corp .screen-input:focus{border-color:#d71920 !important;outline:none !important;box-shadow:0 0 0 3px rgba(215,25,32,.14) !important;}
+  body.doc-corp #valorToma{font-weight:800;font-size:16px;}
+  body.doc-corp #tabla tbody td{padding-top:6px !important;padding-bottom:6px !important;}
+  body.doc-corp .totalbox .trow.total{border-radius:0 0 6px 6px;}
+}
+@media screen and (max-width:720px){
+  body.doc-corp .veh-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+  body.doc-corp .document{padding:0 14px !important;}
+  body.doc-corp .document::before{margin:0 -14px 14px !important;}
+  body.doc-corp .document::after{margin:14px -14px 0 !important;}
 }
 #prefCondBox[hidden]{display:none !important;}
 </style>
-<script src="js/api-config.js?v=20261008T223143Z"></script>
-<script src="js/apps-script-transport.js?v=20261008T223143Z"></script>
-<script src="js/api-client.js?v=20261008T223143Z"></script>
-<script src="js/expediente.js?v=20261008T223143Z"></script>
-<link rel="stylesheet" href="js/navigation.css?v=20261008T223143Z">
+<script src="js/api-config.js?v=20261015T084000Z"></script>
+<script src="js/apps-script-transport.js?v=20261015T084000Z"></script>
+<script src="js/api-client.js?v=20261015T084000Z"></script>
+<script src="js/expediente.js?v=20261015T084000Z"></script>
+<link rel="stylesheet" href="js/navigation.css?v=20261015T084000Z">
 </head>
 <body>
 
@@ -1215,6 +1246,19 @@ function setTitulo(tipo){
   const prefBox = document.getElementById("prefCondBox");
   if (prefBox) prefBox.hidden = tipo !== "feria";
   document.body.classList.toggle("doc-feria", tipo === "feria");
+  document.body.classList.add("doc-corp");
+  const doc = document.querySelector(".document");
+  const footerText = "AUTOCOR  ·  Siempre nuevos  ·  " + ({ cartilla: "Cartilla de descuentos", liquidacion: "Liquidación", feria: "Liquidación Cliente Preferencial" }[tipo] || "Control de saneamientos");
+  // Pie de pagina del PDF: va al final de cada hoja, con el numero de pagina.
+  let pageStyle = document.getElementById("pageFooterStyle");
+  if (!pageStyle) {
+    pageStyle = document.createElement("style");
+    pageStyle.id = "pageFooterStyle";
+    document.head.appendChild(pageStyle);
+  }
+  const cssText = footerText.replace(/\\/g, "").replace(/"/g, "'");
+  pageStyle.textContent = `@page{margin-bottom:14mm;@bottom-left{content:"${cssText}";vertical-align:middle;padding-left:4mm;color:#ffffff;background:#2c2e33;font:700 7.5pt Arial,Helvetica,sans-serif;letter-spacing:.12em;margin:3mm 0 4mm;}@bottom-right{content:"Página " counter(page) " de " counter(pages);vertical-align:middle;padding-right:4mm;color:#ffffff;background:#d71920;font:700 7.5pt Arial,Helvetica,sans-serif;margin:3mm 0 4mm;width:34mm;text-align:right;}}`;
+  if (doc) doc.dataset.footer = "AUTOCOR  ·  Siempre nuevos  ·  " + ({ cartilla: "Cartilla de descuentos", liquidacion: "Liquidación", feria: "Liquidación Cliente Preferencial" }[tipo] || "Control de saneamientos");
 }
 
 // auto=true -> no muestra alertas, solo ajusta
@@ -4959,8 +5003,8 @@ document.addEventListener('paste', function(e){
 </script>
 
 
-<script src="js/session-sync.js?v=20261008T223143Z"></script>
-<script src="js/workflow.js?v=20261008T223143Z"></script>
-<script src="js/workflow-adapters.js?v=20261008T223143Z"></script>
+<script src="js/session-sync.js?v=20261015T084000Z"></script>
+<script src="js/workflow.js?v=20261015T084000Z"></script>
+<script src="js/workflow-adapters.js?v=20261015T084000Z"></script>
 </body>
 </html>
