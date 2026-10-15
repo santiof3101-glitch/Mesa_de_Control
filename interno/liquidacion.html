@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta name="autocor-version" content="20261015T084000Z">
-<script src="js/auto-update.js?v=20261015T084000Z"></script>
+<meta name="autocor-version" content="20261015T085500Z">
+<script src="js/auto-update.js?v=20261015T085500Z"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cartilla de Descuentos AUTOCOR</title>
@@ -720,11 +720,11 @@ body.doc-corp .document::after{content:attr(data-footer);display:block;margin:14
 }
 #prefCondBox[hidden]{display:none !important;}
 </style>
-<script src="js/api-config.js?v=20261015T084000Z"></script>
-<script src="js/apps-script-transport.js?v=20261015T084000Z"></script>
-<script src="js/api-client.js?v=20261015T084000Z"></script>
-<script src="js/expediente.js?v=20261015T084000Z"></script>
-<link rel="stylesheet" href="js/navigation.css?v=20261015T084000Z">
+<script src="js/api-config.js?v=20261015T085500Z"></script>
+<script src="js/apps-script-transport.js?v=20261015T085500Z"></script>
+<script src="js/api-client.js?v=20261015T085500Z"></script>
+<script src="js/expediente.js?v=20261015T085500Z"></script>
+<link rel="stylesheet" href="js/navigation.css?v=20261015T085500Z">
 </head>
 <body>
 
@@ -1601,24 +1601,25 @@ function buildAuthorizationText(){
 
 ` : "";
 
-  return `${feriaTexto}Autorización de pago
+  return `${feriaTexto}Yo, ${cliente || "________________"}, con CI/RUC ${cedula || "________________"}, declaro que he revisado, conozco y acepto voluntariamente las condiciones comerciales y económicas detalladas en la presente liquidación, correspondientes a la negociación de mi vehículo con AUTOCOR.
 
-Yo, ${cliente || "________________"}, con CI/RUC ${cedula || "________________"}, 
-autorizo que el valor de $${valorVenta || "0.00"}, correspondiente al pago neto del vehículo, 
-sea realizado a nombre del concesionario que interviene en esta operación.
+1. Autorización de pago: Autorizo que el valor de $${valorVenta || "0.00"}, correspondiente al valor neto a recibir por la venta del vehículo, sea pagado a mi favor o, cuando corresponda al concesionario que intervenga en la operación.
 
-En mi calidad de titular del vehículo antes mencionado, en pleno conocimiento de los hechos, declaro que he sido informado de que la página de consulta de peaje Guayasamín no se encuentra operativa para verificar obligaciones pendientes. En tal virtud, manifiesto bajo mi responsabilidad que el vehículo no mantiene valores adeudados por concepto de peajes. No obstante, en caso de existir algún valor pendiente, me comprometo a cancelarlo de manera inmediata.
+2. Autorización de descuentos: Acepto y autorizo la aplicación del valor de $${valorDescuentos}, correspondiente a descuentos, infracciones, matriculación, revisión vehicular, gastos administrativos y demás obligaciones relacionadas con el vehículo, conforme a los rubros detallados en esta liquidación.
 
+3. Aceptación y compromiso de venta: Mediante mi firma, manifiesto mi voluntad expresa de vender el vehículo bajo las condiciones económicas aquí establecidas y me comprometo a continuar de buena fe con el proceso de negociación, evitando desistimientos injustificados o modificaciones unilaterales de las condiciones aceptadas.
 
-Autorizo además que el valor de $${valorDescuentos}, correspondiente a descuentos, infracciones, matriculación, revisión vehicular, gastos administrativos y valores relacionados con el vehículo antes descrito, sea aplicado y gestionado para la cancelación de dichos rubros.
+4. Validación final de AUTOCOR: Reconozco y acepto que la firma de este documento constituye mi aceptación de las condiciones de negociación, pero no representa una compra definitiva, obligación de adquisición ni compromiso irrevocable de pago por parte de AUTOCOR. La operación estará sujeta a la aprobación de las verificaciones finales mecánicas, técnicas, legales, documentales, administrativas y de cualquier otra condición relevante para la comercialización del vehículo. AUTOCOR podrá suspender o no concretar la operación cuando existan novedades, inconsistencias o incumplimientos que impidan su aprobación.
 
-En virtud de lo anterior, declaro conocer y aceptar los valores detallados en este documento, y renuncio a presentar reclamaciones posteriores respecto de los descuentos y pagos aquí autorizados.`;
+5. Conformidad: Declaro que los valores y condiciones de esta liquidación me han sido informados de manera clara y transparente, y que los acepto libremente. Una vez ejecutados los pagos y descuentos conforme a lo autorizado, reconozco su validez, sin perjuicio de los derechos que legalmente me correspondan.
+
+Con mi firma, confirmo mi decisión de vender el vehículo y autorizo a AUTOCOR a continuar con las gestiones necesarias para concretar una negociación segura, ágil y transparente, sujeta a su aprobación final.`;
 }
 
 function loadDeclTemplate(){
   const el = document.getElementById("declText");
   if(!el) return;
-  const saved = localStorage.getItem("autocor_decl_template");
+  const saved = localStorage.getItem("autocor_decl_template_v2");
   const autoText = buildAuthorizationText();
   window.__AUTO_DECL_LAST = autoText;
   el.value = (saved && saved.trim()) ? saved : autoText;
@@ -1626,7 +1627,7 @@ function loadDeclTemplate(){
 function saveDeclTemplate(){
   const el = document.getElementById("declText");
   if(!el) return;
-  localStorage.setItem("autocor_decl_template", el.value);
+  localStorage.setItem("autocor_decl_template_v2", el.value);
 }
 function refreshAuthorizationText(force=false){
   const el = document.getElementById("declText");
@@ -1634,7 +1635,7 @@ function refreshAuthorizationText(force=false){
   const autoText = buildAuthorizationText();
   if(force || !el.value.trim() || el.value === window.__AUTO_DECL_LAST){
     el.value = autoText;
-    try{ localStorage.removeItem("autocor_decl_template"); }catch(e){}
+    try{ localStorage.removeItem("autocor_decl_template_v2"); }catch(e){}
   }
   window.__AUTO_DECL_LAST = autoText;
 }
@@ -5003,8 +5004,8 @@ document.addEventListener('paste', function(e){
 </script>
 
 
-<script src="js/session-sync.js?v=20261015T084000Z"></script>
-<script src="js/workflow.js?v=20261015T084000Z"></script>
-<script src="js/workflow-adapters.js?v=20261015T084000Z"></script>
+<script src="js/session-sync.js?v=20261015T085500Z"></script>
+<script src="js/workflow.js?v=20261015T085500Z"></script>
+<script src="js/workflow-adapters.js?v=20261015T085500Z"></script>
 </body>
 </html>
