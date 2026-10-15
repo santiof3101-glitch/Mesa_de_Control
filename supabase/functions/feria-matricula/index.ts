@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
     let text = "";
     if (geminiKey) {
       // Si un modelo esta saturado (503/429) se prueba con el siguiente.
-      const models = (Deno.env.get("GEMINI_MODEL") || "gemini-3.6-flash,gemini-3.5-flash,gemini-flash-latest")
+      const models = (Deno.env.get("GEMINI_MODEL") || "gemini-3.8-flash,gemini-3.5-flash-lite,gemini-3.6-flash,gemini-3.5-flash")
         .split(",").map((item) => item.trim()).filter(Boolean);
       let lastStatus = 0;
       for (const model of models) {
