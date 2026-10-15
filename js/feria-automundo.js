@@ -157,23 +157,68 @@
     return { ...(await window.AutocorAuth.headers()), ...extra };
   }
 
+  // Carga liviana: la primera vez trae solo la ultima version de cada solicitud;
+  // despues, solo las filas nuevas desde la ultima vista. Cada 10 minutos se recarga completo.
+  const FULL_RELOAD_MS = 10 * 60 * 1000;
+  let feriaMap = new Map();
+  let lastRowId = 0;
+  let lastFullLoad = 0;
+
+  function applyRow(row) {
+    const task = row?.datos;
+    if (!task?.id) return;
+    const rowId = Number(row.id) || 0;
+    const current = feriaMap.get(task.id);
+    if (current && current.rowId > rowId) return;
+    feriaMap.set(task.id, { rowId, task });
+    if (rowId > lastRowId) lastRowId = rowId;
+  }
+
+  function rebuildList() {
+    feriaTasks = [...feriaMap.values()].map((item) => item.task).filter((task) => !task.deleted)
+      .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+  }
+
+  async function fullLoad() {
+    const response = await fetch(`${window.AutocorAuth.REST_URL}/rpc/autocor_feria_tareas`, {
+      method: "POST",
+      headers: await authHeaders({ "Content-Type": "application/json" }),
+      body: "{}"
+    });
+    const rows = response.ok ? await response.json().catch(() => null) : null;
+    feriaMap = new Map();
+    lastRowId = 0;
+    if (Array.isArray(rows)) {
+      rows.forEach(applyRow);
+    } else {
+      // Respaldo si la funcion no responde: lectura directa de todas las versiones.
+      const url = `${SUPABASE_URL}/REGISTROS?modulo=eq.${FERIA_MODULO}&tipo=eq.${FERIA_TIPO}&select=id,datos&order=id.asc`;
+      const direct = await fetch(url, { headers: await authHeaders() });
+      if (!direct.ok) throw new Error("No se pudieron cargar las solicitudes de la feria.");
+      const all = await direct.json();
+      (Array.isArray(all) ? all : []).forEach(applyRow);
+    }
+    lastFullLoad = Date.now();
+  }
+
+  async function incrementalLoad() {
+    const url = `${SUPABASE_URL}/REGISTROS?modulo=eq.${FERIA_MODULO}&tipo=eq.${FERIA_TIPO}&id=gt.${lastRowId}&select=id,datos&order=id.asc&limit=1000`;
+    const response = await fetch(url, { headers: await authHeaders() });
+    if (!response.ok) throw new Error("No se pudieron cargar las solicitudes de la feria.");
+    const rows = await response.json();
+    (Array.isArray(rows) ? rows : []).forEach(applyRow);
+    if (Array.isArray(rows) && rows.length === 1000) await incrementalLoad();
+  }
+
   async function loadFeriaTasks(force = false) {
     if (!window.AutocorAuth?.hasSession()) return feriaTasks;
     if (!force && feriaLoadedAt && Date.now() - feriaLoadedAt < 15000) return feriaTasks;
     if (feriaLoading) return feriaLoading;
     feriaLoading = (async () => {
       try {
-        const url = `${SUPABASE_URL}/REGISTROS?modulo=eq.${FERIA_MODULO}&tipo=eq.${FERIA_TIPO}&select=datos,created_at&order=id.desc&limit=3000`;
-        const response = await fetch(url, { headers: await authHeaders() });
-        if (!response.ok) throw new Error("No se pudieron cargar las solicitudes de la feria.");
-        const rows = await response.json();
-        const latest = new Map();
-        (Array.isArray(rows) ? rows : []).forEach((row) => {
-          const task = row?.datos;
-          if (!task?.id || latest.has(task.id)) return;
-          latest.set(task.id, task);
-        });
-        feriaTasks = [...latest.values()].filter((task) => !task.deleted).sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+        if (!lastFullLoad || Date.now() - lastFullLoad > FULL_RELOAD_MS) await fullLoad();
+        else await incrementalLoad();
+        rebuildList();
         feriaLoadedAt = Date.now();
       } catch (error) {
         toast(error.message || "No se pudieron cargar las solicitudes de la feria.", "error");
@@ -188,9 +233,9 @@
   async function saveFeriaTask(task) {
     const saved = await guardarRegistroSupabase(FERIA_MODULO, FERIA_TIPO, task, currentUser().name);
     if (!saved) throw new Error("No se pudo guardar. Revise la conexión e intente de nuevo.");
-    feriaTasks = task.deleted
-      ? feriaTasks.filter((item) => item.id !== task.id)
-      : [task, ...feriaTasks.filter((item) => item.id !== task.id)];
+    const previous = feriaMap.get(task.id);
+    feriaMap.set(task.id, { rowId: previous?.rowId || 0, task });
+    rebuildList();
     return task;
   }
 
@@ -1494,6 +1539,9 @@
     if (role !== lastRole) {
       lastRole = role;
       feriaTasks = [];
+      feriaMap = new Map();
+      lastRowId = 0;
+      lastFullLoad = 0;
       feriaLoadedAt = 0;
       applyVisibility();
       if (canUseFeria() && currentUser().role === "legal") refreshAll(true);
