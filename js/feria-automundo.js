@@ -491,18 +491,18 @@
     const ficha = fichaOf(task);
     const client = titleCase(ficha.propietario) || "estimado cliente";
     const advisor = titleCase(task.asesor?.name || currentUser().name);
-    const car = titleCase([ficha.marca, ficha.modelo, ficha.anio].filter(Boolean).join(" ")) || "vehículo";
+    // Siglas cortas (AC, GL, 4X4) se quedan en mayusculas: "Nissan Kicks Drive AC 1.6".
+    const car = String([ficha.marca, ficha.modelo].filter(Boolean).join(" ")).split(/\s+/).filter(Boolean)
+      .map((word) => (word.length <= 2 || /\d/.test(word) ? word.toUpperCase() : titleCase(word))).join(" ") || "vehículo";
+    const year = ficha.anio ? `, año ${ficha.anio}` : "";
     return [
-      `Hola, ${client} 👋`,
-      "",
-      `Te saluda ${advisor}, tu asesor de AUTOCOR. Gracias por confiar en nosotros.`,
-      "",
-      `Te comparto la liquidación de tu ${car}, placas ${task.placa}, para que la revises con calma.`,
-      "",
-      "Recuerda que en AUTOCOR nos encargamos de todo el proceso: revisión legal, trámites y traspaso, de forma segura y transparente. Tú no tienes que preocuparte por nada. ✅",
-      "",
-      "Cualquier duda, escríbeme por aquí. ¡Estoy para ayudarte! 🚗"
-    ].join("\n");
+      `¡Hola, ${client}! 👋`,
+      `Soy ${advisor}, tu asesor comercial de AUTOCOR. ¡Gracias por confiar en nosotros! 🚗`,
+      `Te comparto la liquidación de tu ${car}${year}, placas ${task.placa}, con todos los valores detallados para que podamos avanzar con tu negociación.`,
+      "¡Queremos que aproveches esta oportunidad durante la Feria Automundo! Estamos listos para acompañarte y hacer que tu negociación sea rápida, segura y transparente.",
+      "*Recuerda* que en AUTOCOR nos encargamos de todo: revisión legal, documentación, trámites y traspaso. ¡Tú disfrutas de una experiencia fácil y sin complicaciones! 🤝",
+      "¡Sigamos sumando kilómetros juntos y hagamos de esta feria una gran experiencia para ti!"
+    ].join("\n\n");
   }
 
   function liquidationFileName(task) {
