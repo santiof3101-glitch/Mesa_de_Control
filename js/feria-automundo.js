@@ -12,7 +12,7 @@
   const FERIA_MODULO = "feria";
   const FERIA_TIPO = "tarea";
   const STATUS_LABELS = {
-    pendiente: "Pendiente",
+    pendiente: "Por asignar",
     en_revision: "En revisión",
     observada: "Con observación",
     finalizada: "Realizada"
@@ -786,7 +786,9 @@
         </div>
         <div class="fx-card-side">
           <span class="fx-card-date">${esc(when(task.createdAt))}</span>
-          ${task.tomadaPor ? `<span class="fx-card-taker">${takenByOther || !isLegal ? `Atiende: ${esc(task.tomadaPor.name)}` : "La atiendes tú"}</span>` : ""}
+          ${task.tomadaPor
+            ? `<span class="fx-card-taker">${takenByOther || !isLegal ? `Atiende: ${esc(task.tomadaPor.name)}` : "La atiendes tú"}</span>`
+            : (!isLegal && task.status === "pendiente" ? `<span class="fx-card-taker is-waiting">Aún sin asesor legal asignado</span>` : "")}
           ${actions}
         </div>
       </article>`;

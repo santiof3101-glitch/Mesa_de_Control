@@ -19,10 +19,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Roboto+Condensed:wght@300;400;500;600;700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261015-asig-v1">
-  <link rel="stylesheet" href="layout-fix.css?v=20261015-asig-v1">
-  <link rel="stylesheet" href="feria-automundo.css?v=20261015-asig-v1">
-  <link rel="stylesheet" href="mesa-control.css?v=20261015-asig-v1">
+  <link rel="stylesheet" href="styles.css?v=20261015-asig-v2">
+  <link rel="stylesheet" href="layout-fix.css?v=20261015-asig-v2">
+  <link rel="stylesheet" href="feria-automundo.css?v=20261015-asig-v2">
+  <link rel="stylesheet" href="mesa-control.css?v=20261015-asig-v2">
 </head>
 <body>
   <header class="topbar">
@@ -951,7 +951,7 @@
 
         <section class="fx-stats" aria-label="Mis solicitudes de la feria">
           <div class="fx-stat"><span>Mis solicitudes</span><strong data-fx-stat="total">0</strong></div>
-          <div class="fx-stat is-pending"><span>Pendientes</span><strong data-fx-stat="pendiente">0</strong></div>
+          <div class="fx-stat is-pending"><span>Por asignar</span><strong data-fx-stat="pendiente">0</strong></div>
           <div class="fx-stat is-progress"><span>En revisión</span><strong data-fx-stat="en_revision">0</strong></div>
           <div class="fx-stat is-done"><span>Realizadas</span><strong data-fx-stat="finalizada">0</strong></div>
           <div class="fx-stat is-warn"><span>Con observación</span><strong data-fx-stat="observada">0</strong></div>
@@ -1616,7 +1616,7 @@
             <p class="mc-assign-note" data-fx-assign-note hidden></p>
             <div class="fx-tabs" role="tablist" aria-label="Estado de las solicitudes">
             <button type="button" class="fx-tab is-active" data-fx-filter="activas"><strong data-fx-legal-count="activas">0</strong><span>Por atender</span></button>
-            <button type="button" class="fx-tab" data-fx-filter="pendiente"><strong data-fx-legal-count="pendiente">0</strong><span>Pendientes</span></button>
+            <button type="button" class="fx-tab" data-fx-filter="pendiente"><strong data-fx-legal-count="pendiente">0</strong><span>Por asignar</span></button>
             <button type="button" class="fx-tab" data-fx-filter="en_revision"><strong data-fx-legal-count="en_revision">0</strong><span>En revisión</span></button>
             <button type="button" class="fx-tab" data-fx-filter="observada"><strong data-fx-legal-count="observada">0</strong><span>Observadas</span></button>
             <button type="button" class="fx-tab" data-fx-filter="finalizada"><strong data-fx-legal-count="finalizada">0</strong><span>Realizadas</span></button>
@@ -3264,13 +3264,14 @@
     }, true);
   </script>
   <script src="js/core/autocor-core.js?v=20260803-modular-phase1"></script>
-  <script src="js/core/autocor-auth.js?v=20261015-asig-v1"></script>
+  <script src="js/core/autocor-auth.js?v=20261015-asig-v2"></script>
   <script src="js/components/modal.component.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/comercial.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20261015-asig-v1"></script>
-  <script src="js/feria-automundo.js?v=20261015-asig-v1"></script>
+  <script src="app.js?v=20261015-asig-v2"></script>
+  <script src="js/feria-automundo.js?v=20261015-asig-v2"></script>
+  <script src="js/version-check.js?v=20261015-asig-v2"></script>
 </body>
 </html>

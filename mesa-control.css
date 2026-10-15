@@ -1921,3 +1921,35 @@ body:has(#tareas.mc.is-active) main {
     flex: 1 1 100% !important;
   }
 }
+
+/* Aviso de actualizacion publicada */
+.version-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  z-index: 2000;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  max-width: calc(100% - 24px);
+  padding: 12px 14px 12px 18px;
+  border-radius: 12px;
+  background: #15171d;
+  color: #ffffff;
+  font-size: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+  transform: translateX(-50%);
+}
+
+.version-banner button {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #d71920;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
