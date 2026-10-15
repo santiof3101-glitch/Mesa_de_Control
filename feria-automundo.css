@@ -914,3 +914,253 @@
   color: #b3121a !important;
 }
 \n.fx-photo-empty strong em { color: var(--fx-suave); font-style: normal; font-weight: 600; }
+
+/* ===== Flujo de liquidacion (v2) ===== */
+.fx-form-note {
+  color: var(--fx-suave);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.fx-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.fx-photos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.fx-photo-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.fx-photo-tip {
+  color: var(--fx-suave);
+  font-size: 13px;
+}
+
+.fx-hint {
+  margin-top: 12px !important;
+}
+
+.fx-ficha {
+  border-color: #e6c9cb;
+  background: #fffafa;
+}
+
+.fx-muted {
+  color: var(--fx-suave);
+  font-size: 13.5px;
+}
+
+.fx-card-side .fx-btn {
+  width: 100%;
+  min-height: 40px !important;
+}
+
+/* Ventana de la ficha vehicular */
+body.fx-modal-open {
+  overflow: hidden;
+}
+
+.fx-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+}
+
+.fx-modal *,
+.fx-modal *::before,
+.fx-modal *::after {
+  box-sizing: border-box;
+}
+
+.fx-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(21, 23, 29, .55);
+}
+
+.fx-modal-card {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(920px, 100%);
+  max-height: min(90vh, 900px);
+  overflow: hidden;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 30px 80px rgba(15, 18, 25, .3);
+}
+
+.fx-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.fx-modal-head h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 0;
+}
+
+.fx-modal-close {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #e2e4e9;
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--fx-texto);
+  cursor: pointer;
+}
+
+.fx-modal-close svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.fx-modal-close:hover {
+  border-color: #d71920;
+  color: #b3121a;
+}
+
+.fx-modal-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  overflow-y: auto;
+  padding: 18px 20px 22px;
+}
+
+.fx-ficha-panel {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid #e9ebef;
+  border-radius: 12px;
+  background: var(--fx-fondo);
+}
+
+.fx-ficha-wide {
+  grid-column: 1 / -1;
+}
+
+.fx-ficha-panel h4 {
+  margin: 0;
+  color: var(--fx-tinta);
+  font-family: "Roboto Condensed", "Arial Narrow", sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.fx-ficha-panel dl {
+  display: grid;
+  margin: 0;
+}
+
+.fx-ficha-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 40%) minmax(0, 1fr);
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid #eceef1;
+}
+
+.fx-ficha-row:last-child {
+  border-bottom: 0;
+}
+
+.fx-ficha-row dt {
+  color: var(--fx-suave);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.fx-ficha-row dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--fx-tinta);
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.fx-ficha-files {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.fx-modal .fx-btn.primary {
+  border: 0 !important;
+  background: #d71920 !important;
+  color: #ffffff !important;
+}
+
+.fx-modal .fx-btn.secondary {
+  border: 1px solid #d5d7dc !important;
+  background: #ffffff !important;
+  color: var(--fx-texto) !important;
+}
+
+.fx-history {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--fx-texto);
+  font-size: 13.5px;
+}
+
+@media (max-width: 760px) {
+  .fx-grid-3,
+  .fx-photos,
+  .fx-modal-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fx-modal {
+    padding: 8px;
+  }
+}
+
+.fx-plate-row {
+  justify-content: start;
+  grid-template-columns: minmax(0, 320px) auto !important;
+}
+
+#formulario .fx-form input.is-autofilled {
+  border-color: #86c79d !important;
+  background: #f3fbf6 !important;
+}
+
+@media (max-width: 640px) {
+  .fx-plate-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}

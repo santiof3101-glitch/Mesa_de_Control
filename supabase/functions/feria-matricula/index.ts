@@ -29,12 +29,13 @@ async function getRole(req: Request, supabaseUrl: string, apiKey: string): Promi
   return String(user?.app_metadata?.autocor_role || "");
 }
 
-const PROMPT = `Esta imagen es una matricula vehicular de Ecuador (documento de la ANT).
+const PROMPT = `Estas imagenes son el frente y/o el reverso de una matricula vehicular de Ecuador (documento de la ANT).
+Combina la informacion de todas las imagenes.
 Extrae los datos y responde SOLO con un objeto JSON con estas claves:
 {"placa": "", "propietario": "", "cedula": "", "marca": "", "modelo": "", "anio": "", "color": "", "chasis": "", "motor": "", "clase": "", "servicio": ""}
 Reglas: placa sin guiones ni espacios (ejemplo PBX1234); cedula o RUC solo con digitos;
 anio con cuatro digitos; textos en mayusculas tal como aparecen.
-Si un dato no se ve con claridad deja la cadena vacia. Si la imagen no es una matricula,
+Si un dato no se ve con claridad deja la cadena vacia. Si las imagenes no son una matricula,
 devuelve todas las claves vacias.`;
 
 Deno.serve(async (req) => {
@@ -62,10 +63,15 @@ Deno.serve(async (req) => {
   } catch {
     return response(origin, 400, { ok: false, error: "Solicitud invalida." });
   }
-  const image = String(body.image || "");
-  const mediaType = ["image/jpeg", "image/png", "image/webp"].includes(String(body.mediaType)) ? String(body.mediaType) : "image/jpeg";
-  if (!image || image.length > 7_000_000) {
-    return response(origin, 400, { ok: false, error: "La foto no es valida o es demasiado grande." });
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+  const rawImages = Array.isArray(body.images) ? body.images : [{ image: body.image, mediaType: body.mediaType }];
+  const images = rawImages.slice(0, 2).map((item: Record<string, unknown>) => ({
+    data: String(item?.image || ""),
+    mediaType: allowedTypes.includes(String(item?.mediaType)) ? String(item?.mediaType) : "image/jpeg",
+  })).filter((item) => item.data);
+  const totalSize = images.reduce((sum, item) => sum + item.data.length, 0);
+  if (!images.length || totalSize > 12_000_000) {
+    return response(origin, 400, { ok: false, error: "Las fotos no son validas o son demasiado grandes." });
   }
 
   try {
@@ -80,7 +86,7 @@ Deno.serve(async (req) => {
           method: "POST",
           headers: { "x-goog-api-key": geminiKey, "content-type": "application/json" },
           body: JSON.stringify({
-            contents: [{ parts: [{ inline_data: { mime_type: mediaType, data: image } }, { text: PROMPT }] }],
+            contents: [{ parts: [...images.map((item) => ({ inline_data: { mime_type: item.mediaType, data: item.data } })), { text: PROMPT }] }],
             generationConfig: { temperature: 0, responseMimeType: "application/json" },
           }),
           signal: AbortSignal.timeout(40000),
@@ -113,7 +119,7 @@ Deno.serve(async (req) => {
           messages: [{
             role: "user",
             content: [
-              { type: "image", source: { type: "base64", media_type: mediaType, data: image } },
+              ...images.map((item) => ({ type: "image", source: { type: "base64", media_type: item.mediaType, data: item.data } })),
               { type: "text", text: PROMPT },
             ],
           }],
