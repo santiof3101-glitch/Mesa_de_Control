@@ -19,11 +19,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Roboto+Condensed:wght@300;400;500;600;700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261015-carga-v1">
-  <link rel="stylesheet" href="layout-fix.css?v=20261015-carga-v1">
-  <link rel="stylesheet" href="feria-automundo.css?v=20261015-carga-v1">
-  <link rel="stylesheet" href="mesa-control.css?v=20261015-carga-v1">
-  <link rel="stylesheet" href="admin-panel.css?v=20261015-carga-v1">
+  <link rel="stylesheet" href="styles.css?v=20261015-cs-v1">
+  <link rel="stylesheet" href="layout-fix.css?v=20261015-cs-v1">
+  <link rel="stylesheet" href="feria-automundo.css?v=20261015-cs-v1">
+  <link rel="stylesheet" href="mesa-control.css?v=20261015-cs-v1">
+  <link rel="stylesheet" href="admin-panel.css?v=20261015-cs-v1">
+  <link rel="stylesheet" href="control-seminuevos.css?v=20261015-cs-v1">
 </head>
 <body>
   <header class="topbar">
@@ -133,7 +134,7 @@
           <button class="ac-card ac-card-row" type="button" data-view="login-gerencial">
             <span class="ac-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4"></path><path d="M4 20h16"></path><path d="M8 16v-4M12 16V8M16 16v-6"></path></svg></span>
             <span class="ac-card-body">
-              <span id="managerAccessTitle" class="ac-card-title">Consulta de saneamientos</span>
+              <span id="managerAccessTitle" class="ac-card-title">Control Seminuevos</span>
               <span id="managerAccessText" class="ac-card-text">Indicadores de operación con filtros y gráficos para gerencia.</span>
             </span>
             <span class="ac-go">Ingresar <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
@@ -717,9 +718,9 @@
     <section id="login-gerencial" class="view" aria-labelledby="login-manager-title">
       <div class="login-shell">
         <div>
-          <p class="eyebrow">Consulta de saneamientos</p>
+          <p class="eyebrow">Control Seminuevos</p>
           <h1 id="login-manager-title">Acceso gerencial</h1>
-          <p>Dashboard completo de la operacion de saneamientos.</p>
+          <p>Dashboards ejecutivos de toda la operación, incluida la Feria Automundo.</p>
         </div>
         <form id="managerLoginForm" class="panel login-form">
           <input name="username" autocomplete="username" placeholder="Usuario gerente" required>
@@ -759,67 +760,119 @@
       <div id="billboardList" class="billboard-grid board-mode"></div>
     </section>
 
-    <section id="gerencial" class="view" aria-labelledby="manager-title">
-      <div class="section-head">
-        <div>
-          <p class="eyebrow">Dashboard gerencial</p>
-          <h1 id="manager-title">Operacion de saneamientos</h1>
+    <section id="gerencial" class="view cs" aria-labelledby="manager-title">
+      <section class="cs-banner">
+        <svg class="cs-wheel" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="88"/><circle cx="100" cy="100" r="64"/><circle cx="100" cy="100" r="16"/><path d="M36 100h48M116 100h48M100 116v48"/></svg>
+        <div class="cs-banner-copy">
+          <p class="cs-eyebrow">Gerencia</p>
+          <h1 id="manager-title">Control Seminuevos</h1>
+          <p>Vista ejecutiva de toda la operación: saneamientos, contratos, CUV, firmas y Feria Automundo.</p>
         </div>
-        <button class="btn secondary" type="button" data-view="acceso">Volver al inicio</button>
-      </div>
-      <div class="manager-hero panel">
-        <div>
-          <p class="eyebrow">Vista ejecutiva</p>
-          <h2>Indicadores, tendencias y carga operativa</h2>
-          <p>Seguimiento consolidado por agencia, asesor comercial, mesa de control, estatus y tiempos de cierre.</p>
+        <div class="cs-banner-stats" data-cs-hero></div>
+      </section>
+
+      <div class="cs-filters">
+        <div class="cs-seg" role="group" aria-label="Periodo">
+          <button type="button" data-cs-period="today">Hoy</button>
+          <button type="button" data-cs-period="7d">7 días</button>
+          <button type="button" class="is-active" data-cs-period="month">Este mes</button>
+          <button type="button" data-cs-period="all">Todo</button>
+          <button type="button" data-cs-period="range">Rango</button>
         </div>
-        <div id="managerHeroMetric" class="hero-panel mini-hero-panel"></div>
+        <span class="cs-range" data-cs-range hidden>
+          <input type="date" data-cs-from aria-label="Desde">
+          <input type="date" data-cs-to aria-label="Hasta">
+        </span>
+        <select data-cs-agency aria-label="Agencia"><option value="">Todas las agencias</option></select>
+        <select data-cs-process aria-label="Proceso">
+          <option value="">Todos los procesos</option>
+          <option value="saneamientos">Saneamientos</option>
+          <option value="contratos">Contratos</option>
+          <option value="cuv">CUV</option>
+          <option value="firmas">Firmas</option>
+        </select>
+        <button type="button" class="btn secondary cs-export" data-cs-export>Descargar Excel</button>
+        <button type="button" class="btn secondary cs-home" data-view="acceso">Volver al inicio</button>
       </div>
-      <div id="managerKpis" class="kpi-grid"></div>
-      <div class="manager-grid">
-        <section class="panel">
-          <h2>Embudo de saneamientos</h2>
-          <div id="managerStatusChart" class="bar-chart"></div>
-        </section>
-        <section class="panel">
-          <h2>Operacion por agencia</h2>
-          <div id="managerAgencyChart" class="bar-chart"></div>
-        </section>
-        <section class="panel">
-          <h2>Carga por mesa de control</h2>
-          <div id="managerLegalChart" class="bar-chart"></div>
-        </section>
-        <section class="panel">
-          <h2>Riesgos y duplicados</h2>
-          <div id="managerRiskPanel" class="risk-panel"></div>
-        </section>
-        <section class="panel span-admin">
+
+      <div class="cs-tabs" role="tablist" aria-label="Dashboards">
+        <button type="button" role="tab" class="is-active" data-cs-tab="resumen">Resumen general</button>
+        <button type="button" role="tab" data-cs-tab="saneamientos">Saneamientos</button>
+        <button type="button" role="tab" data-cs-tab="contratos">Contratos y CUV</button>
+        <button type="button" role="tab" data-cs-tab="feria">Feria Automundo <em data-cs-feria-count>0</em></button>
+        <button type="button" role="tab" data-cs-tab="detalle">Detalle</button>
+      </div>
+
+      <div class="cs-pane is-active" data-cs-pane="resumen">
+        <section class="cs-kpis" data-cs-kpis="resumen"></section>
+        <div class="cs-grid">
+          <section class="cs-panel"><div class="cs-ph"><h2>Solicitudes por día</h2><span data-cs-days-note></span></div><div data-cs-chart="days"></div></section>
+          <section class="cs-panel"><div class="cs-ph"><h2>Por proceso</h2><span>Solicitudes del periodo</span></div><div data-cs-chart="process"></div></section>
+          <section class="cs-panel"><div class="cs-ph"><h2>Por agencia</h2><span>Solicitudes del periodo</span></div><div data-cs-chart="agency"></div></section>
+          <section class="cs-panel"><div class="cs-ph"><h2>Mesa de control</h2><span>Carga y velocidad por asistente</span></div><div data-cs-chart="mesa"></div></section>
+        </div>
+        <section class="cs-panel cs-fx" data-cs-feria-summary></section>
+      </div>
+
+      <div class="cs-pane" data-cs-pane="saneamientos" hidden>
+        <section class="cs-kpis" data-cs-kpis="saneamientos"></section>
+        <div class="cs-grid">
+          <section class="cs-panel"><div class="cs-ph"><h2>Por estado</h2><span>Saneamientos del periodo</span></div><div data-cs-chart="san-status"></div></section>
+          <section class="cs-panel"><div class="cs-ph"><h2>Asesores con más saneamientos</h2><span>Top 8</span></div><div data-cs-chart="san-advisors"></div></section>
+          <section class="cs-panel"><div class="cs-ph"><h2>Tiempo de cierre por agencia</h2><span>Promedio, en horas</span></div><div data-cs-chart="san-agency-time"></div></section>
+          <section class="cs-panel"><div class="cs-ph"><h2>Rechazos por agencia</h2><span>Cantidad del periodo</span></div><div data-cs-chart="san-rejects"></div></section>
+        </div>
+      </div>
+
+      <div class="cs-pane" data-cs-pane="contratos" hidden>
+        <section class="cs-kpis" data-cs-kpis="contratos"></section>
+        <div class="cs-grid">
+          <section class="cs-panel"><div class="cs-ph"><h2>Por proceso</h2><span>Contratos, CUV y firmas</span></div><div data-cs-chart="con-process"></div></section>
+          <section class="cs-panel"><div class="cs-ph"><h2>Por estado</h2><span>Del periodo</span></div><div data-cs-chart="con-status"></div></section>
+          <section class="cs-panel"><div class="cs-ph"><h2>Por agencia</h2><span>Del periodo</span></div><div data-cs-chart="con-agency"></div></section>
+          <section class="cs-panel"><div class="cs-ph"><h2>Mesa de control</h2><span>Contratos, CUV y firmas</span></div><div data-cs-chart="con-mesa"></div></section>
+        </div>
+      </div>
+
+      <div class="cs-pane" data-cs-pane="feria" hidden>
+        <section class="cs-kpis cs-kpis-6" data-cs-kpis="feria"></section>
+        <div class="cs-grid">
+          <section class="cs-panel"><div class="cs-ph"><h2>Liquidaciones por día</h2><span>Feria Automundo</span></div><div data-cs-chart="fx-days"></div></section>
+          <section class="cs-panel"><div class="cs-ph"><h2>Liquidaciones por asesor</h2><span>Top 8</span></div><div data-cs-chart="fx-advisors"></div></section>
+          <section class="cs-panel"><div class="cs-ph"><h2>Marcas más cotizadas</h2><span>Top 8</span></div><div data-cs-chart="fx-brands"></div></section>
+          <section class="cs-panel"><div class="cs-ph"><h2>Mesa de control en la feria</h2><span>Liquidaciones atendidas</span></div><div data-cs-chart="fx-mesa"></div></section>
+        </div>
+        <section class="cs-panel"><div class="cs-ph"><h2>Solicitudes de la feria</h2><span data-cs-fx-count></span></div><div data-cs-chart="fx-list"></div></section>
+      </div>
+
+      <div class="cs-pane" data-cs-pane="detalle" hidden>
+        <section class="cs-panel cs-detail">
           <div class="panel-title-row">
             <div>
-              <p class="eyebrow"><span class="mono-icon">BUSCAR</span> Consulta detallada</p>
-              <h2>Detalle de saneamientos</h2>
+              <p class="eyebrow">Consulta detallada</p>
+              <h2>Detalle de solicitudes</h2>
             </div>
             <span id="managerDetailCount" class="soft-badge">0 registros</span>
           </div>
           <div class="manager-detail-filters">
             <label>
-              <span><span class="mono-icon">FECHA</span> Desde</span>
+              <span>Desde</span>
               <input id="managerDateFrom" type="date">
             </label>
             <label>
-              <span><span class="mono-icon">FECHA</span> Hasta</span>
+              <span>Hasta</span>
               <input id="managerDateTo" type="date">
             </label>
             <label>
-              <span><span class="mono-icon">PLACA</span> Placa</span>
+              <span>Placa</span>
               <input id="managerPlateFilter" type="search" placeholder="Ej. GSB1234">
             </label>
             <label>
-              <span><span class="mono-icon">ASESOR</span> Asesor</span>
+              <span>Asesor</span>
               <select id="managerAdvisorFilter"></select>
             </label>
             <label>
-              <span><span class="mono-icon">AGENCIA</span> Agencia</span>
+              <span>Agencia</span>
               <select id="managerAgencyFilter"></select>
             </label>
             <button id="clearManagerFilters" class="btn secondary" type="button">Limpiar filtros</button>
@@ -3278,14 +3331,15 @@
     }, true);
   </script>
   <script src="js/core/autocor-core.js?v=20260803-modular-phase1"></script>
-  <script src="js/core/autocor-auth.js?v=20261015-carga-v1"></script>
+  <script src="js/core/autocor-auth.js?v=20261015-cs-v1"></script>
   <script src="js/components/modal.component.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/comercial.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20261015-carga-v1"></script>
-  <script src="js/feria-automundo.js?v=20261015-carga-v1"></script>
-  <script src="js/version-check.js?v=20261015-carga-v1"></script>
+  <script src="app.js?v=20261015-cs-v1"></script>
+  <script src="js/feria-automundo.js?v=20261015-cs-v1"></script>
+  <script src="js/control-seminuevos.js?v=20261015-cs-v1"></script>
+  <script src="js/version-check.js?v=20261015-cs-v1"></script>
 </body>
 </html>

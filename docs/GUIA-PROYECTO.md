@@ -21,6 +21,7 @@ legal las toma y las cierra, gerencia ve reportes y procesamiento de datos carga
 | `js/core/autocor-auth.js` | `window.AutocorAuth`: inicio de sesion con Supabase Auth, renovacion del token, llamadas RPC y Storage. |
 | `styles.css` | Estilos base (historicos, con muchas capas). |
 | `layout-fix.css` | Ajustes y rediseños recientes. Los bloques nuevos van al final, con comentario y fecha. |
+| `control-seminuevos.css`, `js/control-seminuevos.js` | Control Seminuevos: dashboards ejecutivos para gerencia (operacion completa y Feria Automundo). |
 | `admin-panel.css` | Panel de administrador: barra lateral, banner por modulo y estilo comun de las secciones. |
 | `mesa-control.css` | Mesa de control (barra lateral, paginas, banner) y, en el panel de administrador, Usuarios con asignacion de tareas y el modulo Feria Automundo. |
 | `js/feria-automundo.js`, `feria-automundo.css` | Modulo temporal de la Feria Automundo (asesor, mesa de control y administrador). |

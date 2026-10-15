@@ -389,8 +389,8 @@ const defaultState = {
     adminText: "Configuracion de usuarios, agencias, estados, diseno y comunicados.",
     announcementsTitle: "Comunicados",
     announcementsText: "Anuncios, novedades y procesos internos vigentes.",
-    managerTitle: "Consulta de saneamientos",
-    managerText: "Indicadores de operación con filtros y gráficos para gerencia.",
+    managerTitle: "Control Seminuevos",
+    managerText: "Dashboards ejecutivos de toda la operación, incluida la Feria Automundo.",
     supportTitle: "Soporte",
     supportQuestion: "\u00BFNecesitas ayuda?",
     supportButton: "Consultar",
@@ -4066,6 +4066,8 @@ const LEGACY_HOME_COPY = {
   "Acceso a comunicados": "announcementsTitle",
   "Cartelera completa de anuncios, novedades y procesos internos.": "announcementsText",
   "Acceso consulta de saneamientos": "managerTitle",
+  "Consulta de saneamientos": "managerTitle",
+  "Indicadores de operación con filtros y gráficos para gerencia.": "managerText",
   "Dashboard gerencial con filtros, graficos e indicadores de operacion.": "managerText"
 };
 
@@ -12486,34 +12488,8 @@ function renderControlDashboard() {
 }
 
 function renderManagerDashboard() {
-  const tasks = state.tasks;
-  const kpis = getKpis(tasks);
-  renderKpiCards("#managerKpis", [
-    ["INFO Total saneamientos", kpis.total, "Operacion completa"],
-    ["PLACA Placas unicas", kpis.uniquePlates, "Vehiculos sin repetir"],
-    ["PEND Pendientes", kpis.pending, "Sin tomar"],
-    ["ESTATUS Tomados / proceso", kpis.inProgress, "En gestion"],
-    ["OK Cerrados", kpis.completed, "Estatus de cierre"],
-    ["! Duplicados", kpis.duplicates, "Alertas de placa/cliente"],
-    ["TIEMPO Prom. toma", formatMinutes(kpis.avgTake), "Ingreso a tomado"],
-    ["TIEMPO Prom. cierre", formatMinutes(kpis.avgCompletion), "Tomado a cerrado"],
-    ["INFO Cerrados hoy", kpis.completedToday, "Resultado del dia"]
-  ]);
-
-  const hero = document.querySelector("#managerHeroMetric");
-  if (hero) {
-    hero.innerHTML = `<span>Efectividad de cierre</span><strong>${kpis.total ? Math.round((kpis.completed / kpis.total) * 100) : 0}%</strong><small>${kpis.completed} de ${kpis.total} saneamientos</small>`;
-  }
-
-  document.querySelector("#managerStatusChart").innerHTML = renderBarRows(groupByStatus(tasks), Math.max(tasks.length, 1));
-  document.querySelector("#managerAgencyChart").innerHTML = renderBarRows(groupByField(tasks, "agencia"), Math.max(tasks.length, 1));
-  document.querySelector("#managerLegalChart").innerHTML = renderBarRows(groupByField(tasks, "legalAdvisor", "Disponible"), Math.max(tasks.length, 1));
-  document.querySelector("#managerRiskPanel").innerHTML = `
-    <article><strong>${kpis.duplicates}</strong><span>Duplicados detectados</span></article>
-    <article><strong>${state.tasks.filter((task) => !task.legalUserId && task.status === "pendiente").length}</strong><span>Leads esperando mesa</span></article>
-    <article><strong>${formatMinutes(kpis.avgCompletion)}</strong><span>Promedio tomado a cerrado</span></article>
-  `;
-  renderManagerDetails(tasks);
+  window.ControlSeminuevos?.render();
+  renderManagerDetails(state.tasks || []);
 }
 
 function renderManagerDetails(tasks) {
@@ -12521,28 +12497,33 @@ function renderManagerDetails(tasks) {
   if (!container) return;
   const detailCount = document.querySelector("#managerDetailCount");
   const filtered = getManagerFilteredDetails(tasks);
-  const sorted = [...filtered].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 80);
+  const sorted = [...filtered].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 100);
   if (detailCount) {
     detailCount.textContent = `${filtered.length} ${filtered.length === 1 ? "registro" : "registros"}`;
   }
   if (!sorted.length) {
-    container.innerHTML = `<div class="empty compact-empty"> No hay saneamientos con esos filtros.</div>`;
+    container.innerHTML = `<p class="cs-empty">No hay solicitudes con esos filtros.</p>`;
     return;
   }
+  const processLabels = { saneamientos: "Saneamiento", contratos: "Contrato", cuv: "CUV", firmas: "Firma" };
   container.innerHTML = `
-    <div class="detail-header">
-      <span><span class="mono-icon">PLACA</span> Placa</span><span><span class="mono-icon">AGENCIA</span> Agencia</span><span><span class="mono-icon">ASESOR</span> Asesor</span><span><span class="mono-icon">ESTATUS</span> Estatus</span><span><span class="mono-icon">INFO</span> Fecha</span>
+    <div class="cs-table-wrap">
+      <table class="cs-table">
+        <thead><tr><th>Placa</th><th>Proceso</th><th>Agencia</th><th>Asesor</th><th>Mesa de control</th><th>Estado</th><th>Fecha</th></tr></thead>
+        <tbody>${sorted.map((task) => `
+          <tr>
+            <td><strong>${escapeHtml(task.placa || "Sin placa")}</strong></td>
+            <td>${escapeHtml(processLabels[getTaskMailbox(task)] || "Otro")}</td>
+            <td>${escapeHtml(task.agencia || "Sin agencia")}</td>
+            <td>${escapeHtml(task.asesor || task.commercialUserName || "Sin asesor")}</td>
+            <td>${escapeHtml(task.legalAdvisor || "Por asignar")}</td>
+            <td>${renderStatusPill(task.status)}</td>
+            <td>${formatDateTime(task.createdAt)}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
     </div>
-    ${sorted.map((task) => `
-      <article class="detail-row">
-        <strong>${escapeHtml(task.placa)}</strong>
-        <span>${escapeHtml(task.agencia || "Sin agencia")}</span>
-        <span>${escapeHtml(task.asesor || "Sin asesor")}</span>
-        <span>${renderStatusPill(task.status)}</span>
-        <span>${formatDateTime(task.createdAt)}</span>
-      </article>
-    `).join("")}
-    ${filtered.length > sorted.length ? `<div class="detail-limit-note">Mostrando los ultimos ${sorted.length} de ${filtered.length} registros filtrados.</div>` : ""}
+    ${filtered.length > sorted.length ? `<p class="cs-note">Mostrando las ${sorted.length} más recientes de ${filtered.length}. Usa los filtros para acotar.</p>` : ""}
   `;
 }
 
