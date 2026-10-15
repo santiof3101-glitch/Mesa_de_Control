@@ -19,8 +19,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Roboto+Condensed:wght@300;400;500;600;700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261007-antlista-v1b">
-  <link rel="stylesheet" href="layout-fix.css?v=20261007-antlista-v1b">
+  <link rel="stylesheet" href="styles.css?v=20261014-feria-v3">
+  <link rel="stylesheet" href="layout-fix.css?v=20261014-feria-v3">
+  <link rel="stylesheet" href="feria-automundo.css?v=20261014-feria-v3">
 </head>
 <body>
   <header class="topbar">
@@ -841,6 +842,10 @@
           Menu comercial
         </button>
         <aside class="commercial-sidebar">
+          <div class="commercial-sidebar-group fx-side-group" data-feria-only hidden>
+            <span>Evento</span>
+            <button class="commercial-side-link fx-side-link" type="button" data-commercial-area="feria"><img src="assets/feria-automundo-2026.webp" alt="" aria-hidden="true"> Feria Automundo</button>
+          </div>
           <div class="commercial-sidebar-group">
             <span>Principal</span>
             <button class="commercial-side-link is-active" type="button" data-commercial-area="process" aria-current="page"><svg class="cc-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg> Nueva gestión</button>
@@ -931,6 +936,108 @@
         </div>
         <div id="commercialControlKpis" class="kpi-grid compact-kpis"></div>
         <div id="commercialControlChart" class="personal-chart"></div>
+      </section>
+
+      <section class="fx-area" data-commercial-area-section="feria" aria-labelledby="fxTitle" hidden>
+        <div class="fx-banner">
+          <img class="fx-seal" src="assets/feria-automundo-2026.webp" alt="Automundo Feria 2026">
+          <div class="fx-banner-text">
+            <span class="fx-badge">Módulo temporal</span>
+            <h2 id="fxTitle">Feria Automundo</h2>
+            <p>Solicita liquidaciones a la mesa de control de la feria.</p>
+          </div>
+        </div>
+
+        <section class="fx-stats" aria-label="Mis solicitudes de la feria">
+          <div class="fx-stat"><span>Mis solicitudes</span><strong data-fx-stat="total">0</strong></div>
+          <div class="fx-stat is-pending"><span>Pendientes</span><strong data-fx-stat="pendiente">0</strong></div>
+          <div class="fx-stat is-progress"><span>En revisión</span><strong data-fx-stat="en_revision">0</strong></div>
+          <div class="fx-stat is-done"><span>Realizadas</span><strong data-fx-stat="finalizada">0</strong></div>
+          <div class="fx-stat is-warn"><span>Con observación</span><strong data-fx-stat="observada">0</strong></div>
+        </section>
+
+        <div class="fx-closed" data-fx-closed hidden>
+          <strong>La Feria Automundo terminó.</strong>
+          <span>Ya no se reciben nuevas solicitudes. Puedes revisar tus fichas y descargar las liquidaciones abajo.</span>
+        </div>
+        <form id="fxForm" class="fx-form" novalidate>
+          <header class="fx-form-head">
+            <h3>Nueva liquidación</h3>
+            <span class="fx-form-note">Consulta ANT → matrícula → ficha vehicular → enviar a mesa de control</span>
+          </header>
+
+          <fieldset class="fx-block">
+            <legend><span class="fx-step">1</span>Consulta ANT</legend>
+            <div class="fx-plate-row">
+              <label class="fx-plate">
+                Placa
+                <input name="placa" maxlength="8" autocomplete="off" placeholder="ABC1234" required>
+              </label>
+              <button type="button" class="btn primary fx-btn" data-fx-datacil>Consultar ANT</button>
+            </div>
+            <p class="fx-hint" data-fx-hint>Empieza consultando la placa en ANT. Es obligatorio para enviar la solicitud.</p>
+          </fieldset>
+
+          <fieldset class="fx-block">
+            <legend><span class="fx-step">2</span>Matrícula (ambos lados)</legend>
+            <div class="fx-photos">
+              <label class="fx-photo-drop" data-fx-side="anverso">
+                <input type="file" name="matriculaAnverso" accept="image/*" capture="environment" hidden>
+                <span class="fx-photo-empty"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg><strong>Frente de la matrícula</strong><small>Toma la foto o elige una imagen</small></span>
+                <img class="fx-photo-preview" alt="Frente de la matrícula" hidden>
+              </label>
+              <label class="fx-photo-drop" data-fx-side="reverso">
+                <input type="file" name="matriculaReverso" accept="image/*" capture="environment" hidden>
+                <span class="fx-photo-empty"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg><strong>Reverso de la matrícula</strong><small>Toma la foto o elige una imagen</small></span>
+                <img class="fx-photo-preview" alt="Reverso de la matrícula" hidden>
+              </label>
+            </div>
+            <div class="fx-photo-actions">
+              <button type="button" class="btn secondary fx-btn" data-fx-ocr disabled>Extraer datos de la matrícula</button>
+              <span class="fx-photo-tip">Las fotos son opcionales; con ellas se completa chasis, motor, clase y servicio.</span>
+            </div>
+          </fieldset>
+
+          <fieldset class="fx-block fx-ficha">
+            <legend><span class="fx-step">3</span>Ficha vehicular</legend>
+            <div class="fx-grid fx-grid-3">
+              <label class="fx-span">Propietario<input name="propietario" autocomplete="off" required></label>
+              <label>Cédula / RUC<input name="cedula" inputmode="numeric" autocomplete="off" required></label>
+              <label>Marca<input name="marca" autocomplete="off"></label>
+              <label>Modelo<input name="modelo" autocomplete="off"></label>
+              <label>Año<input name="anio" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+              <label>Color<input name="color" autocomplete="off"></label>
+              <label>Clase<input name="clase" autocomplete="off"></label>
+              <label>Servicio<input name="servicio" autocomplete="off"></label>
+              <label>Chasis<input name="chasis" autocomplete="off"></label>
+              <label>Motor<input name="motor" autocomplete="off"></label>
+            </div>
+          </fieldset>
+
+          <fieldset class="fx-block">
+            <legend><span class="fx-step">4</span>Datos de la negociación</legend>
+            <div class="fx-grid">
+              <label class="fx-affix" data-prefix="$">Precio de toma<input name="precioToma" type="number" min="0" step="0.01" required></label>
+              <label class="fx-affix" data-suffix="km">Kilometraje<input name="kilometraje" type="number" min="0" step="1" required></label>
+              <label>Teléfono del cliente<input name="telefono" type="tel" inputmode="tel" autocomplete="off" required></label>
+              <label class="fx-span">Observaciones<textarea name="observaciones" rows="3" placeholder="Novedades del vehículo o del cliente"></textarea></label>
+            </div>
+          </fieldset>
+
+          <div class="fx-status" data-fx-status hidden></div>
+          <div class="fx-actions">
+            <button type="reset" class="btn secondary">Limpiar</button>
+            <button type="submit" class="btn primary">Enviar ficha a mesa de control</button>
+          </div>
+        </form>
+
+        <section class="fx-list-panel" aria-labelledby="fxMineTitle">
+          <div class="fx-list-head">
+            <h3 id="fxMineTitle">Mis solicitudes de la feria</h3>
+            <button type="button" class="btn tiny secondary" data-fx-reload>Actualizar</button>
+          </div>
+          <div id="fxMineList" class="fx-list"></div>
+        </section>
       </section>
 
       <section class="panel status-lookup" data-commercial-area-section="lookup" aria-labelledby="lookup-title" hidden>
@@ -1422,6 +1529,7 @@
           <button id="legalAntNavButton" type="button" data-legal-scroll="legalAntLookupPanel" hidden>Consulta ANT</button>
           <button type="button" data-legal-scroll="taskList">&#128269; Bandeja de tareas</button>
           <button type="button" data-legal-scroll="legalAvailabilityBlock">&#128994; Disponibilidad</button>
+          <button type="button" class="fx-legal-nav" data-legal-scroll="fxLegalPanel" data-feria-only hidden>Feria Automundo</button>
         </nav>
         <div class="legal-sidebar-filters">
           <span>Filtros rapidos</span>
@@ -1452,6 +1560,29 @@
           </div>
           <div id="statusFilterButtons" class="filters" role="group" aria-label="Filtros de tareas"></div>
         </div>
+
+        <section id="fxLegalPanel" class="fx-legal" data-feria-only hidden aria-labelledby="fxLegalTitle">
+          <div class="fx-banner is-compact">
+            <img class="fx-seal" src="assets/feria-automundo-2026.webp" alt="Automundo Feria 2026">
+            <div class="fx-banner-text">
+              <span class="fx-badge">Mesa de control · Feria</span>
+              <h2 id="fxLegalTitle">Solicitudes de la Feria Automundo</h2>
+              <p>Toma la solicitud, revisa la ficha vehicular y sube la liquidación en PDF para finalizar.</p>
+            </div>
+            <div class="fx-banner-actions">
+              <button type="button" class="btn secondary fx-btn" data-fx-reload>Actualizar</button>
+              <button type="button" class="btn primary fx-btn" data-fx-export>Descargar reporte (Excel)</button>
+            </div>
+          </div>
+          <div class="fx-tabs" role="tablist" aria-label="Estado de las solicitudes">
+            <button type="button" class="fx-tab is-active" data-fx-filter="activas"><strong data-fx-legal-count="activas">0</strong><span>Por atender</span></button>
+            <button type="button" class="fx-tab" data-fx-filter="pendiente"><strong data-fx-legal-count="pendiente">0</strong><span>Pendientes</span></button>
+            <button type="button" class="fx-tab" data-fx-filter="en_revision"><strong data-fx-legal-count="en_revision">0</strong><span>En revisión</span></button>
+            <button type="button" class="fx-tab" data-fx-filter="observada"><strong data-fx-legal-count="observada">0</strong><span>Observadas</span></button>
+            <button type="button" class="fx-tab" data-fx-filter="finalizada"><strong data-fx-legal-count="finalizada">0</strong><span>Realizadas</span></button>
+          </div>
+          <div id="fxLegalList" class="fx-list"></div>
+        </section>
 
         <section id="legalControlSummary" class="panel control-dashboard">
           <div>
@@ -3057,6 +3188,7 @@
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20261007-antlista-v1b"></script>
+  <script src="app.js?v=20261014-feria-v3"></script>
+  <script src="js/feria-automundo.js?v=20261014-feria-v3"></script>
 </body>
 </html>
