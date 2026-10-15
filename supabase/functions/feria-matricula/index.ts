@@ -1,5 +1,5 @@
 // Feria Automundo: lee la foto de una matricula vehicular y devuelve sus datos.
-// Requiere el secreto ANTHROPIC_API_KEY en las funciones de Supabase.
+// Usa Google Gemini (secreto GEMINI_API_KEY) o, si no existe, Anthropic (ANTHROPIC_API_KEY).
 const ALLOWED_ORIGINS = new Set([
   "https://santiof3101-glitch.github.io",
   "http://127.0.0.1:8787",
@@ -45,14 +45,14 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-  const aiKey = Deno.env.get("ANTHROPIC_API_KEY") || "";
-  const model = Deno.env.get("FERIA_OCR_MODEL") || "claude-sonnet-5-5";
+  const geminiKey = Deno.env.get("GEMINI_API_KEY") || "";
+  const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY") || "";
 
   const role = await getRole(req, supabaseUrl, anonKey).catch(() => "");
   if (!["commercial", "legal", "admin"].includes(role)) {
     return response(origin, 401, { ok: false, error: "Su sesion no es valida. Ingrese nuevamente." });
   }
-  if (!aiKey) {
+  if (!geminiKey && !anthropicKey) {
     return response(origin, 503, { ok: false, error: "La lectura automatica de matriculas aun no esta configurada. Llene los datos o use Consulta ANT." });
   }
 
@@ -69,31 +69,47 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": aiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 600,
-        messages: [{
-          role: "user",
-          content: [
-            { type: "image", source: { type: "base64", media_type: mediaType, data: image } },
-            { type: "text", text: PROMPT },
-          ],
-        }],
-      }),
-      signal: AbortSignal.timeout(45000),
-    });
-    const payload = await aiResponse.json().catch(() => null);
-    if (!aiResponse.ok) {
-      return response(origin, 502, { ok: false, error: "El servicio de lectura no respondio. Llene los datos o use Consulta ANT." });
+    let text = "";
+    if (geminiKey) {
+      const model = Deno.env.get("GEMINI_MODEL") || "gemini-3.6-flash";
+      const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+        method: "POST",
+        headers: { "x-goog-api-key": geminiKey, "content-type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ inline_data: { mime_type: mediaType, data: image } }, { text: PROMPT }] }],
+          generationConfig: { temperature: 0, responseMimeType: "application/json" },
+        }),
+        signal: AbortSignal.timeout(45000),
+      });
+      const payload = await aiResponse.json().catch(() => null);
+      if (!aiResponse.ok) {
+        return response(origin, 502, { ok: false, error: "El servicio de lectura no respondio. Llene los datos o use Consulta ANT." });
+      }
+      text = (payload?.candidates?.[0]?.content?.parts || []).map((part: { text?: string }) => part?.text || "").join("");
+    } else {
+      const model = Deno.env.get("ANTHROPIC_MODEL") || "claude-sonnet-5-5";
+      const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "x-api-key": anthropicKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+        body: JSON.stringify({
+          model,
+          max_tokens: 600,
+          messages: [{
+            role: "user",
+            content: [
+              { type: "image", source: { type: "base64", media_type: mediaType, data: image } },
+              { type: "text", text: PROMPT },
+            ],
+          }],
+        }),
+        signal: AbortSignal.timeout(45000),
+      });
+      const payload = await aiResponse.json().catch(() => null);
+      if (!aiResponse.ok) {
+        return response(origin, 502, { ok: false, error: "El servicio de lectura no respondio. Llene los datos o use Consulta ANT." });
+      }
+      text = (payload?.content || []).map((part: { text?: string }) => part?.text || "").join("");
     }
-    const text = (payload?.content || []).map((part: { text?: string }) => part?.text || "").join("");
     const match = text.match(/\{[\s\S]*\}/);
     const parsed = match ? JSON.parse(match[0]) : {};
     const clean = (value: unknown) => String(value ?? "").trim().slice(0, 120);
