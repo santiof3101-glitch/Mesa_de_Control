@@ -1,0 +1,1923 @@
+/* Mesa de control: barra lateral de arriba a abajo, modulos separados y banner corporativo.
+   Panel de administrador: Usuarios con asignacion de tareas y modulo Feria Automundo. */
+
+:root {
+  --mc-red: #d71920;
+  --mc-red-dark: #b3121a;
+  --mc-ink: #15171d;
+  --mc-text: #2f3035;
+  --mc-muted: #5f6168;
+  --mc-soft: #8a8c8f;
+  --mc-line: #e2e4e9;
+  --mc-line-soft: #eef0f3;
+  --mc-bg: #f4f5f7;
+  --mc-graphite: #2c2e33;
+}
+
+/* ===== Estructura: la vista ocupa todo el ancho y la barra llega hasta abajo ===== */
+body:has(#tareas.mc.is-active) main {
+  width: 100% !important;
+  max-width: none !important;
+  padding: 0 !important;
+}
+
+#tareas.mc.legal-desk.is-active {
+  display: grid !important;
+  grid-template-columns: 252px minmax(0, 1fr) !important;
+  gap: 0 !important;
+  align-items: stretch !important;
+  min-height: calc(100vh - 88px);
+  padding: 0 !important;
+  background: var(--mc-bg) !important;
+}
+
+#tareas.mc .mc-side {
+  border-right: 1px solid var(--mc-line);
+  background: #fff;
+}
+
+#tareas.mc .mc-side-in {
+  position: sticky;
+  top: 88px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: calc(100vh - 88px);
+  max-height: calc(100vh - 88px);
+  overflow-y: auto;
+  padding: 18px 14px;
+}
+
+#tareas.mc .mc-side-head {
+  display: grid;
+  gap: 2px;
+  padding: 2px 10px 14px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--mc-line-soft);
+}
+
+#tareas.mc .mc-side-head span {
+  color: var(--mc-red-dark);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+#tareas.mc .mc-side-head strong {
+  color: var(--mc-ink);
+  font-size: 15px;
+}
+
+#tareas.mc .mc-side-label {
+  margin-top: 12px;
+  padding: 0 10px 4px;
+  color: var(--mc-soft);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+#tareas.mc .mc-side-label[hidden],
+#tareas.mc .mc-nav[hidden],
+#tareas.mc .mc-nav button[hidden] {
+  display: none !important;
+}
+
+#tareas.mc .mc-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+#tareas.mc .mc-nav button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--mc-text);
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+#tareas.mc .mc-nav button svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: #6d6e71;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#tareas.mc .mc-nav button:hover {
+  background: var(--mc-bg);
+}
+
+#tareas.mc .mc-nav button.is-active {
+  background: #fdecec;
+  color: var(--mc-red-dark);
+}
+
+#tareas.mc .mc-nav button.is-active svg {
+  stroke: var(--mc-red-dark);
+}
+
+#tareas.mc .mc-nav button.is-active::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--mc-red);
+}
+
+#tareas.mc .mc-nav button em {
+  margin-left: auto;
+  min-width: 24px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #eceef1;
+  color: var(--mc-text);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  text-align: center;
+}
+
+#tareas.mc .mc-nav button.is-active em,
+#tareas.mc .mc-nav button.mc-nav-fx em {
+  background: var(--mc-red);
+  color: #fff;
+}
+
+#tareas.mc .mc-side-foot {
+  display: grid;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--mc-line-soft);
+}
+
+#tareas.mc .mc-avail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 10px;
+  border: 1px solid #c7e9d3;
+  border-radius: 10px;
+  background: #ecfdf3;
+  box-shadow: none;
+}
+
+#tareas.mc .mc-avail-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #16a34a;
+}
+
+#tareas.mc .mc-avail strong {
+  flex: 1;
+  min-width: 0;
+  color: #166534 !important;
+  font-size: 12.5px;
+  line-height: 1.2;
+}
+
+#tareas.mc .mc-avail.is-off {
+  border-color: var(--mc-line);
+  background: var(--mc-bg);
+}
+
+#tareas.mc .mc-avail.is-off .mc-avail-dot {
+  background: #9a9ca1;
+}
+
+#tareas.mc .mc-avail.is-off strong {
+  color: var(--mc-muted) !important;
+}
+
+#tareas.mc .mc-avail-btn {
+  flex: none;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--mc-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#tareas.mc .mc-avail-btn[hidden] {
+  display: none;
+}
+
+/* ===== Paginas ===== */
+#tareas.mc .mc-main {
+  display: block !important;
+  min-width: 0;
+  padding: 22px clamp(16px, 2vw, 28px) 40px !important;
+}
+
+#tareas.mc .mc-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#tareas.mc .mc-page[hidden] {
+  display: none !important;
+}
+
+/* ===== Banner de titulo ===== */
+#tareas.mc .mc-banner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+  min-height: 138px;
+  margin: 0;
+  padding: 22px 26px 22px 30px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(115deg, #1d1f24 0%, var(--mc-graphite) 58%, #3d3f45 100%);
+  color: #fff;
+  box-shadow: 0 10px 28px rgba(21, 23, 29, 0.12);
+}
+
+#tareas.mc .mc-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: var(--mc-red);
+}
+
+#tareas.mc .mc-banner::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -60px;
+  bottom: 0;
+  width: 340px;
+  background: linear-gradient(115deg, transparent 0 30%, rgba(215, 25, 32, 0.9) 30% 34%, transparent 34% 42%, rgba(215, 25, 32, 0.35) 42% 44%, transparent 44%);
+  pointer-events: none;
+}
+
+#tareas.mc .mc-wheel {
+  position: absolute;
+  top: -40px;
+  right: 210px;
+  z-index: 0;
+  width: 230px;
+  height: 230px;
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.06);
+  stroke-width: 10;
+  pointer-events: none;
+}
+
+#tareas.mc .mc-banner-copy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  min-width: 0;
+}
+
+#tareas.mc .mc-eyebrow {
+  margin: 0;
+  color: #ff8a8f !important;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+#tareas.mc .mc-banner h1 {
+  margin: 0;
+  color: #fff !important;
+  font-family: "Roboto Condensed", "Arial Narrow", sans-serif;
+  font-size: 30px;
+  line-height: 1.1;
+}
+
+#tareas.mc .mc-banner-copy > p:not(.mc-eyebrow) {
+  max-width: 560px;
+  margin: 0;
+  color: #c9cbd0;
+  font-size: 14px;
+}
+
+#tareas.mc .mc-banner-copy > .btn,
+#tareas.mc .mc-banner-actions {
+  margin-top: 10px;
+}
+
+#tareas.mc .mc-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#tareas.mc .mc-btn-white {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid #fff;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--mc-red-dark);
+  font-weight: 700;
+  box-shadow: none;
+}
+
+#tareas.mc .mc-btn-ghost {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+#tareas.mc .mc-banner-stats {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 6px;
+}
+
+#tareas.mc .mc-banner-stats div {
+  display: grid;
+  min-width: 96px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+#tareas.mc .mc-banner-stats strong {
+  color: #fff;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+#tareas.mc .mc-banner-stats span {
+  color: #c9cbd0;
+  font-size: 12px;
+}
+
+#tareas.mc .mc-banner.is-fx {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+#tareas.mc .mc-seal {
+  position: relative;
+  z-index: 1;
+  width: auto;
+  height: 74px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #fff;
+}
+
+#tareas.mc .mc-banner.is-slim {
+  min-height: 104px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ===== Tarjetas de estado (filtros) ===== */
+#tareas.mc .mc-kpis {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+#tareas.mc .mc-kpi {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-height: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--mc-line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--mc-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+#tareas.mc .mc-kpi::after {
+  content: "";
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--mc-dot, #6d6e71);
+}
+
+#tareas.mc .mc-kpi span {
+  padding-right: 16px;
+  color: var(--mc-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+#tareas.mc .mc-kpi strong {
+  color: var(--mc-ink);
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+#tareas.mc .mc-kpi small {
+  color: var(--mc-soft);
+  font-size: 12px;
+}
+
+#tareas.mc .mc-kpi:hover {
+  border-color: #c3c6cc;
+}
+
+#tareas.mc .mc-kpi.is-active {
+  border-color: var(--mc-red);
+  background: #fdecec;
+}
+
+#tareas.mc .mc-kpi.is-active span,
+#tareas.mc .mc-kpi.is-active strong {
+  color: var(--mc-red-dark);
+}
+
+/* ===== Panel con pestanas, busqueda y lista ===== */
+#tareas.mc .mc-panel {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--mc-line);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: none;
+}
+
+#tareas.mc .mc-tools.task-toolbar {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 !important;
+  padding: 14px 16px !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--mc-line-soft) !important;
+  border-radius: 0 !important;
+  background: #fff !important;
+  box-shadow: none !important;
+}
+
+#tareas.mc .mc-hidden-select {
+  display: none !important;
+}
+
+#tareas.mc .mc-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 10px;
+  background: #f1f2f4;
+}
+
+#tareas.mc .mc-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--mc-muted);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+#tareas.mc .mc-tabs button em {
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #d5d7dc;
+  color: var(--mc-text);
+  font-size: 11.5px;
+  font-style: normal;
+}
+
+#tareas.mc .mc-tabs button.is-active {
+  background: #fff;
+  color: var(--mc-red-dark);
+  box-shadow: 0 1px 4px rgba(21, 23, 29, 0.12);
+}
+
+#tareas.mc .mc-tabs button.is-active em {
+  background: var(--mc-red);
+  color: #fff;
+}
+
+#tareas.mc .mc-search {
+  display: flex !important;
+  flex: 1 1 240px;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  margin: 0;
+  padding: 0 12px;
+  border: 1px solid #d5d8de;
+  border-radius: 8px;
+  background: #fff;
+  color: #9a9ca1;
+}
+
+#tareas.mc .mc-search svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+#tareas.mc .mc-search input {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0;
+  border: 0 !important;
+  background: transparent;
+  box-shadow: none !important;
+  font-size: 14px;
+  outline: 0;
+}
+
+#tareas.mc .mc-date {
+  display: flex !important;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--mc-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+#tareas.mc .mc-date input {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid #d5d8de;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+#tareas.mc .mc-foot.mini-kpis {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 0;
+  padding: 12px 16px;
+  border-top: 1px solid var(--mc-line-soft);
+  color: var(--mc-muted);
+  font-size: 13px;
+}
+
+#tareas.mc .mc-foot.mini-kpis span {
+  display: inline !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
+}
+
+#tareas.mc .mc-foot.mini-kpis strong {
+  color: var(--mc-ink);
+}
+
+/* Filas de tareas */
+#tareas.mc .mc-list.task-list {
+  display: block !important;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+}
+
+#tareas.mc .mc-list .task-card.task-row-card {
+  display: grid !important;
+  grid-template-columns: 34px minmax(0, 1.6fr) minmax(150px, 0.9fr) minmax(150px, 0.8fr) minmax(170px, auto);
+  align-items: center;
+  gap: 14px;
+  margin: 0 !important;
+  padding: 12px 16px !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--mc-line-soft) !important;
+  border-radius: 0 !important;
+  background: #fff !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+#tareas.mc .mc-list .task-card.task-row-card::before {
+  display: none !important;
+}
+
+#tareas.mc .mc-list .task-card.task-row-card:hover {
+  background: #fafbfc !important;
+}
+
+#tareas.mc .mc-list .task-card.has-warning {
+  box-shadow: inset 3px 0 0 #d97706 !important;
+}
+
+#tareas.mc .mc-list .task-row-index {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--mc-bg);
+  color: var(--mc-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#tareas.mc .mc-row-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+#tareas.mc .mc-plate {
+  padding: 2px 8px;
+  border: 1px solid var(--mc-ink);
+  border-radius: 5px;
+  color: var(--mc-ink);
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+#tareas.mc .mc-list .task-row-main h3 {
+  margin: 0;
+  color: var(--mc-ink);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+#tareas.mc .mc-list .task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  margin: 4px 0 0;
+  color: var(--mc-soft);
+  font-size: 12.5px;
+}
+
+#tareas.mc .mc-list .task-row-assignee {
+  display: grid;
+  gap: 1px;
+}
+
+#tareas.mc .mc-list .task-row-assignee span {
+  color: var(--mc-soft);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+#tareas.mc .mc-list .task-row-assignee strong {
+  color: var(--mc-ink);
+  font-size: 14px;
+}
+
+#tareas.mc .mc-list .task-row-assignee small {
+  color: var(--mc-soft);
+  font-size: 12px;
+}
+
+#tareas.mc .mc-list .task-row-status {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+}
+
+#tareas.mc .mc-list .time-chip {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--mc-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+#tareas.mc .mc-list .task-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+
+#tareas.mc .mc-list .task-row-actions .btn {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+#tareas.mc .mc-list .task-row-actions select {
+  min-height: 34px;
+  max-width: 190px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+#tareas.mc .mc-list .locked-note {
+  color: var(--mc-soft);
+  font-size: 12px;
+}
+
+#tareas.mc .mc-list > .empty {
+  margin: 0;
+  padding: 36px 16px;
+  border: 0;
+  background: #fff;
+  color: var(--mc-muted);
+  text-align: center;
+}
+
+/* Paginas secundarias */
+#tareas.mc .mc-summary {
+  padding: 16px;
+}
+
+#tareas.mc .mc-summary #controlKpis {
+  margin: 0;
+}
+
+#tareas.mc .mc-account {
+  display: grid;
+  gap: 12px;
+  max-width: 640px;
+  padding: 18px;
+}
+
+#tareas.mc .mc-account h2 {
+  margin: 0;
+  color: var(--mc-ink);
+  font-size: 18px;
+}
+
+#tareas.mc .mc-password {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+#tareas.mc .mc-password input {
+  flex: 1 1 240px;
+  min-height: 42px;
+}
+
+#tareas.mc .legal-ant-lookup-panel {
+  margin: 0;
+}
+
+/* Feria dentro de mesa de control */
+#tareas.mc .mc-fx {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+}
+
+#tareas.mc .mc-fx[hidden] {
+  display: none !important;
+}
+
+#tareas.mc .mc-assign-note {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px dashed #e7a3a6;
+  border-radius: 10px;
+  background: #fff7f7;
+  color: var(--mc-muted);
+  font-size: 13.5px;
+}
+
+#tareas.mc .mc-assign-note[hidden] {
+  display: none;
+}
+
+/* ===== Celular ===== */
+@media (max-width: 980px) {
+  #tareas.mc.legal-desk.is-active {
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-height: 0;
+  }
+
+  #tareas.mc .mc-side {
+    border-right: 0;
+    border-bottom: 1px solid var(--mc-line);
+  }
+
+  #tareas.mc .mc-side-in {
+    position: static;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 6px;
+    min-height: 0;
+    max-height: none;
+    padding: 10px 12px;
+    overflow-x: auto;
+  }
+
+  #tareas.mc .mc-side-head,
+  #tareas.mc .mc-side-label {
+    display: none !important;
+  }
+
+  #tareas.mc .mc-nav {
+    flex-direction: row;
+    flex: none;
+  }
+
+  #tareas.mc .mc-nav button {
+    width: auto;
+    white-space: nowrap;
+    border: 1px solid var(--mc-line);
+  }
+
+  #tareas.mc .mc-nav button.is-active::before {
+    display: none;
+  }
+
+  #tareas.mc .mc-side-foot {
+    flex-direction: row;
+    display: flex;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  #tareas.mc .mc-avail {
+    white-space: nowrap;
+  }
+
+  #tareas.mc .mc-main {
+    padding: 14px 12px 32px !important;
+  }
+
+  #tareas.mc .mc-banner,
+  #tareas.mc .mc-banner.is-fx {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: 18px 18px 18px 22px;
+  }
+
+  #tareas.mc .mc-banner::after {
+    opacity: 0.5;
+  }
+
+  #tareas.mc .mc-wheel {
+    right: -60px;
+  }
+
+  #tareas.mc .mc-banner h1 {
+    font-size: 24px;
+  }
+
+  #tareas.mc .mc-seal {
+    order: -1;
+    justify-self: start;
+    height: 54px;
+  }
+
+  #tareas.mc .mc-banner-stats div {
+    flex: 1;
+    min-width: 0;
+  }
+
+  #tareas.mc .mc-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #tareas.mc .mc-tabs {
+    width: 100%;
+  }
+
+  #tareas.mc .mc-tools > * {
+    flex: 1 1 100%;
+  }
+
+  #tareas.mc .mc-date {
+    flex: 1 1 calc(50% - 5px);
+  }
+
+  #tareas.mc .mc-date input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  #tareas.mc .mc-list .task-card.task-row-card {
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 8px 12px;
+  }
+
+  #tareas.mc .mc-list .task-row-assignee,
+  #tareas.mc .mc-list .task-row-status,
+  #tareas.mc .mc-list .task-row-actions {
+    grid-column: 2;
+  }
+
+  #tareas.mc .mc-list .task-row-actions {
+    justify-content: stretch;
+  }
+
+  #tareas.mc .mc-list .task-row-actions > * {
+    flex: 1 1 auto;
+  }
+
+  #tareas.mc .mc-list .task-row-actions select {
+    max-width: none;
+  }
+}
+
+/* ===== Administrador: Usuarios ===== */
+#admin-users-module.ux {
+  display: none;
+}
+
+#admin-users-module.ux.is-active {
+  display: grid;
+  gap: 14px;
+}
+
+#admin .ux-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+#admin .ux-head h2 {
+  margin: 2px 0 0;
+  color: var(--mc-ink);
+}
+
+#admin .ux-head .helper-text {
+  margin: 4px 0 0;
+}
+
+#admin .ux-tabs {
+  display: flex;
+  gap: 4px;
+  width: max-content;
+  max-width: 100%;
+  padding: 4px;
+  overflow-x: auto;
+  border-radius: 10px;
+  background: #e9eaed;
+}
+
+#admin .ux-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--mc-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+#admin .ux-tabs button em {
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #d5d7dc;
+  color: var(--mc-text);
+  font-size: 12px;
+  font-style: normal;
+}
+
+#admin .ux-tabs button.is-active {
+  background: #fff;
+  color: var(--mc-red-dark);
+  box-shadow: 0 1px 4px rgba(21, 23, 29, 0.12);
+}
+
+#admin .ux-tabs button.is-active em {
+  background: var(--mc-red);
+  color: #fff;
+}
+
+#admin .ux-pane {
+  display: grid;
+  gap: 12px;
+}
+
+#admin .ux-pane[hidden],
+#admin .ux-new-form[hidden],
+#admin [data-ux-new][hidden] {
+  display: none !important;
+}
+
+#admin .ux-new-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid #f3c2c4;
+  border-radius: 12px;
+  background: #fffafa;
+}
+
+#admin .ux-new-form > strong {
+  grid-column: 1 / -1;
+  color: var(--mc-ink);
+}
+
+#admin .ux-new-form input {
+  min-height: 42px;
+}
+
+#admin .ux-new-checks {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  gap: 8px;
+}
+
+#admin .ux-new-checks label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--mc-line);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+#admin .ux-new-actions {
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+#admin .ux-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+#admin .ux-search {
+  flex: 1 1 260px;
+  margin: 0;
+}
+
+#admin .ux-search input {
+  width: 100%;
+  min-height: 40px;
+}
+
+#admin .ux-alert {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #fff4e5;
+  color: #92400e;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+#admin .ux-alert[hidden] {
+  display: none;
+}
+
+#admin .ux-matrix-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--mc-line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+#admin .ux-matrix {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#admin .ux-matrix th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--mc-line);
+  color: var(--mc-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: left;
+  text-transform: uppercase;
+  vertical-align: bottom;
+}
+
+#admin .ux-matrix th small {
+  display: block;
+  color: #9a9ca1;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+#admin .ux-matrix td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--mc-line-soft);
+  vertical-align: middle;
+}
+
+#admin .ux-matrix tbody tr:hover td {
+  background: #fafbfc;
+}
+
+#admin .ux-matrix .ux-c {
+  text-align: center;
+}
+
+#admin .ux-matrix .is-event {
+  background: #fff7f7;
+}
+
+#admin .ux-matrix th.is-event {
+  color: var(--mc-red-dark);
+  background: #fdecec;
+}
+
+#admin .ux-matrix tfoot td {
+  border-bottom: 0;
+  background: #fafbfc;
+  color: var(--mc-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+#admin .ux-who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 210px;
+}
+
+#admin .ux-who span {
+  display: grid;
+  line-height: 1.25;
+}
+
+#admin .ux-who strong {
+  color: var(--mc-ink);
+}
+
+#admin .ux-who small {
+  color: var(--mc-soft);
+  font-size: 12.5px;
+}
+
+#admin .ux-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #eceef1;
+  color: #3d3f45;
+  font-size: 12px;
+}
+
+#admin .ux-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  margin: 0;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+#admin .ux-switch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+#admin .ux-switch span {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #d5d7dc;
+  transition: background 0.15s ease;
+  pointer-events: none;
+}
+
+#admin .ux-switch span::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: left 0.15s ease;
+}
+
+#admin .ux-switch input:checked + span {
+  background: var(--mc-red);
+}
+
+#admin .ux-switch input:checked + span::after {
+  left: 21px;
+}
+
+#admin .ux-switch input:focus-visible + span {
+  outline: 2px solid var(--mc-red);
+  outline-offset: 2px;
+}
+
+#admin .ux-chip {
+  display: inline-block;
+  max-width: 180px;
+  overflow: hidden;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #f1f2f4;
+  color: #3d3f45;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#admin .ux-menu {
+  position: relative;
+  display: inline-block;
+}
+
+#admin .ux-menu summary {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--mc-line);
+  border-radius: 8px;
+  color: #3d3f45;
+  font-weight: 900;
+  list-style: none;
+  cursor: pointer;
+}
+
+#admin .ux-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+#admin .ux-menu-card {
+  position: absolute;
+  top: 38px;
+  right: 0;
+  z-index: 30;
+  display: grid;
+  gap: 8px;
+  width: 260px;
+  padding: 12px;
+  border: 1px solid var(--mc-line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(21, 23, 29, 0.16);
+  text-align: left;
+}
+
+#admin .ux-menu-title {
+  color: var(--mc-soft);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+#admin .ux-menu-card label {
+  display: grid;
+  gap: 4px;
+  color: var(--mc-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+#admin .ux-menu-card input {
+  min-height: 38px;
+}
+
+#admin .ux-menu-card .btn {
+  min-height: 36px;
+}
+
+#admin .ux-danger {
+  border: 1px solid #f3c2c4;
+  background: #fff;
+  color: var(--mc-red-dark);
+}
+
+#admin .ux-empty {
+  padding: 24px;
+  color: var(--mc-muted);
+  text-align: center;
+}
+
+#admin .ux-list .user-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--mc-line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: none;
+}
+
+#admin .ux-list .user-row > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+#admin .ux-list .user-row .row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+#admin .ux-list .user-row .row-actions input {
+  width: 200px;
+  min-height: 38px;
+}
+
+#admin .ux-list .user-row .row-actions .btn {
+  min-height: 38px;
+}
+
+#admin .ux-admin-pass {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 10px;
+  max-width: 980px;
+}
+
+#admin .ux-admin-pass input {
+  min-height: 42px;
+}
+
+/* ===== Administrador: Feria Automundo ===== */
+#admin-feria-module.fxa {
+  display: none;
+}
+
+#admin-feria-module.fxa.is-active {
+  display: grid;
+  gap: 14px;
+}
+
+#admin .fxa-stats {
+  display: flex;
+  gap: 6px;
+}
+
+#admin .fxa-stats div {
+  display: grid;
+  min-width: 92px;
+  padding: 8px 14px;
+  border: 1px solid var(--mc-line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+#admin .fxa-stats strong {
+  color: var(--mc-ink);
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+#admin .fxa-stats span {
+  color: var(--mc-muted);
+  font-size: 12px;
+}
+
+#admin .fxa-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+#admin .fxa-layout:has(.fxa-editor:not([hidden])) {
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
+}
+
+#admin .fxa-listbox {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+#admin .fxa-listbox select {
+  min-height: 40px;
+}
+
+#admin .fxa-list {
+  overflow-x: auto;
+  border: 1px solid var(--mc-line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+#admin .fxa-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#admin .fxa-table th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--mc-line);
+  color: var(--mc-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+#admin .fxa-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--mc-line-soft);
+  vertical-align: middle;
+}
+
+#admin .fxa-table td small {
+  display: block;
+  color: var(--mc-soft);
+  font-size: 12px;
+}
+
+#admin .fxa-table tr.is-selected td {
+  background: #fff7f7;
+}
+
+#admin .fxa-table tr.is-selected td:first-child {
+  box-shadow: inset 3px 0 0 var(--mc-red);
+}
+
+#admin .fxa-plate {
+  color: var(--mc-ink);
+  font-family: "Plus Jakarta Sans", sans-serif;
+  letter-spacing: 0.06em;
+}
+
+#admin .fxa-actions {
+  text-align: right;
+}
+
+#admin .fxa-editor {
+  position: sticky;
+  top: 100px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  border: 1px solid var(--mc-line);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(21, 23, 29, 0.08);
+}
+
+#admin .fxa-editor[hidden] {
+  display: none;
+}
+
+#admin .fxa-form {
+  display: grid;
+}
+
+#admin .fxa-editor-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--mc-line-soft);
+}
+
+#admin .fxa-editor-head span {
+  color: var(--mc-red-dark);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+#admin .fxa-editor-head h3 {
+  margin: 2px 0 0;
+  color: var(--mc-ink);
+  font-size: 16px;
+}
+
+#admin .fxa-form fieldset {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  margin: 0;
+  padding: 12px 18px;
+  border: 0;
+  border-bottom: 1px solid var(--mc-line-soft);
+}
+
+#admin .fxa-form legend {
+  float: left;
+  grid-column: 1 / -1;
+  width: 100%;
+  margin-bottom: 4px;
+  padding: 0;
+  color: var(--mc-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#admin .fxa-field {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+#admin .fxa-field.is-wide,
+#admin .fxa-files.is-wide {
+  grid-column: 1 / -1;
+}
+
+#admin .fxa-field span {
+  color: #6d6e71;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#admin .fxa-field input,
+#admin .fxa-field select,
+#admin .fxa-field textarea {
+  width: 100%;
+  min-height: 38px;
+  font-size: 14px;
+}
+
+#admin .fxa-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#admin .fxa-history {
+  margin: 0;
+  padding: 10px 18px 10px 34px;
+  color: var(--mc-soft);
+  font-size: 12.5px;
+}
+
+#admin .fxa-editor-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--mc-line-soft);
+}
+
+#admin .fxa-editor-foot .btn {
+  flex: 1 1 auto;
+}
+
+#admin .fxa-delete {
+  flex-basis: 100% !important;
+  border: 1px solid #f3c2c4;
+  background: #fff;
+  color: var(--mc-red-dark);
+}
+
+@media (max-width: 1100px) {
+  #admin .fxa-layout:has(.fxa-editor:not([hidden])) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #admin .fxa-editor {
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-width: 760px) {
+  #admin .ux-new-form,
+  #admin .ux-admin-pass {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #admin .ux-matrix-wrap {
+    border: 0;
+    background: transparent;
+  }
+
+  #admin .ux-matrix thead,
+  #admin .ux-matrix tfoot {
+    display: none;
+  }
+
+  #admin .ux-matrix,
+  #admin .ux-matrix tbody {
+    display: block;
+  }
+
+  #admin .ux-matrix tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+    margin-bottom: 10px;
+    padding: 12px;
+    border: 1px solid var(--mc-line);
+    border-radius: 12px;
+    background: #fff;
+  }
+
+  #admin .ux-matrix td {
+    padding: 0;
+    border: 0;
+  }
+
+  #admin .ux-matrix td.ux-who {
+    grid-column: 1 / -1;
+  }
+
+  #admin .ux-matrix td[data-label] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 10px;
+    border: 1px solid var(--mc-line-soft);
+    border-radius: 8px;
+    text-align: left;
+  }
+
+  #admin .ux-matrix td[data-label]::before {
+    content: attr(data-label);
+    color: #3d3f45;
+    font-size: 12.5px;
+    font-weight: 700;
+  }
+
+  #admin .ux-matrix td.ux-agencies {
+    grid-column: 1 / -1;
+  }
+
+  #admin .ux-matrix td.ux-more {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  #admin .ux-tabs {
+    width: 100%;
+  }
+
+  #admin .fxa-stats div {
+    flex: 1;
+    min-width: 0;
+  }
+
+  #admin .fxa-table thead {
+    display: none;
+  }
+
+  #admin .fxa-table,
+  #admin .fxa-table tbody,
+  #admin .fxa-table tr,
+  #admin .fxa-table td {
+    display: block;
+    width: 100%;
+  }
+
+  #admin .fxa-table tr {
+    padding: 12px;
+    border-bottom: 1px solid var(--mc-line-soft);
+  }
+
+  #admin .fxa-table td {
+    padding: 2px 0;
+    border: 0;
+  }
+
+  #admin .fxa-actions {
+    margin-top: 8px;
+    text-align: left;
+  }
+
+  #admin .fxa-actions .btn {
+    width: 100%;
+  }
+}
+
+/* Ajustes sobre estilos anteriores de la mesa */
+#tareas.mc .mc-main.legal-main {
+  max-width: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#tareas.mc .mc-kpis .mc-kpi {
+  justify-items: start !important;
+  border: 1px solid var(--mc-line) !important;
+  text-align: left !important;
+  transform: none !important;
+}
+
+#tareas.mc .mc-kpis .mc-kpi.is-active {
+  border-color: var(--mc-red) !important;
+}
+
+#tareas.mc .mc-list.task-list {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #fff !important;
+  box-shadow: none !important;
+}
+
+#tareas.mc .mc-list .task-card.task-row-card {
+  grid-template-columns: 34px minmax(0, 1fr) 170px 200px minmax(200px, 260px) !important;
+}
+
+#tareas.mc .mc-list .status-pill {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+@media (max-width: 980px) {
+  #tareas.mc .mc-list .task-card.task-row-card {
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+  }
+}
+
+#tareas.mc #statusFilterButtons button.mc-kpi {
+  min-height: 0 !important;
+  padding: 12px 14px !important;
+  border: 1px solid var(--mc-line) !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  color: var(--mc-text) !important;
+  box-shadow: none !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+}
+
+#tareas.mc #statusFilterButtons button.mc-kpi.is-active {
+  border-color: var(--mc-red) !important;
+  background: #fdecec !important;
+}
+
+#tareas.mc .mc-seal {
+  padding: 0 !important;
+  background: transparent !important;
+  height: 64px !important;
+}
+
+#tareas.mc .mc-list .task-card.task-row-card {
+  grid-template-columns: 34px minmax(0, 1fr) 160px 190px 300px !important;
+}
+
+#tareas.mc .mc-list .task-row-actions {
+  flex-wrap: nowrap;
+}
+
+#tareas.mc .mc-list .task-row-actions select {
+  width: 160px;
+  flex: 0 1 160px;
+}
+
+@media (max-width: 1200px) {
+  #tareas.mc .mc-list .task-card.task-row-card {
+    grid-template-columns: 34px minmax(0, 1fr) 150px 170px !important;
+  }
+
+  #tareas.mc .mc-list .task-row-actions {
+    grid-column: 2 / -1;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 980px) {
+  #tareas.mc .mc-list .task-card.task-row-card {
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+  }
+
+  #tareas.mc .mc-list .task-row-actions {
+    grid-column: 2;
+    flex-wrap: wrap;
+  }
+
+  #tareas.mc .mc-list .task-row-actions select {
+    width: auto;
+    flex: 1 1 100%;
+  }
+}
+
+#admin .ux-tools {
+  flex-wrap: wrap;
+}
+
+#admin .ux-tools .ux-search {
+  flex: 1 1 260px;
+  width: auto;
+}
+
+#admin .ux-tools select {
+  flex: 0 1 200px;
+  width: auto;
+}
+
+#admin .ux-tools .btn {
+  flex: none;
+  width: auto;
+}
+
+@media (max-width: 760px) {
+  #admin .ux-tools > * {
+    flex: 1 1 100% !important;
+  }
+}
