@@ -24,11 +24,13 @@ legal las toma y las cierra, gerencia ve reportes y procesamiento de datos carga
 | `control-seminuevos.css`, `js/control-seminuevos.js` | Control Seminuevos: dashboards ejecutivos para gerencia (operacion completa y Feria Automundo). |
 | `admin-panel.css` | Panel de administrador: barra lateral, banner por modulo y estilo comun de las secciones. |
 | `mesa-control.css` | Mesa de control (barra lateral, paginas, banner) y, en el panel de administrador, Usuarios con asignacion de tareas y el modulo Feria Automundo. |
+| `compra-form.css`, `js/compra-documentos.js` | Formulario de compra: Consulta ANT, fotos de cédula y matrícula, lectura automática (función `lectura-documentos`) y la ficha con documentos que ve la mesa de control. |
 | `js/feria-automundo.js`, `feria-automundo.css` | Modulo temporal de la Feria Automundo (asesor, mesa de control y administrador). |
 | `js/consignment-templates.js`, `assets/contracts` | Plantillas PDF de contratos. |
+| `interno/` | Sistema interno de la mesa de control (liquidaciones, pagos, ventas, contratos), publicado en `/interno/`. Usa su propio backend de Google Apps Script (`js/api-config.js`). La liquidación tiene la opción "Cliente Preferencial" con un texto de condición editable. |
 | `server.js`, `iniciar-autocor.bat` | Servidor local opcional para un PC compartido. |
 | `supabase/migrations` | SQL aplicado en Supabase (usuarios, Storage, RLS, limpieza de claves). |
-| `supabase/functions` | Funciones `datacil-consulta` y `datacil-vehiculo` (Consulta ANT). |
+| `supabase/functions` | Funciones `datacil-consulta` y `datacil-vehiculo` (Consulta ANT), `feria-matricula` (feria) y `lectura-documentos` (cédula y matrícula en compras). |
 
 ## Como se guardan los datos
 
@@ -41,6 +43,8 @@ legal las toma y las cierra, gerencia ve reportes y procesamiento de datos carga
 - Que tareas recibe cada asistente legal se guarda en `legalUsers[].mailboxes`
   (`saneamientos`, `contratos`, `cuv`, `firmas`, `feria`) y se cambia en Administrador >
   Usuarios. Si nadie tiene activado `firmas` o `feria`, esas tareas las ven todos.
+- Compras: las fotos de cédula y matrícula van a Storage en `compras/documentos/`; la tarea guarda
+  `documentos`, `clienteDatos` (cédula) y `matriculaDatos`.
 - Solicitudes de la feria: `modulo = 'feria'`, `tipo = 'tarea'`; cada cambio es una fila
   nueva y vale la ultima por `datos.id`. Al eliminar se guarda `deleted: true`.
 
