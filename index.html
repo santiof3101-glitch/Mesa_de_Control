@@ -19,9 +19,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Roboto+Condensed:wght@300;400;500;600;700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261014-feria-v3">
-  <link rel="stylesheet" href="layout-fix.css?v=20261014-feria-v3">
-  <link rel="stylesheet" href="feria-automundo.css?v=20261014-feria-v3">
+  <link rel="stylesheet" href="styles.css?v=20261015-mat-v2">
+  <link rel="stylesheet" href="layout-fix.css?v=20261015-mat-v2">
+  <link rel="stylesheet" href="feria-automundo.css?v=20261015-mat-v2">
+  <link rel="stylesheet" href="mesa-control.css?v=20261015-mat-v2">
 </head>
 <body>
   <header class="topbar">
@@ -1012,6 +1013,10 @@
               <label>Chasis<input name="chasis" autocomplete="off"></label>
               <label>Motor<input name="motor" autocomplete="off"></label>
             </div>
+            <details class="fx-more" data-fx-more>
+              <summary>Más datos de la matrícula <small data-fx-more-count>Se llenan al extraer los datos de las fotos</small></summary>
+              <div class="fx-grid fx-grid-3" data-fx-extra></div>
+            </details>
           </fieldset>
 
           <fieldset class="fx-block">
@@ -1515,66 +1520,107 @@
       </div>
     </section>
 
-    <section id="tareas" class="view legal-desk" aria-labelledby="tasks-title">
-      <aside class="legal-sidebar">
-        <div class="legal-sidebar-brand">
-          <span class="legal-sidebar-icon">&#128203;</span>
-          <strong>Repositorio de tareas</strong>
-        </div>
-        <nav class="legal-sidebar-nav" aria-label="Mesa de control">
-          <button class="is-active" type="button" data-legal-scroll="tasks-title">&#128203; Repositorio</button>
-          <button type="button" data-legal-scroll="legalControlSummary">&#128200; Resumen operativo</button>
-          <button type="button" data-legal-scroll="legalPasswordForm">&#128273; Cambiar clave</button>
-          <button type="button" data-open-legal-contract-modal>&#128196; Contratos legales</button>
-          <button id="legalAntNavButton" type="button" data-legal-scroll="legalAntLookupPanel" hidden>Consulta ANT</button>
-          <button type="button" data-legal-scroll="taskList">&#128269; Bandeja de tareas</button>
-          <button type="button" data-legal-scroll="legalAvailabilityBlock">&#128994; Disponibilidad</button>
-          <button type="button" class="fx-legal-nav" data-legal-scroll="fxLegalPanel" data-feria-only hidden>Feria Automundo</button>
-        </nav>
-        <div class="legal-sidebar-filters">
-          <span>Filtros rapidos</span>
-          <button class="is-active" type="button" data-legal-sidebar-filter="todos">&#128193; Todos</button>
-          <button type="button" data-legal-sidebar-filter="firmas">&#9997; Firmas</button>
-          <button type="button" data-legal-sidebar-filter="cuv" data-mailbox-filter="cuv">CUV</button>
-          <button type="button" data-legal-sidebar-filter="por asignar">&#128230; Por asignar</button>
-          <button type="button" data-legal-sidebar-filter="pendiente">&#9203; Pendiente</button>
-          <button type="button" data-legal-sidebar-filter="tomado">&#128736; Tomado</button>
-          <button type="button" data-legal-sidebar-filter="rechazado por saneamiento">&#10060; Rechazado</button>
-          <button type="button" data-legal-sidebar-filter="saneamiento realizado y subido a pilot">&#9989; Realizado</button>
-        </div>
-        <div class="legal-sidebar-user">
-          <span>SO</span>
-          <div>
-            <strong>Mesa de control</strong>
-            <small>Equipo legal</small>
+    <section id="tareas" class="view legal-desk mc" aria-labelledby="tasks-title">
+      <aside class="mc-side" aria-label="Mesa de control">
+        <div class="mc-side-in">
+          <div class="mc-side-head">
+            <span>Mesa de control</span>
+            <strong id="mcSideUser">Equipo legal</strong>
+          </div>
+          <span class="mc-side-label">Operación</span>
+          <nav class="mc-nav">
+            <button class="is-active" type="button" data-mc-go="bandeja"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h4l2 3h4l2-3h4"/><path d="M5 5h14l1 8v6H4v-6z"/></svg><span>Bandeja de tareas</span><em id="queueCount">0</em></button>
+            <button id="legalAntNavButton" type="button" data-mc-go="ant" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><span>Consulta ANT</span></button>
+            <button type="button" data-open-legal-contract-modal><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg><span>Contratos legales</span></button>
+          </nav>
+          <span class="mc-side-label" data-mc-feria-nav data-feria-only hidden>Evento</span>
+          <nav class="mc-nav" data-mc-feria-nav data-feria-only hidden>
+            <button type="button" class="mc-nav-fx" data-mc-go="feria"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16V12l2-5h10l2 5v4"/><path d="M3 16h18v2H3z"/></svg><span>Feria Automundo</span><em data-fx-legal-count="activas">0</em></button>
+          </nav>
+          <span class="mc-side-label">Seguimiento</span>
+          <nav class="mc-nav">
+            <button type="button" data-mc-go="resumen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/></svg><span>Resumen operativo</span></button>
+          </nav>
+          <div class="mc-side-foot">
+            <div id="legalAvailabilityBlock" class="mc-avail">
+              <span class="mc-avail-dot" aria-hidden="true"></span>
+              <strong id="legalAvailabilityStatus">Disponible</strong>
+              <button id="legalAvailabilityToggle" class="mc-avail-btn" type="button">Cambiar</button>
+            </div>
+            <nav class="mc-nav">
+              <button type="button" data-mc-go="cuenta"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Mi cuenta</span></button>
+            </nav>
           </div>
         </div>
       </aside>
 
-      <div class="legal-main">
-        <div class="section-head legal-task-head">
-          <div>
-            <p class="eyebrow" id="legalSessionLabel">Asistente de control legal</p>
-            <h1 id="tasks-title">Repositorio de tareas</h1>
-            <span>Gestiona y da seguimiento a las tareas del proceso legal.</span>
-          </div>
-          <div id="statusFilterButtons" class="filters" role="group" aria-label="Filtros de tareas"></div>
+      <div class="legal-main mc-main">
+        <div class="mc-page is-active" data-mc-page="bandeja">
+          <section class="mc-banner">
+            <svg class="mc-wheel" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="88"/><circle cx="100" cy="100" r="64"/><circle cx="100" cy="100" r="16"/><path d="M36 100h48M116 100h48M100 116v48"/></svg>
+            <div class="mc-banner-copy">
+              <p class="mc-eyebrow" id="legalSessionLabel">Mesa de control</p>
+              <h1 id="tasks-title">Bandeja de tareas</h1>
+              <p>Saneamientos, contratos, CUV y firmas que llegan de comercial. Las que más esperan van primero.</p>
+              <button class="btn mc-btn-white" type="button" data-open-legal-contract-modal>+ Generar contrato</button>
+            </div>
+            <div class="mc-banner-stats">
+              <div><strong data-mc-stat="abiertas">0</strong><span>abiertas</span></div>
+              <div><strong data-mc-stat="libres">0</strong><span>sin tomar</span></div>
+              <div><strong data-mc-stat="hoy">0</strong><span>cerradas hoy</span></div>
+            </div>
+          </section>
+          <div id="statusFilterButtons" class="mc-kpis" role="group" aria-label="Filtrar por estado"></div>
+          <section class="mc-panel">
+            <div class="task-toolbar mc-tools">
+              <div class="mc-tabs" id="mcProcessTabs" role="tablist" aria-label="Tipo de tarea"></div>
+              <label class="mc-hidden-select">
+                Tipo de tarea
+                <select id="legalProcessFilter" aria-label="Tipo de tarea">
+                  <option value="saneamientos">Saneamientos</option>
+                  <option value="cuv">CUV</option>
+                  <option value="contratos">Contratos</option>
+                  <option value="firmas">Firmas</option>
+                </select>
+              </label>
+              <label class="mc-search">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>
+                <input id="taskSearch" type="search" placeholder="Buscar placa, cédula, cliente o asesor" aria-label="Buscar tarea">
+              </label>
+              <label class="mc-date">Desde<input id="taskDateFrom" type="date"></label>
+              <label class="mc-date">Hasta<input id="taskDateTo" type="date"></label>
+            </div>
+            <div id="taskList" class="task-list mc-list"></div>
+            <div class="mc-foot mini-kpis">
+              <span><strong id="visibleTaskCount">0</strong> en la lista</span>
+              <span><strong id="unassignedTaskCount">0</strong> sin tomar</span>
+              <span><strong id="avgLeadTime">0 min</strong> de atención promedio</span>
+            </div>
+          </section>
         </div>
 
-        <section id="fxLegalPanel" class="fx-legal" data-feria-only hidden aria-labelledby="fxLegalTitle">
-          <div class="fx-banner is-compact">
-            <img class="fx-seal" src="assets/feria-automundo-2026.webp" alt="Automundo Feria 2026">
-            <div class="fx-banner-text">
-              <span class="fx-badge">Mesa de control · Feria</span>
-              <h2 id="fxLegalTitle">Solicitudes de la Feria Automundo</h2>
-              <p>Toma la solicitud, revisa la ficha vehicular y sube la liquidación en PDF para finalizar.</p>
-            </div>
-            <div class="fx-banner-actions">
-              <button type="button" class="btn secondary fx-btn" data-fx-reload>Actualizar</button>
-              <button type="button" class="btn primary fx-btn" data-fx-export>Descargar reporte (Excel)</button>
-            </div>
-          </div>
-          <div class="fx-tabs" role="tablist" aria-label="Estado de las solicitudes">
+        <div class="mc-page" data-mc-page="feria" hidden>
+          <section id="fxLegalPanel" class="fx-legal mc-fx" data-feria-only hidden aria-labelledby="fxLegalTitle">
+            <section class="mc-banner is-fx">
+              <svg class="mc-wheel" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="88"/><circle cx="100" cy="100" r="64"/><circle cx="100" cy="100" r="16"/><path d="M36 100h48M116 100h48M100 116v48"/></svg>
+              <div class="mc-banner-copy">
+                <p class="mc-eyebrow">Módulo de evento · solicitudes hasta el domingo 18</p>
+                <h1 id="fxLegalTitle">Feria Automundo</h1>
+                <p>Liquidaciones que piden los asesores en la feria. Toma la solicitud, revisa la ficha y sube la liquidación en PDF.</p>
+                <div class="mc-banner-actions">
+                  <button type="button" class="btn mc-btn-white" data-fx-export>Descargar reporte (Excel)</button>
+                  <button type="button" class="btn mc-btn-ghost" data-fx-reload>Actualizar</button>
+                </div>
+              </div>
+              <img class="mc-seal" src="assets/feria-automundo-2026.webp" alt="Automundo Feria 2026">
+              <div class="mc-banner-stats">
+                <div><strong data-fx-legal-count="total">0</strong><span>recibidas</span></div>
+                <div><strong data-fx-legal-count="en_revision">0</strong><span>en revisión</span></div>
+                <div><strong data-fx-legal-count="finalizada">0</strong><span>realizadas</span></div>
+              </div>
+            </section>
+            <p class="mc-assign-note" data-fx-assign-note hidden></p>
+            <div class="fx-tabs" role="tablist" aria-label="Estado de las solicitudes">
             <button type="button" class="fx-tab is-active" data-fx-filter="activas"><strong data-fx-legal-count="activas">0</strong><span>Por atender</span></button>
             <button type="button" class="fx-tab" data-fx-filter="pendiente"><strong data-fx-legal-count="pendiente">0</strong><span>Pendientes</span></button>
             <button type="button" class="fx-tab" data-fx-filter="en_revision"><strong data-fx-legal-count="en_revision">0</strong><span>En revisión</span></button>
@@ -1582,30 +1628,18 @@
             <button type="button" class="fx-tab" data-fx-filter="finalizada"><strong data-fx-legal-count="finalizada">0</strong><span>Realizadas</span></button>
           </div>
           <div id="fxLegalList" class="fx-list"></div>
-        </section>
+          </section>
+        </div>
 
-        <section id="legalControlSummary" class="panel control-dashboard">
-          <div>
-            <p class="eyebrow">Mesa de control</p>
-            <h2>Resumen operativo</h2>
-          </div>
-          <form id="legalPasswordForm" class="password-form" data-legal-anchor="legalPasswordBlock">
-            <input name="password" type="password" placeholder="Nueva contrasena (minimo 8)" minlength="8" autocomplete="new-password" required>
-            <button class="btn secondary" type="submit">Cambiar mi clave</button>
-          </form>
-          <div id="legalAvailabilityBlock" class="availability-panel">
-            <div>
-              <span>Estado de asignacion</span>
-              <strong id="legalAvailabilityStatus">Disponible</strong>
+        <div class="mc-page" data-mc-page="ant" hidden>
+          <section class="mc-banner is-slim">
+            <svg class="mc-wheel" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="88"/><circle cx="100" cy="100" r="64"/><circle cx="100" cy="100" r="16"/><path d="M36 100h48M116 100h48M100 116v48"/></svg>
+            <div class="mc-banner-copy">
+              <p class="mc-eyebrow">Mesa de control</p>
+              <h1>Consulta ANT</h1>
+              <p>Valida un vehículo por placa. Si ya fue consultado, se reutiliza sin costo.</p>
             </div>
-            <button id="legalAvailabilityToggle" class="btn secondary" type="button">Cambiar disponibilidad</button>
-          </div>
-          <div id="controlKpis" class="kpi-grid compact-kpis"></div>
-          <div class="legal-contract-quick-actions">
-            <button class="btn primary" type="button" data-open-legal-contract-modal>Generar contratos legales</button>
-          </div>
-        </section>
-
+          </section>
         <section id="legalAntLookupPanel" class="panel ant-lookup-workspace legal-ant-lookup-panel" hidden>
           <div class="panel-title-row ant-lookup-heading">
             <div>
@@ -1635,6 +1669,39 @@
             <div class="empty compact-empty">Abre Consulta ANT para cargar las validaciones guardadas.</div>
           </div>
         </section>
+        </div>
+
+        <div class="mc-page" data-mc-page="resumen" hidden>
+          <section class="mc-banner is-slim">
+            <svg class="mc-wheel" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="88"/><circle cx="100" cy="100" r="64"/><circle cx="100" cy="100" r="16"/><path d="M36 100h48M116 100h48M100 116v48"/></svg>
+            <div class="mc-banner-copy">
+              <p class="mc-eyebrow">Seguimiento</p>
+              <h1>Resumen operativo</h1>
+              <p>Cómo va la mesa de control en este momento.</p>
+            </div>
+          </section>
+          <section id="legalControlSummary" class="mc-panel mc-summary">
+            <div id="controlKpis" class="kpi-grid compact-kpis"></div>
+          </section>
+        </div>
+
+        <div class="mc-page" data-mc-page="cuenta" hidden>
+          <section class="mc-banner is-slim">
+            <svg class="mc-wheel" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="88"/><circle cx="100" cy="100" r="64"/><circle cx="100" cy="100" r="16"/><path d="M36 100h48M116 100h48M100 116v48"/></svg>
+            <div class="mc-banner-copy">
+              <p class="mc-eyebrow">Mi cuenta</p>
+              <h1>Clave y disponibilidad</h1>
+              <p>Cambia tu clave de acceso. Tu disponibilidad se cambia desde la barra lateral.</p>
+            </div>
+          </section>
+          <section class="mc-panel mc-account">
+            <h2>Cambiar mi clave</h2>
+            <form id="legalPasswordForm" class="password-form mc-password">
+              <input name="password" type="password" placeholder="Nueva clave (mínimo 8 caracteres)" minlength="8" autocomplete="new-password" required>
+              <button class="btn primary" type="submit">Guardar nueva clave</button>
+            </form>
+          </section>
+        </div>
 
         <section id="legalContractGenerator" class="panel legal-contract-generator" hidden>
           <div class="panel-title-row">
@@ -1737,36 +1804,6 @@
           </form>
           <div id="legalContractPreview" class="legal-contract-preview" hidden></div>
         </section>
-
-        <div class="task-toolbar panel">
-          <label>
-            Tipo de tarea
-            <select id="legalProcessFilter" aria-label="Tipo de tarea">
-              <option value="saneamientos">Saneamientos</option>
-              <option value="cuv">CUV</option>
-              <option value="contratos">Contratos</option>
-              <option value="firmas">Firmas</option>
-            </select>
-          </label>
-          <label>
-            Buscar tarea
-            <input id="taskSearch" type="search" placeholder="Buscar por placa, cedula, cliente, asesor, ciudad">
-          </label>
-          <label>
-            Desde
-            <input id="taskDateFrom" type="date">
-          </label>
-          <label>
-            Hasta
-            <input id="taskDateTo" type="date">
-          </label>
-          <div class="mini-kpis">
-            <span><strong id="visibleTaskCount">0</strong> visibles</span>
-            <span><strong id="unassignedTaskCount">0</strong> disponibles</span>
-            <span><strong id="avgLeadTime">0 min</strong> promedio</span>
-          </div>
-        </div>
-        <div id="taskList" class="task-list"></div>
       </div>
 
       <button id="legalChatOpenBtn" class="legal-chat-floating-btn" type="button">
@@ -1815,7 +1852,11 @@
         </button>
         <button class="admin-module-card" type="button" data-admin-module="admin-users-module">
           <strong>Usuarios</strong>
-          <span>Accesos y claves</span>
+          <span>Accesos, claves y tareas</span>
+        </button>
+        <button class="admin-module-card" type="button" data-admin-module="admin-feria-module" data-feria-only hidden>
+          <strong>Feria Automundo</strong>
+          <span>Editar, reasignar o borrar</span>
         </button>
         <button class="admin-module-card" type="button" data-admin-module="admin-commercial-module">
           <strong>Agencias y asesores</strong>
@@ -2172,72 +2213,119 @@
           <div id="commercialAdvisorsList" class="option-list"></div>
         </section>
 
-        <section class="panel span-admin admin-module-section" data-admin-section="admin-users-module">
-          <h2>Clave de administrador</h2>
-          <form id="adminPasswordForm" class="user-form">
-            <input name="currentPassword" type="password" placeholder="Clave actual" autocomplete="current-password" required>
-            <input name="newPassword" type="password" placeholder="Nueva clave (minimo 10 caracteres)" autocomplete="new-password" minlength="10" required>
-            <input name="confirmPassword" type="password" placeholder="Repita la nueva clave" autocomplete="new-password" minlength="10" required>
-            <button class="btn primary" type="submit">Cambiar clave</button>
-          </form>
-        </section>
-
-        <section id="admin-users-module" class="panel span-admin admin-module-section" data-admin-section="admin-users-module">
-          <h2>Usuarios de asistentes de control legal</h2>
-          <form id="userForm" class="user-form admin-legal-user-form">
-            <div class="admin-user-field">
-              <span>Asistente</span>
-              <input name="name" placeholder="Nombre del asistente" required>
-            </div>
-            <div class="admin-user-field">
-              <span>Acceso</span>
-              <input name="username" placeholder="Usuario" required>
-            </div>
-            <div class="admin-user-field">
-              <span>Clave</span>
-              <input name="password" type="password" placeholder="Contrasena (minimo 8)" minlength="8" autocomplete="new-password" required>
-            </div>
-            <div class="mailbox-picker admin-mailbox-picker" aria-label="Buzones de tareas">
-              <label><input type="checkbox" name="mailboxes" value="saneamientos" checked> Saneamientos</label>
-              <label><input type="checkbox" name="mailboxes" value="contratos"> Contratos</label>
-              <label><input type="checkbox" name="mailboxes" value="cuv"> CUV</label>
-            </div>
-            <label class="check-row admin-datacil-create"><input type="checkbox" name="datacilEnabled"> Consulta ANT</label>
-            <div class="admin-user-field admin-user-agencies-field">
-              <span>Agencias contratos</span>
-              <input name="contractAgencies" placeholder="Shyris, Prensa, Cumbaya">
-            </div>
-            <button class="btn primary" type="submit">Crear usuario</button>
-          </form>
-          <div id="usersList" class="users-list"></div>
-        </section>
-
-        <section class="panel span-admin admin-module-section" data-admin-section="admin-users-module">
-          <h2>Usuarios gerenciales</h2>
-          <form id="managerUserForm" class="user-form">
-            <input name="name" placeholder="Nombre del gerente" required>
-            <input name="username" placeholder="Usuario" required>
-            <input name="password" type="password" placeholder="Contrasena (minimo 8)" minlength="8" autocomplete="new-password" required>
-            <button class="btn primary" type="submit">Crear gerente</button>
-          </form>
-          <div id="managerUsersList" class="users-list"></div>
-        </section>
-
-        <section class="panel span-admin admin-module-section" data-admin-section="admin-users-module">
-          <div class="panel-title-row">
+        <section id="admin-users-module" class="panel span-admin admin-module-section ux" data-admin-section="admin-users-module">
+          <div class="ux-head">
             <div>
-              <p class="eyebrow">Procesamiento de datos</p>
-              <h2>Usuarios de datos, proveedores y reportes</h2>
+              <p class="eyebrow">Usuarios</p>
+              <h2>Accesos, claves y tareas</h2>
+              <p class="helper-text">Activa con el interruptor qué tareas le llegan a cada asistente legal. Cada cambio se guarda al momento.</p>
+            </div>
+            <button class="btn primary" type="button" data-ux-new>+ Nuevo usuario</button>
+          </div>
+          <div class="ux-tabs" role="tablist" aria-label="Tipos de usuario">
+            <button type="button" class="is-active" data-ux-tab="legal">Asistentes legales <em data-ux-count="legal">0</em></button>
+            <button type="button" data-ux-tab="managers">Gerentes <em data-ux-count="managers">0</em></button>
+            <button type="button" data-ux-tab="processing">Procesamiento de datos <em data-ux-count="processing">0</em></button>
+            <button type="button" data-ux-tab="admin">Mi clave de administrador</button>
+          </div>
+
+          <div class="ux-pane is-active" data-ux-pane="legal">
+            <form id="userForm" class="ux-new-form" hidden>
+              <strong>Nuevo asistente legal</strong>
+              <input name="name" placeholder="Nombre del asistente" required>
+              <input name="username" placeholder="Usuario (correo)" required>
+              <input name="password" type="password" placeholder="Clave (mínimo 8)" minlength="8" autocomplete="new-password" required>
+              <input name="contractAgencies" placeholder="Agencias de contratos (vacío = todas)">
+              <div class="ux-new-checks">
+                <label><input type="checkbox" name="mailboxes" value="saneamientos" checked> Saneamientos</label>
+                <label><input type="checkbox" name="mailboxes" value="contratos"> Contratos</label>
+                <label><input type="checkbox" name="mailboxes" value="cuv"> CUV</label>
+                <label><input type="checkbox" name="mailboxes" value="firmas"> Firmas</label>
+                <label><input type="checkbox" name="mailboxes" value="feria"> Feria Automundo</label>
+                <label><input type="checkbox" name="datacilEnabled"> Consulta ANT</label>
+              </div>
+              <div class="ux-new-actions">
+                <button class="btn secondary" type="button" data-ux-cancel>Cancelar</button>
+                <button class="btn primary" type="submit">Crear asistente</button>
+              </div>
+            </form>
+            <div class="ux-tools">
+              <label class="ux-search"><input type="search" placeholder="Buscar asistente" data-ux-search aria-label="Buscar asistente"></label>
+              <span class="ux-alert" data-ux-alert hidden></span>
+            </div>
+            <div id="usersList" class="ux-matrix-wrap"></div>
+          </div>
+
+          <div class="ux-pane" data-ux-pane="managers" hidden>
+            <form id="managerUserForm" class="ux-new-form" hidden>
+              <strong>Nuevo usuario gerencial</strong>
+              <input name="name" placeholder="Nombre del gerente" required>
+              <input name="username" placeholder="Usuario" required>
+              <input name="password" type="password" placeholder="Clave (mínimo 8)" minlength="8" autocomplete="new-password" required>
+              <div class="ux-new-actions">
+                <button class="btn secondary" type="button" data-ux-cancel>Cancelar</button>
+                <button class="btn primary" type="submit">Crear gerente</button>
+              </div>
+            </form>
+            <div id="managerUsersList" class="users-list ux-list"></div>
+          </div>
+
+          <div class="ux-pane" data-ux-pane="processing" hidden>
+            <p class="helper-text">Entran solo al módulo de Procesamiento de datos: bases, proveedores, compras, contratos y archivos. No tienen acceso al panel de administrador.</p>
+            <form id="processingUserForm" class="ux-new-form" hidden>
+              <strong>Nuevo usuario de datos</strong>
+              <input name="name" placeholder="Nombre del usuario de datos" required>
+              <input name="username" placeholder="Usuario" required>
+              <input name="password" type="password" placeholder="Clave (mínimo 8)" minlength="8" autocomplete="new-password" required>
+              <div class="ux-new-actions">
+                <button class="btn secondary" type="button" data-ux-cancel>Cancelar</button>
+                <button class="btn primary" type="submit">Crear usuario de datos</button>
+              </div>
+            </form>
+            <div id="processingUsersList" class="users-list ux-list"></div>
+          </div>
+
+          <div class="ux-pane" data-ux-pane="admin" hidden>
+            <form id="adminPasswordForm" class="ux-admin-pass">
+              <input name="currentPassword" type="password" placeholder="Clave actual" autocomplete="current-password" required>
+              <input name="newPassword" type="password" placeholder="Nueva clave (mínimo 10 caracteres)" autocomplete="new-password" minlength="10" required>
+              <input name="confirmPassword" type="password" placeholder="Repita la nueva clave" autocomplete="new-password" minlength="10" required>
+              <button class="btn primary" type="submit">Cambiar clave</button>
+            </form>
+          </div>
+        </section>
+
+        <section id="admin-feria-module" class="panel span-admin admin-module-section fxa" data-admin-section="admin-feria-module">
+          <div class="ux-head">
+            <div>
+              <p class="eyebrow">Feria Automundo</p>
+              <h2>Solicitudes de la feria</h2>
+              <p class="helper-text">Corrige datos, cambia el estado, reasigna a otro asistente o elimina una solicitud.</p>
+            </div>
+            <div class="fxa-stats">
+              <div><strong data-fxa-stat="total">0</strong><span>solicitudes</span></div>
+              <div><strong data-fxa-stat="activas">0</strong><span>activas</span></div>
+              <div><strong data-fxa-stat="finalizada">0</strong><span>realizadas</span></div>
             </div>
           </div>
-          <p class="helper-text">Estos usuarios pueden ingresar solo al modulo de Procesamiento de datos para cargar bases, revisar proveedores, compras, contratos y archivos. No tienen acceso al panel de administrador.</p>
-          <form id="processingUserForm" class="user-form">
-            <input name="name" placeholder="Nombre del usuario de datos" required>
-            <input name="username" placeholder="Usuario" required>
-            <input name="password" type="password" placeholder="Contrasena (minimo 8)" minlength="8" autocomplete="new-password" required>
-            <button class="btn primary" type="submit">Crear usuario de datos</button>
-          </form>
-          <div id="processingUsersList" class="users-list"></div>
+          <div class="fxa-layout">
+            <div class="fxa-listbox">
+              <div class="ux-tools">
+                <label class="ux-search"><input type="search" placeholder="Buscar placa, propietario, cédula o asesor" data-fxa-search aria-label="Buscar solicitud"></label>
+                <select data-fxa-status aria-label="Filtrar por estado">
+                  <option value="">Todos los estados</option>
+                  <option value="pendiente">Pendiente</option>
+                  <option value="en_revision">En revisión</option>
+                  <option value="observada">Con observación</option>
+                  <option value="finalizada">Realizada</option>
+                </select>
+                <button type="button" class="btn secondary" data-fx-export>Exportar (Excel)</button>
+                <button type="button" class="btn secondary" data-fxa-reload>Actualizar</button>
+              </div>
+              <div id="fxaList" class="fxa-list"></div>
+            </div>
+            <aside id="fxaEditor" class="fxa-editor" hidden></aside>
+          </div>
         </section>
       </div>
     </section>
@@ -3182,13 +3270,13 @@
     }, true);
   </script>
   <script src="js/core/autocor-core.js?v=20260803-modular-phase1"></script>
-  <script src="js/core/autocor-auth.js?v=20261007-auth-v1"></script>
+  <script src="js/core/autocor-auth.js?v=20261015-mat-v2"></script>
   <script src="js/components/modal.component.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/comercial.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20261014-feria-v3"></script>
-  <script src="js/feria-automundo.js?v=20261014-feria-v3"></script>
+  <script src="app.js?v=20261015-mat-v2"></script>
+  <script src="js/feria-automundo.js?v=20261015-mat-v2"></script>
 </body>
 </html>

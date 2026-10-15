@@ -29,13 +29,55 @@ async function getRole(req: Request, supabaseUrl: string, apiKey: string): Promi
   return String(user?.app_metadata?.autocor_role || "");
 }
 
-const PROMPT = `Estas imagenes son el frente y/o el reverso de una matricula vehicular de Ecuador (documento de la ANT).
-Combina la informacion de todas las imagenes.
-Extrae los datos y responde SOLO con un objeto JSON con estas claves:
-{"placa": "", "propietario": "", "cedula": "", "marca": "", "modelo": "", "anio": "", "color": "", "chasis": "", "motor": "", "clase": "", "servicio": ""}
-Reglas: placa sin guiones ni espacios (ejemplo PBX1234); cedula o RUC solo con digitos;
-anio con cuatro digitos; textos en mayusculas tal como aparecen.
-Si un dato no se ve con claridad deja la cadena vacia. Si las imagenes no son una matricula,
+// Datos adicionales que trae la matricula (frente y reverso). Clave -> como aparece en el documento.
+const EXTRA_FIELDS: Record<string, string> = {
+  numeroMatricula: "numero de la matricula (numero grande junto al nombre del propietario)",
+  placaAnterior: "PLACA ANTERIOR",
+  anioModelo: "AÑO MODELO",
+  ramv: "RAMV / CPN",
+  cilindraje: "CILINDRAJE",
+  tipoVehiculo: "TIPO DE VEHICULO",
+  combustible: "COMBUSTIBLE",
+  carroceria: "CARROCERIA",
+  pasajeros: "PASAJEROS",
+  tonelaje: "TONELADAS",
+  tipoPeso: "TIPO DE PESO",
+  paisOrigen: "PAIS DE ORIGEN",
+  color2: "COLOR 2",
+  remarcado: "REMARCADO",
+  ortopedico: "ORTOPEDICO",
+  tipoTransporte: "TIPO DE TRANSPORTE (MODALIDAD)",
+  ambitoOperacion: "AMBITO DE OPERACION",
+  provincia: "PROVINCIA",
+  canton: "CANTON",
+  domicilio: "DOMICILIO",
+  telefonoPropietario: "TELEFONO",
+  avaluo: "AVALUO",
+  valorMatricula: "VALOR MATRICULA",
+  fechaCompra: "FECHA COMPRA",
+  fechaEmision: "FECHA EMISION",
+  fechaCaducidad: "FECHA CADUCA",
+  lugarEmision: "LUGAR EMISION",
+  observacionesMatricula: "OBSERVACIONES",
+};
+
+const EMPTY_JSON = JSON.stringify({
+  placa: "", propietario: "", cedula: "", marca: "", modelo: "", anio: "", color: "", chasis: "", motor: "", clase: "", servicio: "",
+  ...Object.fromEntries(Object.keys(EXTRA_FIELDS).map((key) => [key, ""])),
+});
+
+const PROMPT = `Estas imagenes son el frente y/o el reverso de una matricula vehicular de Ecuador (documento de la ANT o de un municipio como la AMT).
+Combina la informacion de todas las imagenes y extrae TODOS los datos que aparecen.
+Responde SOLO con un objeto JSON con estas claves:
+${EMPTY_JSON}
+Donde va cada dato:
+- placa: PLACA ACTUAL; propietario: NOMBRE DEL PROPIETARIO; cedula: C.I. / PASAPORTE / RUC.
+- anio: AÑO (año de fabricacion); chasis: NUMERO VIN (CHASIS); motor: NUMERO MOTOR; color: COLOR 1.
+- clase: CLASE DE VEHICULO (por ejemplo VEHICULO UTILITARIO, AUTOMOVIL); servicio: CLASE DE TRANSPORTE o SERVICIO (por ejemplo PARTICULAR).
+- ${Object.entries(EXTRA_FIELDS).map(([key, label]) => `${key}: ${label}`).join("; ")}.
+Reglas: placa sin guiones ni espacios (ejemplo PBX1234); cedula o RUC solo con digitos; anio y anioModelo con cuatro digitos;
+fechas tal como aparecen (ejemplo 27-NOV-2025); valores en texto tal como aparecen; textos en mayusculas.
+Si una casilla esta vacia, tiene solo guiones o no se ve con claridad, deja la cadena vacia. Si las imagenes no son una matricula,
 devuelve todas las claves vacias.`;
 
 Deno.serve(async (req) => {
@@ -115,7 +157,7 @@ Deno.serve(async (req) => {
         headers: { "x-api-key": anthropicKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
         body: JSON.stringify({
           model,
-          max_tokens: 600,
+          max_tokens: 1500,
           messages: [{
             role: "user",
             content: [
@@ -147,6 +189,10 @@ Deno.serve(async (req) => {
       motor: clean(parsed.motor).toUpperCase(),
       clase: clean(parsed.clase).toUpperCase(),
       servicio: clean(parsed.servicio).toUpperCase(),
+      ...Object.fromEntries(Object.keys(EXTRA_FIELDS).map((key) => {
+        const value = clean(parsed[key]).toUpperCase();
+        return [key, /^[-_.\s]*$/.test(value) ? "" : value];
+      })),
     };
     return response(origin, 200, { ok: true, data });
   } catch (error) {

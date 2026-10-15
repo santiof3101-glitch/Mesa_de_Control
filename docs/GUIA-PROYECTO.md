@@ -21,6 +21,8 @@ legal las toma y las cierra, gerencia ve reportes y procesamiento de datos carga
 | `js/core/autocor-auth.js` | `window.AutocorAuth`: inicio de sesion con Supabase Auth, renovacion del token, llamadas RPC y Storage. |
 | `styles.css` | Estilos base (historicos, con muchas capas). |
 | `layout-fix.css` | Ajustes y rediseños recientes. Los bloques nuevos van al final, con comentario y fecha. |
+| `mesa-control.css` | Mesa de control (barra lateral, paginas, banner) y, en el panel de administrador, Usuarios con asignacion de tareas y el modulo Feria Automundo. |
+| `js/feria-automundo.js`, `feria-automundo.css` | Modulo temporal de la Feria Automundo (asesor, mesa de control y administrador). |
 | `js/consignment-templates.js`, `assets/contracts` | Plantillas PDF de contratos. |
 | `server.js`, `iniciar-autocor.bat` | Servidor local opcional para un PC compartido. |
 | `supabase/migrations` | SQL aplicado en Supabase (usuarios, Storage, RLS, limpieza de claves). |
@@ -34,6 +36,11 @@ legal las toma y las cierra, gerencia ve reportes y procesamiento de datos carga
   (`reconcileModuleBeforePublish`, `mergeThreeWay`) para no pisar cambios de otra persona.
 - Archivos y PDF van al bucket privado `autocor-archivos` de Storage; en `REGISTROS` solo
   queda la referencia (`storageKey`).
+- Que tareas recibe cada asistente legal se guarda en `legalUsers[].mailboxes`
+  (`saneamientos`, `contratos`, `cuv`, `firmas`, `feria`) y se cambia en Administrador >
+  Usuarios. Si nadie tiene activado `firmas` o `feria`, esas tareas las ven todos.
+- Solicitudes de la feria: `modulo = 'feria'`, `tipo = 'tarea'`; cada cambio es una fila
+  nueva y vale la ultima por `datos.id`. Al eliminar se guarda `deleted: true`.
 
 ## Acceso y seguridad
 

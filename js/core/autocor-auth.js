@@ -228,6 +228,19 @@
     return response.blob();
   }
 
+  // Enlace temporal para que alguien sin acceso al sistema descargue un archivo.
+  async function signedFileUrl(path, expiresInSeconds = 7 * 24 * 60 * 60) {
+    const response = await fetch(`${STORAGE_URL}/object/sign/${FILE_BUCKET}/${encodeStoragePath(path)}`, {
+      method: "POST",
+      headers: await headers({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ expiresIn: expiresInSeconds })
+    });
+    const payload = await readJson(response);
+    const signed = payload?.signedURL || payload?.signedUrl || "";
+    if (!response.ok || !signed) throw new Error("No se pudo crear el enlace de descarga.");
+    return /^https?:/i.test(signed) ? signed : `${STORAGE_URL}${signed.startsWith("/") ? "" : "/"}${signed}`;
+  }
+
   async function removeFile(path) {
     const response = await fetch(`${STORAGE_URL}/object/${FILE_BUCKET}`, {
       method: "DELETE",
@@ -268,6 +281,7 @@
     headers,
     rpc,
     getClaims,
+    signedFileUrl,
     hasSession: () => Boolean(authSession?.access_token),
     onChange: (listener) => {
       listeners.add(listener);

@@ -46,7 +46,8 @@ const LEGAL_MAILBOXES = [
   { id: "saneamientos", label: "Saneamientos", description: "Compra, saneamiento y consultas de placa" },
   { id: "contratos", label: "Contratos", description: "Tracking de contratos de compraventa" },
   { id: "firmas", label: "Firmas", description: "Envio a firma y contratos firmados en Pilot" },
-  { id: "cuv", label: "CUV", description: "Solicitudes y carga de certificado unico vehicular" }
+  { id: "cuv", label: "CUV", description: "Solicitudes y carga de certificado unico vehicular" },
+  { id: "feria", label: "Feria Automundo", description: "Liquidaciones pedidas en la Feria Automundo" }
 ];
 
 const CUV_STATUS_OPTIONS = [
@@ -4025,11 +4026,13 @@ function setView(viewId) {
 
   views.forEach((view) => view.classList.toggle("is-active", view.id === viewId));
   navTabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.view === viewId));
+  const previousViewId = currentViewId;
   currentViewId = viewId;
   persistView(viewId);
   startSupabaseModulePolling();
   window.scrollTo({ top: 0, behavior: "smooth" });
   safeRenderAll();
+  if (viewId === "tareas" && previousViewId !== "tareas") setMesaControlPage("bandeja");
 }
 
 function applyTheme() {
@@ -5561,33 +5564,96 @@ function renderStatusOptions() {
 }
 
 function renderStatusFilters() {
+  renderMesaControlChrome();
+}
+
+const MESA_STATUS_HINTS = {
+  todos: "En este proceso",
+  "por asignar": "Nadie las ha tomado",
+  pendiente: "Asignadas, sin empezar",
+  tomado: "En proceso en la mesa"
+};
+const MESA_STATUS_SHORT = {
+  "rechazado por saneamiento": "Rechazadas",
+  "saneamiento realizado y subido a pilot": "Realizadas"
+};
+
+function isSameLocalDay(value, reference = new Date()) {
+  const date = new Date(value || "");
+  return !Number.isNaN(date.getTime()) &&
+    date.getFullYear() === reference.getFullYear() &&
+    date.getMonth() === reference.getMonth() &&
+    date.getDate() === reference.getDate();
+}
+
+function renderMesaControlChrome() {
   if (!statusFilterButtons) return;
-  const options = [
-    { value: "todos", label: "Todos los estados" },
-    ...state.statusOptions.map((status) => ({
-      value: status.value,
-      label: status.label
-    }))
-  ];
-  const activeLabel = options.find((option) => option.value === activeFilter)?.label || "Todos los estados";
-  statusFilterButtons.innerHTML = `
-    <label class="task-status-select">
-      <span>Filtro del tablero</span>
-      <select id="taskStatusFilterSelect" aria-label="Filtro de estado de tareas">
-        ${options.map((option) => `
-          <option value="${escapeHtml(option.value)}" ${activeFilter === option.value ? "selected" : ""}>
-            ${escapeHtml(option.label)}
-          </option>
-        `).join("")}
-      </select>
-      <small>${escapeHtml(activeLabel)}</small>
-    </label>
-  `;
-  statusFilterButtons.querySelector("#taskStatusFilterSelect")?.addEventListener("change", (event) => {
-    activeFilter = event.target.value || "todos";
-    renderTasks();
-    renderStatusFilters();
+  const allVisible = (state.tasks || []).filter((task) => canLegalUserSeeTask(task));
+  const pool = allVisible.filter((task) => taskMatchesLegalProcess(task));
+  const counts = new Map();
+  pool.forEach((task) => counts.set(task.status, (counts.get(task.status) || 0) + 1));
+  const cards = [{ value: "todos", label: "Todas", count: pool.length, color: "#3d3f45" }];
+  (state.statusOptions || []).forEach((option) => {
+    cards.push({ value: option.value, label: MESA_STATUS_SHORT[option.value] || option.label, count: counts.get(option.value) || 0, color: option.color || "#6d6e71", closes: option.closes });
   });
+  counts.forEach((count, value) => {
+    if (cards.some((card) => card.value === value)) return;
+    const option = getStatusOption(value);
+    cards.push({ value, label: option?.label || value, count, color: option?.color || "#6d6e71", closes: option?.closes });
+  });
+  if (!cards.some((card) => card.value === activeFilter)) activeFilter = "todos";
+  statusFilterButtons.innerHTML = cards.map((card) => `
+    <button type="button" class="mc-kpi${card.value === activeFilter ? " is-active" : ""}" data-mc-status="${escapeHtml(card.value)}" style="--mc-dot:${escapeHtml(card.color)}">
+      <span>${escapeHtml(card.label)}</span>
+      <strong>${card.count}</strong>
+      <small>${escapeHtml(MESA_STATUS_HINTS[card.value] || (card.closes ? "Cerradas" : "Abiertas"))}</small>
+    </button>
+  `).join("");
+
+  const tabs = document.querySelector("#mcProcessTabs");
+  if (tabs) {
+    tabs.innerHTML = getLegalProcessOptions().map((option) => {
+      const open = allVisible.filter((task) => getTaskMailbox(task) === option.value && !isClosedStatus(task.status)).length;
+      return `<button type="button" role="tab" class="${option.value === activeLegalProcessFilter ? "is-active" : ""}" aria-selected="${option.value === activeLegalProcessFilter}" data-mc-process="${escapeHtml(option.value)}">${escapeHtml(option.label)}<em>${open}</em></button>`;
+    }).join("");
+  }
+
+  const open = allVisible.filter((task) => !isClosedStatus(task.status));
+  const stats = {
+    abiertas: open.length,
+    libres: open.filter((task) => !task.legalUserId).length,
+    hoy: allVisible.filter((task) => isClosedStatus(task.status) && isSameLocalDay(task.completedAt || task.updatedAt)).length
+  };
+  document.querySelectorAll("[data-mc-stat]").forEach((element) => {
+    element.textContent = String(stats[element.dataset.mcStat] ?? 0);
+  });
+  const sideUser = document.querySelector("#mcSideUser");
+  if (sideUser) sideUser.textContent = session.role === "admin" ? "Administrador" : (session.name || "Equipo legal");
+}
+
+let activeMcPage = "bandeja";
+
+function setMesaControlPage(page = "bandeja") {
+  const pages = [...document.querySelectorAll("#tareas [data-mc-page]")];
+  let target = pages.some((item) => item.dataset.mcPage === page) ? page : "bandeja";
+  if (target === "ant" && !canCurrentUserUseDatacil()) target = "bandeja";
+  if (target === "feria" && document.querySelector("#fxLegalPanel")?.hidden) target = "bandeja";
+  activeMcPage = target;
+  pages.forEach((item) => {
+    const isOn = item.dataset.mcPage === target;
+    item.hidden = !isOn;
+    item.classList.toggle("is-active", isOn);
+  });
+  document.querySelectorAll("#tareas [data-mc-go]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.mcGo === target);
+  });
+  if (target === "ant" && legalAntLookupPanel) {
+    legalAntLookupPanel.hidden = false;
+    loadDatacilStoredLookups();
+  }
+  if (target === "feria") window.AutocorFeria?.refresh?.(true);
+  const desk = document.querySelector("#tareas");
+  if (desk && desk.getBoundingClientRect().top < 0) window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function addOption(key, value) {
@@ -5967,64 +6033,176 @@ function removeUser(id) {
   showToast("Usuario eliminado.");
 }
 
+const USER_TASK_COLUMNS = [
+  { id: "saneamientos", label: "Saneamientos", hint: "Compra y saneamiento" },
+  { id: "contratos", label: "Contratos", hint: "Compraventa" },
+  { id: "cuv", label: "CUV", hint: "Certificado vehicular" },
+  { id: "firmas", label: "Firmas", hint: "Pilot" },
+  { id: "feria", label: "Feria Automundo", hint: "Temporal", isEvent: true }
+];
+let usersSearchTerm = "";
+
+function userInitials(name = "") {
+  return String(name).split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U";
+}
+
+function renderUserSwitch(attrs, checked, label) {
+  return `<label class="ux-switch" title="${escapeHtml(label)}"><input type="checkbox" ${attrs} ${checked ? "checked" : ""} aria-label="${escapeHtml(label)}"><span aria-hidden="true"></span></label>`;
+}
+
 function renderUsers() {
   const container = document.querySelector("#usersList");
-  container.innerHTML = "";
-
+  if (!container) return;
   state.legalUsers = normalizeLegalUsers(state.legalUsers || []);
-  state.legalUsers.forEach((user) => {
+  const users = state.legalUsers;
+  const term = usersSearchTerm.trim().toLowerCase();
+  const visible = users.filter((user) => !term || `${user.name} ${user.username}`.toLowerCase().includes(term));
+  const feriaOn = window.AutocorFeria?.isActive ? window.AutocorFeria.isActive() : Date.now() < Date.parse("2026-11-01T05:00:00Z");
+  const columns = USER_TASK_COLUMNS.filter((column) => !column.isEvent || feriaOn);
+  const totals = Object.fromEntries(columns.map((column) => [column.id, users.filter((user) => normalizeLegalMailboxes(user.mailboxes).includes(column.id)).length]));
+
+  document.querySelectorAll("[data-ux-count='legal']").forEach((element) => { element.textContent = String(users.length); });
+  document.querySelectorAll("[data-ux-count='managers']").forEach((element) => { element.textContent = String((state.managerUsers || []).length); });
+  document.querySelectorAll("[data-ux-count='processing']").forEach((element) => { element.textContent = String((state.processingUsers || []).length); });
+
+  const alert = document.querySelector("[data-ux-alert]");
+  if (alert) {
+    const uncovered = columns.filter((column) => !["feria", "firmas"].includes(column.id) && !users.some((user) =>
+      user.legalAvailable !== false && normalizeLegalMailboxes(user.mailboxes).includes(column.id)));
+    alert.hidden = !uncovered.length;
+    alert.textContent = uncovered.length
+      ? `Sin nadie disponible para: ${uncovered.map((column) => column.label).join(", ")}. Esas tareas quedarán por asignar.`
+      : "";
+  }
+
+  const rows = visible.map((user) => {
     const mailboxes = normalizeLegalMailboxes(user.mailboxes);
-    const contractAgencies = normalizeContractAgencies(user.contractAgencies);
-    const item = document.createElement("article");
-    item.className = "user-row admin-legal-user-row";
-    item.innerHTML = `
-      <div class="admin-user-summary">
-        <div class="admin-user-avatar">${escapeHtml(user.name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U")}</div>
-        <div class="admin-user-copy">
-          <strong>${escapeHtml(user.name)}</strong>
-          <span>@${escapeHtml(user.username)}</span>
-          <small>${mailboxes.map((mailbox) => LEGAL_MAILBOXES.find((entry) => entry.id === mailbox)?.label || mailbox).join(" + ")} · Agencias: ${contractAgencies.length ? contractAgencies.join(", ") : "Todas"}</small>
-        </div>
-        <small class="availability-badge ${user.legalAvailable === false ? "is-off" : "is-on"}">${user.legalAvailable === false ? "No disponible" : "Disponible"}</small>
-      </div>
-      <div class="row-actions admin-user-controls">
-        <div class="mailbox-picker is-inline admin-user-mailboxes" aria-label="Buzones de ${escapeHtml(user.name)}">
-          ${LEGAL_MAILBOXES.map((mailbox) => `
-            <label>
-              <input type="checkbox" value="${escapeHtml(mailbox.id)}" ${mailboxes.includes(mailbox.id) ? "checked" : ""}>
-              ${escapeHtml(mailbox.label)}
-            </label>
-          `).join("")}
-        </div>
-        <label class="check-row admin-datacil-access"><input class="toggle-datacil-access" type="checkbox" ${user.datacilEnabled ? "checked" : ""}> Consulta ANT</label>
-        <input class="contract-agencies-input" type="text" value="${escapeHtml(contractAgencies.join(", "))}" placeholder="Agencias contratos">
-        <button class="btn secondary save-mailboxes" type="button">Guardar</button>
-        <button class="btn secondary toggle-legal-availability" type="button">${user.legalAvailable === false ? "Disponible" : "No disponible"}</button>
-        <input type="password" placeholder="Nueva contrasena">
-        <button class="btn secondary change-password" type="button">Clave</button>
-        <button class="btn secondary delete-user" type="button">Eliminar</button>
-      </div>
-    `;
-    item.querySelector(".delete-user").addEventListener("click", () => removeUser(user.id));
-    item.querySelector(".change-password").addEventListener("click", () => {
-      const passwordInput = item.querySelector("input[type='password']");
-      changePassword("legalUsers", user.id, passwordInput.value);
-      passwordInput.value = "";
-    });
-    item.querySelector(".save-mailboxes").addEventListener("click", () => {
-      const selected = [...item.querySelectorAll(".mailbox-picker input:checked")].map((input) => input.value);
-      const agenciesInput = item.querySelector(".contract-agencies-input");
-      updateLegalUserAccess(user.id, selected, agenciesInput?.value || "");
-    });
-    item.querySelector(".toggle-legal-availability").addEventListener("click", () => {
-      setLegalUserAvailability(user.id, user.legalAvailable === false);
-    });
-    item.querySelector(".toggle-datacil-access").addEventListener("change", (event) => {
-      updateDatacilUserAccess("legal", user.id, event.target.checked);
-    });
-    container.appendChild(item);
-  });
+    const agencies = normalizeContractAgencies(user.contractAgencies);
+    const available = user.legalAvailable !== false;
+    return `
+      <tr data-ux-user="${escapeHtml(user.id)}">
+        <td class="ux-who">
+          <b class="ux-avatar">${escapeHtml(userInitials(user.name))}</b>
+          <span><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(user.username)}</small></span>
+        </td>
+        <td class="ux-c" data-label="Disponible">${renderUserSwitch(`data-ux-available`, available, `Disponible: ${user.name}`)}</td>
+        ${columns.map((column) => `
+          <td class="ux-c${column.isEvent ? " is-event" : ""}" data-label="${escapeHtml(column.label)}">
+            ${renderUserSwitch(`data-ux-mailbox="${escapeHtml(column.id)}"`, mailboxes.includes(column.id), `${column.label}: ${user.name}`)}
+          </td>`).join("")}
+        <td class="ux-c" data-label="Consulta ANT">${renderUserSwitch(`data-ux-ant`, user.datacilEnabled === true, `Consulta ANT: ${user.name}`)}</td>
+        <td class="ux-agencies" data-label="Agencias contratos">
+          <span class="ux-chip">${escapeHtml(agencies.length ? agencies.join(", ") : "Todas")}</span>
+        </td>
+        <td class="ux-c ux-more">
+          <details class="ux-menu">
+            <summary aria-label="Más opciones de ${escapeHtml(user.name)}">&#8943;</summary>
+            <div class="ux-menu-card">
+              <span class="ux-menu-title">${escapeHtml(user.name)}</span>
+              <label>Agencias de contratos
+                <input type="text" value="${escapeHtml(agencies.join(", "))}" placeholder="Vacío = todas" data-ux-agencies-input>
+              </label>
+              <button type="button" class="btn secondary" data-ux-save-agencies>Guardar agencias</button>
+              <label>Nueva clave
+                <input type="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password" data-ux-password-input>
+              </label>
+              <button type="button" class="btn secondary" data-ux-password>Cambiar clave</button>
+              <button type="button" class="btn ux-danger" data-ux-delete>Eliminar acceso</button>
+            </div>
+          </details>
+        </td>
+      </tr>`;
+  }).join("");
+
+  container.innerHTML = `
+    <table class="ux-matrix">
+      <thead>
+        <tr>
+          <th>Asistente legal</th>
+          <th class="ux-c">Disponible<small>Recibe hoy</small></th>
+          ${columns.map((column) => `<th class="ux-c${column.isEvent ? " is-event" : ""}">${escapeHtml(column.label)}<small>${escapeHtml(column.hint)}</small></th>`).join("")}
+          <th class="ux-c">Consulta ANT<small>Acceso</small></th>
+          <th>Agencias contratos</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>${rows || `<tr><td colspan="${columns.length + 5}" class="ux-empty">No hay asistentes con ese nombre.</td></tr>`}</tbody>
+      <tfoot>
+        <tr>
+          <td>Reciben</td>
+          <td></td>
+          ${columns.map((column) => `<td class="ux-c${column.isEvent ? " is-event" : ""}">${totals[column.id] || 0} ${totals[column.id] === 1 ? "activo" : "activos"}</td>`).join("")}
+          <td></td><td></td><td></td>
+        </tr>
+      </tfoot>
+    </table>`;
   initPasswordToggles(container);
+}
+
+function handleUsersMatrixChange(event) {
+  const row = event.target.closest?.("[data-ux-user]");
+  if (!row) return;
+  const id = row.dataset.uxUser;
+  const user = state.legalUsers.find((item) => item.id === id);
+  if (!user) return;
+  const input = event.target;
+  if (input.matches("[data-ux-available]")) {
+    setLegalUserAvailability(id, input.checked);
+    return;
+  }
+  if (input.matches("[data-ux-ant]")) {
+    updateDatacilUserAccess("legal", id, input.checked);
+    return;
+  }
+  if (input.matches("[data-ux-mailbox]")) {
+    const mailbox = input.dataset.uxMailbox;
+    const current = normalizeLegalMailboxes(user.mailboxes);
+    const next = input.checked ? [...new Set([...current, mailbox])] : current.filter((item) => item !== mailbox);
+    if (!next.length) {
+      input.checked = true;
+      showToast("Cada asistente debe recibir al menos un tipo de tarea. Si no debe recibir nada, desactiva Disponible.");
+      return;
+    }
+    updateLegalUserAccess(id, next);
+  }
+}
+
+function handleUsersMatrixClick(event) {
+  const row = event.target.closest?.("[data-ux-user]");
+  if (!row) return;
+  const id = row.dataset.uxUser;
+  const user = state.legalUsers.find((item) => item.id === id);
+  if (!user) return;
+  if (event.target.closest("[data-ux-save-agencies]")) {
+    const value = row.querySelector("[data-ux-agencies-input]")?.value || "";
+    updateLegalUserAccess(id, normalizeLegalMailboxes(user.mailboxes), value);
+    return;
+  }
+  if (event.target.closest("[data-ux-password]")) {
+    const input = row.querySelector("[data-ux-password-input]");
+    changePassword("legalUsers", id, input?.value || "");
+    if (input) input.value = "";
+    return;
+  }
+  if (event.target.closest("[data-ux-delete]")) {
+    if (window.confirm(`¿Eliminar el acceso de ${user.name}? Sus tareas abiertas vuelven a quedar por asignar.`)) removeUser(id);
+  }
+}
+
+function setUsersTab(tab = "legal") {
+  document.querySelectorAll("[data-ux-tab]").forEach((button) => {
+    const isOn = button.dataset.uxTab === tab;
+    button.classList.toggle("is-active", isOn);
+    button.setAttribute("aria-selected", String(isOn));
+  });
+  document.querySelectorAll("[data-ux-pane]").forEach((pane) => {
+    const isOn = pane.dataset.uxPane === tab;
+    pane.hidden = !isOn;
+    pane.classList.toggle("is-active", isOn);
+  });
+  const newButton = document.querySelector("[data-ux-new]");
+  if (newButton) newButton.hidden = tab === "admin";
+  document.querySelectorAll("#admin-users-module .ux-new-form").forEach((form) => { form.hidden = true; });
 }
 
 function setLegalUserAvailability(id, available) {
@@ -6204,9 +6382,10 @@ function renderLegalAvailability() {
   }
   const available = user.legalAvailable !== false;
   legalAvailabilityToggle.hidden = false;
-  legalAvailabilityStatus.textContent = available ? "Disponible para recibir saneamientos" : "No disponible";
+  legalAvailabilityStatus.textContent = available ? "Disponible para recibir" : "No disponible";
   legalAvailabilityStatus.className = available ? "is-available" : "is-unavailable";
-  legalAvailabilityToggle.textContent = available ? "Ponerme no disponible" : "Ponerme disponible";
+  legalAvailabilityStatus.closest("#legalAvailabilityBlock")?.classList.toggle("is-off", !available);
+  legalAvailabilityToggle.textContent = available ? "Pausar" : "Activar";
   legalAvailabilityToggle.classList.toggle("danger-soft", available);
 }
 
@@ -8494,7 +8673,7 @@ function getLegalProcessOptions(user = currentLegalUser()) {
   ];
   if (session.role === "admin") return baseOptions;
   const mailboxes = normalizeLegalMailboxes(user?.mailboxes);
-  return baseOptions.filter((option) => option.value === "firmas" || mailboxes.includes(option.value));
+  return baseOptions.filter((option) => option.value === "firmas" ? legalUserReceivesFirmas(user || {}) : mailboxes.includes(option.value));
 }
 
 function syncLegalProcessFilter() {
@@ -8584,16 +8763,17 @@ function renderTasks() {
     saveState();
     sincronizarTareasPendientesSupabase();
   }
+  renderMesaControlChrome();
   const visiblePool = state.tasks
     .filter((task) => canLegalUserSeeTask(task))
     .filter((task) => taskMatchesLegalProcess(task));
   const pendingTasks = visiblePool.filter((task) => !isClosedStatus(task.status));
-  if (queueCount) queueCount.textContent = pendingTasks.length;
+  if (queueCount) queueCount.textContent = state.tasks.filter((task) => canLegalUserSeeTask(task) && !isClosedStatus(task.status)).length;
   const user = currentLegalUser();
   const mailboxLabel = user
     ? normalizeLegalMailboxes(user.mailboxes).map((mailbox) => LEGAL_MAILBOXES.find((item) => item.id === mailbox)?.label || mailbox).join(" + ")
     : "";
-  legalSessionLabel.textContent = session.role === "admin" ? "Administrador" : `Asistente: ${session.name || ""}${mailboxLabel ? ` | Buzon: ${mailboxLabel}` : ""}`;
+  legalSessionLabel.textContent = session.role === "admin" ? "Mesa de control · Administrador" : `Mesa de control · ${session.name || ""}${mailboxLabel ? ` · ${mailboxLabel}` : ""}`;
   taskList.innerHTML = "";
 
   if (!canOpenTasks()) {
@@ -8628,9 +8808,11 @@ function renderTasks() {
     card.innerHTML = `
       <div class="task-row-index">${index + 1}</div>
       <div class="task-row-main">
-        <h3>${escapeHtml(isSignatureTask(task) ? getSignatureTaskTitle(task) : isCuvTask(task) ? "Solicitud CUV" : (task.cliente || task.vendedor || "Solicitud sin nombre"))}</h3>
+        <div class="mc-row-title">
+          <span class="mc-plate">${escapeHtml(task.placa || "Sin placa")}</span>
+          <h3>${escapeHtml(isSignatureTask(task) ? getSignatureTaskTitle(task) : isCuvTask(task) ? "Solicitud CUV" : (task.cliente || task.vendedor || "Solicitud sin nombre"))}</h3>
+        </div>
         <p class="task-meta">
-          <span>Placa: ${escapeHtml(task.placa || "Sin placa")}</span>
           <span>Cliente: ${escapeHtml(task.cliente || task.vendedor || "Sin registro")}</span>
           <span>Asesor: ${escapeHtml(task.asesor || task.commercialUserName || "Sin asesor")}</span>
         </p>
@@ -9393,11 +9575,20 @@ function currentLegalUser() {
   return state.legalUsers.find((user) => user.id === session.userId) || null;
 }
 
+// Firmas: si el administrador no activo Firmas a nadie, las ven todos (como antes).
+function legalUserReceivesFirmas(user = {}) {
+  if (userHasMailbox(user, "firmas")) return true;
+  return !(state.legalUsers || []).some((item) => userHasMailbox(item, "firmas"));
+}
+
 function canLegalUserSeeTask(task = {}, user = currentLegalUser()) {
   if (session.role === "admin") return true;
   if (!user) return false;
   const mailbox = getTaskMailbox(task);
-  if (mailbox === "firmas") return !task.legalUserId || task.legalUserId === user.id;
+  if (mailbox === "firmas") {
+    if (task.legalUserId) return task.legalUserId === user.id;
+    return legalUserReceivesFirmas(user);
+  }
   if (!userHasMailbox(user, mailbox)) return false;
   if (mailbox === "contratos") {
     if (task.legalUserId) return task.legalUserId === user.id;
@@ -19342,6 +19533,24 @@ legalSidebarNavButtons.forEach((button) => {
   });
 });
 
+document.addEventListener("click", (event) => {
+  const statusButton = event.target.closest?.("#tareas [data-mc-status]");
+  if (statusButton) {
+    activeFilter = statusButton.dataset.mcStatus || "todos";
+    renderTasks();
+    return;
+  }
+  const processButton = event.target.closest?.("#tareas [data-mc-process]");
+  if (processButton) {
+    activeLegalProcessFilter = processButton.dataset.mcProcess || "saneamientos";
+    activeFilter = "todos";
+    renderTasks();
+    return;
+  }
+  const pageButton = event.target.closest?.("#tareas [data-mc-go]");
+  if (pageButton) setMesaControlPage(pageButton.dataset.mcGo);
+});
+
 legalProcessFilter?.addEventListener("change", () => {
   activeLegalProcessFilter = legalProcessFilter.value || "saneamientos";
   activeFilter = "todos";
@@ -19699,8 +19908,38 @@ legalChatList?.addEventListener("click", (event) => {
   deleteLegalChatMessage(button.dataset.deleteChatMessage);
 });
 
+document.querySelector("#usersList")?.addEventListener("change", handleUsersMatrixChange);
+document.querySelector("#usersList")?.addEventListener("click", handleUsersMatrixClick);
+document.querySelector("[data-ux-search]")?.addEventListener("input", (event) => {
+  usersSearchTerm = event.target.value || "";
+  renderUsers();
+});
+document.querySelectorAll("[data-ux-tab]").forEach((button) => {
+  button.addEventListener("click", () => setUsersTab(button.dataset.uxTab));
+});
+document.querySelector("[data-ux-new]")?.addEventListener("click", () => {
+  const pane = document.querySelector("[data-ux-pane]:not([hidden])");
+  const form = pane?.querySelector(".ux-new-form");
+  if (!form) return;
+  form.hidden = false;
+  form.querySelector("input")?.focus();
+});
+document.querySelectorAll("#admin-users-module [data-ux-cancel]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const form = button.closest(".ux-new-form");
+    form?.reset();
+    if (form) form.hidden = true;
+  });
+});
+document.addEventListener("click", (event) => {
+  document.querySelectorAll("#admin-users-module details.ux-menu[open]").forEach((menu) => {
+    if (!menu.contains(event.target)) menu.open = false;
+  });
+});
+
 userForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  userForm.hidden = true;
   const formData = new FormData(userForm);
   createUser({
     ...Object.fromEntries(formData.entries()),
@@ -19724,12 +19963,14 @@ managerUserForm.addEventListener("submit", (event) => {
   event.preventDefault();
   createManagerUser(Object.fromEntries(new FormData(managerUserForm).entries()));
   managerUserForm.reset();
+  managerUserForm.hidden = true;
 });
 
 processingUserForm?.addEventListener("submit", (event) => {
   event.preventDefault();
   createProcessingUser(Object.fromEntries(new FormData(processingUserForm).entries()));
   processingUserForm.reset();
+  processingUserForm.hidden = true;
 });
 
 commercialAdvisorForm.addEventListener("submit", (event) => {

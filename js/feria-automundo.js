@@ -30,6 +30,38 @@
     ["motor", "Motor"]
   ];
 
+  // Datos adicionales que la lectura de la matricula llena (no obligatorios).
+  const EXTRA_FIELDS = [
+    ["numeroMatricula", "N.º de matrícula"],
+    ["placaAnterior", "Placa anterior"],
+    ["anioModelo", "Año modelo"],
+    ["ramv", "RAMV / CPN"],
+    ["cilindraje", "Cilindraje"],
+    ["tipoVehiculo", "Tipo de vehículo"],
+    ["combustible", "Combustible"],
+    ["carroceria", "Carrocería"],
+    ["pasajeros", "Pasajeros"],
+    ["tonelaje", "Tonelaje"],
+    ["tipoPeso", "Tipo de peso"],
+    ["paisOrigen", "País de origen"],
+    ["color2", "Color 2"],
+    ["remarcado", "Remarcado"],
+    ["ortopedico", "Ortopédico"],
+    ["tipoTransporte", "Tipo de transporte"],
+    ["ambitoOperacion", "Ámbito de operación"],
+    ["provincia", "Provincia"],
+    ["canton", "Cantón"],
+    ["telefonoPropietario", "Teléfono en la matrícula"],
+    ["avaluo", "Avalúo"],
+    ["domicilio", "Domicilio del propietario", true],
+    ["valorMatricula", "Valor de la matrícula"],
+    ["lugarEmision", "Lugar de emisión"],
+    ["fechaCompra", "Fecha de compra"],
+    ["fechaEmision", "Fecha de emisión"],
+    ["fechaCaducidad", "Fecha de caducidad"],
+    ["observacionesMatricula", "Observaciones de la matrícula"]
+  ];
+
   let feriaTasks = [];
   let feriaLoadedAt = 0;
   let feriaLoading = null;
@@ -64,8 +96,23 @@
     return { id: String(user.userId || user.role || ""), name: String(user.name || "Usuario"), agency: String(user.agency || ""), role: String(user.role || "") };
   }
 
+  // Asistentes legales que el administrador activo para recibir la feria (Usuarios > Feria Automundo).
+  // Si nadie esta activado, la reciben todos para que ninguna solicitud se quede sin atender.
+  function feriaLegalUsers() {
+    const users = typeof state === "object" && Array.isArray(state?.legalUsers) ? state.legalUsers : [];
+    return users.filter((user) => Array.isArray(user.mailboxes) && user.mailboxes.includes("feria"));
+  }
+
+  function legalReceivesFeria() {
+    const assigned = feriaLegalUsers();
+    if (!assigned.length) return true;
+    return assigned.some((user) => user.id === currentUser().id);
+  }
+
   function canUseFeria() {
-    return isFeriaActive() && ["commercial", "legal", "admin"].includes(currentUser().role);
+    const role = currentUser().role;
+    if (!isFeriaActive() || !["commercial", "legal", "admin"].includes(role)) return false;
+    return role !== "legal" || legalReceivesFeria();
   }
 
   function applyVisibility() {
@@ -73,11 +120,22 @@
     $$("[data-feria-only]").forEach((element) => {
       element.hidden = !show;
     });
+    if (!show && typeof activeMcPage === "string" && activeMcPage === "feria" && typeof setMesaControlPage === "function") {
+      setMesaControlPage("bandeja");
+    }
     const open = isReceivingRequests();
     const form = $("#fxForm");
     const closed = $("[data-fx-closed]");
     if (form) form.hidden = !open;
     if (closed) closed.hidden = open;
+    const note = $("[data-fx-assign-note]");
+    if (note) {
+      const names = feriaLegalUsers().map((user) => user.name);
+      note.hidden = !show;
+      note.textContent = names.length
+        ? `Estas solicitudes llegan a: ${names.join(", ")}. Lo define el administrador en Usuarios.`
+        : "Estas solicitudes llegan a toda la mesa de control. El administrador puede elegir quién las recibe en Usuarios.";
+    }
   }
 
   // ===== Datos =====
@@ -101,7 +159,7 @@
           if (!task?.id || latest.has(task.id)) return;
           latest.set(task.id, task);
         });
-        feriaTasks = [...latest.values()].sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+        feriaTasks = [...latest.values()].filter((task) => !task.deleted).sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
         feriaLoadedAt = Date.now();
       } catch (error) {
         toast(error.message || "No se pudieron cargar las solicitudes de la feria.", "error");
@@ -116,7 +174,9 @@
   async function saveFeriaTask(task) {
     const saved = await guardarRegistroSupabase(FERIA_MODULO, FERIA_TIPO, task, currentUser().name);
     if (!saved) throw new Error("No se pudo guardar. Revise la conexión e intente de nuevo.");
-    feriaTasks = [task, ...feriaTasks.filter((item) => item.id !== task.id)];
+    feriaTasks = task.deleted
+      ? feriaTasks.filter((item) => item.id !== task.id)
+      : [task, ...feriaTasks.filter((item) => item.id !== task.id)];
     return task;
   }
 
@@ -222,11 +282,20 @@
         const fromAnt = ["propietario", "cedula", "marca", "modelo", "anio"].includes(name) && pendingLookup;
         if (setFormField(form, name, data[name], { overwrite: !fromAnt })) filled.push(name);
       });
+      let extras = 0;
+      EXTRA_FIELDS.forEach(([name]) => {
+        if (setFormField(form, name, data[name])) extras += 1;
+      });
+      if (extras) {
+        const more = $("[data-fx-more]", form);
+        if (more) more.open = true;
+      }
+      updateExtraCount(form);
       const mismatch = readPlate && plate && readPlate !== plate;
       if (mismatch) {
         setHint(`Atención: la matrícula dice ${readPlate} y la placa consultada es ${plate}. Revisa antes de enviar.`, "warn");
       } else {
-        setHint(filled.length
+        setHint(filled.length || extras
           ? "Datos extraídos de la matrícula y agregados a la ficha vehicular. Revísalos antes de enviar."
           : "La matrícula no aportó datos nuevos. La ficha conserva los datos de ANT.", filled.length ? "ok" : "info");
       }
@@ -359,13 +428,21 @@
     if (ocrButton) ocrButton.disabled = false;
   }
 
-  function resetForm(form) {
-    form.reset();
+  // Limpia lo que form.reset() no toca (fotos, consulta ANT, marcas de autollenado).
+  function clearFormExtras(form) {
     resetPhotos();
+    const more = $("[data-fx-more]", form);
+    if (more) more.open = false;
+    updateExtraCount(form);
     pendingLookup = null;
     $$(".is-autofilled", form).forEach((field) => field.classList.remove("is-autofilled"));
     setFormStatus("");
     setHint("Empieza consultando la placa en ANT. Es obligatorio para enviar la solicitud.", "info");
+  }
+
+  function resetForm(form) {
+    form.reset();
+    clearFormExtras(form);
   }
 
   async function submitFeriaForm(event) {
@@ -418,6 +495,9 @@
         observaciones: String(data.observaciones || "").trim(),
         ant: pendingLookup,
         matricula,
+        matriculaDatos: Object.fromEntries(EXTRA_FIELDS
+          .map(([name]) => [name, String(data[name] || "").trim().toUpperCase()])
+          .filter(([, value]) => value)),
         asesor: { id: user.id, name: user.name, agency: user.agency },
         status: "pendiente",
         createdAt: now,
@@ -437,6 +517,179 @@
       }
     }
   }
+
+
+  // ===== Enviar la liquidacion al cliente por WhatsApp =====
+  const WA_ICON = '<svg class="fx-wa-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2a9.7 9.7 0 0 0-8.4 14.6L2.3 21.8l5.1-1.3A9.7 9.7 0 1 0 12 2.2Zm0 17.7a8 8 0 0 1-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 19.9Zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.8.9c-.1.2-.3.2-.5.1a6.6 6.6 0 0 1-3.3-2.9c-.2-.4.3-.4.8-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5a.9.9 0 0 0-.7.3 2.8 2.8 0 0 0-.9 2.1 4.9 4.9 0 0 0 1 2.6 11.2 11.2 0 0 0 4.3 3.8c1.6.7 2.2.7 3 .6.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1l-.4-.2Z" fill="currentColor"/></svg>';
+
+  function titleCase(value) {
+    return String(value || "").toLowerCase().replace(/(^|[\s-])([a-záéíóúñü])/g, (match, space, letter) => space + letter.toUpperCase()).trim();
+  }
+
+  // Numero de Ecuador en formato internacional: 0991234567 -> 593991234567.
+  function whatsappNumber(value) {
+    let digits = String(value || "").replace(/\D/g, "");
+    if (digits.startsWith("593")) return digits.length >= 11 ? digits : "";
+    if (digits.startsWith("0")) digits = digits.slice(1);
+    return digits.length === 9 ? `593${digits}` : (digits.length >= 10 ? digits : "");
+  }
+
+  function whatsappMessage(task) {
+    const ficha = fichaOf(task);
+    const client = titleCase(ficha.propietario) || "estimado cliente";
+    const advisor = titleCase(task.asesor?.name || currentUser().name);
+    // Siglas cortas (AC, GL, 4X4) se quedan en mayusculas: "Nissan Kicks Drive AC 1.6".
+    const car = String([ficha.marca, ficha.modelo].filter(Boolean).join(" ")).split(/\s+/).filter(Boolean)
+      .map((word) => (word.length <= 2 || /\d/.test(word) ? word.toUpperCase() : titleCase(word))).join(" ") || "vehículo";
+    const year = ficha.anio ? `, año ${ficha.anio}` : "";
+    return [
+      `¡Hola, ${client}! 👋`,
+      `Soy ${advisor}, tu asesor comercial de AUTOCOR. ¡Gracias por confiar en nosotros! 🚗`,
+      `Te comparto la liquidación de tu ${car}${year}, placas ${task.placa}, con todos los valores detallados para que podamos avanzar con tu negociación.`,
+      "¡Queremos que aproveches esta oportunidad durante la Feria Automundo! Estamos listos para acompañarte y hacer que tu negociación sea rápida, segura y transparente.",
+      "*Recuerda* que en AUTOCOR nos encargamos de todo: revisión legal, documentación, trámites y traspaso. ¡Tú disfrutas de una experiencia fácil y sin complicaciones! 🤝",
+      "¡Sigamos sumando kilómetros juntos y hagamos de esta feria una gran experiencia para ti!"
+    ].join("\n\n");
+  }
+
+  function liquidationFileName(task) {
+    return `Liquidacion-AUTOCOR-${task.placa}.pdf`;
+  }
+
+  function canShareFiles() {
+    try {
+      const probe = new File(["x"], "x.pdf", { type: "application/pdf" });
+      return typeof navigator.canShare === "function" && navigator.canShare({ files: [probe] });
+    } catch {
+      return false;
+    }
+  }
+
+  const pdfCache = new Map();
+  function prefetchPdf(task) {
+    if (!pdfCache.has(task.resultado.path)) {
+      const promise = window.AutocorAuth.downloadFile(task.resultado.path)
+        .then((blob) => new File([blob], liquidationFileName(task), { type: "application/pdf" }));
+      promise.catch(() => pdfCache.delete(task.resultado.path));
+      pdfCache.set(task.resultado.path, promise);
+    }
+    return pdfCache.get(task.resultado.path);
+  }
+
+  // El enlace se prepara al abrir la ventana para que el chat se abra al instante con el toque.
+  const linkCache = new Map();
+  function prefetchLink(task) {
+    const key = task.resultado.path;
+    if (!linkCache.has(key)) {
+      const entry = { url: "", promise: null };
+      entry.promise = window.AutocorAuth.signedFileUrl(key, 7 * 24 * 60 * 60)
+        .then((url) => { entry.url = url; return url; })
+        .catch((error) => { linkCache.delete(key); throw error; });
+      entry.promise.catch(() => {});
+      linkCache.set(key, entry);
+    }
+    return linkCache.get(key);
+  }
+
+  function openWhatsapp(taskId) {
+    const task = feriaTasks.find((item) => item.id === taskId);
+    if (!task?.resultado?.path) return;
+    const number = whatsappNumber(task.telefono);
+    const shareFiles = canShareFiles();
+    const dialog = document.createElement("div");
+    dialog.className = "fx-modal fx-wa-modal";
+    dialog.innerHTML = `
+      <div class="fx-modal-backdrop" data-fx-close></div>
+      <section class="fx-modal-card" role="dialog" aria-modal="true" aria-labelledby="fxWaTitle">
+        <header class="fx-modal-head">
+          <div>
+            <span class="fx-badge">Liquidación · ${esc(task.placa)}</span>
+            <h3 id="fxWaTitle">Enviar al cliente por WhatsApp</h3>
+          </div>
+          <button type="button" class="fx-modal-close" data-fx-close aria-label="Cerrar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+        </header>
+        <div class="fx-wa-body" data-fx-wa="${esc(task.id)}">
+          <div class="fx-wa-to">
+            <span>Para</span>
+            <strong>${esc(titleCase(fichaOf(task).propietario) || "Cliente")}</strong>
+            <em>${number ? `+${esc(number.slice(0, 3))} ${esc(number.slice(3))}` : "Sin número válido"}</em>
+          </div>
+          <label class="fx-wa-label" for="fxWaText">Mensaje (puedes editarlo)</label>
+          <textarea id="fxWaText" rows="11" data-fx-wa-text>${esc(whatsappMessage(task))}</textarea>
+          <div class="fx-wa-file">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+            <span>${esc(liquidationFileName(task))}</span>
+          </div>
+          <div class="fx-wa-actions">
+            ${number ? `<button type="button" class="btn fx-wa-btn" data-fx-wa-chat>${WA_ICON}Abrir chat de +${esc(number.slice(0, 3))} ${esc(number.slice(3))}</button>` : ""}
+            ${shareFiles ? `<button type="button" class="btn secondary" data-fx-wa-share>Adjuntar el PDF como archivo</button>` : ""}
+          </div>
+          <p class="fx-wa-help">${number
+            ? `<b>Abrir chat</b> va directo al número del cliente con el mensaje y un enlace seguro a la liquidación (válido 7 días).${shareFiles ? " Si además quieres mandar el PDF como archivo, usa <b>Adjuntar el PDF</b>: WhatsApp no deja elegir el número desde aquí, pero el chat del cliente te aparecerá primero en la lista." : ""}`
+            : "El número registrado no es válido. Usa <b>Adjuntar el PDF</b> y elige el chat del cliente en WhatsApp."}</p>
+        </div>
+      </section>`;
+    document.body.appendChild(dialog);
+    document.body.classList.add("fx-modal-open");
+    if (shareFiles) prefetchPdf(task);
+    if (number) prefetchLink(task);
+    dialog.querySelector("[data-fx-wa-share],[data-fx-wa-chat]")?.focus();
+  }
+
+  async function logWhatsapp(taskId, how) {
+    try {
+      await withFreshTask(taskId, (task) => {
+        task.enviosWhatsapp = [...(task.enviosWhatsapp || []), { at: new Date().toISOString(), by: currentUser().name, how }];
+        task.history = addHistory(task, "Liquidación enviada al cliente por WhatsApp", how);
+        return task;
+      });
+    } catch {}
+  }
+
+  async function shareWhatsappPdf(button) {
+    const box = button.closest("[data-fx-wa]");
+    const task = feriaTasks.find((item) => item.id === box?.dataset.fxWa);
+    if (!task) return;
+    const text = box.querySelector("[data-fx-wa-text]").value.trim();
+    const file = await prefetchPdf(task);
+    // Algunas versiones de WhatsApp ignoran el texto al compartir un archivo: queda copiado para pegarlo.
+    navigator.clipboard?.writeText(text).catch(() => {});
+    try {
+      await navigator.share({ files: [file], text, title: `Liquidación ${task.placa}` });
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+      throw error;
+    }
+    toast("Listo. Si el mensaje no aparece en WhatsApp, pégalo: ya está copiado.");
+    logWhatsapp(task.id, "PDF adjunto");
+  }
+
+  async function openWhatsappChat(button) {
+    const box = button.closest("[data-fx-wa]");
+    const task = feriaTasks.find((item) => item.id === box?.dataset.fxWa);
+    const number = whatsappNumber(task?.telefono);
+    if (!task || !number) return;
+    const message = box.querySelector("[data-fx-wa-text]").value.trim();
+    const buildUrl = (link) => `https://wa.me/${number}?text=${encodeURIComponent(`${message}\n\n📄 Descarga tu liquidación aquí:\n${link}`)}`;
+    const entry = prefetchLink(task);
+    if (entry.url) {
+      // Directo al chat del numero registrado (en el celular abre la app de WhatsApp).
+      const opened = window.open(buildUrl(entry.url), "_blank");
+      if (!opened) window.location.href = buildUrl(entry.url);
+    } else {
+      const popup = window.open("", "_blank");
+      try {
+        const url = buildUrl(await entry.promise);
+        if (popup) popup.location.href = url;
+        else window.location.href = url;
+      } catch (error) {
+        popup?.close();
+        throw error;
+      }
+    }
+    logWhatsapp(task.id, "Chat del cliente con enlace al PDF");
+  }
+
 
   // ===== Vistas =====
   function statusPill(status) {
@@ -495,7 +748,10 @@
       actions += `<button type="button" class="btn secondary fx-btn" data-fx-resend="${esc(task.id)}">Corregido, reenviar</button>`;
     }
     if (result?.path) {
-      actions += `<button type="button" class="btn primary fx-btn" data-fx-download="${esc(task.id)}">Descargar liquidación</button>`;
+      if (!isLegal) {
+        actions += `<button type="button" class="btn fx-btn fx-wa-btn" data-fx-whatsapp="${esc(task.id)}">${WA_ICON}Enviar al cliente por WhatsApp</button>`;
+      }
+      actions += `<button type="button" class="btn ${isLegal ? "primary" : "secondary"} fx-btn" data-fx-download="${esc(task.id)}">Descargar liquidación</button>`;
     }
     return `
       <article class="fx-card is-${esc(task.status)}">
@@ -566,6 +822,7 @@
             <p class="fx-ant is-${ant.level}">${esc(ant.text)}</p>
             ${task.observaciones ? `<p class="fx-card-note">${esc(task.observaciones)}</p>` : ""}
           </section>
+          ${extraRows(task) ? `<section class="fx-ficha-panel fx-ficha-wide"><h4>Datos de la matrícula</h4><dl class="fx-ficha-extra">${extraRows(task)}</dl></section>` : ""}
           <section class="fx-ficha-panel fx-ficha-wide">
             <h4>Documentos</h4>
             <div class="fx-ficha-files">
@@ -581,6 +838,12 @@
     document.body.appendChild(dialog);
     document.body.classList.add("fx-modal-open");
     dialog.querySelector(".fx-modal-close")?.focus();
+  }
+
+  function extraRows(task) {
+    const extra = task.matriculaDatos || {};
+    return EXTRA_FIELDS.filter(([name]) => extra[name])
+      .map(([name, label]) => `<div class="fx-ficha-row"><dt>${esc(label)}</dt><dd>${esc(extra[name])}</dd></div>`).join("");
   }
 
   function closeFicha() {
@@ -635,13 +898,14 @@
     await loadFeriaTasks(force);
     renderCommercial();
     renderLegal();
+    renderAdmin();
   }
 
   function startAutoRefresh() {
     window.clearInterval(refreshTimer);
     refreshTimer = window.setInterval(() => {
       const commercialVisible = !$("[data-commercial-area-section='feria']")?.hidden && currentViewId === "formulario";
-      const legalVisible = !$("#fxLegalPanel")?.hidden && currentViewId === "tareas";
+      const legalVisible = Boolean($("#fxLegalPanel")?.offsetParent) && currentViewId === "tareas";
       const busy = $(".fx-modal") || document.activeElement?.closest?.(".fx-resolve");
       if (document.visibilityState === "visible" && !busy && (commercialVisible || legalVisible)) refreshAll(true);
     }, 30000);
@@ -679,7 +943,8 @@
       "Fecha de envío", "Tomada por", "Fecha tomada", "Realizada por", "Fecha realizada",
       "Minutos hasta tomar", "Minutos de atención", "Minutos totales",
       "ANT deuda", "ANT multas", "ANT prohibición de enajenar", "Fotos de matrícula", "Liquidación subida",
-      "Observaciones del asesor", "Comentario de mesa", "Observación de mesa", "Veces devuelta"
+      "Observaciones del asesor", "Comentario de mesa", "Observación de mesa", "Veces devuelta",
+      ...EXTRA_FIELDS.map(([, label]) => label)
     ];
     const ordered = [...feriaTasks].sort((a, b) => String(a.createdAt || "").localeCompare(String(b.createdAt || "")));
     const rows = ordered.map((task) => {
@@ -698,7 +963,8 @@
         minutesBetween(task.createdAt, takenAt), minutesBetween(takenAt, doneAt), minutesBetween(task.createdAt, doneAt),
         task.ant ? String(Number(task.ant.deuda || 0).toFixed(2)).replace(".", ",") : "", task.ant ? task.ant.multas : "",
         task.ant ? (task.ant.prohibicion ? "Sí" : "No") : "", photos, task.resultado?.path ? "Sí" : "No",
-        task.observaciones, task.resultado?.comentario || "", task.observacionMesa || "", returned
+        task.observaciones, task.resultado?.comentario || "", task.observacionMesa || "", returned,
+        ...EXTRA_FIELDS.map(([name]) => (name === "telefonoPropietario" ? asText(task.matriculaDatos?.[name]) : task.matriculaDatos?.[name] || ""))
       ];
     });
     const csv = "﻿" + [headers, ...rows].map((row) => row.map(csvCell).join(";")).join("\r\n");
@@ -796,13 +1062,228 @@
     renderCommercial();
   }
 
+
+  // ===== Administrador: editar, reasignar o borrar solicitudes =====
+  let adminSearch = "";
+  let adminStatus = "";
+  let adminEditingId = "";
+
+  function legalUserOptions() {
+    const users = typeof state === "object" && Array.isArray(state?.legalUsers) ? state.legalUsers : [];
+    return users.map((user) => ({ id: user.id, name: user.name }));
+  }
+
+  function renderAdmin() {
+    const list = $("#fxaList");
+    if (!list) return;
+    const counts = countBy(feriaTasks);
+    $$("[data-fxa-stat]").forEach((element) => {
+      element.textContent = String(counts[element.dataset.fxaStat] || 0);
+    });
+    const term = adminSearch.trim().toLowerCase();
+    const rows = feriaTasks.filter((task) => {
+      if (adminStatus && task.status !== adminStatus) return false;
+      if (!term) return true;
+      const ficha = fichaOf(task);
+      return [task.placa, ficha.propietario, ficha.cedula, task.asesor?.name, task.tomadaPor?.name, ficha.marca, ficha.modelo]
+        .join(" ").toLowerCase().includes(term);
+    });
+    list.innerHTML = rows.length ? `
+      <table class="fxa-table">
+        <thead><tr><th>Placa / vehículo</th><th>Propietario</th><th>Asesor</th><th>Atiende</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          ${rows.map((task) => {
+            const ficha = fichaOf(task);
+            return `
+              <tr class="${task.id === adminEditingId ? "is-selected" : ""}">
+                <td data-label="Placa"><strong class="fxa-plate">${esc(task.placa)}</strong><small>${esc(vehicleLine(task))}</small></td>
+                <td data-label="Propietario">${esc(ficha.propietario || "-")}<small>${esc(ficha.cedula || "")}</small></td>
+                <td data-label="Asesor">${esc(task.asesor?.name || "-")}<small>${esc(when(task.createdAt))}</small></td>
+                <td data-label="Atiende">${esc(task.tomadaPor?.name || "Sin asignar")}</td>
+                <td data-label="Estado">${statusPill(task.status)}</td>
+                <td class="fxa-actions"><button type="button" class="btn secondary fx-btn" data-fxa-edit="${esc(task.id)}">Editar</button></td>
+              </tr>`;
+          }).join("")}
+        </tbody>
+      </table>` : `<div class="fx-empty">No hay solicitudes con ese filtro.</div>`;
+  }
+
+  function field(label, name, value, { type = "text", wide = false, options = null } = {}) {
+    const control = options
+      ? `<select name="${name}">${options.map(([optionValue, optionLabel]) => `<option value="${esc(optionValue)}" ${String(optionValue) === String(value ?? "") ? "selected" : ""}>${esc(optionLabel)}</option>`).join("")}</select>`
+      : type === "textarea"
+        ? `<textarea name="${name}" rows="2">${esc(value ?? "")}</textarea>`
+        : `<input name="${name}" type="${type}" value="${esc(value ?? "")}" ${type === "number" ? 'min="0" step="any"' : ""}>`;
+    return `<label class="fxa-field${wide ? " is-wide" : ""}"><span>${esc(label)}</span>${control}</label>`;
+  }
+
+  function openEditor(taskId) {
+    const editor = $("#fxaEditor");
+    const task = feriaTasks.find((item) => item.id === taskId);
+    if (!editor || !task) return;
+    adminEditingId = taskId;
+    const ficha = fichaOf(task);
+    const legal = [["", "Sin asignar"], ...legalUserOptions().map((user) => [user.id, user.name])];
+    if (task.tomadaPor?.id && !legal.some(([id]) => id === task.tomadaPor.id)) legal.push([task.tomadaPor.id, task.tomadaPor.name]);
+    const files = matriculaFiles(task)
+      .map(([side, label]) => `<button type="button" class="btn secondary fx-btn" data-fx-photo="${esc(task.id)}" data-fx-side-open="${side}">${esc(label)}</button>`).join("");
+    const history = (task.history || []).slice(-6).reverse()
+      .map((item) => `<li><b>${esc(when(item.at))}</b> · ${esc(item.action)} · ${esc(item.by || "")}</li>`).join("");
+    editor.innerHTML = `
+      <form class="fxa-form" data-fxa-form="${esc(task.id)}">
+        <header class="fxa-editor-head">
+          <div><span>Editar solicitud de feria</span><h3>${esc(task.placa)} · ${esc(vehicleLine(task))}</h3></div>
+          <button type="button" class="fx-modal-close" data-fxa-close aria-label="Cerrar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+        </header>
+        <fieldset><legend>Estado y responsable</legend>
+          ${field("Estado", "status", task.status, { options: Object.entries(STATUS_LABELS) })}
+          ${field("Atiende", "tomadaPor", task.tomadaPor?.id || "", { options: legal })}
+          ${field("Observación de mesa", "observacionMesa", task.observacionMesa || "", { type: "textarea", wide: true })}
+        </fieldset>
+        <fieldset><legend>Vehículo y propietario</legend>
+          ${field("Placa", "placa", task.placa)}
+          ${FICHA_FIELDS.map(([name, label]) => field(label, name, ficha[name] || "", { wide: name === "propietario" })).join("")}
+        </fieldset>
+        <fieldset><legend>Más datos de la matrícula</legend>
+          ${EXTRA_FIELDS.map(([name, label, wide]) => field(label, `extra_${name}`, task.matriculaDatos?.[name] || "", { wide })).join("")}
+        </fieldset>
+        <fieldset><legend>Negociación</legend>
+          ${field("Precio de toma", "precioToma", task.precioToma || "", { type: "number" })}
+          ${field("Kilometraje", "kilometraje", task.kilometraje ?? "", { type: "number" })}
+          ${field("Teléfono", "telefono", task.telefono || "")}
+          ${field("Observaciones del asesor", "observaciones", task.observaciones || "", { type: "textarea", wide: true })}
+        </fieldset>
+        <fieldset><legend>Archivos</legend>
+          <div class="fxa-files is-wide">
+            ${files || `<span class="fx-muted">Sin fotos de la matrícula.</span>`}
+            ${task.resultado?.path ? `<button type="button" class="btn secondary fx-btn" data-fx-download="${esc(task.id)}">Descargar liquidación</button>` : ""}
+            <label class="fx-file"><input type="file" accept="application/pdf" name="liquidacion" data-fx-result-file><span>${task.resultado?.path ? "Reemplazar liquidación (PDF)" : "Subir liquidación (PDF)"}</span></label>
+          </div>
+        </fieldset>
+        ${history ? `<ul class="fx-history fxa-history">${history}</ul>` : ""}
+        <footer class="fxa-editor-foot">
+          <button type="button" class="btn fxa-delete" data-fxa-delete="${esc(task.id)}">Eliminar solicitud</button>
+          <button type="button" class="btn secondary" data-fxa-close>Cancelar</button>
+          <button type="submit" class="btn primary">Guardar cambios</button>
+        </footer>
+      </form>`;
+    editor.hidden = false;
+    renderAdmin();
+    if (window.matchMedia("(max-width: 1100px)").matches) editor.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function closeEditor() {
+    adminEditingId = "";
+    const editor = $("#fxaEditor");
+    if (editor) {
+      editor.hidden = true;
+      editor.innerHTML = "";
+    }
+    renderAdmin();
+  }
+
+  async function saveAdminEdit(form) {
+    const taskId = form.dataset.fxaForm;
+    const data = Object.fromEntries(new FormData(form).entries());
+    const file = form.elements.liquidacion?.files?.[0] || null;
+    const plate = plateOf(data.placa);
+    if (!/^[A-Z]{3}[0-9]{3,4}$/.test(plate)) throw new Error("La placa no es válida.");
+    if (file && file.type !== "application/pdf" && !/\.pdf$/i.test(file.name)) throw new Error("La liquidación debe ser un PDF.");
+    const user = currentUser();
+    const uploaded = file ? await uploadFeriaFile(file, "liquidaciones", taskId) : null;
+    const saved = await withFreshTask(taskId, (task) => {
+      if (data.status === "finalizada" && !task.resultado?.path && !uploaded) {
+        throw new Error("Para marcarla como realizada, sube la liquidación en PDF.");
+      }
+      const changes = [];
+      const ficha = { ...fichaOf(task) };
+      FICHA_FIELDS.forEach(([name, label]) => {
+        const value = String(data[name] || "").trim().toUpperCase();
+        if (value !== String(ficha[name] || "")) changes.push(label);
+        ficha[name] = value;
+      });
+      if (plate !== task.placa) changes.push("Placa");
+      const extras = {};
+      EXTRA_FIELDS.forEach(([name]) => {
+        const value = String(data[`extra_${name}`] || "").trim().toUpperCase();
+        if (value) extras[name] = value;
+      });
+      if (JSON.stringify(extras) !== JSON.stringify(task.matriculaDatos || {})) changes.push("Datos de la matrícula");
+      task.matriculaDatos = extras;
+      const price = Number(data.precioToma) || 0;
+      const km = Number(data.kilometraje) || 0;
+      if (price !== Number(task.precioToma || 0)) changes.push("Precio de toma");
+      if (km !== Number(task.kilometraje || 0)) changes.push("Kilometraje");
+      if (String(data.telefono || "").trim() !== String(task.telefono || "")) changes.push("Teléfono");
+      if (String(data.observaciones || "").trim() !== String(task.observaciones || "")) changes.push("Observaciones");
+      task.placa = plate;
+      task.ficha = ficha;
+      task.propietario = ficha.propietario;
+      task.cedula = ficha.cedula;
+      task.vehiculo = { marca: ficha.marca, modelo: ficha.modelo, anio: ficha.anio, color: ficha.color };
+      task.precioToma = price;
+      task.kilometraje = km;
+      task.telefono = String(data.telefono || "").trim();
+      task.observaciones = String(data.observaciones || "").trim();
+      task.observacionMesa = String(data.observacionMesa || "").trim();
+
+      const takerId = String(data.tomadaPor || "");
+      if (takerId !== String(task.tomadaPor?.id || "")) {
+        const taker = legalUserOptions().find((item) => item.id === takerId);
+        task.tomadaPor = taker ? { id: taker.id, name: taker.name, at: new Date().toISOString() } : null;
+        changes.push(taker ? `Asignada a ${taker.name}` : "Sin asignar");
+      }
+      let status = data.status || task.status;
+      if (status === "en_revision" && !task.tomadaPor) status = "pendiente";
+      if (status === "pendiente" && task.tomadaPor && takerId) status = "en_revision";
+      if (status !== task.status) changes.push(`Estado: ${STATUS_LABELS[status] || status}`);
+      task.status = status;
+      if (uploaded) {
+        task.resultado = { ...(task.resultado || {}), ...uploaded, at: new Date().toISOString(), by: user.name, byId: user.id };
+        changes.push("Liquidación");
+      }
+      if (!changes.length) return null;
+      task.history = addHistory(task, "Editada por el administrador", changes.join(", "));
+      return task;
+    });
+    toast(saved ? "Cambios guardados." : "No hubo cambios para guardar.");
+    if (saved) openEditor(taskId);
+  }
+
+  async function deleteAdminTask(taskId) {
+    const task = feriaTasks.find((item) => item.id === taskId);
+    if (!task) return;
+    if (!window.confirm(`¿Eliminar la solicitud de ${task.placa}? Ya no aparecerá para el asesor ni para la mesa de control.`)) return;
+    await withFreshTask(taskId, (fresh) => {
+      fresh.deleted = true;
+      fresh.history = addHistory(fresh, "Eliminada por el administrador");
+      return fresh;
+    });
+    closeEditor();
+    toast(`Solicitud de ${task.placa} eliminada.`);
+  }
+
   // ===== Eventos =====
+  function buildExtraInputs() {
+    const box = $("[data-fx-extra]");
+    if (!box || box.childElementCount) return;
+    box.innerHTML = EXTRA_FIELDS.map(([name, label, wide]) =>
+      `<label class="${wide ? "fx-span" : ""}">${esc(label)}<input name="${name}" autocomplete="off"></label>`).join("");
+  }
+
+  function updateExtraCount(form = $("#fxForm")) {
+    const counter = $("[data-fx-more-count]");
+    if (!counter || !form) return;
+    const filled = EXTRA_FIELDS.filter(([name]) => String(form.elements[name]?.value || "").trim()).length;
+    counter.textContent = filled ? `${filled} dato${filled === 1 ? "" : "s"} leído${filled === 1 ? "" : "s"} de la matrícula` : "Se llenan al extraer los datos de las fotos";
+  }
+
   function bind() {
+    buildExtraInputs();
     const form = $("#fxForm");
     form?.addEventListener("submit", submitFeriaForm);
-    form?.addEventListener("reset", (event) => {
-      event.preventDefault();
-      resetForm(form);
+    form?.addEventListener("reset", () => {
+      window.setTimeout(() => clearFormExtras(form), 0);
     });
     $$("[data-fx-side] input[type=file]", form || document).forEach((input) => {
       input.addEventListener("change", (event) => onPhotoSelected(event.currentTarget));
@@ -826,11 +1307,19 @@
         closeFicha();
         return;
       }
-      if (target.closest?.("[data-commercial-area='feria']") || target.closest?.("[data-legal-scroll='fxLegalPanel']")) {
+      if (target.closest?.("[data-admin-module='admin-feria-module']")) {
         refreshAll(true);
         return;
       }
-      const button = target.closest?.("[data-fx-export],[data-fx-datacil],[data-fx-ocr],[data-fx-reload],[data-fx-filter],[data-fx-take],[data-fx-finish],[data-fx-observe],[data-fx-resend],[data-fx-ficha],[data-fx-download],[data-fx-photo]");
+      if (target.closest?.("[data-fxa-close]")) {
+        closeEditor();
+        return;
+      }
+      if (target.closest?.("[data-commercial-area='feria']")) {
+        refreshAll(true);
+        return;
+      }
+      const button = target.closest?.("[data-fx-export],[data-fx-datacil],[data-fx-ocr],[data-fx-reload],[data-fx-filter],[data-fx-take],[data-fx-finish],[data-fx-observe],[data-fx-resend],[data-fx-ficha],[data-fx-download],[data-fx-photo],[data-fxa-edit],[data-fxa-delete],[data-fxa-reload],[data-fx-whatsapp],[data-fx-wa-share],[data-fx-wa-chat]");
       if (!button) return;
       event.preventDefault();
       try {
@@ -839,6 +1328,11 @@
         if (button.matches("[data-fx-ocr]")) return await extractFromPhotos();
         if (button.matches("[data-fx-reload]")) return await refreshAll(true);
         if (button.matches("[data-fx-ficha]")) return openFicha(button.dataset.fxFicha);
+        if (button.matches("[data-fxa-edit]")) return openEditor(button.dataset.fxaEdit);
+        if (button.matches("[data-fx-whatsapp]")) return openWhatsapp(button.dataset.fxWhatsapp);
+        if (button.matches("[data-fx-wa-share]")) return await shareWhatsappPdf(button);
+        if (button.matches("[data-fx-wa-chat]")) return await openWhatsappChat(button);
+        if (button.matches("[data-fxa-reload]")) return await refreshAll(true);
         if (button.matches("[data-fx-filter]")) {
           legalFilter = button.dataset.fxFilter;
           return renderLegal();
@@ -857,11 +1351,41 @@
         if (button.matches("[data-fx-finish]")) await finishTask(button.dataset.fxFinish, button.closest(".fx-card"));
         if (button.matches("[data-fx-observe]")) await observeTask(button.dataset.fxObserve, button.closest(".fx-card"));
         if (button.matches("[data-fx-resend]")) await resendTask(button.dataset.fxResend);
+        if (button.matches("[data-fxa-delete]")) await deleteAdminTask(button.dataset.fxaDelete);
       } catch (error) {
         toast(error.message || "No se pudo completar la acción.", "error");
       } finally {
         if (button.isConnected) button.disabled = false;
       }
+    });
+
+    document.addEventListener("submit", async (event) => {
+      const form = event.target.closest?.("[data-fxa-form]");
+      if (!form) return;
+      event.preventDefault();
+      const submit = form.querySelector("button[type='submit']");
+      if (submit) {
+        submit.disabled = true;
+        submit.textContent = "Guardando...";
+      }
+      try {
+        await saveAdminEdit(form);
+      } catch (error) {
+        toast(error.message || "No se pudieron guardar los cambios.", "error");
+      } finally {
+        if (submit?.isConnected) {
+          submit.disabled = false;
+          submit.textContent = "Guardar cambios";
+        }
+      }
+    });
+    $("[data-fxa-search]")?.addEventListener("input", (event) => {
+      adminSearch = event.target.value || "";
+      renderAdmin();
+    });
+    $("[data-fxa-status]")?.addEventListener("change", (event) => {
+      adminStatus = event.target.value || "";
+      renderAdmin();
     });
 
     document.addEventListener("change", (event) => {
@@ -875,13 +1399,13 @@
   // La sesion cambia al ingresar o salir: se revisa cada poco si mostrar el modulo.
   let lastRole = "";
   function watchSession() {
-    const role = currentUser().role;
+    const role = `${currentUser().role}:${currentUser().id}:${feriaLegalUsers().map((user) => user.id).join(",")}`;
     if (role !== lastRole) {
       lastRole = role;
       feriaTasks = [];
       feriaLoadedAt = 0;
       applyVisibility();
-      if (canUseFeria() && role === "legal") refreshAll(true);
+      if (canUseFeria() && currentUser().role === "legal") refreshAll(true);
     }
   }
 
