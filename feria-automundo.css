@@ -1164,3 +1164,45 @@ body.fx-modal-open {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+.fx-banner-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fx-closed {
+  display: grid;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 1px solid #e2e4e9;
+  border-left: 4px solid #d71920;
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--fx-texto);
+}
+
+.fx-closed[hidden] {
+  display: none;
+}
+
+.fx-closed strong {
+  color: var(--fx-tinta);
+  font-size: 16px;
+}
+
+#formulario .fx-form[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  .fx-banner-actions {
+    width: 100%;
+  }
+
+  .fx-banner-actions .btn {
+    flex: 1 1 0;
+  }
+}

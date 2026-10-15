@@ -5,8 +5,10 @@
 (function () {
   "use strict";
 
-  // El modulo se oculta solo despues de esta fecha (lunes 19 de octubre, hora de Ecuador).
-  const FERIA_HASTA = new Date("2026-10-20T05:00:00Z");
+  // Feria: jueves 15 a domingo 18 de octubre. Desde el lunes 19 ya no se reciben solicitudes;
+  // la consulta y la descarga del reporte siguen disponibles hasta el 31 de octubre.
+  const FERIA_SOLICITUDES_HASTA = new Date("2026-10-19T05:00:00Z");
+  const FERIA_HASTA = new Date("2026-11-01T05:00:00Z");
   const FERIA_MODULO = "feria";
   const FERIA_TIPO = "tarea";
   const STATUS_LABELS = {
@@ -53,6 +55,10 @@
     return Date.now() < FERIA_HASTA.getTime();
   }
 
+  function isReceivingRequests() {
+    return Date.now() < FERIA_SOLICITUDES_HASTA.getTime();
+  }
+
   function currentUser() {
     const user = typeof session === "object" && session ? session : {};
     return { id: String(user.userId || user.role || ""), name: String(user.name || "Usuario"), agency: String(user.agency || ""), role: String(user.role || "") };
@@ -67,6 +73,11 @@
     $$("[data-feria-only]").forEach((element) => {
       element.hidden = !show;
     });
+    const open = isReceivingRequests();
+    const form = $("#fxForm");
+    const closed = $("[data-fx-closed]");
+    if (form) form.hidden = !open;
+    if (closed) closed.hidden = open;
   }
 
   // ===== Datos =====
@@ -636,6 +647,74 @@
     }, 30000);
   }
 
+  // ===== Reporte de la feria (CSV para Excel) =====
+  function minutesBetween(start, end) {
+    const a = Date.parse(start || "");
+    const b = Date.parse(end || "");
+    return Number.isFinite(a) && Number.isFinite(b) && b >= a ? Math.round((b - a) / 60000) : "";
+  }
+
+  function localDate(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const pad = (number) => String(number).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  function csvCell(value) {
+    const text = String(value ?? "");
+    return /[";\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  }
+
+  async function exportFeria() {
+    await loadFeriaTasks(true);
+    if (!feriaTasks.length) {
+      toast("Todavía no hay solicitudes de la feria para descargar.", "error");
+      return;
+    }
+    const headers = [
+      "Placa", "Estado", "Propietario", "Cédula/RUC", "Marca", "Modelo", "Año", "Color", "Clase", "Servicio", "Chasis", "Motor",
+      "Precio de toma", "Kilometraje", "Teléfono", "Asesor", "Agencia",
+      "Fecha de envío", "Tomada por", "Fecha tomada", "Realizada por", "Fecha realizada",
+      "Minutos hasta tomar", "Minutos de atención", "Minutos totales",
+      "ANT deuda", "ANT multas", "ANT prohibición de enajenar", "Fotos de matrícula", "Liquidación subida",
+      "Observaciones del asesor", "Comentario de mesa", "Observación de mesa", "Veces devuelta"
+    ];
+    const ordered = [...feriaTasks].sort((a, b) => String(a.createdAt || "").localeCompare(String(b.createdAt || "")));
+    const rows = ordered.map((task) => {
+      const ficha = fichaOf(task);
+      const takenAt = task.tomadaPor?.at || "";
+      const doneAt = task.status === "finalizada" ? task.resultado?.at || "" : "";
+      const photos = matriculaFiles(task).length;
+      const returned = (task.history || []).filter((item) => /observaci/i.test(item.action || "")).length;
+      // Cedula y telefono como texto para que Excel no borre el cero inicial.
+      const asText = (value) => (value ? `="${String(value).replace(/"/g, "")}"` : "");
+      return [
+        task.placa, STATUS_LABELS[task.status] || task.status, ficha.propietario, asText(ficha.cedula), ficha.marca, ficha.modelo, ficha.anio, ficha.color,
+        ficha.clase, ficha.servicio, ficha.chasis, ficha.motor,
+        String(Number(task.precioToma || 0).toFixed(2)).replace(".", ","), task.kilometraje, asText(task.telefono), task.asesor?.name, task.asesor?.agency,
+        localDate(task.createdAt), task.tomadaPor?.name || "", localDate(takenAt), doneAt ? task.resultado?.by || "" : "", localDate(doneAt),
+        minutesBetween(task.createdAt, takenAt), minutesBetween(takenAt, doneAt), minutesBetween(task.createdAt, doneAt),
+        task.ant ? String(Number(task.ant.deuda || 0).toFixed(2)).replace(".", ",") : "", task.ant ? task.ant.multas : "",
+        task.ant ? (task.ant.prohibicion ? "Sí" : "No") : "", photos, task.resultado?.path ? "Sí" : "No",
+        task.observaciones, task.resultado?.comentario || "", task.observacionMesa || "", returned
+      ];
+    });
+    const csv = "﻿" + [headers, ...rows].map((row) => row.map(csvCell).join(";")).join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const stamp = localDate(new Date().toISOString()).replace(/[: ]/g, "-");
+    link.href = url;
+    link.download = `feria-automundo-2026-${stamp}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+    toast(`Reporte descargado: ${rows.length} solicitud${rows.length === 1 ? "" : "es"}.`);
+  }
+
   // ===== Acciones de mesa de control =====
   async function withFreshTask(taskId, change) {
     await loadFeriaTasks(true);
@@ -751,10 +830,11 @@
         refreshAll(true);
         return;
       }
-      const button = target.closest?.("[data-fx-datacil],[data-fx-ocr],[data-fx-reload],[data-fx-filter],[data-fx-take],[data-fx-finish],[data-fx-observe],[data-fx-resend],[data-fx-ficha],[data-fx-download],[data-fx-photo]");
+      const button = target.closest?.("[data-fx-export],[data-fx-datacil],[data-fx-ocr],[data-fx-reload],[data-fx-filter],[data-fx-take],[data-fx-finish],[data-fx-observe],[data-fx-resend],[data-fx-ficha],[data-fx-download],[data-fx-photo]");
       if (!button) return;
       event.preventDefault();
       try {
+        if (button.matches("[data-fx-export]")) return await exportFeria();
         if (button.matches("[data-fx-datacil]")) return await lookupPlate();
         if (button.matches("[data-fx-ocr]")) return await extractFromPhotos();
         if (button.matches("[data-fx-reload]")) return await refreshAll(true);

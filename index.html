@@ -19,9 +19,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Roboto+Condensed:wght@300;400;500;600;700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261014-feria-v2">
-  <link rel="stylesheet" href="layout-fix.css?v=20261014-feria-v2">
-  <link rel="stylesheet" href="feria-automundo.css?v=20261014-feria-v2">
+  <link rel="stylesheet" href="styles.css?v=20261014-feria-v3">
+  <link rel="stylesheet" href="layout-fix.css?v=20261014-feria-v3">
+  <link rel="stylesheet" href="feria-automundo.css?v=20261014-feria-v3">
 </head>
 <body>
   <header class="topbar">
@@ -956,6 +956,10 @@
           <div class="fx-stat is-warn"><span>Con observación</span><strong data-fx-stat="observada">0</strong></div>
         </section>
 
+        <div class="fx-closed" data-fx-closed hidden>
+          <strong>La Feria Automundo terminó.</strong>
+          <span>Ya no se reciben nuevas solicitudes. Puedes revisar tus fichas y descargar las liquidaciones abajo.</span>
+        </div>
         <form id="fxForm" class="fx-form" novalidate>
           <header class="fx-form-head">
             <h3>Nueva liquidación</h3>
@@ -1559,7 +1563,10 @@
               <h2 id="fxLegalTitle">Solicitudes de la Feria Automundo</h2>
               <p>Toma la solicitud, revisa la ficha vehicular y sube la liquidación en PDF para finalizar.</p>
             </div>
-            <button type="button" class="btn secondary fx-btn" data-fx-reload>Actualizar</button>
+            <div class="fx-banner-actions">
+              <button type="button" class="btn secondary fx-btn" data-fx-reload>Actualizar</button>
+              <button type="button" class="btn primary fx-btn" data-fx-export>Descargar reporte (Excel)</button>
+            </div>
           </div>
           <div class="fx-tabs" role="tablist" aria-label="Estado de las solicitudes">
             <button type="button" class="fx-tab is-active" data-fx-filter="activas"><strong data-fx-legal-count="activas">0</strong><span>Por atender</span></button>
@@ -3175,7 +3182,7 @@
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20261014-feria-v2"></script>
-  <script src="js/feria-automundo.js?v=20261014-feria-v2"></script>
+  <script src="app.js?v=20261014-feria-v3"></script>
+  <script src="js/feria-automundo.js?v=20261014-feria-v3"></script>
 </body>
 </html>
