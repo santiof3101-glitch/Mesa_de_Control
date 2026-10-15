@@ -51,15 +51,15 @@
     ["ambitoOperacion", "Ámbito de operación"],
     ["provincia", "Provincia"],
     ["canton", "Cantón"],
-    ["domicilio", "Domicilio del propietario", true],
     ["telefonoPropietario", "Teléfono en la matrícula"],
     ["avaluo", "Avalúo"],
+    ["domicilio", "Domicilio del propietario", true],
     ["valorMatricula", "Valor de la matrícula"],
+    ["lugarEmision", "Lugar de emisión"],
     ["fechaCompra", "Fecha de compra"],
     ["fechaEmision", "Fecha de emisión"],
     ["fechaCaducidad", "Fecha de caducidad"],
-    ["lugarEmision", "Lugar de emisión"],
-    ["observacionesMatricula", "Observaciones de la matrícula", true]
+    ["observacionesMatricula", "Observaciones de la matrícula"]
   ];
 
   let feriaTasks = [];
