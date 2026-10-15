@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta name="autocor-version" content="20261015T091800Z">
-<script src="js/auto-update.js?v=20261015T091800Z"></script>
+<meta name="autocor-version" content="20261015T093500Z">
+<script src="js/auto-update.js?v=20261015T093500Z"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AUTOCOR | Contratos</title>
@@ -566,6 +566,9 @@
   .paste-side.active .paste-drop svg{stroke:var(--navy)}
   .paste-side:focus .paste-drop,
   .paste-side.active .paste-drop{color:var(--navy)}
+  .paste-pick{margin-top:2px;padding:4px 10px;border:1px solid #c8ccd3;border-radius:999px;background:#fff;color:#374151;font:700 10.5px/1.2 inherit;cursor:pointer;white-space:nowrap}
+  .paste-pick:hover{border-color:#d71920;color:#b3121a}
+  .paste-hint{font-size:9.5px;color:#9ca3af;font-weight:600;text-align:center;line-height:1.25}
   .paste-preview{
     position:relative;width:100%;display:none;
   }
@@ -892,14 +895,14 @@
     .validate-toast.visible{transform:translate(0,0)}
   }
 </style>
-<script src="js/api-config.js?v=20261015T091800Z"></script>
-<script src="js/apps-script-transport.js?v=20261015T091800Z"></script>
-<script src="js/api-client.js?v=20261015T091800Z"></script>
-<script src="js/gemini-client.js?v=20261015T091800Z"></script>
-<script src="js/document-extraction.js?v=20261015T091800Z"></script>
-<script src="js/expediente.js?v=20261015T091800Z"></script>
+<script src="js/api-config.js?v=20261015T093500Z"></script>
+<script src="js/apps-script-transport.js?v=20261015T093500Z"></script>
+<script src="js/api-client.js?v=20261015T093500Z"></script>
+<script src="js/gemini-client.js?v=20261015T093500Z"></script>
+<script src="js/document-extraction.js?v=20261015T093500Z"></script>
+<script src="js/expediente.js?v=20261015T093500Z"></script>
 <style>.vc-needs-review{background:#fff7ed!important;outline:2px solid #f59e0b;border-radius:6px;padding:6px}</style>
-<link rel="stylesheet" href="js/navigation.css?v=20261015T091800Z">
+<link rel="stylesheet" href="js/navigation.css?v=20261015T093500Z">
 </head>
 <body>
 
@@ -1539,9 +1542,9 @@
 <script src="https://unpkg.com/pizzip@3.1.4/dist/pizzip.js"></script>
 <script src="https://unpkg.com/docxtemplater@3.50.0/build/docxtemplater.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="js/cuv-parser.js?v=20261015T091800Z"></script>
-<script src="js/contrato-templates.js?v=20261015T091800Z" onerror="console.warn('[Contratos] contrato-templates.js no encontrado — generación de contratos no disponible')"></script>
-<script src="js/generador-contratos.js?v=20261015T091800Z"></script>
+<script src="js/cuv-parser.js?v=20261015T093500Z"></script>
+<script src="js/contrato-templates.js?v=20261015T093500Z" onerror="console.warn('[Contratos] contrato-templates.js no encontrado — generación de contratos no disponible')"></script>
+<script src="js/generador-contratos.js?v=20261015T093500Z"></script>
 <script>
 /* ════════════════════════════════════════════════════════════════
    CONTRATOS — lógica principal
@@ -3548,6 +3551,71 @@ async function _procesarNotariaPaste(){
 /* Se ejecuta inmediatamente (el DOM ya existe porque el script   *
  * está al final del body). No depende de DOMContentLoaded.      */
 (function initPasteZones(){
+
+  /* 0) Boton "Elegir archivo" en cada zona: permite seleccionar la imagen (o un PDF)
+        ademas de pegarla con Ctrl+V o arrastrarla. */
+  var pastePicker = document.createElement('input');
+  pastePicker.type = 'file';
+  pastePicker.accept = 'image/*,.pdf,application/pdf';
+  pastePicker.style.display = 'none';
+  document.body.appendChild(pastePicker);
+  var pasteTarget = null;
+  async function _archivoADataUrl(file){
+    if(file.type === 'application/pdf' || /\.pdf$/i.test(file.name||'')){
+      if(typeof pdfjsLib === 'undefined') throw new Error('No se pudo leer el PDF.');
+      var pdf = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
+      var page = await pdf.getPage(1);
+      var vp = page.getViewport({scale: 2});
+      var canvas = document.createElement('canvas');
+      canvas.width = vp.width; canvas.height = vp.height;
+      await page.render({canvasContext: canvas.getContext('2d'), viewport: vp}).promise;
+      return canvas.toDataURL('image/jpeg', 0.9);
+    }
+    if(String(file.type).indexOf('image') === -1) throw new Error('Selecciona una imagen o un PDF.');
+    return await new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(ev){ resolve(ev.target.result); };
+      reader.onerror = function(){ reject(new Error('No se pudo leer el archivo.')); };
+      reader.readAsDataURL(file);
+    });
+  }
+  async function _cargarArchivoEnZona(tipo, lado, file){
+    try{
+      var dataUrl = await _archivoADataUrl(file);
+      var safe = await limitarPrintPegado(dataUrl);
+      _setPasteImage(tipo, lado, safe);
+      if(lado === 'frontal'){
+        var next = document.getElementById('paste-'+tipo+'-reverso');
+        if(next) _activarPasteZone(next);
+      }
+    }catch(err){
+      alert(err && err.message ? err.message : 'No se pudo cargar el archivo.');
+    }
+  }
+  window._cargarArchivoEnZona = _cargarArchivoEnZona;
+  pastePicker.addEventListener('change', function(){
+    var f = pastePicker.files && pastePicker.files[0];
+    var t = pasteTarget;
+    pastePicker.value = '';
+    if(f && t) _cargarArchivoEnZona(t.tipo, t.lado, f);
+  });
+  document.querySelectorAll('.paste-side').forEach(function(zone){
+    var drop = zone.querySelector('.paste-drop');
+    if(!drop || drop.querySelector('.paste-pick')) return;
+    var hint = drop.querySelector('span');
+    if(hint){ hint.className = 'paste-hint'; hint.textContent = 'Pega (Ctrl+V) o arrastra'; }
+    var pick = document.createElement('button');
+    pick.type = 'button';
+    pick.className = 'paste-pick';
+    pick.textContent = 'Elegir archivo';
+    pick.addEventListener('click', function(e){
+      e.stopPropagation();
+      _activarPasteZone(zone);
+      pasteTarget = { tipo: zone.getAttribute('data-tipo'), lado: zone.getAttribute('data-lado') };
+      pastePicker.click();
+    });
+    drop.appendChild(pick);
+  });
   /* 1) Click / focus en cada .paste-side → activar zona */
   document.querySelectorAll('.paste-side').forEach(function(zone){
     zone.addEventListener('click',    function(){ _activarPasteZone(zone); });
@@ -3566,11 +3634,7 @@ async function _procesarNotariaPaste(){
       var tipo = zone.getAttribute('data-tipo');
       var lado = zone.getAttribute('data-lado');
       var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-      if(f && f.type.indexOf('image')!==-1){
-        var reader = new FileReader();
-        reader.onload = function(ev){ _setPasteImage(tipo, lado, ev.target.result); };
-        reader.readAsDataURL(f);
-      }
+      if(f) _cargarArchivoEnZona(tipo, lado, f);
     });
   });
 
@@ -6636,9 +6700,9 @@ window.AutoCorContractDraft = {
 })();
 </script>
 
-<script src="js/auth-ui.js?v=20261015T091800Z"></script>
-<script src="js/session-sync.js?v=20261015T091800Z"></script>
-<script src="js/workflow.js?v=20261015T091800Z"></script>
-<script src="js/workflow-adapters.js?v=20261015T091800Z"></script>
+<script src="js/auth-ui.js?v=20261015T093500Z"></script>
+<script src="js/session-sync.js?v=20261015T093500Z"></script>
+<script src="js/workflow.js?v=20261015T093500Z"></script>
+<script src="js/workflow-adapters.js?v=20261015T093500Z"></script>
 </body>
 </html>
