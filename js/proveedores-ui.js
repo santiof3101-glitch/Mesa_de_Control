@@ -55,11 +55,18 @@
     const rejected = getProviderRejectedOverchargeAmount(records);
     const authorized = getProviderAuthorizedOverchargeAmount(records);
     const plates = new Set(records.map(getProviderRecordPlate).filter(Boolean)).size;
+    // Estado de cada cobro (no de la placa completa).
     const status = new Map();
     groups.forEach((group) => {
-      status.set(group.plate, isProviderDuplicatePending(group) ? "pending" : isProviderDuplicateRejected(group) ? "rejected" : "approved");
+      group.items.forEach((item, index) => {
+        const decision = getProviderItemDecision(group, item, index);
+        status.set(item, decision === "no_aprobado" ? "rejected" : index === 0 ? "base" : decision === "aprobado" ? "approved" : "pending");
+      });
     });
-    return { groups, pending, pendingAmounts, paid, billable, overcharge, rejected, authorized, plates, status };
+    const withoutPlate = getProviderWithoutPlateRecords(records);
+    const common = getProviderCommonAmount(records);
+    const withoutPlateAmount = withoutPlate.reduce((sum, record) => sum + (getProviderRecordAmount(record) || common), 0);
+    return { groups, pending, pendingAmounts, paid, billable, overcharge, rejected, authorized, plates, status, withoutPlate, withoutPlateAmount };
   }
 
   function sumBy(records, keyFn, common) {
@@ -110,12 +117,12 @@
     const average = metrics.plates ? metrics.paid / metrics.plates : 0;
     if (kpis) {
       kpis.innerHTML = [
-        kpi("Total cobrado", money(metrics.paid), `${records.length} registros en el filtro`),
-        kpi("A pagar conciliado", money(metrics.billable), "Sin duplicados pendientes ni rechazados", "is-ok"),
-        kpi("Por revisar", money(metrics.overcharge), `${metrics.pending.length} placa(s) repetidas sin decisión`, metrics.pending.length ? "is-warn" : ""),
-        kpi("No aprobado", money(metrics.rejected), "Cobros repetidos que no se pagan", "is-red"),
-        kpi("Placas únicas", String(metrics.plates), `Promedio ${money(average)} por placa`),
-        kpi("Duplicados aprobados", money(metrics.authorized), "Segundos cobros autorizados")
+        kpi("Total cobrado", money(metrics.paid), `${records.length} cobros · ${metrics.plates} placas`),
+        kpi("A pagar", money(metrics.billable), "Total cobrado menos por revisar y no aprobado", "is-ok"),
+        kpi("Por revisar", money(metrics.overcharge), `${metrics.pending.length} placa(s) con cobros repetidos sin decisión`, metrics.pending.length ? "is-warn" : ""),
+        kpi("No aprobado", money(metrics.rejected), "Cobros que no se pagan", "is-red"),
+        kpi("Repetidos aprobados", money(metrics.authorized), "Cobros adicionales autorizados"),
+        kpi("Sin placa", money(metrics.withoutPlateAmount), metrics.withoutPlate.length ? `${metrics.withoutPlate.length} cobro(s) para revisar` : "Todos los cobros tienen placa", metrics.withoutPlate.length ? "is-warn" : "")
       ].join("");
     }
     const common = getProviderCommonAmount(records);
@@ -150,6 +157,7 @@
         lines.push(`<li>No hay duplicados pendientes en el filtro actual.</li>`);
       }
       if (metrics.rejected > 0) lines.push(`<li>Los cobros no aprobados evitan pagar ${esc(money(metrics.rejected))}.</li>`);
+      if (metrics.withoutPlate.length) lines.push(`<li><b>${metrics.withoutPlate.length}</b> cobro(s) no tienen placa (${esc(money(metrics.withoutPlateAmount))}). Revísalos en <b>Registros</b>: suelen venir de un Excel con las columnas en otro orden.</li>`);
       insight.innerHTML = records.length
         ? `<header><h3>Lectura rápida</h3>${metrics.pending.length ? `<button type="button" class="pv-btn pv-btn-red pv-btn-sm" data-pv-go="duplicados">Revisar duplicados</button>` : ""}</header><ul>${lines.join("")}</ul>`
         : `<header><h3>Sin registros</h3></header><p>Carga el reporte de un proveedor en la pestaña <b>Cargar reporte</b>.</p>`;
@@ -210,10 +218,12 @@
       .join(" ").toUpperCase().includes(term));
   }
 
-  function statusChip(state) {
+  function statusChip(state, hasPlate = true) {
+    if (!hasPlate) return `<span class="pv-chip is-warn">Sin placa</span>`;
     if (state === "pending") return `<span class="pv-chip is-warn">Por revisar</span>`;
     if (state === "rejected") return `<span class="pv-chip is-red">No aprobado</span>`;
-    if (state === "approved") return `<span class="pv-chip is-ok">Duplicado aprobado</span>`;
+    if (state === "approved") return `<span class="pv-chip is-ok">Repetido aprobado</span>`;
+    if (state === "base") return `<span class="pv-chip">Primer cobro</span>`;
     return `<span class="pv-chip">OK</span>`;
   }
 
@@ -246,7 +256,7 @@
           <td>${esc(getProviderAdvisor(record) || "—")}</td>
           <td>${esc(getProviderAgency(record) || "—")}</td>
           <td class="pv-obs" title="${esc(getProviderObservation(record))}">${esc(getProviderObservation(record) || "")}</td>
-          <td>${statusChip(metrics.status.get(plate))}</td>
+          <td>${statusChip(metrics.status.get(record), Boolean(plate))}</td>
         </tr>`;
       }).join("")}</tbody></table></div>`;
     if (pager) {
@@ -270,7 +280,7 @@
     }
     const metrics = computeMetrics(records);
     const common = getProviderCommonAmount(records);
-    const statusText = { pending: "POR REVISAR", rejected: "NO APROBADO", approved: "DUPLICADO APROBADO" };
+    const statusText = { pending: "POR REVISAR", rejected: "NO APROBADO", approved: "REPETIDO APROBADO", base: "PRIMER COBRO" };
     const header = ["MES", "FECHA", "PLACA", "PROVEEDOR", "VALOR", "ASESOR", "AGENCIA", "OBSERVACION", "ESTADO", "CARGADO"];
     const lines = [header.join(";")].concat(rows.map((record) => {
       const plate = getProviderRecordPlate(record);
@@ -278,7 +288,7 @@
         record.importMonth, record.FECHA, plate, record.provider,
         (getProviderRecordAmount(record) || common).toFixed(2).replace(".", ","),
         getProviderAdvisor(record), getProviderAgency(record), getProviderObservation(record),
-        statusText[metrics.status.get(plate)] || "OK", record.importedAt ? when(record.importedAt) : ""
+        plate ? (statusText[metrics.status.get(record)] || "OK") : "SIN PLACA", record.importedAt ? when(record.importedAt) : ""
       ].map(csvCell).join(";");
     }));
     const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
