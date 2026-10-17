@@ -1967,6 +1967,7 @@ function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
   const base = supabaseModuleBases[modulo];
   const localBefore = base ? cloneSnapshotWithoutVersion(getLocalModuleSnapshot(modulo)) : null;
   const localChanged = Boolean(base && localBefore && stableJson(localBefore) !== stableJson(base.norm));
+  const localApprovalsBeforeApply = !base && modulo === "proveedores" ? { ...(state.dataProcessing?.providerDuplicateApprovals || {}) } : null;
   const applied = applySupabaseModuleSnapshotRaw(modulo, snapshot, base ? { ...options, allowSmaller: true } : options);
   if (!applied) return false;
   const remoteNorm = cloneSnapshotWithoutVersion(getLocalModuleSnapshot(modulo));
@@ -1980,6 +1981,17 @@ function applySupabaseModuleSnapshot(modulo, snapshot, options = {}) {
   supabaseModuleVersions[modulo] = getSupabaseSnapshotVersion(snapshot) || supabaseModuleVersions[modulo];
   supabaseModuleBases[modulo] = { norm: localChanged ? aligned : cloneSnapshotWithoutVersion(getLocalModuleSnapshot(modulo)), raw: remoteRaw };
   if (localChanged) scheduleSupabaseModuleSync();
+  // Primera lectura del servidor con decisiones de proveedores hechas en este equipo que aun no
+  // estan publicadas: la base queda con las del servidor para que esas decisiones se guarden.
+  if (!base && modulo === "proveedores" && localApprovalsBeforeApply) {
+    const remoteApprovals = remoteRaw?.providerDuplicateApprovals || {};
+    const pendingLocal = Object.keys(localApprovalsBeforeApply).some((key) => key.startsWith("v2::")
+      && getProviderApprovalEntryTime(localApprovalsBeforeApply[key]) > getProviderApprovalEntryTime(remoteApprovals[key]));
+    if (pendingLocal) {
+      supabaseModuleBases[modulo].norm = { ...supabaseModuleBases[modulo].norm, providerDuplicateApprovals: structuredClone(remoteApprovals) };
+      scheduleSupabaseModuleSync();
+    }
+  }
   return true;
 }
 
@@ -2005,9 +2017,22 @@ async function loadModuleBaseBeforeFirstPublish(modulo) {
   if (!remoteVersion) return "empty";
   const remoteSnapshot = await leerUltimoModuloSupabase(modulo);
   if (!remoteSnapshot) return "error";
+  // Decisiones de proveedores hechas en este equipo antes de leer la copia del servidor:
+  // se recuerdan para no darlas por publicadas al fusionar.
+  const localApprovals = modulo === "proveedores" ? { ...(state.dataProcessing?.providerDuplicateApprovals || {}) } : null;
   supabaseRemoteVersions[modulo] = remoteVersion;
   supabasePublishedHashes[modulo] = getSupabaseSnapshotHash(remoteSnapshot);
   applySupabaseModuleSnapshot(modulo, remoteSnapshot, { allowOlderVersion: true, allowSmaller: true });
+  if (localApprovals) {
+    const remoteApprovals = parseMaybeJson(remoteSnapshot)?.providerDuplicateApprovals || {};
+    const pendingLocal = Object.keys(localApprovals).some((key) => key.startsWith("v2::")
+      && getProviderApprovalEntryTime(localApprovals[key]) > getProviderApprovalEntryTime(remoteApprovals[key]));
+    const base = supabaseModuleBases[modulo];
+    if (pendingLocal && base?.norm) {
+      // La base vuelve a ser la del servidor: asi la diferencia (las decisiones nuevas) se publica.
+      base.norm = { ...base.norm, providerDuplicateApprovals: structuredClone(remoteApprovals) };
+    }
+  }
   saveState();
   safeRenderAll();
   return "loaded";
@@ -16550,6 +16575,30 @@ function getProviderItemDecision(group, item, index) {
   return "";
 }
 
+// Varias decisiones seguidas se guardan juntas en una sola copia (1,5 s despues de la ultima).
+let providerDecisionsPublishTimer = 0;
+let providerDecisionsPublishPending = false;
+function scheduleProviderDecisionsPublish() {
+  providerDecisionsPublishPending = true;
+  window.clearTimeout(providerDecisionsPublishTimer);
+  providerDecisionsPublishTimer = window.setTimeout(flushProviderDecisionsPublish, 1500);
+}
+function flushProviderDecisionsPublish() {
+  if (!providerDecisionsPublishPending) return;
+  providerDecisionsPublishPending = false;
+  window.clearTimeout(providerDecisionsPublishTimer);
+  sincronizarProveedoresCriticosAhora();
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") flushProviderDecisionsPublish();
+});
+window.addEventListener("beforeunload", (event) => {
+  if (!providerDecisionsPublishPending) return;
+  flushProviderDecisionsPublish();
+  event.preventDefault();
+  event.returnValue = "";
+});
+
 function writeProviderItemDecision(item, status) {
   const approvals = getProviderDuplicateApprovals();
   approvals[getProviderItemDecisionKey(item)] = {
@@ -16578,7 +16627,7 @@ function setProviderItemDecisionById(recordId, status) {
   writeProviderItemDecision(record, status === "aprobado" || status === "no_aprobado" ? status : "pendiente");
   saveState();
   renderProviderProcessing();
-  sincronizarProveedoresCriticosAhora();
+  scheduleProviderDecisionsPublish();
   showToast(status === "aprobado" ? "Cobro aprobado." : status === "no_aprobado" ? "Cobro marcado como no aprobado." : "Cobro devuelto a pendiente.");
 }
 
