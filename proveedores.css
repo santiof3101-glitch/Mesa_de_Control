@@ -390,3 +390,23 @@
 .pv .pv-head-tools input.pv-input[type=search]:not([type=checkbox]) { width: 320px !important; }
 .pv-profile dt { font-size: 10px; letter-spacing: .03em; }
 @media (max-width: 760px) { .pv .pv-head-tools > * { flex: 1 1 100%; } .pv .pv-head-tools input.pv-input[type=search]:not([type=checkbox]) { width: 100% !important; } }
+
+/* Banner claro */
+.pv-banner {
+  border: 1px solid var(--pv-line);
+  background: linear-gradient(110deg, #ffffff 0%, #f8f8fa 55%, #eff0f3 100%);
+  color: var(--pv-text);
+  box-shadow: 0 10px 26px rgba(21, 23, 29, .07);
+}
+.pv-eyebrow { color: var(--pv-red); }
+.pv-banner h2 { color: var(--pv-ink) !important; }
+.pv-banner p { color: var(--pv-muted) !important; }
+.pv-banner-metrics > div { border-color: var(--pv-line); background: #fff; box-shadow: 0 2px 8px rgba(21, 23, 29, .04); }
+.pv-banner-metrics span { color: var(--pv-muted); }
+.pv-banner-metrics b { color: var(--pv-ink); }
+.pv-banner-metrics .is-alert { border-color: #f3c3c5; background: var(--pv-red-soft); }
+.pv-banner-metrics .is-alert b { color: var(--pv-red-dark); }
+.pv-banner-foot { border-top-color: var(--pv-line); color: var(--pv-muted); }
+.pv-banner-foot b, .pv-banner-foot span span { color: var(--pv-ink); }
+.pv .pv-banner .pv-btn-light { border-color: #d5d7dc; background: #fff; color: var(--pv-ink); }
+.pv .pv-banner .pv-btn-light:hover { border-color: var(--pv-red); color: var(--pv-red-dark); }
