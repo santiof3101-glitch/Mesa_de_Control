@@ -19,13 +19,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Roboto+Condensed:wght@300;400;500;600;700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261015-cx-v2">
-  <link rel="stylesheet" href="layout-fix.css?v=20261015-cx-v2">
-  <link rel="stylesheet" href="feria-automundo.css?v=20261015-cx-v2">
-  <link rel="stylesheet" href="mesa-control.css?v=20261015-cx-v2">
-  <link rel="stylesheet" href="admin-panel.css?v=20261015-cx-v2">
-  <link rel="stylesheet" href="control-seminuevos.css?v=20261015-cx-v2">
-  <link rel="stylesheet" href="compra-form.css?v=20261015-cx-v2">
+  <link rel="stylesheet" href="styles.css?v=20261017-pv-v1">
+  <link rel="stylesheet" href="layout-fix.css?v=20261017-pv-v1">
+  <link rel="stylesheet" href="feria-automundo.css?v=20261017-pv-v1">
+  <link rel="stylesheet" href="mesa-control.css?v=20261017-pv-v1">
+  <link rel="stylesheet" href="admin-panel.css?v=20261017-pv-v1">
+  <link rel="stylesheet" href="control-seminuevos.css?v=20261017-pv-v1">
+  <link rel="stylesheet" href="compra-form.css?v=20261017-pv-v1">
+  <link rel="stylesheet" href="proveedores.css?v=20261017-pv-v1">
 </head>
 <body>
   <header class="topbar">
@@ -430,115 +431,148 @@
         <div class="empty compact-empty">Modulo listo para cargas y reportes de saneamientos.</div>
       </section>
 
-      <section class="panel processing-panel processing-workspace provider-workspace" data-processing-panel="proveedores">
-        <div class="report-hero provider-hero">
-          <div class="provider-hero-icon" aria-hidden="true">📄</div>
-          <div>
-            <p class="eyebrow">Proveedores</p>
-            <h2>Mesa de Control</h2>
-            <p>Controla pagos por proveedor, valida placas repetidas y revisa posibles cobros duplicados con detalle operativo.</p>
+      <section class="panel processing-panel processing-workspace pv" data-processing-panel="proveedores">
+        <header class="pv-banner pv-banner--rojo">
+          <div class="pv-banner-text">
+            <span class="pv-eyebrow">Procesamiento de datos</span>
+            <h2>Proveedores y pagos</h2>
+            <p>Carga los reportes de cada proveedor, revisa placas cobradas más de una vez y controla lo que se paga cada mes.</p>
           </div>
-          <div class="title-actions">
-            <div class="provider-hero-metrics">
-              <span><b id="providerHeroRecords">0</b><small>Registros totales</small></span>
-              <span><b id="providerHeroProviders">0</b><small>Proveedores</small></span>
-              <span><b id="providerHeroPending">0</b><small>Sin autorizacion</small></span>
-              <span><b id="providerHeroMonth">Sin mes</b><small>Mes del reporte</small></span>
+          <div class="pv-banner-metrics">
+            <div><span>Total cobrado</span><b data-pv-m="paid">$ 0,00</b></div>
+            <div><span>A pagar conciliado</span><b data-pv-m="billable">$ 0,00</b></div>
+            <div class="is-alert"><span>Duplicados por revisar</span><b id="providerHeroPending">0</b></div>
+            <div><span>Registros</span><b id="providerHeroRecords">0</b></div>
+          </div>
+          <div class="pv-banner-foot">
+            <span><b id="providerHeroProviders">0</b> proveedores · <b id="providerHeroMonth">Todos los meses</b> · <span id="providerRecordCount">0 registros</span></span>
+            <div class="pv-banner-actions">
+              <button type="button" class="pv-btn pv-btn-light" data-pv-go="cargar">+ Nueva carga</button>
+              <button id="exportProviderPdfBtn" type="button" class="pv-btn pv-btn-red">Descargar reporte PDF</button>
             </div>
-            <span id="providerRecordCount" class="soft-badge">0 registros</span>
-            <button id="toggleProviderProfileManagerBtn" class="btn primary" type="button">Registrar proveedor aqui</button>
           </div>
-        </div>
+        </header>
 
-        <div class="processing-command-center">
-          <section class="processing-upload-card">
-            <div class="card-title-row">
-              <div>
-                <p class="eyebrow">Entrada de datos</p>
-                <h3>Cargar reporte de proveedor</h3>
-              </div>
-            </div>
-            <div class="provider-main-selector">
-              <label>Seleccionar proveedor<select id="providerProfileSelect"></select></label>
-              <button id="showProviderCellsBtn" class="btn secondary" type="button">Mostrar celdas de registro</button>
-            </div>
-            <section id="providerProfileBox" class="provider-profile-box" hidden>
-              <div class="provider-profile-select">
-                <div id="providerProfileSummary" class="provider-cells-panel" hidden></div>
-              </div>
-              <form id="providerProfileForm" class="provider-profile-form">
-                <input id="providerProfileIdInput" type="hidden">
-                <input id="providerProfileNameInput" placeholder="Nuevo perfil: Ej. Matriculacion MG">
-                <input id="providerProfileColumnsInput" placeholder="Columnas separadas por coma: CUV, FECHA, VALOR, PLACA...">
-                <button class="btn secondary" type="submit">Guardar perfil</button>
-              </form>
-              <div class="provider-profile-tools">
-                <button id="editProviderProfileBtn" class="btn secondary" type="button">Editar perfil seleccionado</button>
-                <button id="deleteProviderProfileBtn" class="btn danger" type="button">Eliminar perfil</button>
-              </div>
-            </section>
-            <div class="processing-actions provider-actions">
-              <label class="provider-name-field">Proveedor<input id="providerNameInput" placeholder="Ej. Gestor, notaria, perito" required></label>
+        <section class="pv-filters" aria-label="Filtros de proveedores">
+          <label>Proveedor<select id="providerFilterSelect"></select></label>
+          <label>Mes<select id="providerMonthFilter"></select></label>
+          <label>Carga<select id="providerLoadFilter"></select></label>
+          <label class="pv-search">Placa<input id="providerPlateFilter" type="search" placeholder="Buscar placa"></label>
+          <button id="clearProviderFiltersBtn" class="pv-btn pv-btn-ghost" type="button">Limpiar filtros</button>
+        </section>
+
+        <nav class="pv-tabs" role="tablist" aria-label="Secciones de proveedores">
+          <button type="button" class="pv-tab is-active" data-pv-tab="resumen">Resumen</button>
+          <button type="button" class="pv-tab" data-pv-tab="cargar">Cargar reporte</button>
+          <button type="button" class="pv-tab" data-pv-tab="duplicados">Duplicados <em data-pv-count="pending">0</em></button>
+          <button type="button" class="pv-tab" data-pv-tab="registros">Registros</button>
+          <button type="button" class="pv-tab" data-pv-tab="proveedores">Proveedores</button>
+        </nav>
+
+        <section class="pv-pane is-active" data-pv-pane="resumen">
+          <div class="pv-kpis" data-pv-kpis></div>
+          <div class="pv-grid-2">
+            <article class="pv-card">
+              <header><h3>Gasto por proveedor</h3><span>Total cobrado en el filtro</span></header>
+              <div data-pv-chart="providers"></div>
+            </article>
+            <article class="pv-card">
+              <header><h3>Gasto por mes</h3><span>Últimos 6 meses</span></header>
+              <div data-pv-chart="months"></div>
+            </article>
+          </div>
+          <div class="pv-grid-2">
+            <article class="pv-card">
+              <header><h3>Asesores con más trámites</h3><span>Registros cobrados</span></header>
+              <div data-pv-chart="advisors"></div>
+            </article>
+            <article class="pv-card">
+              <header><h3>Agencias</h3><span>Registros cobrados</span></header>
+              <div data-pv-chart="agencies"></div>
+            </article>
+          </div>
+          <article class="pv-card pv-insight" data-pv-insight></article>
+          <div hidden><div id="providerKpis"></div><section id="providerExecutiveDashboard"></section></div>
+        </section>
+
+        <section class="pv-pane" data-pv-pane="cargar">
+          <div class="pv-steps">
+            <article class="pv-card pv-step">
+              <header><span class="pv-step-num">1</span><div><h3>Proveedor</h3><span>Elige el formato del reporte</span></div></header>
+              <label>Proveedor registrado<select id="providerProfileSelect"></select></label>
+              <button id="showProviderCellsBtn" class="pv-btn pv-btn-ghost pv-btn-sm" type="button">Mostrar celdas de registro</button>
+              <div id="providerProfileSummary" class="pv-columns" hidden></div>
+              <button type="button" class="pv-link" data-pv-go="proveedores">¿No está en la lista? Registra un proveedor nuevo</button>
+            </article>
+            <article class="pv-card pv-step">
+              <header><span class="pv-step-num">2</span><div><h3>Datos de la carga</h3><span>Nombre que aparecerá en los reportes</span></div></header>
+              <label>Nombre del proveedor<input id="providerNameInput" placeholder="Ej. gestor, notaría, perito" required></label>
               <label>Mes del reporte<input id="providerMonthInput" type="month" required></label>
-              <label class="file-action" title="Subir Excel, CSV, TXT o TSV">
-                Subir Excel / CSV
-                <input id="providerFileInput" type="file" accept=".csv,.txt,.tsv,.xlsx">
-              </label>
-              <button id="processProviderPasteBtn" class="btn primary" type="button">Previsualizar</button>
-              <button id="clearProvidersBtn" class="btn danger" type="button">Limpiar</button>
-              <button id="restoreProviderTrashBtn" class="btn secondary" type="button">Restaurar ultimo borrado</button>
-            </div>
-            <textarea id="providerBulkInput" class="bulk-input provider-excel-input" rows="7" placeholder="Pega aqui la tabla copiada desde Excel. El sistema usara las columnas del perfil seleccionado."></textarea>
-            <div id="providerPastePreview" class="provider-paste-preview" hidden></div>
-          </section>
-
-          <aside class="purchase-report-shell provider-filter-shell">
-            <div class="purchase-report-head">
-              <div>
-                <p class="eyebrow">Filtros</p>
-                <h3>Analisis de proveedor</h3>
+            </article>
+            <article class="pv-card pv-step pv-step-wide">
+              <header><span class="pv-step-num">3</span><div><h3>Pega o sube el reporte</h3><span>Copia la tabla desde Excel con sus encabezados</span></div></header>
+              <textarea id="providerBulkInput" class="pv-paste" rows="7" placeholder="Pega aquí la tabla copiada desde Excel. Se usan las columnas del proveedor elegido."></textarea>
+              <div class="pv-step-actions">
+                <label class="pv-btn pv-btn-ghost pv-file" title="Subir Excel, CSV, TXT o TSV">Subir Excel / CSV<input id="providerFileInput" type="file" accept=".csv,.txt,.tsv,.xlsx"></label>
+                <button id="processProviderPasteBtn" class="pv-btn pv-btn-red" type="button">Previsualizar</button>
               </div>
-              <button id="clearProviderFiltersBtn" class="btn secondary" type="button">Limpiar</button>
-            </div>
-            <div class="purchase-filter-grid">
-              <label>Proveedor<select id="providerFilterSelect"></select></label>
-              <label>Mes<select id="providerMonthFilter"></select></label>
-              <label>Carga<select id="providerLoadFilter"></select></label>
-              <label>Placa<input id="providerPlateFilter" type="search" placeholder="Buscar placa"></label>
-              <button id="deleteProviderLoadBtn" class="btn danger" type="button">Eliminar carga</button>
-            </div>
-          </aside>
-        </div>
-
-        <section class="report-dashboard">
-          <div class="report-stage-head">
-            <div>
-              <p class="eyebrow">Auditoria de cobros</p>
-              <h2>Alertas, duplicados y control de gasto</h2>
-            </div>
-            <div class="title-actions">
-              <span class="soft-badge">Control financiero operativo</span>
-              <span class="soft-badge">PDF disponible al final de la base</span>
-            </div>
+            </article>
           </div>
-          <div id="providerKpis" class="kpi-grid compact-kpis report-kpis"></div>
-          <section id="providerExecutiveDashboard" class="payment-executive-dashboard"></section>
+          <div id="providerPastePreview" class="provider-paste-preview pv-preview" hidden></div>
+
+          <article class="pv-card">
+            <header><h3>Historial de cargas</h3><span data-pv-loads-count>0 cargas</span></header>
+            <div data-pv-loads></div>
+          </article>
+
+          <details class="pv-danger">
+            <summary>Opciones avanzadas</summary>
+            <p>Eliminar una carga borra solo sus registros. "Borrar todo" elimina todas las cargas de proveedores; se puede restaurar el último borrado.</p>
+            <div class="pv-step-actions">
+              <button id="deleteProviderLoadBtn" class="pv-btn pv-btn-danger" type="button">Eliminar carga filtrada</button>
+              <button id="restoreProviderTrashBtn" class="pv-btn pv-btn-ghost" type="button">Restaurar último borrado</button>
+              <button id="clearProvidersBtn" class="pv-btn pv-btn-danger" type="button">Borrar todo</button>
+            </div>
+          </details>
+        </section>
+
+        <section class="pv-pane" data-pv-pane="duplicados">
+          <p class="pv-help">Una placa cobrada más de una vez queda <b>por revisar</b>. Apruébala si el segundo cobro fue solicitado; si no, márcala como <b>no aprobada</b> y no se suma al valor a pagar.</p>
           <div id="providerDuplicateReport" class="provider-duplicate-report"></div>
         </section>
 
-        <section class="data-table-panel provider-table-panel">
-          <div class="card-title-row">
-            <div>
-              <p class="eyebrow">Base de proveedor</p>
-              <h3>Ultimos registros cargados</h3>
-            </div>
-            <button class="btn secondary" type="button" data-provider-detail="total">Ver todos los registros</button>
-          </div>
-          <div id="providerTable" class="processing-table"></div>
-          <div class="provider-table-actions">
-            <button class="btn secondary" type="button" data-provider-detail="duplicates">Control financiero operativo</button>
-            <button id="exportProviderPdfBtn" class="btn primary" type="button">Descargar reporte PDF</button>
-          </div>
+        <section class="pv-pane" data-pv-pane="registros">
+          <article class="pv-card">
+            <header>
+              <div><h3>Registros</h3><span data-pv-rec-count>0 registros</span></div>
+              <div class="pv-head-tools">
+                <input type="search" class="pv-input" placeholder="Buscar placa, asesor, agencia u observación" data-pv-rec-search aria-label="Buscar en registros">
+                <button type="button" class="pv-btn pv-btn-ghost" data-pv-export>Exportar Excel (CSV)</button>
+              </div>
+            </header>
+            <div data-pv-records></div>
+            <nav class="pv-pager" data-pv-rec-pager></nav>
+          </article>
+          <div hidden><div id="providerTable"></div></div>
+        </section>
+
+        <section class="pv-pane" data-pv-pane="proveedores">
+          <article class="pv-card">
+            <header>
+              <div><h3>Proveedores registrados</h3><span>Cada proveedor tiene las columnas de su reporte</span></div>
+              <button id="toggleProviderProfileManagerBtn" class="pv-btn pv-btn-red" type="button">Registrar proveedor aqui</button>
+            </header>
+            <section id="providerProfileBox" class="pv-profile-form" hidden>
+              <form id="providerProfileForm">
+                <input id="providerProfileIdInput" type="hidden">
+                <label>Nombre del proveedor<input id="providerProfileNameInput" placeholder="Ej. Matriculación MG"></label>
+                <label>Columnas del reporte (separadas por coma)<input id="providerProfileColumnsInput" placeholder="CUV, FECHA, VALOR, PLACA, ASESOR COMPRA, AGENCIA COMPRA, OBSERVACIONES"></label>
+                <button class="pv-btn pv-btn-red" type="submit">Guardar proveedor</button>
+              </form>
+              <div hidden><button id="editProviderProfileBtn" type="button"></button><button id="deleteProviderProfileBtn" type="button"></button></div>
+            </section>
+            <div class="pv-profiles" data-pv-profiles></div>
+          </article>
         </section>
       </section>
 
@@ -3378,16 +3412,17 @@
     }, true);
   </script>
   <script src="js/core/autocor-core.js?v=20260803-modular-phase1"></script>
-  <script src="js/core/autocor-auth.js?v=20261015-cx-v2"></script>
+  <script src="js/core/autocor-auth.js?v=20261017-pv-v1"></script>
   <script src="js/components/modal.component.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/comercial.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/mesa-control.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/procesamiento.module.js?v=20260803-modular-phase1"></script>
   <script src="js/modules/proveedores.module.js?v=20260803-modular-phase1"></script>
-  <script src="app.js?v=20261015-cx-v2"></script>
-  <script src="js/feria-automundo.js?v=20261015-cx-v2"></script>
-  <script src="js/control-seminuevos.js?v=20261015-cx-v2"></script>
-  <script src="js/compra-documentos.js?v=20261015-cx-v2"></script>
-  <script src="js/version-check.js?v=20261015-cx-v2"></script>
+  <script src="app.js?v=20261017-pv-v1"></script>
+  <script src="js/feria-automundo.js?v=20261017-pv-v1"></script>
+  <script src="js/control-seminuevos.js?v=20261017-pv-v1"></script>
+  <script src="js/compra-documentos.js?v=20261017-pv-v1"></script>
+  <script src="js/proveedores-ui.js?v=20261017-pv-v1"></script>
+  <script src="js/version-check.js?v=20261017-pv-v1"></script>
 </body>
 </html>
