@@ -410,3 +410,36 @@
 .pv-banner-foot b, .pv-banner-foot span span { color: var(--pv-ink); }
 .pv .pv-banner .pv-btn-light { border-color: #d5d7dc; background: #fff; color: var(--pv-ink); }
 .pv .pv-banner .pv-btn-light:hover { border-color: var(--pv-red); color: var(--pv-red-dark); }
+
+/* Variantes del banner */
+.pv-banner.pv-banner--gris {
+  border-color: #d3d5da;
+  border-left: 6px solid var(--pv-red);
+  background: linear-gradient(110deg, #e4e6ea 0%, #eceef1 60%, #f3f4f6 100%);
+}
+.pv-banner.pv-banner--gris::before { display: none; }
+.pv-banner.pv-banner--logo {
+  border: 0;
+  background: linear-gradient(115deg, #55575c 0%, #6d6e71 55%, #8a8c8f 100%);
+  color: #fff;
+}
+.pv-banner.pv-banner--logo h2 { color: #fff !important; }
+.pv-banner.pv-banner--logo p { color: rgba(255, 255, 255, .85) !important; }
+.pv-banner.pv-banner--logo .pv-eyebrow { color: #fff; }
+.pv-banner.pv-banner--logo .pv-eyebrow::before { background: #fff; }
+.pv-banner.pv-banner--logo .pv-banner-foot { border-top-color: rgba(255, 255, 255, .25); color: rgba(255, 255, 255, .85); }
+.pv-banner.pv-banner--logo .pv-banner-foot b, .pv-banner.pv-banner--logo .pv-banner-foot span span { color: #fff; }
+.pv-banner.pv-banner--rojo {
+  border: 0;
+  background: linear-gradient(115deg, #b3121a 0%, #d71920 60%, #e2474d 100%);
+  color: #fff;
+}
+.pv-banner.pv-banner--rojo::before { background: linear-gradient(90deg, #2c2e33 0 68%, #8a8c8f 68% 100%); }
+.pv-banner.pv-banner--rojo h2 { color: #fff !important; }
+.pv-banner.pv-banner--rojo p { color: rgba(255, 255, 255, .88) !important; }
+.pv-banner.pv-banner--rojo .pv-eyebrow { color: #fff; }
+.pv-banner.pv-banner--rojo .pv-eyebrow::before { background: #fff; }
+.pv-banner.pv-banner--rojo .pv-banner-metrics .is-alert { border-color: #fff; background: #fff; }
+.pv-banner.pv-banner--rojo .pv-banner-foot { border-top-color: rgba(255, 255, 255, .3); color: rgba(255, 255, 255, .88); }
+.pv-banner.pv-banner--rojo .pv-banner-foot b, .pv-banner.pv-banner--rojo .pv-banner-foot span span { color: #fff; }
+.pv .pv-banner.pv-banner--rojo .pv-btn-red { background: #2c2e33; border-color: #2c2e33; }
