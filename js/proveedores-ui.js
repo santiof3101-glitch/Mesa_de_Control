@@ -50,7 +50,8 @@
     const pending = groups.filter(isProviderDuplicatePending);
     const paid = getProviderEffectivePaidAmount(records);
     const billable = getProviderBillableAmount(records);
-    const overcharge = pending.reduce((sum, group) => sum + getProviderDuplicateUnauthorizedAmount(group, records), 0);
+    const pendingAmounts = pending.map((group) => ({ plate: group.plate, amount: getProviderDuplicateUnauthorizedAmount(group, records) }));
+    const overcharge = pendingAmounts.reduce((sum, item) => sum + item.amount, 0);
     const rejected = getProviderRejectedOverchargeAmount(records);
     const authorized = getProviderAuthorizedOverchargeAmount(records);
     const plates = new Set(records.map(getProviderRecordPlate).filter(Boolean)).size;
@@ -58,7 +59,7 @@
     groups.forEach((group) => {
       status.set(group.plate, isProviderDuplicatePending(group) ? "pending" : isProviderDuplicateRejected(group) ? "rejected" : "approved");
     });
-    return { groups, pending, paid, billable, overcharge, rejected, authorized, plates, status };
+    return { groups, pending, pendingAmounts, paid, billable, overcharge, rejected, authorized, plates, status };
   }
 
   function sumBy(records, keyFn, common) {
@@ -139,9 +140,7 @@
 
     const insight = $("[data-pv-insight]", root);
     if (insight) {
-      const worst = metrics.pending
-        .map((group) => ({ plate: group.plate, amount: getProviderDuplicateUnauthorizedAmount(group, records) }))
-        .sort((a, b) => b.amount - a.amount)[0];
+      const worst = metrics.pendingAmounts.slice().sort((a, b) => b.amount - a.amount)[0];
       const top = byProvider[0];
       const lines = [];
       if (top) lines.push(`<li><b>${esc(top.label)}</b> concentra ${metrics.paid ? Math.round((top.amount / metrics.paid) * 100) : 0}% del gasto (${esc(money(top.amount))}).</li>`);
@@ -297,7 +296,8 @@
     const root = panel();
     const box = $("[data-pv-profiles]", root);
     if (!box) return;
-    const profiles = getProviderProfiles();
+    // app.js ya reconstruyo los perfiles en este mismo render; reconstruirlos otra vez es costoso.
+    const profiles = state.dataProcessing?.providerProfiles?.length ? state.dataProcessing.providerProfiles : getProviderProfiles();
     const loads = state.dataProcessing?.providerLoads || [];
     const stats = new Map();
     loads.forEach((load) => {

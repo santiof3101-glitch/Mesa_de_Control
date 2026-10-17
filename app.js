@@ -2894,15 +2894,33 @@ function buildProviderProfilesFromHistory(existingProfiles = [], processing = st
       isDefault: Boolean(DEFAULT_PROVIDER_PROFILES.some((profile) => profile.id === cleanId))
     });
   };
+  // Columnas de cada registro calculadas una sola vez y agrupadas por carga, perfil y nombre
+  // (antes se recorria toda la base por cada carga).
+  const records = processing.proveedores || [];
+  const recordColumns = records.map(getProviderProfileColumnsFromRecord);
+  const byKey = new Map();
+  const addTo = (key, index) => {
+    if (!key) return;
+    if (!byKey.has(key)) byKey.set(key, new Set());
+    byKey.get(key).add(index);
+  };
+  records.forEach((record, index) => {
+    addTo(`load:${record.loadId}`, index);
+    addTo(`profile:${record.profileId}`, index);
+    addTo(`name:${record.profileName}`, index);
+  });
   (processing.providerLoads || []).forEach((load) => {
-    const relatedRecords = (processing.proveedores || []).filter((record) =>
-      record.loadId === load.id || record.profileId === load.profileId || record.profileName === load.profileName
-    );
-    const columns = relatedRecords.flatMap(getProviderProfileColumnsFromRecord);
+    const related = new Set([
+      ...(byKey.get(`load:${load.id}`) || []),
+      ...(byKey.get(`profile:${load.profileId}`) || []),
+      ...(byKey.get(`name:${load.profileName}`) || [])
+    ]);
+    // Mismo orden que la base (importa para leer las columnas pegadas).
+    const columns = [...related].sort((a, b) => a - b).flatMap((index) => recordColumns[index]);
     addProfile(load.profileId, load.profileName || load.provider, columns);
   });
-  (processing.proveedores || []).forEach((record) => {
-    addProfile(record.profileId, record.profileName || record.provider, getProviderProfileColumnsFromRecord(record));
+  records.forEach((record, index) => {
+    addProfile(record.profileId, record.profileName || record.provider, recordColumns[index]);
   });
   const profiles = [...map.values()].map((profile) => ({
     ...profile,
@@ -15713,7 +15731,19 @@ function getProviderExplicitAmount(record) {
   return valueColumn ? getMoneyNumber(valueColumn[1]) : 0;
 }
 
+// El valor mas comun se pide muchas veces con la misma lista (una vez por placa repetida):
+// se guarda por lista para no recorrer miles de registros en cada llamada.
+const providerCommonAmountCache = new WeakMap();
+
 function getProviderCommonAmount(records = []) {
+  const cached = providerCommonAmountCache.get(records);
+  if (cached && cached.length === records.length) return cached.value;
+  const value = computeProviderCommonAmount(records);
+  providerCommonAmountCache.set(records, { length: records.length, value });
+  return value;
+}
+
+function computeProviderCommonAmount(records = []) {
   const counts = new Map();
   records.forEach((record) => {
     const amount = getProviderRecordAmount(record);
