@@ -16527,7 +16527,7 @@ function getProviderDuplicateDecisionKeys(group, item, index = 0) {
 // solo con la clave "v2::item::<id del registro>". Las claves antiguas (por valor o por placa
 // completa) se aplicaban a varios cobros a la vez; ahora solo se leen para los registros
 // cargados antes de este cambio, asi se conserva lo que ya estaba revisado.
-const PROVIDER_DECISIONS_V2_SINCE = Date.parse("2026-10-17T07:30:00Z");
+const PROVIDER_DECISIONS_V2_SINCE = Date.parse("2026-10-17T06:40:00Z");
 
 function getProviderItemDecisionKey(item) {
   return `v2::item::${item?.id || getProviderDuplicateStableItemId(item, 0)}`;
