@@ -364,6 +364,50 @@
     return getSelectedProviderProfile();
   }
 
+  // ===== Copia del servidor al abrir el modulo =====
+  // El navegador guarda una copia que puede estar atrasada. Al abrir Proveedores se trae la del
+  // servidor de inmediato y, mientras llega, no se permite decidir duplicados.
+  let freshLoading = false;
+  let freshLoadedAt = 0;
+  function panelVisible() {
+    const root = panel();
+    const view = document.getElementById("procesamiento");
+    return Boolean(root && root.classList.contains("is-active") && view && !view.hidden && view.classList.contains("is-active") !== false);
+  }
+  function setLoading(on) {
+    const root = panel();
+    if (!root) return;
+    root.classList.toggle("pv-loading", on);
+    let note = root.querySelector(".pv-sync-note");
+    if (on && !note) {
+      note = document.createElement("div");
+      note.className = "pv-sync-note";
+      note.setAttribute("role", "status");
+      note.innerHTML = '<span class="pv-spin" aria-hidden="true"></span>Actualizando proveedores y decisiones desde el servidor…';
+      root.insertBefore(note, root.querySelector(".pv-filters"));
+    }
+    if (note) note.hidden = !on;
+  }
+  async function ensureFresh(force = false) {
+    if (freshLoading || typeof loadModuleBaseBeforeFirstPublish !== "function") return;
+    if (!navigator.onLine || !window.AutocorAuth?.hasSession?.()) return;
+    const hasBase = Boolean(typeof supabaseModuleBases !== "undefined" && supabaseModuleBases.proveedores);
+    if (hasBase && !force && Date.now() - freshLoadedAt < 60000) return;
+    if (hasBase && !force) return;
+    freshLoading = true;
+    setLoading(true);
+    try {
+      await loadModuleBaseBeforeFirstPublish("proveedores");
+      freshLoadedAt = Date.now();
+    } catch (error) {
+      console.warn("Proveedores: no se pudo leer la copia del servidor", error);
+    } finally {
+      freshLoading = false;
+      setLoading(false);
+      renderProviderProcessing();
+    }
+  }
+
   // ===== Render principal =====
   function render() {
     const root = panel();
@@ -384,6 +428,7 @@
     renderRecords(records, metrics);
     renderProfiles();
     setTab(ui.tab);
+    if (panelVisible()) ensureFresh();
   }
 
   function bind() {
@@ -470,7 +515,10 @@
       return result;
     };
   }
-  window.ProveedoresUI = { render, setTab };
+  document.addEventListener("click", (event) => {
+    if (event.target.closest?.('[data-processing-tab="proveedores"]')) window.setTimeout(() => ensureFresh(), 0);
+  });
+  window.ProveedoresUI = { render, setTab, ensureFresh };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => { bind(); setTab(ui.tab); });
   else { bind(); setTab(ui.tab); }
 })();
