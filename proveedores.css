@@ -443,3 +443,23 @@
 .pv-banner.pv-banner--rojo .pv-banner-foot { border-top-color: rgba(255, 255, 255, .3); color: rgba(255, 255, 255, .88); }
 .pv-banner.pv-banner--rojo .pv-banner-foot b, .pv-banner.pv-banner--rojo .pv-banner-foot span span { color: #fff; }
 .pv .pv-banner.pv-banner--rojo .pv-btn-red { background: #2c2e33; border-color: #2c2e33; }
+
+/* Decision por cobro */
+.pv .provider-item-help { margin: 12px 16px 0 !important; color: var(--pv-muted) !important; font-size: 13.5px !important; }
+.pv .provider-item-table td.num { text-align: right; white-space: nowrap; }
+.pv .provider-item-table tr.is-red td { background: #fff5f5; }
+.pv .provider-item-table tr.is-warn td { background: #fffdf3; }
+.pv .provider-item-status { display: inline-block; padding: 3px 9px; border-radius: 999px; background: #eef0f3; color: var(--pv-muted); font-size: 12px; font-weight: 800; white-space: nowrap; }
+.pv .provider-item-status.is-ok { background: #dcfce7; color: #166534; }
+.pv .provider-item-status.is-warn { background: #fef3c7; color: #92400e; }
+.pv .provider-item-status.is-red { background: #fee2e2; color: #991b1b; }
+.pv .provider-item-obs { max-width: 280px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--pv-muted); }
+.pv .provider-item-actions { display: flex; gap: 6px; justify-content: flex-end; white-space: nowrap; }
+.pv .provider-item-actions button { min-height: 30px; padding: 0 10px; border: 1px solid #d5d7dc; border-radius: 7px; background: #fff; color: var(--pv-text); font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.pv .provider-item-actions .is-approve:hover, .pv .provider-item-actions .is-approve.is-current { border-color: var(--pv-ok); background: var(--pv-ok); color: #fff; }
+.pv .provider-item-actions .is-reject:hover, .pv .provider-item-actions .is-reject.is-current { border-color: var(--pv-red); background: var(--pv-red); color: #fff; }
+.pv .provider-item-actions .is-reset { color: var(--pv-muted); }
+.pv .provider-preview-alert.is-strong { border-left-color: var(--pv-red); background: var(--pv-red-soft); color: #7f1d1d; }
+.pv .provider-alert-card > p.provider-item-help { display: block !important; padding: 0 !important; border: 0 !important; background: none !important; line-height: 1.45; }
+.pv .provider-item-help b { display: inline !important; color: var(--pv-ink); font-size: inherit; }
+.pv .provider-duplicate-actions .provider-bulk-check { margin-right: auto; padding: 0 12px; min-height: 36px; border: 1px solid var(--pv-line) !important; border-radius: 8px; background: #fff !important; }
