@@ -24,7 +24,6 @@ legal las toma y las cierra, gerencia ve reportes y procesamiento de datos carga
 | `control-seminuevos.css`, `js/control-seminuevos.js` | Control Seminuevos: dashboards ejecutivos para gerencia (operacion completa y Feria Automundo). |
 | `admin-panel.css` | Panel de administrador: barra lateral, banner por modulo y estilo comun de las secciones. |
 | `mesa-control.css` | Mesa de control (barra lateral, paginas, banner) y, en el panel de administrador, Usuarios con asignacion de tareas y el modulo Feria Automundo. |
-| `proveedores.css`, `js/proveedores-ui.js` | Procesamiento de datos > Proveedores y pagos: pestañas Resumen, Cargar reporte, Duplicados, Registros y Proveedores. La lógica de cargas, perfiles y aprobación de duplicados sigue en `app.js`. |
 | `compra-form.css`, `js/compra-documentos.js` | Formulario de compra: Consulta ANT, fotos de cédula y matrícula, lectura automática (función `lectura-documentos`) y la ficha con documentos que ve la mesa de control. |
 | `js/feria-automundo.js`, `feria-automundo.css` | Modulo temporal de la Feria Automundo (asesor, mesa de control y administrador). |
 | `js/consignment-templates.js`, `assets/contracts` | Plantillas PDF de contratos. |
