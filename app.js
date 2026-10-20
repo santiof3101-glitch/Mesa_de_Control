@@ -473,6 +473,7 @@ const supabaseProtectedRemoteCounts = {};
 const supabaseIntentionalSmallerPublishes = {};
 let supabaseTaskCursor = localStorage.getItem(TASK_SYNC_CURSOR_KEY) || "";
 let supabaseTaskDeleteCursor = localStorage.getItem(TASK_DELETE_CURSOR_KEY) || "";
+let supabaseTaskFullReadDone = false;
 let supabaseLastRefreshAt = 0;
 let initialRemoteSyncInFlight = false;
 const state = loadState();
@@ -1124,11 +1125,23 @@ async function leerModuloSupabaseSiCambio(modulo, remoteVersions, tipo = "base")
   return { snapshot, exists: true, changed: true };
 }
 
+function getConsistentSyncCursor(globalCursor, stateCursor) {
+  const a = String(globalCursor || "");
+  const b = String(stateCursor || "");
+  if (!a || !b) return "";
+  return a < b ? a : b;
+}
+
 async function leerTareasSupabase(forceFull = false) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return [];
-  const incremental = Boolean(supabaseTaskCursor) && !forceFull;
+  // El cursor vale solo si las tareas leidas quedaron guardadas junto con el estado:
+  // si el navegador no pudo guardar el estado, se vuelve a leer desde el ultimo punto guardado.
+  const taskCursor = getConsistentSyncCursor(supabaseTaskCursor, state?.taskSyncCursor);
+  // La primera lectura de cada carga de pagina trae todas las tareas, igual que "Conciliar",
+  // para que ninguna solicitud quede fuera aunque la copia local del navegador este desactualizada.
+  const incremental = Boolean(taskCursor) && !forceFull && supabaseTaskFullReadDone;
   const cursorFilter = incremental
-    ? `&created_at=gt.${encodeURIComponent(supabaseTaskCursor)}`
+    ? `&created_at=gt.${encodeURIComponent(taskCursor)}`
     : "";
   const order = incremental ? "asc" : "desc";
   const query = `${SUPABASE_URL}/REGISTROS?modulo=eq.saneamientos&tipo=eq.tarea${cursorFilter}&select=datos,created_at&order=created_at.${order}&limit=3000`;
@@ -1142,10 +1155,15 @@ async function leerTareasSupabase(forceFull = false) {
     if (!response.ok) return [];
     const rows = await response.json();
     if (!Array.isArray(rows)) return [];
+    if (!incremental) supabaseTaskFullReadDone = true;
     const orderedRows = incremental ? rows : [...rows].reverse();
     if (orderedRows.length) {
-      supabaseTaskCursor = String(orderedRows[orderedRows.length - 1].created_at || supabaseTaskCursor);
-      localStorage.setItem(TASK_SYNC_CURSOR_KEY, supabaseTaskCursor);
+      const lastCreated = String(orderedRows[orderedRows.length - 1].created_at || "");
+      if (lastCreated && (!incremental || lastCreated > taskCursor)) {
+        supabaseTaskCursor = lastCreated;
+        if (state) state.taskSyncCursor = lastCreated;
+        try { localStorage.setItem(TASK_SYNC_CURSOR_KEY, supabaseTaskCursor); } catch {}
+      }
     }
     return orderedRows
       .map((row) => parseMaybeJson(row.datos))
@@ -1159,8 +1177,9 @@ async function leerTareasSupabase(forceFull = false) {
 
 async function leerEliminacionesTareasSupabase(forceFull = false) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return [];
-  const cursorFilter = supabaseTaskDeleteCursor && !forceFull
-    ? `&created_at=gt.${encodeURIComponent(supabaseTaskDeleteCursor)}`
+  const deleteCursor = getConsistentSyncCursor(supabaseTaskDeleteCursor, state?.taskDeleteSyncCursor);
+  const cursorFilter = deleteCursor && !forceFull
+    ? `&created_at=gt.${encodeURIComponent(deleteCursor)}`
     : "";
   const query = `${SUPABASE_URL}/REGISTROS?modulo=eq.saneamientos&tipo=eq.tarea&datos-%3E%3Edeleted=eq.true${cursorFilter}&select=datos,created_at&order=created_at.asc&limit=1000`;
   try {
@@ -1174,8 +1193,12 @@ async function leerEliminacionesTareasSupabase(forceFull = false) {
     const rows = await response.json();
     if (!Array.isArray(rows)) return [];
     if (rows.length) {
-      supabaseTaskDeleteCursor = String(rows[rows.length - 1].created_at || supabaseTaskDeleteCursor);
-      localStorage.setItem(TASK_DELETE_CURSOR_KEY, supabaseTaskDeleteCursor);
+      const lastDeleted = String(rows[rows.length - 1].created_at || "");
+      if (lastDeleted && (!deleteCursor || lastDeleted > deleteCursor)) {
+        supabaseTaskDeleteCursor = lastDeleted;
+        if (state) state.taskDeleteSyncCursor = lastDeleted;
+        try { localStorage.setItem(TASK_DELETE_CURSOR_KEY, supabaseTaskDeleteCursor); } catch {}
+      }
     }
     return rows
       .map((row) => parseMaybeJson(row.datos))
