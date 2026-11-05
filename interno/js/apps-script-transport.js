@@ -1,6 +1,8 @@
 // Canal HTML Service reutilizable. Nunca envia credenciales en una URL.
 (function(global){
   'use strict';
+  // El canal google.script.run solo existe con Apps Script; con el servidor de Supabase se usa HTTP directo.
+  if(!/^https:\/\/script\.google\.com\//.test(String(global.AutoCorConfig && global.AutoCorConfig.apiUrl || ''))) return;
   let connection;
   let connectedClient = null;
   let unavailableUntil = 0;

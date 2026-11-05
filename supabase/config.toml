@@ -7,3 +7,7 @@ verify_jwt = true
 # Nombre anterior, se mantiene con el mismo codigo seguro.
 [functions.datacil-vehiculo]
 verify_jwt = true
+
+# Sistema Interno: autentica con sus propias sesiones (interno_usuarios).
+[functions.interno-api]
+verify_jwt = false
