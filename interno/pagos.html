@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta name="autocor-version" content="20261105T151500Z">
-<script src="js/auto-update.js?v=20261105T151500Z"></script>
+<meta name="autocor-version" content="20261105T174500Z">
+<script src="js/auto-update.js?v=20261105T174500Z"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AUTOCOR | Pagos</title>
@@ -387,12 +387,78 @@
   .cbtn:hover,.cbtn.on{border-color:#fff;transform:scale(1.3);}
   @media print{.cbtn{display:none!important;}}
 
+  /* ══ Diseño ejecutivo AUTOCOR (rojo corporativo + grafito) ══ */
+  :root{
+    --brand:#d71920; --brand-dark:#b3121a;
+    --corp-ink:#1f2328; --corp-graphite:#2b2f36; --corp-graphite2:#3a3f47;
+    --corp-line:#dde1e6; --corp-label:#f5f6f8; --corp-muted:#5b636e;
+  }
+  #captureArea table{font-family:Arial,Helvetica,sans-serif;color:var(--corp-ink);}
+  #captureArea th,#captureArea td{border-color:var(--corp-line);padding:7px 10px;}
+  #captureArea .pag-doc-header td{background:var(--corp-graphite);border:0!important;box-shadow:inset 0 -3px 0 var(--brand);padding:12px 14px;}
+  .pag-title-cell{color:#fff;font-size:12px;letter-spacing:1.6px;text-align:right;padding-right:6px;}
+  .pag-doc-inforow td{background:#fff;}
+  .pag-doc-inforow .label{background:var(--corp-label);color:var(--corp-muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px;}
+  .pag-doc-inforow .info-val{color:var(--corp-ink);}
+  .top-dark{background:#fff;color:var(--corp-graphite);border-bottom:2px solid var(--corp-graphite)!important;font-size:13px;letter-spacing:1.4px;padding:11px 10px!important;}
+  .top-dark input{color:var(--corp-graphite);letter-spacing:1.4px;}
+  .dictamen-label{background:var(--corp-label);color:var(--corp-muted);font-size:10px;letter-spacing:.8px;}
+  .dictamen-value{font-size:13px;letter-spacing:.6px;color:var(--corp-ink);}
+  .label{background:var(--corp-label);color:var(--corp-muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;}
+  .value{color:var(--corp-ink);font-weight:700;}
+  .section{background:var(--corp-graphite);font-size:11px;letter-spacing:1.4px;border-left:4px solid var(--brand)!important;}
+  .section.section-verde{background:#e6f2ea!important;color:#1e6b3a!important;border-left-color:#1e6b3a!important;}
+  .section.section-amarillo{background:#fbf3df!important;color:#8a5a00!important;border-left-color:#b7791f!important;}
+  .section.section-rojo{background:var(--brand)!important;color:#fff!important;border-left-color:var(--brand-dark)!important;}
+  .subhead{background:#eceef1;color:var(--corp-graphite);font-size:9.5px;letter-spacing:.9px;}
+  .val-head td{background:var(--corp-graphite2);border-color:var(--corp-graphite2)!important;border-top:2px solid var(--brand)!important;font-size:9.5px;letter-spacing:.9px;}
+  #tbodyDocs tr:nth-child(even) td{background:#fafbfc;}
+  /* Estados con tonos sobrios */
+  .estado-correcto td{background:#eaf4ee!important;color:#1e4d2f;}
+  .estado-incorrecto td{background:#fbeaea!important;color:#a3161c;}
+  .estado-sininfo td{background:#fcf6e6!important;color:#6b4e00;}
+  .estado-pendiente td{background:#fdf0e5!important;color:#8a4508;}
+  .estado-fideval td{background:#eaf0f8!important;color:#1f3f73;}
+  .estado-noaplica td{background:#f3f4f6!important;color:#6b7280;}
+  .val-match td{background:#eaf4ee!important;}
+  .val-mismatch td{background:#fbeaea!important;color:#a3161c;}
+  .tick.ok{color:#1e6b3a;} .tick.bad{color:var(--brand);} .tick.warn{color:#b7791f;} .tick.fideval{color:#1f3f73;}
+  #dictamenVal.dict-verde{background:#eaf4ee!important;color:#1e6b3a!important;}
+  #dictamenVal.dict-verde input{color:#1e6b3a!important;}
+  #dictamenVal.dict-amarillo{background:#fcf6e6!important;color:#8a5a00!important;}
+  #dictamenVal.dict-amarillo input{color:#8a5a00!important;}
+  #dictamenVal.dict-rojo{background:#fbeaea!important;color:var(--brand-dark)!important;}
+  #dictamenVal.dict-rojo input{color:var(--brand-dark)!important;}
+  .sheet{border-radius:12px;border-color:var(--corp-line);box-shadow:0 6px 24px rgba(31,35,40,.08);}
+  .status-bar{border-left-color:var(--brand);}
+
+  /* ══ Prints con texto seleccionable (OCR) ══ */
+  .support-card .ocr-state{font-size:11px;color:var(--corp-muted);margin:0 0 8px;display:flex;align-items:center;gap:6px;min-height:16px;}
+  .support-card .ocr-state.ok{color:#1e6b3a;}
+  .support-card .ocr-state.err{color:var(--brand);}
+  .ocr-spin{width:11px;height:11px;border:2px solid #d0d4da;border-top-color:var(--brand);border-radius:50%;animation:ocrspin .8s linear infinite;flex:none;}
+  @keyframes ocrspin{to{transform:rotate(360deg)}}
+  .support-card .row-actions .copy-btn{background:var(--corp-graphite);border-color:var(--corp-graphite);color:#fff;}
+  .support-card .row-actions .copy-btn:disabled{opacity:.45;cursor:default;}
+  .ocr-stage{position:relative;display:inline-block;max-width:100%;line-height:0;}
+  .ocr-stage img{max-width:100%;max-height:60vh;display:block;}
+  .ocr-layer{position:absolute;inset:0;line-height:1;}
+  .ocr-layer span{position:absolute;color:transparent;white-space:pre;cursor:text;transform-origin:0 0;font-family:Arial,Helvetica,sans-serif;}
+  .ocr-layer span::selection{background:rgba(215,25,32,.28);color:transparent;}
+  .ocr-text-box{margin-top:12px;}
+  .ocr-text-box .ocr-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}
+  .ocr-text-box .ocr-head b{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--corp-graphite);}
+  .ocr-text-box textarea{width:100%;min-height:130px;border:1px solid var(--corp-line);border-radius:10px;padding:10px;font:12px/1.45 Arial,Helvetica,sans-serif;color:var(--corp-ink);resize:vertical;background:#fafbfc;}
+  .ocr-copy-main{border:none;border-radius:8px;background:var(--brand);color:#fff;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;}
+  .ocr-copy-main:hover{background:var(--brand-dark);}
+  .ocr-hint{font-size:11px;color:var(--corp-muted);margin-top:8px;}
+
 </style>
-<script src="js/api-config.js?v=20261105T151500Z"></script>
-<script src="js/apps-script-transport.js?v=20261105T151500Z"></script>
-<script src="js/api-client.js?v=20261105T151500Z"></script>
-<script src="js/expediente.js?v=20261105T151500Z"></script>
-<link rel="stylesheet" href="js/navigation.css?v=20261105T151500Z">
+<script src="js/api-config.js?v=20261105T174500Z"></script>
+<script src="js/apps-script-transport.js?v=20261105T174500Z"></script>
+<script src="js/api-client.js?v=20261105T174500Z"></script>
+<script src="js/expediente.js?v=20261105T174500Z"></script>
+<link rel="stylesheet" href="js/navigation.css?v=20261105T174500Z">
 </head>
 <body>
 
@@ -1247,13 +1313,23 @@ function renderSupportPrints(){
   }
 
   supportPrints.forEach((item, index) => {
+    const ocr = item.ocr || {};
+    const estado = ocr.status === 'done'
+      ? `<div class="ocr-state ok">✓ Texto listo para copiar</div>`
+      : ocr.status === 'error'
+        ? `<div class="ocr-state err">No se pudo leer el texto</div>`
+        : `<div class="ocr-state"><span class="ocr-spin"></span>Leyendo texto…</div>`;
     const card = document.createElement('div');
     card.className = 'support-card';
     card.innerHTML = `
       <div class="thumb-wrap"><img src="${item.src}" alt="Print ${index+1}"></div>
       <div class="meta">
+        ${estado}
         <div class="row-actions">
           <button class="btn-secondary" type="button" onclick="previsualizarPrint(${index})">👁 Ver</button>
+          <button class="copy-btn" type="button" onclick="copiarTextoPrint(${index}, this)" ${ocr.status === 'done' && ocr.text ? '' : 'disabled'}>📋 Copiar texto</button>
+        </div>
+        <div class="row-actions" style="margin-top:6px">
           <button class="btn-secondary" type="button" onclick="moverPrint(${index}, -1)">↑</button>
           <button class="btn-secondary" type="button" onclick="moverPrint(${index}, 1)">↓</button>
           <button class="del-btn" type="button" onclick="eliminarPrint(${index})">✕ Eliminar</button>
@@ -1263,6 +1339,128 @@ function renderSupportPrints(){
     grid.appendChild(card);
   });
 }
+
+/* ── OCR de prints: el texto de la imagen se puede seleccionar y copiar ── */
+const TESSERACT_SRC = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+let ocrWorkerPromise = null;
+let ocrQueue = Promise.resolve();
+let ocrPreviewIndex = -1;
+
+function cargarTesseract(){
+  if(window.Tesseract) return Promise.resolve(window.Tesseract);
+  return new Promise(function(resolve, reject){
+    const s = document.createElement('script');
+    s.src = TESSERACT_SRC; s.async = true;
+    s.onload = function(){ window.Tesseract ? resolve(window.Tesseract) : reject(new Error('OCR no disponible')); };
+    s.onerror = function(){ reject(new Error('No se pudo cargar el lector de texto')); };
+    document.head.appendChild(s);
+  });
+}
+function obtenerWorkerOcr(){
+  if(!ocrWorkerPromise){
+    ocrWorkerPromise = cargarTesseract().then(function(T){ return T.createWorker('spa'); })
+      .catch(function(err){ ocrWorkerPromise = null; throw err; });
+  }
+  return ocrWorkerPromise;
+}
+function medirImagen(src){
+  return new Promise(function(resolve){
+    const img = new Image();
+    img.onload = function(){ resolve({w:img.naturalWidth, h:img.naturalHeight}); };
+    img.onerror = function(){ resolve({w:0, h:0}); };
+    img.src = src;
+  });
+}
+function leerTextoPrint(item){
+  item.ocr = {status:'pending'};
+  ocrQueue = ocrQueue.then(async function(){
+    if(supportPrints.indexOf(item) < 0) return;
+    try{
+      const size = await medirImagen(item.src);
+      const worker = await obtenerWorkerOcr();
+      const result = await worker.recognize(item.src);
+      const data = result && result.data || {};
+      const lines = (data.lines || []).map(function(l){
+        return {text:String(l.text || '').replace(/\s+$/,''), x0:l.bbox.x0, y0:l.bbox.y0, x1:l.bbox.x1, y1:l.bbox.y1};
+      }).filter(function(l){ return l.text.trim(); });
+      item.ocr = {status:'done', text:String(data.text || '').trim(), lines:lines, w:size.w, h:size.h};
+    }catch(err){
+      console.warn('[OCR]', err);
+      item.ocr = {status:'error', message:err && err.message || 'Error'};
+    }
+    renderSupportPrints();
+    if(ocrPreviewIndex >= 0 && supportPrints[ocrPreviewIndex] === item) pintarCapaOcr(item);
+  });
+  return ocrQueue;
+}
+async function copiarTexto(texto){
+  try{ await navigator.clipboard.writeText(texto); return true; }
+  catch(_){
+    const ta = document.createElement('textarea'); ta.value = texto; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try{ ok = document.execCommand('copy'); }catch(__){}
+    ta.remove(); return ok;
+  }
+}
+async function copiarTextoPrint(index, btn){
+  const item = supportPrints[index];
+  if(!item || !item.ocr || !item.ocr.text) return;
+  const ok = await copiarTexto(item.ocr.text);
+  if(btn){ const t = btn.textContent; btn.textContent = ok ? '✓ Copiado' : 'No se copió'; setTimeout(function(){ btn.textContent = t; }, 1600); }
+}
+function pintarCapaOcr(item){
+  const layer = document.getElementById('ocrLayer');
+  const area = document.getElementById('ocrTextArea');
+  const hint = document.getElementById('ocrHint');
+  const img = document.getElementById('previewPrintImg');
+  if(!layer || !area || !img) return;
+  layer.innerHTML = '';
+  const ocr = item && item.ocr || {};
+  if(ocr.status !== 'done'){
+    area.value = '';
+    area.placeholder = ocr.status === 'error' ? 'No se pudo leer el texto de esta imagen.' : 'Leyendo el texto de la imagen…';
+    hint.textContent = ocr.status === 'error' ? 'No se pudo leer el texto de esta imagen.' : 'Leyendo el texto de la imagen… en unos segundos podrás seleccionarlo.';
+    return;
+  }
+  area.value = ocr.text || '';
+  area.placeholder = 'No se encontró texto en la imagen.';
+  hint.textContent = ocr.text ? 'Puedes seleccionar el texto directamente sobre la imagen y copiarlo con Ctrl + C.' : 'No se encontró texto en esta imagen.';
+  const draw = function(){
+    const W = ocr.w || img.naturalWidth, H = ocr.h || img.naturalHeight;
+    const scale = img.clientWidth / (W || 1);
+    if(!W || !H || !img.clientWidth) return;
+    const ctx = document.createElement('canvas').getContext('2d');
+    layer.innerHTML = '';
+    ocr.lines.forEach(function(l){
+      const span = document.createElement('span');
+      const hPx = Math.max(6, (l.y1 - l.y0) * scale);
+      const wPx = Math.max(4, (l.x1 - l.x0) * scale);
+      const fontPx = hPx * 0.86;
+      span.textContent = l.text + '\n';
+      span.style.left = (l.x0 / W * 100) + '%';
+      span.style.top = (l.y0 / H * 100) + '%';
+      span.style.fontSize = fontPx + 'px';
+      span.style.height = hPx + 'px';
+      span.style.lineHeight = hPx + 'px';
+      ctx.font = fontPx + 'px Arial';
+      const natural = ctx.measureText(l.text).width || wPx;
+      span.style.transform = 'scaleX(' + (wPx / natural) + ')';
+      layer.appendChild(span);
+    });
+  };
+  if(img.complete && img.naturalWidth) requestAnimationFrame(draw); else img.onload = draw;
+}
+window.addEventListener('resize', function(){
+  if(ocrPreviewIndex >= 0 && supportPrints[ocrPreviewIndex]) pintarCapaOcr(supportPrints[ocrPreviewIndex]);
+});
+document.addEventListener('click', async function(e){
+  if(!e.target || e.target.id !== 'ocrCopyBtn') return;
+  const area = document.getElementById('ocrTextArea');
+  if(!area || !area.value) return;
+  const ok = await copiarTexto(area.value);
+  e.target.textContent = ok ? '✓ Copiado' : 'No se copió';
+  setTimeout(function(){ e.target.textContent = 'Copiar texto'; }, 1600);
+});
 
 function updateSupportField(index, field, value){
   if(!supportPrints[index]) return;
@@ -1284,9 +1482,12 @@ function eliminarTodosLosPrints(){
 function previsualizarPrint(index){
   const item = supportPrints[index];
   if(!item) return;
+  ocrPreviewIndex = index;
+  document.getElementById('ocrLayer').innerHTML = '';
   document.getElementById('previewPrintImg').src                = item.src;
   document.getElementById('previewPrintModalTitle').textContent = `PRINT ${index + 1}`;
   abrirModal('modalPrintPreview');
+  pintarCapaOcr(item);
 }
 
 function moverPrint(index, direction){
@@ -1306,12 +1507,14 @@ function handlePrintFiles(files){
   list.forEach((file) => {
     const reader = new FileReader();
     reader.onload = e => {
-      supportPrints.push({
+      const nuevo = {
         title: `PRINT ${supportPrints.length + 1}`,
         note: '',
         src: e.target.result,
         mime: file.type || 'image/png'
-      });
+      };
+      supportPrints.push(nuevo);
+      leerTextoPrint(nuevo);
       pending--;
       if(pending === 0) renderSupportPrints();
     };
@@ -1454,6 +1657,9 @@ async function exportarImagenes(placa){
     folder.file(`PRINT_${num}.${ext}`, blob);
     if(item.note && String(item.note).trim()){
       folder.file(`PRINT_${num}.txt`, String(item.note).trim());
+    }
+    if(item.ocr && item.ocr.text){
+      folder.file(`PRINT_${num}_TEXTO.txt`, item.ocr.text);
     }
   });
 
@@ -1614,16 +1820,24 @@ function setColor(thId, colorClass){
     </div>
     <div class="modal-body">
       <div class="preview-img-wrap">
-        <img id="previewPrintImg" src="" alt="Vista previa del print">
+        <div class="ocr-stage" id="ocrStage">
+          <img id="previewPrintImg" src="" alt="Vista previa del print">
+          <div class="ocr-layer" id="ocrLayer"></div>
+        </div>
+      </div>
+      <div class="ocr-hint" id="ocrHint">Puedes seleccionar el texto directamente sobre la imagen y copiarlo con Ctrl + C.</div>
+      <div class="ocr-text-box">
+        <div class="ocr-head"><b>Texto detectado en la imagen</b><button type="button" class="ocr-copy-main" id="ocrCopyBtn">Copiar texto</button></div>
+        <textarea id="ocrTextArea" readonly placeholder="Leyendo el texto de la imagen…"></textarea>
       </div>
     </div>
   </div>
 </div>
 
 
-<script src="js/auth-ui.js?v=20261105T151500Z"></script>
-<script src="js/session-sync.js?v=20261105T151500Z"></script>
-<script src="js/workflow.js?v=20261105T151500Z"></script>
-<script src="js/workflow-adapters.js?v=20261105T151500Z"></script>
+<script src="js/auth-ui.js?v=20261105T174500Z"></script>
+<script src="js/session-sync.js?v=20261105T174500Z"></script>
+<script src="js/workflow.js?v=20261105T174500Z"></script>
+<script src="js/workflow-adapters.js?v=20261105T174500Z"></script>
 </body>
 </html>
