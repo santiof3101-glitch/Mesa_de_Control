@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta name="autocor-version" content="20261105T174500Z">
-<script src="js/auto-update.js?v=20261105T174500Z"></script>
+<meta name="autocor-version" content="20261105T182500Z">
+<script src="js/auto-update.js?v=20261105T182500Z"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AUTOCOR | Pagos</title>
@@ -387,48 +387,87 @@
   .cbtn:hover,.cbtn.on{border-color:#fff;transform:scale(1.3);}
   @media print{.cbtn{display:none!important;}}
 
-  /* ══ Diseño ejecutivo AUTOCOR (rojo corporativo + grafito) ══ */
+  /* ══ Diseño ejecutivo AUTOCOR del cuadro (pantalla e imagen exportada) ══ */
   :root{
     --brand:#d71920; --brand-dark:#b3121a;
-    --corp-ink:#1f2328; --corp-graphite:#2b2f36; --corp-graphite2:#3a3f47;
-    --corp-line:#dde1e6; --corp-label:#f5f6f8; --corp-muted:#5b636e;
+    --corp-ink:#1f2328; --corp-graphite:#23272e; --corp-graphite2:#363b44;
+    --corp-line:#e1e4e8; --corp-label:#f6f7f9; --corp-muted:#5b636e;
+    --ok:#1e6b3a; --ok-soft:#eef6f1; --warn:#a8650a; --warn-soft:#fdf5e7;
+    --bad:#b3121a; --bad-soft:#fcefef; --info:#1f4f8f; --info-soft:#edf2f9;
   }
-  #captureArea table{font-family:Arial,Helvetica,sans-serif;color:var(--corp-ink);}
-  #captureArea th,#captureArea td{border-color:var(--corp-line);padding:7px 10px;}
-  #captureArea .pag-doc-header td{background:var(--corp-graphite);border:0!important;box-shadow:inset 0 -3px 0 var(--brand);padding:12px 14px;}
-  .pag-title-cell{color:#fff;font-size:12px;letter-spacing:1.6px;text-align:right;padding-right:6px;}
-  .pag-doc-inforow td{background:#fff;}
-  .pag-doc-inforow .label{background:var(--corp-label);color:var(--corp-muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px;}
-  .pag-doc-inforow .info-val{color:var(--corp-ink);}
-  .top-dark{background:#fff;color:var(--corp-graphite);border-bottom:2px solid var(--corp-graphite)!important;font-size:13px;letter-spacing:1.4px;padding:11px 10px!important;}
-  .top-dark input{color:var(--corp-graphite);letter-spacing:1.4px;}
-  .dictamen-label{background:var(--corp-label);color:var(--corp-muted);font-size:10px;letter-spacing:.8px;}
-  .dictamen-value{font-size:13px;letter-spacing:.6px;color:var(--corp-ink);}
-  .label{background:var(--corp-label);color:var(--corp-muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;}
-  .value{color:var(--corp-ink);font-weight:700;}
-  .section{background:var(--corp-graphite);font-size:11px;letter-spacing:1.4px;border-left:4px solid var(--brand)!important;}
-  .section.section-verde{background:#e6f2ea!important;color:#1e6b3a!important;border-left-color:#1e6b3a!important;}
-  .section.section-amarillo{background:#fbf3df!important;color:#8a5a00!important;border-left-color:#b7791f!important;}
-  .section.section-rojo{background:var(--brand)!important;color:#fff!important;border-left-color:var(--brand-dark)!important;}
-  .subhead{background:#eceef1;color:var(--corp-graphite);font-size:9.5px;letter-spacing:.9px;}
-  .val-head td{background:var(--corp-graphite2);border-color:var(--corp-graphite2)!important;border-top:2px solid var(--brand)!important;font-size:9.5px;letter-spacing:.9px;}
-  #tbodyDocs tr:nth-child(even) td{background:#fafbfc;}
-  /* Estados con tonos sobrios */
-  .estado-correcto td{background:#eaf4ee!important;color:#1e4d2f;}
-  .estado-incorrecto td{background:#fbeaea!important;color:#a3161c;}
-  .estado-sininfo td{background:#fcf6e6!important;color:#6b4e00;}
-  .estado-pendiente td{background:#fdf0e5!important;color:#8a4508;}
-  .estado-fideval td{background:#eaf0f8!important;color:#1f3f73;}
-  .estado-noaplica td{background:#f3f4f6!important;color:#6b7280;}
-  .val-match td{background:#eaf4ee!important;}
-  .val-mismatch td{background:#fbeaea!important;color:#a3161c;}
-  .tick.ok{color:#1e6b3a;} .tick.bad{color:var(--brand);} .tick.warn{color:#b7791f;} .tick.fideval{color:#1f3f73;}
-  #dictamenVal.dict-verde{background:#eaf4ee!important;color:#1e6b3a!important;}
-  #dictamenVal.dict-verde input{color:#1e6b3a!important;}
-  #dictamenVal.dict-amarillo{background:#fcf6e6!important;color:#8a5a00!important;}
-  #dictamenVal.dict-amarillo input{color:#8a5a00!important;}
-  #dictamenVal.dict-rojo{background:#fbeaea!important;color:var(--brand-dark)!important;}
-  #dictamenVal.dict-rojo input{color:var(--brand-dark)!important;}
+  :is(#captureArea,#captureAreaClone) table{font-family:Arial,Helvetica,sans-serif;color:var(--corp-ink);font-size:11.5px;}
+  :is(#captureArea,#captureAreaClone) :is(th,td){border:1px solid var(--corp-line);padding:4px 10px;line-height:1.25;}
+  /* Encabezado */
+  :is(#captureArea,#captureAreaClone) .pag-doc-header td{background:var(--corp-graphite);border:0!important;box-shadow:inset 0 -3px 0 var(--brand);padding:9px 14px 11px;}
+  #pagosLogoImg{height:34px;}
+  .pag-title-cell{text-align:right!important;padding-right:18px!important;}
+  .pag-t1{font-family:'Poppins',Arial,sans-serif;font-weight:700;font-size:15px;letter-spacing:2px;color:#fff;text-transform:uppercase;}
+  .pag-t2{font-family:Arial,sans-serif;font-size:10.5px;letter-spacing:1.2px;color:rgba(255,255,255,.62);text-transform:uppercase;margin-top:1px;}
+  :is(#captureArea,#captureAreaClone) .pag-doc-inforow td{background:#fff;padding:5px 10px;}
+  :is(#captureArea,#captureAreaClone) .pag-doc-inforow .label{background:var(--corp-label);color:var(--corp-muted);font-size:9.5px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;}
+  :is(#captureArea,#captureAreaClone) .pag-doc-inforow .info-val{color:var(--corp-ink);font-size:12px;}
+  :is(#captureArea,#captureAreaClone) .top-dark{background:#fff;color:var(--corp-graphite);border-bottom:2px solid var(--corp-graphite)!important;font-size:12px;letter-spacing:2px;padding:6px 10px!important;}
+  :is(#captureArea,#captureAreaClone) .top-dark :is(input,.capture-value){color:var(--corp-graphite);letter-spacing:2px;font-family:'Poppins',Arial,sans-serif;}
+  /* Dictamen y riesgo */
+  :is(#captureArea,#captureAreaClone) .dictamen-label{background:var(--corp-label);color:var(--corp-muted);font-size:10px;letter-spacing:1.2px;font-weight:700;text-align:left;padding-left:14px;}
+  :is(#captureArea,#captureAreaClone) .dictamen-value{font-family:'Poppins',Arial,sans-serif;font-size:14px;letter-spacing:1.4px;color:var(--corp-graphite);background:#fff;padding:6px 10px;}
+  #dictamenVal.dict-verde{background:var(--ok)!important;color:#fff!important;}
+  #dictamenVal.dict-amarillo{background:var(--warn)!important;color:#fff!important;}
+  #dictamenVal.dict-rojo{background:var(--bad)!important;color:#fff!important;}
+  #dictamenVal.dict-verde input,#dictamenVal.dict-amarillo input,#dictamenVal.dict-rojo input{color:#fff!important;}
+  #riskVal{font-size:13px!important;}
+  #riskVal.row-verde{color:var(--ok)!important;} #riskVal.row-verde input{color:var(--ok)!important;}
+  #riskVal.row-amarillo{color:var(--warn)!important;} #riskVal.row-amarillo input{color:var(--warn)!important;}
+  #riskVal.row-rojo{color:var(--bad)!important;} #riskVal.row-rojo input{color:var(--bad)!important;}
+  /* Datos del vehículo */
+  :is(#captureArea,#captureAreaClone) .label{background:var(--corp-label);color:var(--corp-muted);font-size:9.5px;text-transform:uppercase;letter-spacing:.9px;}
+  :is(#captureArea,#captureAreaClone) .value{color:var(--corp-ink);font-weight:700;font-size:12px;}
+  /* Secciones */
+  :is(#captureArea,#captureAreaClone) .section{background:var(--corp-graphite)!important;color:#fff!important;font-size:10.5px;letter-spacing:2px;padding:5px!important;box-shadow:inset 6px 0 0 var(--brand);border-color:var(--corp-graphite)!important;}
+  :is(#captureArea,#captureAreaClone) .section.section-verde{box-shadow:inset 6px 0 0 #3fae6a;}
+  :is(#captureArea,#captureAreaClone) .section.section-amarillo{box-shadow:inset 6px 0 0 #e0a43a;}
+  :is(#captureArea,#captureAreaClone) .section.section-rojo{box-shadow:inset 6px 0 0 var(--brand);}
+  :is(#captureArea,#captureAreaClone) .subhead{background:var(--corp-label);color:var(--corp-muted);font-size:9px;letter-spacing:1.2px;padding:4px!important;}
+  :is(#captureArea,#captureAreaClone) .val-head td{background:var(--corp-graphite2);color:#fff;border-color:var(--corp-graphite2)!important;font-size:9px;letter-spacing:1.4px;padding:5px!important;}
+  /* Filas: solo se resaltan las excepciones; lo correcto queda limpio */
+  :is(#captureArea,#captureAreaClone) #tbodyDocs tr td{background:#fff!important;color:var(--corp-ink);}
+  :is(#captureArea,#captureAreaClone) #tbodyDocs tr td:first-child{box-shadow:inset 3px 0 0 transparent;}
+  :is(#captureArea,#captureAreaClone) #tbodyDocs tr.estado-correcto td:first-child{box-shadow:inset 3px 0 0 var(--ok);}
+  :is(#captureArea,#captureAreaClone) #tbodyDocs tr.estado-fideval td{background:var(--info-soft)!important;}
+  :is(#captureArea,#captureAreaClone) #tbodyDocs tr.estado-fideval td:first-child{box-shadow:inset 3px 0 0 var(--info);}
+  :is(#captureArea,#captureAreaClone) #tbodyDocs tr:is(.estado-pendiente,.estado-sininfo) td{background:var(--warn-soft)!important;}
+  :is(#captureArea,#captureAreaClone) #tbodyDocs tr:is(.estado-pendiente,.estado-sininfo) td:first-child{box-shadow:inset 3px 0 0 var(--warn);}
+  :is(#captureArea,#captureAreaClone) #tbodyDocs tr.estado-incorrecto td{background:var(--bad-soft)!important;color:var(--bad);}
+  :is(#captureArea,#captureAreaClone) #tbodyDocs tr.estado-incorrecto td:first-child{box-shadow:inset 3px 0 0 var(--bad);}
+  :is(#captureArea,#captureAreaClone) #tbodyDocs tr.estado-noaplica td{color:#8a919b!important;}
+  /* Estado como etiqueta */
+  :is(#captureArea,#captureAreaClone) .status-cell :is(select,.capture-value),
+  :is(#captureArea,#captureAreaClone) :is(#tbodySri,#tbodyMatricula) td:nth-child(2) :is(select,.capture-value){
+    display:inline-block;width:auto;min-width:96px;padding:1px 10px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.8px;text-align:center;text-align-last:center;line-height:1.35;min-height:0;
+    background:#eef0f3;color:var(--corp-muted);border:1px solid transparent;font-family:Arial,Helvetica,sans-serif;}
+  :is(#captureArea,#captureAreaClone) :is(#tbodySri,#tbodyMatricula) td:nth-child(2){font-family:Arial,Helvetica,sans-serif;}
+  :is(#captureArea,#captureAreaClone) .pag-doc-inforow .label{white-space:nowrap;letter-spacing:.6px;}
+  #captureAreaClone .dictamen-value .capture-value{min-height:0;padding:0;}
+  :is(#captureArea,#captureAreaClone) .capture-value{min-height:0;padding:0;}
+  :is(#captureArea,#captureAreaClone) td input[type=text]{min-height:0;padding:0;}
+  :is(#captureArea,#captureAreaClone) tr.estado-correcto .status-cell :is(select,.capture-value),
+  :is(#captureArea,#captureAreaClone) :is(#tbodySri,#tbodyMatricula) tr.val-match td:nth-child(2) :is(select,.capture-value){background:var(--ok-soft);color:var(--ok);border-color:#cfe5d7;}
+  :is(#captureArea,#captureAreaClone) tr:is(.estado-pendiente,.estado-sininfo) .status-cell :is(select,.capture-value){background:#fff;color:var(--warn);border-color:#f0d9ad;}
+  :is(#captureArea,#captureAreaClone) tr.estado-incorrecto .status-cell :is(select,.capture-value),
+  :is(#captureArea,#captureAreaClone) :is(#tbodySri,#tbodyMatricula) tr.val-mismatch td:nth-child(2) :is(select,.capture-value){background:var(--bad);color:#fff;border-color:var(--bad);}
+  :is(#captureArea,#captureAreaClone) tr.estado-fideval .status-cell :is(select,.capture-value){background:#fff;color:var(--info);border-color:#c9d7ec;}
+  :is(#captureArea,#captureAreaClone) tr.estado-noaplica .status-cell :is(select,.capture-value){background:#f1f2f4;color:#8a919b;}
+  :is(#captureArea,#captureAreaClone) .tick{font-size:12px;line-height:1;}
+  .tick.ok{color:var(--ok);} .tick.bad{color:#b7bcc4;} .tick.warn{color:var(--warn);} .tick.fideval{color:var(--info);}
+  :is(#captureArea,#captureAreaClone) tr.estado-incorrecto .tick{color:var(--bad);}
+  /* Validaciones */
+  :is(#captureArea,#captureAreaClone) :is(#tbodySri,#tbodyMatricula) td{background:#fff!important;color:var(--corp-ink);font-family:'Courier New',monospace;font-weight:700;letter-spacing:.5px;}
+  :is(#captureArea,#captureAreaClone) :is(#tbodySri,#tbodyMatricula) tr.val-mismatch td{background:var(--bad-soft)!important;color:var(--bad);}
+  /* Pie de la imagen exportada */
+  .pag-export-foot td{background:var(--corp-label)!important;color:var(--corp-muted);font-size:9.5px;letter-spacing:.4px;padding:5px 10px!important;}
+  .pag-export-foot .pag-res{display:flex;gap:16px;flex-wrap:wrap;align-items:center;}
+  .pag-export-foot .pag-res b{color:var(--corp-ink);}
+  .pag-export-foot .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle;}
   .sheet{border-radius:12px;border-color:var(--corp-line);box-shadow:0 6px 24px rgba(31,35,40,.08);}
   .status-bar{border-left-color:var(--brand);}
 
@@ -454,11 +493,11 @@
   .ocr-hint{font-size:11px;color:var(--corp-muted);margin-top:8px;}
 
 </style>
-<script src="js/api-config.js?v=20261105T174500Z"></script>
-<script src="js/apps-script-transport.js?v=20261105T174500Z"></script>
-<script src="js/api-client.js?v=20261105T174500Z"></script>
-<script src="js/expediente.js?v=20261105T174500Z"></script>
-<link rel="stylesheet" href="js/navigation.css?v=20261105T174500Z">
+<script src="js/api-config.js?v=20261105T182500Z"></script>
+<script src="js/apps-script-transport.js?v=20261105T182500Z"></script>
+<script src="js/api-client.js?v=20261105T182500Z"></script>
+<script src="js/expediente.js?v=20261105T182500Z"></script>
+<link rel="stylesheet" href="js/navigation.css?v=20261105T182500Z">
 </head>
 <body>
 
@@ -514,7 +553,7 @@
         <!-- Cabecera: logo + módulo -->
         <tr class="pag-doc-header">
           <td style="width:34%;"><img id="pagosLogoImg" alt="AUTOCOR"></td>
-          <td colspan="3" class="pag-title-cell">Pagos · Control Legal</td>
+          <td colspan="3" class="pag-title-cell"><div class="pag-t1">Cuadro de Pagos</div><div class="pag-t2">Mesa de Control Legal · AUTOCOR</div></td>
         </tr>
         <!-- Info: realizado por + responsable(s) -->
         <tr class="pag-doc-inforow">
@@ -1576,7 +1615,33 @@ function buildCaptureClone(){
   });
 
   // Eliminar bolitas de color del clon para que no aparezcan en la imagen
-  clone.querySelectorAll('.cbtn').forEach(function(el){ el.remove(); });
+  clone.querySelectorAll('.cbtn').forEach(function(el){
+    const wrap = el.parentElement;
+    el.remove();
+    if(wrap && wrap.tagName === 'SPAN' && !wrap.children.length && !wrap.textContent.trim()) wrap.remove();
+  });
+
+  // Pie ejecutivo: resumen de estados y fecha de generación
+  try{
+    const cuenta = {CORRECTO:0, PENDIENTE:0, INCORRECTO:0, 'NO APLICA':0};
+    document.querySelectorAll('#tbodyDocs tr select').forEach(function(sel){
+      const v = normalizeValue(sel.value);
+      if(v === 'SIN INFO') cuenta.PENDIENTE++;
+      else if(v === 'FIDEVAL') cuenta.CORRECTO++;
+      else if(Object.prototype.hasOwnProperty.call(cuenta, v)) cuenta[v]++;
+    });
+    const ahora = new Date();
+    const fecha = ahora.toLocaleDateString('es-EC', {day:'2-digit', month:'2-digit', year:'numeric'}) + ' ' + ahora.toLocaleTimeString('es-EC', {hour:'2-digit', minute:'2-digit'});
+    const tabla = clone.querySelector('table');
+    const tf = document.createElement('tbody');
+    tf.innerHTML = '<tr class="pag-export-foot"><td colspan="2"><div class="pag-res">'
+      + '<span><span class="dot" style="background:#1e6b3a"></span><b>' + cuenta.CORRECTO + '</b> correctos</span>'
+      + '<span><span class="dot" style="background:#a8650a"></span><b>' + cuenta.PENDIENTE + '</b> pendientes</span>'
+      + '<span><span class="dot" style="background:#b3121a"></span><b>' + cuenta.INCORRECTO + '</b> incorrectos</span>'
+      + '<span><span class="dot" style="background:#b7bcc4"></span><b>' + cuenta['NO APLICA'] + '</b> no aplica</span>'
+      + '</div></td><td colspan="2" style="text-align:right">Generado el ' + escapeHtml(fecha) + ' · Mesa de Control Legal AUTOCOR</td></tr>';
+    if(tabla) tabla.appendChild(tf);
+  }catch(_){}
 
   document.body.appendChild(clone);
   return clone;
@@ -1835,9 +1900,9 @@ function setColor(thId, colorClass){
 </div>
 
 
-<script src="js/auth-ui.js?v=20261105T174500Z"></script>
-<script src="js/session-sync.js?v=20261105T174500Z"></script>
-<script src="js/workflow.js?v=20261105T174500Z"></script>
-<script src="js/workflow-adapters.js?v=20261105T174500Z"></script>
+<script src="js/auth-ui.js?v=20261105T182500Z"></script>
+<script src="js/session-sync.js?v=20261105T182500Z"></script>
+<script src="js/workflow.js?v=20261105T182500Z"></script>
+<script src="js/workflow-adapters.js?v=20261105T182500Z"></script>
 </body>
 </html>
