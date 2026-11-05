@@ -480,6 +480,147 @@ async function dispatch(action: string, p: Json): Promise<Json> {
   return { ok: false, message: "Acción no válida: " + action };
 }
 
+// ── servidor anterior (Apps Script) como principal + respaldo en Supabase ──
+// Cada solicitud va primero al Apps Script. Si responde, se copia el resultado a Supabase.
+// Si no responde, se atiende desde la copia de Supabase (y lo guardado queda pendiente de reenviar).
+const GAS_URL = Deno.env.get("INTERNO_GAS_URL") ||
+  "https://script.google.com/macros/s/AKfycbxbh1cLzulwNeFHJj2c6_k6Yk4PyHhzTlFlcfW7M0SMz4NrAxKUagOweQobl4AJTcmQ/exec";
+const MODULO_POR_ACCION: Record<string, string> = {
+  save: "liquidacion", getByPlaca: "liquidacion", delete: "liquidacion",
+  savePago: "pago", getPagoByPlaca: "pago", deletePago: "pago",
+  saveVenta: "venta", getVentaByPlaca: "venta", deleteVenta: "venta",
+  saveContrato: "contrato", getContratoByPlaca: "contrato", deleteContrato: "contrato", setEstadoProceso: "contrato",
+};
+
+async function callGas(query: string, raw: string, timeoutMs = 60000): Promise<Json | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const resp = await fetch(GAS_URL + query, {
+      method: "POST", body: raw, redirect: "follow", signal: controller.signal,
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+    });
+    const text = await resp.text();
+    if (!resp.ok) return null;
+    const parsed = JSON.parse(text);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function copyRecord(modulo: string, placa: unknown, data: unknown) {
+  const p = normPlaca(placa || (data as Json)?.placaValue || (data as Json)?.placa);
+  if (!p || !data || typeof data !== "object") return;
+  const clean = { ...(data as Json) }; delete clean._pendienteServidorAnterior;
+  await putRecord(modulo, p, clean);
+}
+
+async function mirror(action: string, body: Json, res: Json) {
+  if (!res || res.ok === false) return;
+  const modulo = MODULO_POR_ACCION[action];
+  if (action === "login" && res.sessionToken && res.user) {
+    const username = normUser(res.user.username);
+    await db.from("interno_usuarios").upsert({
+      username, display_name: res.user.displayName || username, is_admin: !!res.user.isAdmin, is_active: true,
+      must_change: !!res.user.mustChangePassword, password_hash: await makePasswordHash(String(body.password || "")),
+      session_token: res.sessionToken, session_expires_at: new Date(Date.now() + SESSION_TTL_MS).toISOString(),
+    });
+    return;
+  }
+  if (action === "changePassword") {
+    await db.from("interno_usuarios").update({ password_hash: await makePasswordHash(String(body.newPassword || "")), must_change: false, session_token: null, session_expires_at: null }).eq("username", normUser(body.username));
+    return;
+  }
+  if (action === "adminResetPassword") {
+    await db.from("interno_usuarios").upsert({ username: normUser(body.targetUsername), display_name: normUser(body.targetUsername), password_hash: await makePasswordHash(String(body.newPassword || "")), must_change: true, is_active: true, session_token: null, session_expires_at: null });
+    return;
+  }
+  if (action === "listUsers" && Array.isArray(res.rows)) {
+    for (const r of res.rows) {
+      const username = normUser(r.username); if (!username) continue;
+      const { data: ex } = await db.from("interno_usuarios").select("username").eq("username", username).maybeSingle();
+      if (ex) await db.from("interno_usuarios").update({ display_name: r.displayName || username, is_admin: !!r.isAdmin, is_active: !!r.isActive }).eq("username", username);
+      else await db.from("interno_usuarios").insert({ username, display_name: r.displayName || username, is_admin: !!r.isAdmin, is_active: !!r.isActive, must_change: true, password_hash: "" });
+    }
+    return;
+  }
+  if (modulo && /^delete/.test(action)) { await db.from("interno_registros").delete().eq("modulo", modulo).eq("placa", normPlaca(body.placa)); return; }
+  if (modulo && res.data) { await copyRecord(modulo, res.placa || body.placa, res.data); return; }
+  if (action === "estadoPorPlaca") {
+    const pairs: [string, unknown][] = [["contrato", res._contratos], ["liquidacion", res._liquidacion], ["pago", res._pagos], ["venta", res._ventas]];
+    for (const [m, d] of pairs) if (d) await copyRecord(m, res.placa, d);
+    return;
+  }
+  if ((action === "listPagos" || action === "listVentas") && Array.isArray(res.rows)) {
+    const m = action === "listPagos" ? "pago" : "venta";
+    const rows = res.rows.filter((r: Json) => r && r.placa && r.data && typeof r.data === "object")
+      .map((r: Json) => ({ modulo: m, placa: normPlaca(r.placa), data: r.data, updated_at: new Date().toISOString() }));
+    for (let k = 0; k < rows.length; k += 200) await db.from("interno_registros").upsert(rows.slice(k, k + 200));
+    return;
+  }
+  if (action === "listGlossary" && res.items && typeof res.items === "object") {
+    const rows = Object.entries(res.items).map(([term, description]) => ({ term: normTerm(term), description: String(description), updated_at: new Date().toISOString() }));
+    if (rows.length) await db.from("interno_glosario").upsert(rows);
+    return;
+  }
+  if (action === "saveGlossaryTerm") { await db.from("interno_glosario").upsert({ term: normTerm(body.term), description: String(body.description || "").trim(), updated_at: new Date().toISOString() }); return; }
+  if (action === "deleteGlossaryTerm") { await db.from("interno_glosario").delete().eq("term", normTerm(body.term)); return; }
+  if (action === "getFirmaSPByPlaca" && res.data) { await copyRecord("firma_sp", body.placa, res.data); return; }
+  if (action === "subirExpedienteDrive" && Array.isArray(body.archivos)) {
+    const p = normPlaca(body.placa);
+    for (const a of body.archivos) {
+      if (!a || a.esDocx || !a.contenidoBase64) continue;
+      let nombre = String(a.nombre || "documento").replace(/[\/\\?*:"<>|]/g, "_").trim(); if (!/\.pdf$/i.test(nombre)) nombre += ".pdf";
+      await db.storage.from(BUCKET).upload(`${p}/${nombre}`, decodeB64(a.contenidoBase64), { contentType: "application/pdf", upsert: true });
+    }
+  }
+}
+
+// Reenvía al servidor anterior lo que se guardó mientras estaba caído.
+async function replayPending(token: string) {
+  const { data: rows } = await db.from("interno_registros").select("modulo,placa,data")
+    .eq("data->>_pendienteServidorAnterior", "true").limit(5);
+  const accion: Record<string, string> = { liquidacion: "save", pago: "savePago", venta: "saveVenta", contrato: "saveContrato" };
+  for (const r of rows || []) {
+    const act = accion[r.modulo]; if (!act) continue;
+    const data = { ...(r.data || {}) }; delete data._pendienteServidorAnterior;
+    const res = await callGas("", JSON.stringify({ action: act, sessionToken: token, requestId: data._requestId || crypto.randomUUID(), data }));
+    if (res && res.ok !== false) await copyRecord(r.modulo, res.placa || r.placa, res.data || data);
+    else if (!res) return;
+  }
+}
+
+async function respaldoCompleto(body: Json): Promise<Json> {
+  const v = await validateSession(body.sessionToken);
+  if (!v.ok || !(v as Session).isAdmin) return { ok: false, message: "No autorizado." };
+  const token = String(body.sessionToken);
+  const offset = Math.max(0, Number(body.offset || 0)); const limit = Math.min(60, Math.max(1, Number(body.limit || 40)));
+  const listas: [string, string, string][] = [["list", "getByPlaca", "liquidacion"], ["listContratos", "getContratoByPlaca", "contrato"]];
+  const pendientes: [string, string, string][] = [];
+  for (const [listAction, getAction, modulo] of listas) {
+    const res = await callGas("", JSON.stringify({ action: listAction, sessionToken: token, mode: "todos" }), 90000);
+    if (!res || res.ok === false) return { ok: false, message: "El servidor anterior no respondió al listar " + modulo + "." };
+    (res.rows || []).forEach((r: Json) => r && r.placa && pendientes.push([getAction, modulo, String(r.placa)]));
+  }
+  for (const listAction of ["listPagos", "listVentas", "listGlossary", "listUsers"]) {
+    const res = await callGas("", JSON.stringify({ action: listAction, sessionToken: token, mode: "todos" }), 90000);
+    if (res) await mirror(listAction, {}, res);
+  }
+  const lote = pendientes.slice(offset, offset + limit);
+  let copiados = 0, fallidos = 0;
+  for (let k = 0; k < lote.length; k += 6) {
+    await Promise.all(lote.slice(k, k + 6).map(async ([getAction, modulo, placa]) => {
+      const res = await callGas("", JSON.stringify({ action: getAction, sessionToken: token, placa }));
+      if (res && res.ok !== false && res.data) { await copyRecord(modulo, placa, res.data); copiados++; } else fallidos++;
+    }));
+  }
+  const next = offset + lote.length;
+  return { ok: true, total: pendientes.length, copiados, fallidos, siguiente: next < pendientes.length ? next : null };
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin") || "";
   if (req.method === "OPTIONS") return new Response("ok", { headers: headers(origin) });
@@ -489,17 +630,41 @@ Deno.serve(async (req) => {
   try {
     const raw = req.method === "POST" ? await req.text() : "";
     if (url.searchParams.get("action") === "geminiProxy") {
-      result = await geminiProxy(url, raw);
+      const remote = await callGas(url.search, raw, 120000);
+      result = remote && remote._proxy ? remote : await geminiProxy(url, raw);
     } else if (req.method !== "POST") {
       const action = url.searchParams.get("action") || "ping";
       result = action === "ping" ? { ok: true, message: "API funcionando" } : { ok: false, message: "Usa POST para esta accion." };
     } else {
       const body = raw ? JSON.parse(raw) : {};
       const action = String(body.action || "ping");
-      try { result = await dispatch(action, body); }
-      catch (e) { result = { ok: false, message: "Error al procesar la solicitud: " + (e as Error).message }; }
-      const serverMs = Date.now() - started;
-      result.timing = { lockWaitMs: 0, processingMs: serverMs, flushMs: 0, serverMs };
+      if (action === "respaldoCompleto") {
+        result = await respaldoCompleto(body);
+      } else {
+        const remote = await callGas("", raw);
+        if (remote) {
+          result = remote;
+          // La copia de respaldo se hace despues de responder, para no demorar al usuario.
+          const background = (async () => {
+            try { await mirror(action, body, remote); } catch (e) { console.warn("respaldo", action, (e as Error).message); }
+            if (body.sessionToken && remote.ok !== false) { try { await replayPending(String(body.sessionToken)); } catch (_) { /* siguiente vez */ } }
+          })();
+          const rt = (globalThis as any).EdgeRuntime;
+          if (rt && typeof rt.waitUntil === "function") rt.waitUntil(background); else await background;
+        } else {
+          try { result = await dispatch(action, body); }
+          catch (e) { result = { ok: false, message: "Error al procesar la solicitud: " + (e as Error).message }; }
+          if (result.ok !== false && /^save(Pago|Venta|Contrato)?$/.test(action) && result.data) {
+            const modulo = MODULO_POR_ACCION[action];
+            await putRecord(modulo, result.placa, { ...result.data, _pendienteServidorAnterior: true });
+          }
+          result.respaldo = true;
+        }
+      }
+      if (!result.timing) {
+        const serverMs = Date.now() - started;
+        result.timing = { lockWaitMs: 0, processingMs: serverMs, flushMs: 0, serverMs };
+      }
     }
   } catch (e) {
     result = { ok: false, message: "Error en la solicitud: " + (e as Error).message };
