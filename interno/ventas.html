@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta name="autocor-version" content="20261125T160500Z">
-<script src="js/auto-update.js?v=20261125T160500Z"></script>
+<meta name="autocor-version" content="20261127T190000Z">
+<script src="js/auto-update.js?v=20261127T190000Z"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AUTOCOR | Ventas</title>
@@ -386,12 +386,39 @@
   .tercero-parentesco-label input{min-width:0;flex:1}
   #riskTitle{font-size:12px;font-weight:800}
   #riskVal .cbtn{padding:0;min-width:14px;min-height:14px}
+
+  /* ══ Visor en línea de los archivos exportados ══ */
+  .vx-back{position:fixed;inset:0;background:rgba(20,22,26,.6);display:none;align-items:center;justify-content:center;padding:18px;z-index:10000;}
+  .vx-back.open{display:flex;}
+  .vx{width:min(1100px,100%);max-height:92vh;background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden;font-family:Arial,Helvetica,sans-serif;}
+  .vx-head{background:#2c2e33;border-bottom:3px solid #d71920;color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .vx-head h3{margin:0;font-family:'Poppins',Arial,sans-serif;font-size:14px;letter-spacing:.8px;text-transform:uppercase;}
+  .vx-head small{display:block;color:#b9bec6;font-size:11px;margin-top:2px;letter-spacing:.2px;text-transform:none;font-family:Arial,sans-serif;}
+  .vx-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .vx-btn{border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);color:#fff;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;}
+  .vx-btn:hover{background:rgba(255,255,255,.16);}
+  .vx-btn.red{background:#d71920;border-color:#b3121a;}
+  .vx-btn.red:hover{background:#b3121a;}
+  .vx-body{padding:14px 16px;overflow:auto;background:#f4f5f7;}
+  .vx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;}
+  .vx-card{background:#fff;border:1px solid #e2e4e9;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;}
+  .vx-thumb{background:#fff;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;border-bottom:1px solid #eceef1;cursor:zoom-in;}
+  .vx-thumb img{max-width:100%;max-height:100%;object-fit:contain;}
+  .vx-name{padding:8px 10px 4px;font-size:11px;font-weight:700;color:#2c2e33;word-break:break-word;}
+  .vx-row{display:flex;gap:6px;padding:6px 10px 10px;}
+  .vx-row button{flex:1;border:1px solid #e2e4e9;background:#f6f7f9;color:#1f2328;border-radius:7px;padding:6px 4px;font-size:11px;font-weight:700;cursor:pointer;}
+  .vx-row button.main{background:#2c2e33;border-color:#2c2e33;color:#fff;}
+  .vx-note{font-size:11.5px;color:#5f6168;margin:0 0 12px;}
+  .vx-zoom{position:fixed;inset:0;background:rgba(10,10,12,.85);display:none;align-items:center;justify-content:center;z-index:10001;padding:20px;cursor:zoom-out;}
+  .vx-zoom.open{display:flex;}
+  .vx-zoom img{max-width:100%;max-height:100%;background:#fff;border-radius:6px;}
+  .vx-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#2c2e33;color:#fff;padding:10px 16px;border-radius:9px;font-size:12px;font-weight:700;z-index:10002;display:none;border-left:4px solid #d71920;}
 </style>
-<script src="js/api-config.js?v=20261125T160500Z"></script>
-<script src="js/apps-script-transport.js?v=20261125T160500Z"></script>
-<script src="js/api-client.js?v=20261125T160500Z"></script>
-<script src="js/expediente.js?v=20261125T160500Z"></script>
-<link rel="stylesheet" href="js/navigation.css?v=20261125T160500Z">
+<script src="js/api-config.js?v=20261127T190000Z"></script>
+<script src="js/apps-script-transport.js?v=20261127T190000Z"></script>
+<script src="js/api-client.js?v=20261127T190000Z"></script>
+<script src="js/expediente.js?v=20261127T190000Z"></script>
+<link rel="stylesheet" href="js/navigation.css?v=20261127T190000Z">
 </head>
 <body>
 
@@ -415,6 +442,7 @@
 <div class="toolbar-wrap">
 
   <button type="button" class="btn-primary" onclick="guardarYExportarTodo()">💾 Guardar + Exportar</button>
+  <button type="button" class="btn-secondary" onclick="abrirVisorArchivos()">🗂 Ver archivos en línea</button>
   <button type="button" class="btn-secondary" onclick="buscarPorPlacaPrompt()">🔍 Buscar Placa</button>
   <button type="button" class="btn-secondary" onclick="agregarFilaDocumento()">+ Documento</button>
   <button type="button" class="btn-secondary" onclick="deshacerUltimaFila('tbodyDocs', docsVentasBase.length)">↩ Deshacer doc.</button>
@@ -1085,14 +1113,11 @@ function downloadBlob(blob, filename){
 }
 
 // ── Exportar imágenes ────────────────────────────────────────────
-async function exportarImagenes(placa){
-  const folderName = placa;
-
-  // 1. Capturar cuadro principal
+// Prepara los mismos archivos que van en el ZIP, en orden:
+// 01 VENTAS (PLACA).png · 02 TERCERO_1 (PLACA).png · … · NN PRINT_1.png
+async function prepararArchivosVenta(placa){
   setStatus('CAPTURANDO CUADRO PRINCIPAL...');
   const mainBlob = await captureElementToBlob(document.getElementById('captureArea'));
-
-  // 2. Capturar cada cuadro de tercero (en orden)
   const terceroBlobs = [];
   for(let i = 0; i < terceros.length; i++){
     setStatus(`CAPTURANDO TERCERO ${i+1} DE ${terceros.length}...`);
@@ -1102,50 +1127,39 @@ async function exportarImagenes(placa){
       terceroBlobs.push({ blob, label:`TERCERO_${i+1}` });
     }
   }
+  const total = 1 + terceroBlobs.length + supportPrints.length;
+  const hasExtras = total > 1;
+  const pad   = n => String(n).padStart(String(total).length, '0');
+  let counter = 1;
+  const items = [];
+  items.push({ name: hasExtras ? `${pad(counter++)} VENTAS (${placa}).png` : `VENTAS (${placa}).png`, blob: mainBlob });
+  terceroBlobs.forEach(t => items.push({ name:`${pad(counter++)} ${t.label} (${placa}).png`, blob:t.blob }));
+  supportPrints.forEach((item, idx) => {
+    const blob = dataURLtoBlob(item.src);
+    const ext  = (blob.type||'image/png').includes('jpeg') ? 'jpg' : 'png';
+    items.push({ name:`${pad(counter++)} PRINT_${idx+1}.${ext}`, blob });
+  });
+  return { items, hasExtras };
+}
 
-  const hasPrints = supportPrints.length > 0;
-  const hasExtras = terceroBlobs.length > 0 || hasPrints;
+async function exportarImagenes(placa){
+  const folderName = placa;
+  const { items, hasExtras } = await prepararArchivosVenta(placa);
+  let zipBlob = null;
 
   // Sin extras → descarga directa del PNG principal
   if(!hasExtras){
-    downloadBlob(mainBlob, `VENTAS (${placa}).png`);
-    return;
+    downloadBlob(items[0].blob, items[0].name);
+  } else {
+    setStatus('GENERANDO ZIP...');
+    const zip    = new JSZip();
+    const folder = zip.folder(folderName);
+    items.forEach(it => folder.file(it.name, it.blob));
+    zipBlob = await zip.generateAsync({ type:'blob' });
+    downloadBlob(zipBlob, `${folderName}.zip`);
   }
-
-  // Con extras → ZIP con prefijos numéricos para garantizar el orden:
-  // 01 VENTAS (PLACA).png
-  // 02 TERCERO_1 (PLACA).png  ...
-  // NN PRINT_1.png  ...
-  setStatus('GENERANDO ZIP...');
-  const zip    = new JSZip();
-  const folder = zip.folder(folderName);
-
-  // Calcular cuántos dígitos necesitamos para el padding
-  const total  = 1 + terceroBlobs.length + supportPrints.length;
-  const pad    = n => String(n).padStart(String(total).length, '0');
-
-  let counter = 1;
-
-  // Cuadro principal → primer lugar
-  folder.file(`${pad(counter++)} VENTAS (${placa}).png`, mainBlob);
-
-  // Terceros → segundo lugar, en orden de adición
-  terceroBlobs.forEach(t => {
-    folder.file(`${pad(counter++)} ${t.label} (${placa}).png`, t.blob);
-  });
-
-  // Prints → al final, en orden
-  if(hasPrints){
-    supportPrints.forEach((item, idx) => {
-      const blob = dataURLtoBlob(item.src);
-      const ext  = (blob.type||'image/png').includes('jpeg') ? 'jpg' : 'png';
-      const base = `${pad(counter++)} PRINT_${idx+1}`;
-      folder.file(`${base}.${ext}`, blob);
-    });
-  }
-
-  const zipBlob = await zip.generateAsync({ type:'blob' });
-  downloadBlob(zipBlob, `${folderName}.zip`);
+  // Visor en línea: permite ver y copiar todo aunque la descarga no se haya guardado
+  try { vxMostrar(items, placa, zipBlob); } catch(e){ console.warn('[Visor]', e); }
 }
 
 // ── Obtener datos del formulario ─────────────────────────────────
@@ -1434,9 +1448,130 @@ try{
 }catch(_){}
 </script>
 
-<script src="js/auth-ui.js?v=20261125T160500Z"></script>
-<script src="js/session-sync.js?v=20261125T160500Z"></script>
-<script src="js/workflow.js?v=20261125T160500Z"></script>
-<script src="js/workflow-adapters.js?v=20261125T160500Z"></script>
+<script src="js/auth-ui.js?v=20261127T190000Z"></script>
+<script src="js/session-sync.js?v=20261127T190000Z"></script>
+<script src="js/workflow.js?v=20261127T190000Z"></script>
+<script src="js/workflow-adapters.js?v=20261127T190000Z"></script>
+
+<!-- Visor en línea de los archivos del cuadro (alternativa al ZIP) -->
+<div class="vx-back" id="vxBack">
+  <div class="vx" role="dialog" aria-modal="true" aria-labelledby="vxTitle">
+    <div class="vx-head">
+      <div><h3 id="vxTitle">Archivos del cuadro</h3><small id="vxSub"></small></div>
+      <div class="vx-actions">
+        <button type="button" class="vx-btn red" id="vxCopyAll">📋 Copiar todo</button>
+        <button type="button" class="vx-btn" id="vxZip">⬇ Descargar ZIP</button>
+        <button type="button" class="vx-btn" onclick="cerrarVisorArchivos()">Cerrar</button>
+      </div>
+    </div>
+    <div class="vx-body">
+      <p class="vx-note">Puedes copiar cada imagen y pegarla con <b>Ctrl + V</b> en el correo, Teams o Word, sin descargar nada. <b>Copiar todo</b> une todas las imágenes en una sola.</p>
+      <div class="vx-grid" id="vxGrid"></div>
+    </div>
+  </div>
+</div>
+<div class="vx-zoom" id="vxZoom" onclick="this.classList.remove('open')"><img id="vxZoomImg" alt="Vista ampliada"></div>
+<div class="vx-toast" id="vxToast"></div>
+<script>
+let vxItems = [];       // [{name, blob, url}]
+let vxPlaca = '';
+let vxZipBlob = null;
+
+function vxToast(msg){
+  const t = document.getElementById('vxToast');
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(vxToast._t); vxToast._t = setTimeout(function(){ t.style.display = 'none'; }, 2200);
+}
+async function vxAPng(blob){
+  if(blob.type === 'image/png') return blob;
+  const bmp = await createImageBitmap(blob);
+  const c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height;
+  c.getContext('2d').drawImage(bmp, 0, 0);
+  return new Promise(function(r){ c.toBlob(r, 'image/png'); });
+}
+async function vxCopiarBlob(blob){
+  if(!navigator.clipboard || typeof ClipboardItem === 'undefined') throw new Error('Este navegador no permite copiar imágenes. Usa “Abrir” y copia desde ahí.');
+  const png = await vxAPng(blob);
+  await navigator.clipboard.write([new ClipboardItem({'image/png': png})]);
+}
+async function vxUnirTodo(){
+  const bitmaps = [];
+  for(const it of vxItems){ bitmaps.push(await createImageBitmap(it.blob)); }
+  const W = Math.max.apply(null, bitmaps.map(function(b){ return b.width; }));
+  const sep = 24;
+  const H = bitmaps.reduce(function(h, b){ return h + Math.round(b.height * (W / b.width)) + sep; }, 0) - sep;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const ctx = c.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+  let y = 0;
+  bitmaps.forEach(function(b, i){
+    const h = Math.round(b.height * (W / b.width));
+    ctx.drawImage(b, 0, y, W, h); y += h;
+    if(i < bitmaps.length - 1){ ctx.fillStyle = '#e2e4e9'; ctx.fillRect(0, y + sep/2 - 1, W, 2); y += sep; }
+  });
+  return new Promise(function(r){ c.toBlob(r, 'image/png'); });
+}
+function vxRender(){
+  const grid = document.getElementById('vxGrid');
+  grid.innerHTML = '';
+  document.getElementById('vxTitle').textContent = 'Archivos del cuadro' + (vxPlaca ? ' · ' + vxPlaca : '');
+  document.getElementById('vxSub').textContent = vxItems.length + (vxItems.length === 1 ? ' archivo' : ' archivos') + ' · los mismos que van en el ZIP';
+  document.getElementById('vxZip').style.display = vxItems.length > 1 ? '' : 'none';
+  vxItems.forEach(function(it, i){
+    const card = document.createElement('div');
+    card.className = 'vx-card';
+    card.innerHTML = '<div class="vx-thumb"><img alt=""></div><div class="vx-name"></div>'
+      + '<div class="vx-row"><button type="button" class="main" data-a="copy">📋 Copiar</button><button type="button" data-a="open">Abrir</button><button type="button" data-a="down">Descargar</button></div>';
+    card.querySelector('img').src = it.url;
+    card.querySelector('.vx-name').textContent = it.name;
+    card.querySelector('.vx-thumb').onclick = function(){ document.getElementById('vxZoomImg').src = it.url; document.getElementById('vxZoom').classList.add('open'); };
+    card.querySelector('[data-a="copy"]').onclick = async function(){
+      try{ await vxCopiarBlob(it.blob); vxToast('Imagen copiada. Pégala con Ctrl + V'); }
+      catch(e){ vxToast(e.message || 'No se pudo copiar la imagen'); }
+    };
+    card.querySelector('[data-a="open"]').onclick = function(){ window.open(it.url, '_blank'); };
+    card.querySelector('[data-a="down"]').onclick = function(){ downloadBlob(it.blob, it.name); };
+    grid.appendChild(card);
+  });
+}
+function vxMostrar(items, placa, zipBlob){
+  vxItems.forEach(function(it){ try{ URL.revokeObjectURL(it.url); }catch(_){} });
+  vxItems = items.map(function(it){ return {name: it.name, blob: it.blob, url: URL.createObjectURL(it.blob)}; });
+  vxPlaca = placa || ''; vxZipBlob = zipBlob || null;
+  vxRender();
+  document.getElementById('vxBack').classList.add('open');
+}
+function cerrarVisorArchivos(){ document.getElementById('vxBack').classList.remove('open'); }
+async function abrirVisorArchivos(){
+  try{
+    const placa = normalizeValue(document.getElementById('placaValue').value) || 'SIN PLACA';
+    setStatus('PREPARANDO ARCHIVOS...');
+    const r = await prepararArchivosVenta(placa);
+    vxMostrar(r.items, placa, null);
+    setStatus('ARCHIVOS LISTOS PARA VER Y COPIAR', false, true);
+  }catch(e){ console.error(e); setStatus(e.message || 'NO SE PUDIERON PREPARAR LOS ARCHIVOS', true); }
+}
+document.getElementById('vxCopyAll').onclick = async function(){
+  if(!vxItems.length) return;
+  const btn = this; const txt = btn.textContent; btn.textContent = 'Uniendo imágenes…';
+  try{
+    const blob = vxItems.length === 1 ? vxItems[0].blob : await vxUnirTodo();
+    await vxCopiarBlob(blob);
+    vxToast('Todo copiado en una sola imagen. Pégala con Ctrl + V');
+  }catch(e){ vxToast(e.message || 'No se pudo copiar'); }
+  finally{ btn.textContent = txt; }
+};
+document.getElementById('vxZip').onclick = async function(){
+  if(!vxItems.length) return;
+  if(!vxZipBlob){
+    const zip = new JSZip(); const folder = zip.folder(vxPlaca || 'VENTAS');
+    vxItems.forEach(function(it){ folder.file(it.name, it.blob); });
+    vxZipBlob = await zip.generateAsync({type:'blob'});
+  }
+  downloadBlob(vxZipBlob, (vxPlaca || 'VENTAS') + '.zip');
+};
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){ document.getElementById('vxZoom').classList.remove('open'); }
+});
+</script>
 </body>
 </html>
