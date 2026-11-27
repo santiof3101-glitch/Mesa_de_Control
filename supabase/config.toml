@@ -11,3 +11,7 @@ verify_jwt = true
 # Sistema Interno: autentica con sus propias sesiones (interno_usuarios).
 [functions.interno-api]
 verify_jwt = false
+
+# Prints del Sistema Interno: valida la sesión del Sistema Interno por su cuenta.
+[functions.interno-prints]
+verify_jwt = false

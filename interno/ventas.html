@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta name="autocor-version" content="20261127T190000Z">
-<script src="js/auto-update.js?v=20261127T190000Z"></script>
+<meta name="autocor-version" content="20261127T191000Z">
+<script src="js/auto-update.js?v=20261127T191000Z"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AUTOCOR | Ventas</title>
@@ -414,11 +414,11 @@
   .vx-zoom img{max-width:100%;max-height:100%;background:#fff;border-radius:6px;}
   .vx-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#2c2e33;color:#fff;padding:10px 16px;border-radius:9px;font-size:12px;font-weight:700;z-index:10002;display:none;border-left:4px solid #d71920;}
 </style>
-<script src="js/api-config.js?v=20261127T190000Z"></script>
-<script src="js/apps-script-transport.js?v=20261127T190000Z"></script>
-<script src="js/api-client.js?v=20261127T190000Z"></script>
-<script src="js/expediente.js?v=20261127T190000Z"></script>
-<link rel="stylesheet" href="js/navigation.css?v=20261127T190000Z">
+<script src="js/api-config.js?v=20261127T191000Z"></script>
+<script src="js/apps-script-transport.js?v=20261127T191000Z"></script>
+<script src="js/api-client.js?v=20261127T191000Z"></script>
+<script src="js/expediente.js?v=20261127T191000Z"></script>
+<link rel="stylesheet" href="js/navigation.css?v=20261127T191000Z">
 </head>
 <body>
 
@@ -542,7 +542,7 @@
     <div class="support-head">
       <div>
         <div class="support-title">Respaldo de consultas / prints</div>
-        <div class="support-help">Los prints no se guardan en línea — solo se exportan al ZIP.</div>
+        <div class="support-help">Los prints se guardan en el servidor con la placa: al buscar la placa vuelven a aparecer.</div>
       </div>
     </div>
     <div class="support-body">
@@ -982,6 +982,67 @@ function sincronizarPlacaTerceros(){
 }
 
 // ── Prints ───────────────────────────────────────────────────────
+// ── Prints guardados en el servidor (Supabase) por placa ─────────
+const PRINTS_URL = 'https://evblnxgeyelatdmloydl.supabase.co/functions/v1/interno-prints';
+const PRINTS_MODULO = 'ventas';
+function tokenSesionVentas(){
+  if(authToken) return authToken;
+  try{ return (JSON.parse(localStorage.getItem('autocor_auth') || 'null') || {}).token || ''; }catch(_){ return ''; }
+}
+async function printsApi(action, payload={}){
+  const body = Object.assign({ action, modulo:PRINTS_MODULO, sessionToken:tokenSesionVentas() }, payload);
+  const json = await AutoCorApi.postJson(PRINTS_URL, body, { context:action, throwOnApiError:false, retries:1, timeoutMs:90000 });
+  if(!json || !json.ok) throw new Error((json && json.message) || 'No se pudo completar la operación de prints');
+  return json;
+}
+function estadoPrintHtml(item){
+  const st = item.remoteId ? ['ok','☁ Guardado en el servidor']
+    : item.uploading ? ['up','Guardando en el servidor…']
+    : item.uploadError ? ['err','No se guardó: ' + escapeHtml(item.uploadError)]
+    : ['pend', normalizeValue(document.getElementById('placaValue').value) ? 'Pendiente de guardar' : 'Se guardará al ingresar la placa'];
+  const color = {ok:'#25613c', up:'#5f6168', err:'#a3161c', pend:'#8a5a0a'}[st[0]];
+  const retry = st[0] === 'err' ? ' <a href="#" onclick="subirPrintsPendientes(true);return false;" style="color:#a3161c;font-weight:700">Reintentar</a>' : '';
+  return `<div style="font-size:11px;font-weight:700;color:${color};margin:0 0 8px">${st[1]}${retry}</div>`;
+}
+let subiendoPrints = false;
+async function subirPrintsPendientes(mostrarErrores){
+  const placa = normalizeValue(document.getElementById('placaValue').value);
+  if(!placa || !tokenSesionVentas() || subiendoPrints) return;
+  subiendoPrints = true;
+  let fallos = 0;
+  try{
+    for(const item of supportPrints.slice()){
+      if(item.remoteId || supportPrints.indexOf(item) < 0) continue;
+      item.uploading = true; item.uploadError = ''; renderSupportPrints();
+      try{
+        const r = await printsApi('subirPrint', { placa, nombre:item.title || '', nota:item.note || '', dataUrl:item.src });
+        item.remoteId = r.print && r.print.id; item.remotePlaca = placa;
+      }catch(e){ item.uploadError = e.message || 'Error'; fallos++; }
+      item.uploading = false; renderSupportPrints();
+    }
+    const ids = supportPrints.map(x => x.remoteId).filter(Boolean);
+    if(ids.length > 1) printsApi('ordenarPrints', { ids }).catch(() => {});
+  } finally { subiendoPrints = false; }
+  if(fallos && mostrarErrores) setStatus(`${fallos} PRINT(S) NO SE GUARDARON EN EL SERVIDOR. USA "REINTENTAR".`, true);
+}
+async function cargarPrintsDelServidor(placa, searchId){
+  if(!placa || !tokenSesionVentas()) return;
+  try{
+    setStatus('CARGANDO PRINTS GUARDADOS DE ' + placa + '...');
+    const r = await printsApi('listarPrints', { placa });
+    if(searchId && searchId !== window.__ventasPlateSearchId) return;
+    const remotos = (r.prints || []).map(p => ({ title:p.nombre || 'PRINT', note:p.nota || '', src:p.dataUrl, mime:p.mime || 'image/png', remoteId:p.id, remotePlaca:placa }));
+    // Se reemplazan los de otra placa; los recién agregados sin guardar se conservan para esta placa.
+    const locales = supportPrints.filter(x => !x.remoteId);
+    supportPrints = remotos.concat(locales);
+    renderSupportPrints();
+    setStatus(remotos.length ? `CUADRO CARGADO · ${remotos.length} PRINT(S) RECUPERADO(S) DEL SERVIDOR` : 'CUADRO CARGADO · SIN PRINTS GUARDADOS', false, true);
+    if(locales.length) subirPrintsPendientes();
+  }catch(e){
+    console.warn('[Prints] no se pudieron cargar:', e);
+    setStatus('NO SE PUDIERON CARGAR LOS PRINTS GUARDADOS: ' + (e.message || e), true);
+  }
+}
 function renderSupportPrints(){
   const grid = document.getElementById('supportGrid');
   grid.innerHTML = '';
@@ -995,6 +1056,7 @@ function renderSupportPrints(){
     card.innerHTML = `
       <div class="thumb-wrap"><img src="${item.src}" alt="Print ${index+1}"></div>
       <div class="meta">
+        ${estadoPrintHtml(item, index)}
         <div class="row-actions">
           <button type="button" class="btn-secondary" onclick="previsualizarPrint(${index})">👁 Ver</button>
           <button type="button" class="btn-secondary" onclick="moverPrint(${index},-1)">↑</button>
@@ -1009,14 +1071,28 @@ function renderSupportPrints(){
 function updateSupportField(index, field, value){
   if(supportPrints[index]) supportPrints[index][field] = value;
 }
-function eliminarPrint(index){
-  supportPrints.splice(index, 1);
+async function eliminarPrint(index){
+  const item = supportPrints[index];
+  if(!item) return;
+  if(item.remoteId){
+    if(!confirm('Este print está guardado en el servidor con la placa. ¿Eliminarlo también del servidor?')) return;
+    try{ await printsApi('eliminarPrint', { id:item.remoteId }); }
+    catch(e){ alert('No se pudo eliminar del servidor: ' + (e.message || e)); return; }
+  }
+  supportPrints.splice(supportPrints.indexOf(item), 1);
   renderSupportPrints();
 }
-function eliminarTodosLosPrints(){
+async function eliminarTodosLosPrints(){
   if(!supportPrints.length) return;
-  if(!confirm('¿Eliminar todos los prints?')) return;
-  supportPrints = [];
+  const enServidor = supportPrints.filter(x => x.remoteId).length;
+  if(!confirm(enServidor ? `¿Eliminar todos los prints? ${enServidor} están guardados en el servidor y también se borrarán de ahí.` : '¿Eliminar todos los prints?')) return;
+  for(const item of supportPrints.slice()){
+    if(item.remoteId){
+      try{ await printsApi('eliminarPrint', { id:item.remoteId }); }
+      catch(e){ alert('No se pudo eliminar un print del servidor: ' + (e.message || e)); renderSupportPrints(); return; }
+    }
+    supportPrints.splice(supportPrints.indexOf(item), 1);
+  }
   renderSupportPrints();
 }
 function moverPrint(index, direction){
@@ -1026,6 +1102,8 @@ function moverPrint(index, direction){
   supportPrints[index] = supportPrints[newIndex];
   supportPrints[newIndex] = tmp;
   renderSupportPrints();
+  const ids = supportPrints.map(x => x.remoteId).filter(Boolean);
+  if(ids.length) printsApi('ordenarPrints', { ids }).catch(e => console.warn('[Prints] orden', e));
 }
 
 function previsualizarPrint(index){
@@ -1044,7 +1122,7 @@ function handlePrintFiles(files){
     const reader = new FileReader();
     reader.onload = e => {
       supportPrints.push({ title:`PRINT ${supportPrints.length+1}`, note:'', src:e.target.result, mime:file.type||'image/png' });
-      if(--pending === 0) renderSupportPrints();
+      if(--pending === 0){ renderSupportPrints(); subirPrintsPendientes(); }
     };
     reader.readAsDataURL(file);
   });
@@ -1277,6 +1355,7 @@ async function buscarPorPlaca(placa){
   if(resp.data){
     cargarFormularioVenta(resp.data);
     setStatus('CUADRO CARGADO', false, true);
+    cargarPrintsDelServidor(placaNorm, searchId);
     return true;
   }
   cargarFormularioVenta({
@@ -1285,6 +1364,7 @@ async function buscarPorPlaca(placa){
     terceros: []
   });
   setStatus('NO EXISTE VENTA PARA ' + placaNorm + '. FORMATO NUEVO LISTO.');
+  cargarPrintsDelServidor(placaNorm, searchId);
   return false;
 }
 
@@ -1321,6 +1401,7 @@ async function guardarYExportarTodo(){
   try{
     setStatus('GUARDANDO CUADRO EN LÍNEA...');
     const placa = await guardarCuadroEnLinea();
+    await subirPrintsPendientes(true);
     const conPrints   = supportPrints.length > 0;
     const conTerceros = terceros.length > 0;
     setStatus('CUADRO GUARDADO. PREPARANDO IMÁGENES...');
@@ -1448,10 +1529,10 @@ try{
 }catch(_){}
 </script>
 
-<script src="js/auth-ui.js?v=20261127T190000Z"></script>
-<script src="js/session-sync.js?v=20261127T190000Z"></script>
-<script src="js/workflow.js?v=20261127T190000Z"></script>
-<script src="js/workflow-adapters.js?v=20261127T190000Z"></script>
+<script src="js/auth-ui.js?v=20261127T191000Z"></script>
+<script src="js/session-sync.js?v=20261127T191000Z"></script>
+<script src="js/workflow.js?v=20261127T191000Z"></script>
+<script src="js/workflow-adapters.js?v=20261127T191000Z"></script>
 
 <!-- Visor en línea de los archivos del cuadro (alternativa al ZIP) -->
 <div class="vx-back" id="vxBack">
